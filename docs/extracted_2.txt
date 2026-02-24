@@ -1,0 +1,1409 @@
+Приложение 2
+Перечень
+а
+ктуальных микробных патогенов (для выпадающего списка)
+. 
+Плюс необходимо оставить возможность ручного ввода дополнительных патогенов.
+ 
+Копировал с 
+В
+икипедии. Там где сокращения перед точкой - просто не было времени 
+исправлять и 
+расписывать. В программе должны быть полные названия. Отдельно выделил супер актуальные патогены группы 
+ESKAPE
+, их 
+просто 
+нужно как-то дополнительно еще выделить.
+Раздел 1. 
+Грамотрицательные бактерии (ГОБ)
+Acinetobacter ssp.
+:
+Acinetobacter baumannii
+ - 
+(ESKAPE 
+патоген)
+Acinetobacter baylyi
+Acinetobacter bouvetii
+Acinetobacter calcoaceticus
+Acinetobacter gerneri
+Acinetobacter grimontii
+Acinetobacter haemolyticus
+Acinetobacter johnsonii
+Acinetobacter junii
+Acinetobacter lwoffii
+Acinetobacter parvus
+Acinetobacter p
+ittii
+Acinetobacter radioresistens
+Acinetobacter schindleri
+Acinetobacter tandoii
+Acinetobacter tjernbergiae
+Acinetobacter towneri
+Acinetobacter ursingii
+Enterobacter spp.
+*
+ -
+(ESKAPE 
+патоген
+ы
+)
+ 
+Enterobacter
+ 
+aerogenes
+Enterobacter
+ 
+amnigenus
+Enterobacter
+ 
+arachidis
+Enterobacter
+ 
+asburiae
+Enterobacter
+ 
+bugandensis
+Enterobacter
+ 
+cancerogenous
+Enterobacter
+ 
+cloacae
+Enterobacter
+ 
+cowanii
+Enterobacter
+ 
+dissolvens
+Enterobacter
+ 
+gergoviae
+Enterobacter
+ 
+helveticus
+Enterobacter
+ 
+hormaechei
+Enterobacter
+ 
+intermedius
+Enterobacter
+ 
+kobei
+Enterobacter
+ 
+ludwigii
+Enterobacter
+ 
+mori
+Enterobacter
+ 
+nimipressuralis
+Enterobacter
+ 
+oryzae
+Enterobacter
+ 
+pulveris
+Enterobacter
+ 
+pyrinus
+Enterobacter
+ radicincitans
+Enterobacter
+ 
+taylorae
+Enterobacter
+ 
+turicensis
+Enterobacter
+ 
+soli
+Klebsiella 
+spp.
+Klebsiella aerogenes
+Klebsiella granulomatis
+Klebsiella grimontii
+Klebsiella huaxiensis
+Klebsiella kielensis
+Klebsiella michiganensis
+Klebsiella milletis
+Klebsiella oxytoca
+Klebsiella pneumoniae
+ 
+- 
+(ESKAPE 
+патоген
+)
+Klebsiella quasipneumoniae
+ 
+Klebsiella quasivariicola
+Klebsiella senegalensis
+Klebsiella steroids
+Klebsiella variicola
+Escherichia coli
+Morganella morganii
+P
+rovidencia
+ spp.
+P. stuartii
+P. sneebia
+P. rettgeri
+P. rustigianii
+P. heimbachae
+P. burhodogranariea
+P. alcalifaciens
+Proteus spp.
+P
+roteus
+ hauseri
+P
+roteus
+ mirabilis
+P
+roteus
+ myxofaciens
+P
+roteus
+ penneri
+P
+roteus
+ vulgaris
+Pseudomonas 
+spp.
+ 
+Pseudomonas
+ 
+alcaligenes
+ 
+Pseudomonas
+ 
+mendocina
+ 
+Pseudomonas
+ pseudoalcaligenes
+ 
+Pseudomonas
+ resinovorans
+ 
+Pseudomonas
+ 
+aeruginosa
+ - 
+(ESKAPE 
+патоген)
+ 
+Pseudomonas
+ putida
+ 
+Pseudomonas
+ 
+desmolyticum
+Pseudomonas
+ nitroreducens 
+ 
+ 
+Pseudomonas
+ veronii
+ 
+Pseudomonas
+ stutzeri
+Moraxella
+ spp.
+M. atlantae
+M. boevrei
+M. bovis
+M. bovoculi
+M. canis
+M. caprae
+M. catarrhalis
+M. caviae
+M. cuniculi
+M. equi
+M. lacunata
+M. lincolnii
+M. nonliquefaciens
+M. oblonga
+M. osloensis
+M. pluranimalium
+M. porci
+M. saccharolytica
+Serratia spp.
+S. aquatilis
+S. entomophila
+S. ficaria
+S. fonticola
+S. glossinae
+S. grimesii
+S. liquefaciens
+S. marcescens
+S. myotis
+S. nematodiphila
+S. odorifera
+S. plymuthica
+S. proteamaculans
+S. quinivorans
+S. rubidaea
+S. symbiotica
+S. ureilytica
+S. vespertilionis
+ 
+Раздел
+ 2. 
+Грамположительные
+ 
+бактерии
+ (
+ГПБ
+)
+Bacillus 
+spp.
+Bacillus cereus
+B. Symun
+B. acidicola
+B. acidiproducens
+B. acidocaldarius
+B. acidoterrestris
+B. aeolius
+B. aerius
+B. aerophilus
+B. agaradhaerens
+B. agri
+B. aidingensis
+B. akibai
+B. albus
+B. alcalophlus
+B. algicola
+B. alginolyticus
+B. alkalidiazotrophicus
+B. alkalinitrilicus
+B. alkalisediminis
+B. alkalitelluris
+B. altitudinis
+B. alveayuensis
+B. alvei
+B. amyloliquefaciens
+B. a. subsp. amyloliquefaciens
+B. a. subsp. plantarum
+B. aminovorans
+B. amylolyticus
+B. andreesenii
+B. aneurinilyticus
+B. anthracis
+B. aquimaris
+B. arenosi
+B. arseniciselenatis
+B. arsenicus
+B. aurantiacus
+B. arvi
+B. aryabhattai
+B. asahii
+B. atrophaeus
+B. axarquiensis
+B. azotofixans
+B. azotoformans
+B. badius
+B. barbaricus
+B. bataviensis
+B. beijingensis
+B. benzoevorans
+B. beringensis
+B. berkeleyi
+B. beveridgei
+B. bogoriensis
+B. boroniphilus
+B. borstelensis
+B. brevis
+B. butanolivorans
+B. canaveralius
+B. carboniphilus
+B. cecembensis
+B. cellulosilyticus
+B. centrosporus
+B. chagannorensis
+B. chitinolyticus
+B. chondroitinus
+B. choshinensis
+B. chungangensis
+B. cibi
+B. circulans
+B. clarkii
+B. clausii
+B. coagulans
+B. coahuilensis
+B. cohnii
+B. composti
+B. curdlanolyticus
+B. cycloheptanicus
+B. cytotoxicus
+B. daliensis
+B. decisifrondis
+B. decolorationis
+B. deserti
+B. dipsosauri
+B. drentensis
+B. edaphicus
+B. ehimensis
+B. eiseniae
+B. enclensis
+B. endophyticus
+B. endoradicis
+B. farraginis
+B. fastidiosus
+B. fengqiuensis
+B. filobacterium rodentuim
+B. firmus
+B. flexus
+B. foraminis
+B. fordii
+B. formosus
+B. fortis
+B. fumarioli
+B. funiculus
+B. fusiformis
+B. gaemokensis
+B. galactophilus
+B. galactosidilyticus
+B. galliciensis
+B. gelatini
+B. gibsonii
+B. ginsengi
+B. ginsengihumi
+B. ginsengisoli
+B. glucanolyticus
+B. gordonae
+B. gottheilii
+B. graminis
+B. halmapalus
+B. haloalkaliphilus
+B. halochares
+B. halodenitrificans
+B. halodurans
+B. halophilus
+B. halosaccharovorans
+B. haynesii
+B. hemicellulosilyticus
+B. hemicentroti
+B. herbersteinensis
+B. horikoshii
+B. horneckiae
+B. horti
+B. huizhouensis
+B. humi
+B. hwajinpoensis
+B. idriensis
+B. indicus
+B. infantis
+B. infernus
+B. insolitus
+B. invictae
+B. iranensis
+B. isabeliae
+B. isronensis
+B. jeotgali
+B. kaustophilus
+B. kobensis
+B. kochii
+B. kokeshiiformis
+B. koreensis
+B. korlensis
+B. kribbensis
+B. krulwichiae
+B. laevolacticus
+B. larvae
+B. laterosporus
+B. lautus
+B. lehensis
+B. lentimorbus
+B. lentus
+B. licheniformis
+B. ligniniphilus
+B. litoralis
+B. locisalis
+B. luciferensis
+B. luteolus
+B. luteus
+B. macauensis
+B. macerans
+B. macquariensis
+B. macyae
+B. malacitensis
+B. mannanilyticus
+B. marisflavi
+B. marismortui
+B. marmarensis
+B. massiliensis
+B. megaterium
+"
+B. mesentericus
+"
+B. mesonae
+B. methanolicus
+B. methylotrophicus
+B. migulanus
+B. mojavensis
+B. mucilaginosus
+B. muralis
+B. murimartini
+B. mycoides
+B. naganoensis
+B. nanhaiensis
+B. nanhaiisediminis
+B. nealsonii
+B. neidei
+B. neizhouensis
+B. niabensis
+B. niacini
+B. novalis
+B. oceanisediminis
+B. odysseyi
+B. okhensis
+B. okuhidensis
+B. oleronius
+B. oryzaecorticis
+B. oshimensis
+B. pabuli
+B. pakistanensis
+B. pallidus
+B. pallidus
+B. panacisoli
+B. panaciterrae
+B. pantothenticus
+B. parabrevis
+B. paraflexus
+B. pasteurii
+B. patagoniensis
+B. peoriae
+B. persepolensis
+B. persicus
+B. pervagus
+B. plakortidis
+B. pocheonensis
+B. polygoni
+B. polymyxa
+B. popilliae
+B. pseudalcalophilus
+B. pseudofirmus
+B. pseudomycoides
+B. psychrodurans
+B. psychrophilus
+B. psychrosaccharolyticus
+B. psychrotolerans
+B. pulvifaciens
+B. pumilus
+B. purgationiresistens
+B. pycnus
+B. qingdaonensis
+B. qingshengii
+B. reuszeri
+B. rhizosphaerae
+B. rigui
+B. ruris
+B. safensis
+B. salarius
+B. salexigens
+B. saliphilus
+B. schlegelii
+B. sediminis
+B. selenatarsenatis
+B. selenitireducens
+B. seohaeanensis
+B. shacheensis
+B. shackletonii
+B. siamensis
+B. silvestris
+B. simplex
+B. siralis
+B. smithii
+B. soli
+B. solimangrovi
+B. solisalsi
+B. songklensis
+B. sonorensis
+B. sphaericus
+B. sporothermodurans
+B. stearothermophilus
+B. stratosphericus
+B. subterraneus
+B. subtilis
+B. s. subsp. inaquosorum
+B. s. subsp. spizizenii
+B. s. subsp. subtilis
+B. taeanensis
+B. tequilensis
+B. thermantarcticus
+B. thermoaerophilus
+B. thermoamylovorans
+B. thermocatenulatus
+B. thermocloacae
+B. thermocopriae
+B. thermodenitrificans
+B. thermoglucosidasius
+B. thermolactis
+B. thermoleovorans
+B. thermophilus
+B. thermoproteolyticus
+B. thermoruber
+B. thermosphaericus
+B. thiaminolyticus
+B. thioparans
+B. thuringiensis
+B. tianshenii
+B. toyonensis
+B. trypoxylicola
+B. tusciae
+B. validus
+B. vallismortis
+B. vedderi
+B. velezensis
+B. vietnamensis
+B. vireti
+B. vulcani
+B. wakoensis
+B. xiamenensis
+B. xiaoxiensis
+B. zanthoxyli
+B. zhanjiangensis
+Staphylococcus spp.
+S. argenteus
+S. arlettae
+S. agnetis
+S. aureus
+ (
+дополнительно
+ 
+здесь
+ 
+еще
+ 
+выделить
+ 
+methicillin-resistant S. aureus
+ (MRSA)
+)
+- 
+(ESKAPE 
+патоген
+)
+S. auricularis
+S. borealis
+S. caeli
+S. capitis
+S. caprae
+S. carnosus
+S. caseolyticus
+S. chromogenes
+S. cohnii
+S. cornubiensis
+S. condimenti
+S. debuckii
+S. delphini
+S. devriesei
+S. edaphicus
+S. epidermidis
+S. equorum
+S. felis
+S. fleurettii
+S. gallinarum
+S. haemolyticus
+S. hominis
+S. hyicus
+S. intermedius
+S. jettensis
+S. kloosii
+S. leei
+S. lentus
+S. lugdunensis
+S. lutrae
+S. lyticans
+S. massiliensis
+S. microti
+S. muscae
+S. nepalensis
+S. pasteuri
+S. petrasii
+S. pettenkoferi
+S. piscifermentans
+S. pseudintermedius
+S. pseudolugdunensis
+S. pulvereri
+S. rostri
+S. saccharolyticus
+S. saprophyticus
+S. schleiferi
+S. schweitzeri
+S. sciuri
+S. simiae
+S. simulans
+S. singaporensis
+S. stepanovicii
+S. succinus
+S. vitulinus
+S. warneri
+S. xylosus
+S. Westin
+Streptococcus spp.
+Streptococcus acidominimus
+Streptococcus agalactiae
+ (Group B Streptococcus)
+Streptococcus alactolyticus
+Streptococcus anginosus
+Streptococcus australis
+Streptococcus caballi
+Streptococcus cameli
+Streptococcus canis
+Streptococcus caprae
+Streptococcus castoreus
+Streptococcus constellatus
+Streptococcus criceti
+Streptococcus cristatus
+Streptococcus cuniculi
+Streptococcus danieliae
+Streptococcus dentasini
+Streptococcus dentiloxodontae
+Streptococcus dentirousetti
+Streptococcus devriesei
+Streptococcus didelphis
+Streptococcus downei
+Streptococcus dysgalactiae
+Streptococcus entericus
+Streptococcus equi
+Streptococcus equinus
+Streptococcus faecalis
+ (Group D Strepcoccus)
+Streptococcus ferus
+Streptococcus gallinaceus
+Streptococcus gallolyticus
+Streptococcus gordonii
+Streptococcus halichoeri
+Streptococcus halotolerans
+Streptococcus henryi
+Streptococcus himalayensis
+Streptococcus hongkongensis
+Streptococcus hyointestinalis
+Streptococcus hyovaginalis
+Streptococcus ictaluri
+Streptococcus infantarius
+Streptococcus infantis
+Streptococcus iniae
+Streptococcus intermedius
+Streptococcus lactarius
+Streptococcus loxodontisalivarius
+Streptococcus lutetiensis
+Streptococcus macacae
+Streptococcus marimammalium
+Streptococcus marmotae
+Streptococcus massiliensis
+Streptococcus merionis
+Streptococcus minor
+Streptococcus mitis
+Streptococcus moroccensis
+Streptococcus mutans
+Streptococcus oralis
+Streptococcus oricebi
+Streptococcus oriloxodontae
+Streptococcus orisasini
+Streptococcus orisratti
+Streptococcus orisuis
+Streptococcus ovis
+Streptococcus panodentis
+Streptococcus pantholopis
+Streptococcus parasanguinis
+Streptococcus parasuis
+Streptococcus parauberis
+Streptococcus peroris
+Streptococcus pharyngis
+Streptococcus phocae
+Streptococcus pluranimalium
+Streptococcus plurextorum
+Streptococcus pneumoniae
+Streptococcus porci
+Streptococcus porcinus
+Streptococcus porcorum
+Streptococcus pseudopneumoniae
+Streptococcus pseudoporcinus
+Streptococcus pyogenes
+ (Group A Streptococcus)
+Streptococcus ratti
+Streptococcus rifensis
+Streptococcus rubneri
+Streptococcus rupicaprae
+Streptococcus salivarius
+Streptococcus saliviloxodontae
+Streptococcus sanguinis
+Streptococcus sinensis
+Streptococcus sobrinus
+Streptococcus suis
+Streptococcus tangierensis
+Streptococcus thermophilus
+Streptococcus thoraltensis
+Streptococcus tigurinus
+Streptococcus troglodytae
+Streptococcus troglodytidis
+Streptococcus uberis
+Streptococcus urinalis
+Streptococcus ursoris
+Streptococcus vestibularis
+ 
+Streptococcus zooepidemicus
+ 
+Viridans streptococci
+ (
+Streptococcus anginosus group
+)
+ 
+Enterococcus ssp.
+Enterococcus avium
+Enterococcus casseliflavus
+Enterococcus durans
+Enterococcus faecalis
+Enterococcus faecium
+ (ESKAPE 
+патоген)
+Enterococcus raffinosus
+Enterococcus solitarius
+ 
+Clostridium spp.
+Clostridium botulinum
+  
+Clostridium perfringens
+ 
+ 
+Clostridium tetani
+ 
+Clostridium difficile
+Clostridium histolyticum
+Clostridium sordellii
+ 
+Corynebacterium 
+spp.
+C. accolens
+ 
+Neubauer et al. 1991
+C. afermentans
+ 
+Riegel et al. 1993
+C. alimapuense
+ 
+Claverias et al. 2019
+"
+C. alkanolyticum
+" 
+Lee and Reichenbach 2006
+C. ammoniagenes
+ 
+(Cooke and Keith 1927) Collins 1987
+C. amycolatum
+ 
+Collins et al. 1988
+C. anserum
+ 
+Liu et al. 2021
+C. appendicis
+ 
+Yassin et al. 2002
+C. aquatimens
+ 
+Aravena-Román et al. 2012
+C. aquilae
+ 
+Fernández-Garayzábal et al. 2003
+C. argentoratense
+ 
+Riegel et al. 1995
+"
+C. asperum
+" 
+De Briel et al. 1992
+C. atrinae
+ 
+Kim et al. 2015
+C. atypicum
+ 
+Hall et al. 2003
+C. aurimucosum
+ 
+Yassin et al. 2002
+C. auris
+ 
+Funke et al. 1995
+C. auriscanis
+ 
+Collins et al. 2000
+C. belfantii
+ 
+Dazas et al. 2018
+C. beticola
+ 
+Abdou 1969 (Approved Lists 1980)
+"
+C. bouchesdurhonense
+" 
+Ndongo et al. 2017
+"
+C. bouchesdurhonense
+" 
+Lo et al. 2019
+C. bovis
+ 
+Bergey et al. 1923 (Approved Lists 1980)
+C. callunae
+ 
+(Lee and Good 1963) Yamada and Komagata 1972 (Approved Lists 1980)
+C. camporealensis
+ 
+Fernández-Garayzábal et al. 1998
+C. canis
+ 
+Funke et al. 2010
+C. capitovis
+ 
+Collins et al. 2001
+C. casei
+ 
+Brennan et al. 2001
+C. caspium
+ 
+Collins et al. 2004
+C. choanae
+ 
+Busse et al. 2019
+C. ciconiae
+ 
+Fernández-Garayzábal et al. 2004
+C. comes
+ 
+Schaffert et al. 2021
+C. confusum
+ 
+Funke et al. 1998
+C. coyleae
+ 
+Funke et al. 1997
+C. crudilactis
+ 
+Zimmermann et al. 2016
+C. cystitidis
+ 
+Yanagawa and Honda 1978 (Approved Lists 1980)
+"
+C. defluvii
+" 
+Yu et al. 2017
+"
+C. dentalis
+" 
+Benabdelkader et al. 2020
+C. deserti
+ 
+Zhou et al. 2012
+C. diphtheriae
+ 
+(Kruse 1886) Lehmann and Neumann 1896 (Approved Lists 1980)
+C. doosanense
+ 
+Lee et al. 2009
+C. durum
+ 
+Riegel et al. 1997
+C. efficiens
+ 
+Fudou et al. 2002
+C. endometrii
+ 
+Ballas et al. 2020
+C. epidermidicanis
+ 
+Frischmann et al. 2012
+C. faecale
+ 
+Chen et al. 2016
+C. falsenii
+ 
+Sjödén et al. 1998
+C. felinum
+ 
+Collins et al. 2001
+C. flavescens
+ 
+Barksdale et al. 1979 (Approved Lists 1980)
+C. fournieri
+ 
+corrig. Diop et al. 2018
+C. frankenforstense
+ 
+Wiertz et al. 2013
+C. freiburgense
+ 
+Funke et al. 2009
+C. freneyi
+ 
+Renaud et al. 2001
+C. gerontici
+ 
+Busse et al. 2019
+C. glaucum
+ 
+Yassin et al. 2003
+C. glucuronolyticum
+ 
+Funke et al. 1995
+C. glutamicum
+ 
+(Kinoshita et al. 1958) Abe et al. 1967 (Approved Lists 1980)
+C. glyciniphilum
+ 
+(ex Kubota et al. 1972) Al-Dilaimi et al. 2015
+C. gottingense
+ 
+Atasayar et al. 2017
+C. guangdongense
+ 
+Li et al. 2016
+"
+C. haemomassiliense
+" 
+Boxberger et al. 2020
+C. halotolerans
+ 
+Chen et al. 2004
+C. hansenii
+ 
+Renaud et al. 2007
+C. heidelbergense
+ 
+Braun et al. 2021
+C. hindlerae
+ 
+Bernard et al. 2021
+C. humireducens
+ 
+Wu et al. 2011
+"
+C. ihumii
+" 
+Padmanabhan et al. 2014
+C. ilicis
+ 
+Mandel et al. 1961 (Approved Lists 1980)
+C. imitans
+ 
+Funke et al. 1997
+"
+C. incognitum
+" 
+Boxberger et al. 2021
+C. jeddahense
+ 
+Edouard et al. 2017
+C. jeikeium
+ 
+Jackman et al. 1988
+C. kalinowskii
+ 
+Schaffert et al. 2021
+"
+C. kefirresidentii
+" 
+Blasche et al. 2017
+C. kroppenstedtii
+ 
+Collins et al. 1998
+C. kutscheri
+ 
+(Migula 1900) Bergey et al. 1925 (Approved Lists 1980)
+C. lactis
+ 
+Wiertz et al. 2013
+"
+C. lactofermentum
+" 
+Gubler et al. 1994
+C. jeikliangguodongiiium
+ 
+Zhu et al. 2020
+C. lipophiloflavum
+ 
+Funke et al. 1997
+C. lizhenjunii
+ 
+Zhou et al. 2021
+C. lowii
+ 
+Bernard et al. 2016
+C. lubricantis
+ 
+Kämpfer et al. 2009
+C. lujinxingii
+ 
+Zhang et al. 2021
+C. macginleyi
+ 
+Riegel et al. 1995
+C. marinum
+ 
+Du et al. 2010
+C. maris
+ 
+Ben-Dov et al. 2009
+C. massiliense
+ 
+Merhej et al. 2009
+C. mastitidis
+ 
+Fernandez-Garayzabal et al. 1997
+C. matruchotii
+ 
+(Mendel 1919) Collins 1983
+C. minutissimum
+ 
+(ex Sarkany et al. 1962) Collins and Jones 1983
+C. mucifaciens
+ 
+Funke et al. 1997
+C. mustelae
+ 
+Funke et al. 2010
+C. mycetoides
+ 
+(ex Castellani 1942) Collins 1983
+C. nasicanis
+ 
+Baumgardt et al. 2015
+"
+C. neomassiliense
+" 
+Boxberger et al. 2020
+C. nuruki
+ 
+Shin et al. 2011
+C. occultum
+ 
+Schaffert et al. 2021
+C. oculi
+ 
+Bernard et al. 2016
+C. otitidis
+ 
+(Funke et al. 1994) Baek et al. 2018
+"
+C. pacaense
+" 
+Bellali et al. 2019
+"
+C. parakroppenstedtii
+" 
+Luo et al. 2022
+"
+C. parvulum
+" 
+Nakamura et al. 1983
+C. pelargi
+ 
+Kämpfer et al. 2015
+C. phocae
+ 
+Pascual et al. 1998
+"
+C. phoceense
+" 
+Cresci et al. 2016
+C. pilbarense
+ 
+Aravena-Roman et al. 2010
+C. pilosum
+ 
+Yanagawa and Honda 1978 (Approved Lists 1980)
+C. pollutisoli
+ 
+Negi et al. 2016
+C. propinquum
+ 
+Riegel et al. 1994
+"
+C. provencense
+" 
+Ndongo et al. 2017
+"
+C. provencense
+" 
+Lo et al. 2019
+C. pseudodiphtheriticum
+ 
+Lehmann and Neumann 1896 (Approved Lists 1980)
+"
+C. pseudokroppenstedtii
+" 
+Luo et al. 2022
+C. pseudopelargi
+ 
+Busse et al. 2019
+C. pseudotuberculosis
+ 
+(Buchanan 1911) Eberson 1918 (Approved Lists 1980)
+C. pyruviciproducens
+ 
+Tong et al. 2010
+C. qintianiae
+ 
+Zhou et al. 2021
+C. renale
+ 
+(Migula 1900) Ernst 1906 (Approved Lists 1980)
+C. resistens
+ 
+Otsuka et al. 2005
+C. riegelii
+ 
+Funke et al. 1998
+C. rouxii
+ 
+Badell et al. 2020
+C. sanguinis
+ 
+Jaén-Luchoro et al. 2020
+"
+C. segmentosum
+" 
+Collins et al. 1998
+"
+C. senegalense
+" 
+Ndiaye et al. 2019
+C. silvaticum
+ 
+Dangel et al. 2020
+C. simulans
+ 
+Wattiau et al. 2000
+C. singulare
+ 
+Riegel et al. 1997
+C. sphenisci
+ 
+Goyache et al. 2003
+C. spheniscorum
+ 
+Goyache et al. 2003
+C. sputi
+ 
+Yassin and Siering 2008
+C. stationis
+ 
+(ZoBell and Upham 1944) Bernard et al. 2010
+C. striatum
+ 
+(Chester 1901) Eberson 1918 (Approved Lists 1980)
+C. suicordis
+ 
+Vela et al. 2003
+C. sundsvallense
+ 
+Collins et al. 1999
+C. suranareeae
+ 
+Nantapong et al. 2020
+C. tapiri
+ 
+Baumgardt et al. 2015
+C. terpenotabidum
+ 
+Takeuchi et al. 1999
+C. testudinoris
+ 
+Collins et al. 2001
+C. thomssenii
+ 
+Zimmermann et al. 1998
+C. timonense
+ 
+Merhej et al. 2009
+C. trachiae
+ 
+Kämpfer et al. 2015
+C. tuberculostearicum
+ 
+Feurer et al. 2004
+C. tuscaniense
+ 
+corrig. Riegel et al. 2006
+"
+C. uberis
+" 
+Kittl et al. 2022
+C. ulcerans
+ 
+(ex Gilbert and Stewart 1927) Riegel et al. 1995
+C. ulceribovis
+ 
+Yassin 2009
+C. urealyticum
+ 
+Pitcher et al. 1992
+C. ureicelerivorans
+ 
+Yassin 2007
+"
+C. urinapleomorphum
+" 
+Morand et al. 2017
+C. urinipleomorphum
+ 
+corrig. Niang et al. 2021
+C. urogenitale
+ 
+Ballas et al. 2020
+C. uropygiale
+ 
+Braun et al. 2016
+C. uterequi
+ 
+Hoyles et al. 2013
+C. variabile
+ 
+corrig. (Müller 1961) Collins 1987
+C. vitaeruminis
+ 
+corrig. (Bechdel et al. 1928) Lanéelle et al. 1980
+C. wankanglinii
+ 
+Zhang et al. 2021
+C. xerosis
+ 
+(Lehmann and Neumann 1896) Lehmann and Neumann 1899 (Approved Lists 1980)
+C. yudongzhengii
+ 
+Zhu et al. 2020
+C. zhongnanshanii
+ 
+Zhang et al. 2021
+ 
+Listeria
+ spp.
+Listeria aquatica
+ 
+Listeria booriae
+ 
+Listeria cornellensis
+ 
+Listeria fleischmannii
+ 
+Listeria grandensis
+ 
+Listeria grayi
+ 
+Listeria innocua
+ 
+Listeria ivanovii
+ 
+Listeria marthii
+ 
+Listeria monocytogenes
+ 
+Listeria newyorkensis
+ 
+Listeria riparia
+ 
+Listeria rocourtiae
+ 
+Listeria seeligeri
+ 
+Listeria weihenstephanensis
+ 
+l.
+ 2013
+Listeria welshimeri
+ 
+Р
+аздел 3. 
+Микромицеты (грибы проще говоря)
+Candida spp.
+C. albicans
+C. ascalaphidarum
+C. amphixiae
+C. antarctica
+[англ.]
+C. atlantica
+C. atmosphaerica
+C. auris
+C. blankii
+[англ.]
+C. blattae
+C. bracarensis
+[англ.]
+C. bromeliacearum
+[англ.]
+C. carpophila
+C. catenulata
+[англ.]
+C. cerambycidarum
+C. chauliodes
+C. corydali
+C. dosseyi
+C. dubliniensis
+[англ.]
+C. ergatensis
+C. fructus
+C. glabrata
+[англ.]
+C. guilliermondii
+[англ.]
+C. fermentati
+C. guilliermondii
+[англ.]
+C. haemulonii
+C. humilis
+[англ.]
+C. insectamens
+[англ.]
+C. insectorum
+C. intermedia
+C. jeffresii
+C. kefyr
+[англ.]
+C. keroseneae
+[англ.]
+C. krusei
+[англ.]
+C. lusitaniae
+[англ.]
+C. lyxosophila
+C. maltosa
+C. marina
+[англ.]
+C. membranifaciens
+C. milleri
+C. mogii
+[англ.]
+C. oleophila
+[англ.]
+C. oregonensis
+C. parapsilosis
+[англ.]
+C. quercitrusa
+C. rhizophoriensis
+[англ.]
+C. rugosa
+[англ.]
+C. sake
+C. sharkiensis
+[англ.]
+C. shehatea
+C. temnochilae
+C. tenuis
+C. theae
+[англ.]
+C. tropicalis
+[англ.]
+C. tsuchiyae
+C. sinolaborantium
+C. sojae
+C. viswanathii
+[англ.]
+C. ubatubensis
+[англ.]
+C. utilis
+[англ.]
+C. zemplinina
+[англ.]
+1.2. другие грибы редко встречаются, оставим для ручного ввода.

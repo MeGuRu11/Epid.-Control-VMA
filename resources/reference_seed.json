@@ -1,0 +1,5272 @@
+{
+  "antibiotic_groups": [
+    {
+      "name": "Пенициллины",
+      "code": "ABG-0001"
+    },
+    {
+      "name": "Цефалоспорины",
+      "code": "ABG-0002"
+    },
+    {
+      "name": "Ингибиторозащищенные цефалоспорины",
+      "code": "ABG-0003"
+    },
+    {
+      "name": "Карбапенемы",
+      "code": "ABG-0004"
+    },
+    {
+      "name": "Монобактамы",
+      "code": "ABG-0005"
+    },
+    {
+      "name": "Гликопептиды",
+      "code": "ABG-0006"
+    },
+    {
+      "name": "Липогликопептиды",
+      "code": "ABG-0007"
+    },
+    {
+      "name": "Липопептиды",
+      "code": "ABG-0008"
+    },
+    {
+      "name": "Макролиды",
+      "code": "ABG-0009"
+    },
+    {
+      "name": "Тетрациклины",
+      "code": "ABG-0010"
+    },
+    {
+      "name": "Амфениколы",
+      "code": "ABG-0011"
+    },
+    {
+      "name": "Аминогликозиды",
+      "code": "ABG-0012"
+    },
+    {
+      "name": "Оксазолидиноны",
+      "code": "ABG-0013"
+    },
+    {
+      "name": "Анзамицины",
+      "code": "ABG-0014"
+    },
+    {
+      "name": "Линкозамиды",
+      "code": "ABG-0015"
+    },
+    {
+      "name": "Глицилциклины",
+      "code": "ABG-0016"
+    },
+    {
+      "name": "Полимиксины",
+      "code": "ABG-0017"
+    },
+    {
+      "name": "Производные фосфоновой кислоты",
+      "code": "ABG-0018"
+    }
+  ],
+  "antibiotics": [
+    {
+      "name": "Бензилпенициллина натриевая соль",
+      "code": "ABX-0001",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Бензатина бензилпенициллин",
+      "code": "ABX-0002",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Оксациллин",
+      "code": "ABX-0003",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Амоксициллин",
+      "code": "ABX-0004",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Ампициллин",
+      "code": "ABX-0005",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Пиперациллин",
+      "code": "ABX-0006",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Амоксициллин+Клавулановая кислота",
+      "code": "ABX-0007",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Пиперациллин+Тазобактам",
+      "code": "ABX-0008",
+      "group_code": "ABG-0001"
+    },
+    {
+      "name": "Iпоколение",
+      "code": "ABX-0009",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефазолин",
+      "code": "ABX-0010",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефалексин",
+      "code": "ABX-0011",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефуроксим",
+      "code": "ABX-0012",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефуроксим аксетил",
+      "code": "ABX-0013",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефотаксим",
+      "code": "ABX-0014",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефиксим",
+      "code": "ABX-0015",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефтриаксон",
+      "code": "ABX-0016",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефоперазон",
+      "code": "ABX-0017",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефтазидим",
+      "code": "ABX-0018",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефепим",
+      "code": "ABX-0019",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "• Vпоколение",
+      "code": "ABX-0020",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефтаролин",
+      "code": "ABX-0021",
+      "group_code": "ABG-0002"
+    },
+    {
+      "name": "Цефоперазон+сульбактам",
+      "code": "ABX-0022",
+      "group_code": "ABG-0003"
+    },
+    {
+      "name": "Цефепим+сульбактам",
+      "code": "ABX-0023",
+      "group_code": "ABG-0003"
+    },
+    {
+      "name": "Цефтазидим+авибактам",
+      "code": "ABX-0024",
+      "group_code": "ABG-0003"
+    },
+    {
+      "name": "Имипенем",
+      "code": "ABX-0025",
+      "group_code": "ABG-0004"
+    },
+    {
+      "name": "Меропенем",
+      "code": "ABX-0026",
+      "group_code": "ABG-0004"
+    },
+    {
+      "name": "Эртапенем",
+      "code": "ABX-0027",
+      "group_code": "ABG-0004"
+    },
+    {
+      "name": "Азтреонам",
+      "code": "ABX-0028",
+      "group_code": "ABG-0005"
+    },
+    {
+      "name": "Ванкомицин",
+      "code": "ABX-0029",
+      "group_code": "ABG-0006"
+    },
+    {
+      "name": "Телаванцин",
+      "code": "ABX-0030",
+      "group_code": "ABG-0007"
+    },
+    {
+      "name": "Даптомицин",
+      "code": "ABX-0031",
+      "group_code": "ABG-0008"
+    },
+    {
+      "name": "Эритромицин",
+      "code": "ABX-0032",
+      "group_code": "ABG-0009"
+    },
+    {
+      "name": "Кларитромицин",
+      "code": "ABX-0033",
+      "group_code": "ABG-0009"
+    },
+    {
+      "name": "Азитромицин",
+      "code": "ABX-0034",
+      "group_code": "ABG-0009"
+    },
+    {
+      "name": "Тетрациклин",
+      "code": "ABX-0035",
+      "group_code": "ABG-0010"
+    },
+    {
+      "name": "Доксициклин",
+      "code": "ABX-0036",
+      "group_code": "ABG-0010"
+    },
+    {
+      "name": "Хлорамфеникол",
+      "code": "ABX-0037",
+      "group_code": "ABG-0011"
+    },
+    {
+      "name": "Iпоколение",
+      "code": "ABX-0038",
+      "group_code": "ABG-0012"
+    },
+    {
+      "name": "Стрептомицин",
+      "code": "ABX-0039",
+      "group_code": "ABG-0012"
+    },
+    {
+      "name": "Канамицин",
+      "code": "ABX-0040",
+      "group_code": "ABG-0012"
+    },
+    {
+      "name": "Гентамицин",
+      "code": "ABX-0041",
+      "group_code": "ABG-0012"
+    },
+    {
+      "name": "Амикацин",
+      "code": "ABX-0042",
+      "group_code": "ABG-0012"
+    },
+    {
+      "name": "Линезолид",
+      "code": "ABX-0043",
+      "group_code": "ABG-0013"
+    },
+    {
+      "name": "Рифампицин",
+      "code": "ABX-0044",
+      "group_code": "ABG-0014"
+    },
+    {
+      "name": "Линкомицин",
+      "code": "ABX-0045",
+      "group_code": "ABG-0015"
+    },
+    {
+      "name": "Клиндамицин",
+      "code": "ABX-0046",
+      "group_code": "ABG-0015"
+    },
+    {
+      "name": "Тигециклин",
+      "code": "ABX-0047",
+      "group_code": "ABG-0016"
+    },
+    {
+      "name": "Полимиксин",
+      "code": "ABX-0048",
+      "group_code": "ABG-0017"
+    },
+    {
+      "name": "В",
+      "code": "ABX-0049",
+      "group_code": "ABG-0017"
+    },
+    {
+      "name": "Колистиметат натрия",
+      "code": "ABX-0050",
+      "group_code": "ABG-0017"
+    },
+    {
+      "name": "Фосфомицин",
+      "code": "ABX-0051",
+      "group_code": "ABG-0018"
+    }
+  ],
+  "microorganisms": [
+    {
+      "name": "Acinetobacter ssp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0001"
+    },
+    {
+      "name": "Acinetobacter baumannii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ) / ESKAPE",
+      "code": "MIC-0002"
+    },
+    {
+      "name": "Acinetobacter baylyi",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0003"
+    },
+    {
+      "name": "Acinetobacter bouvetii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0004"
+    },
+    {
+      "name": "Acinetobacter calcoaceticus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0005"
+    },
+    {
+      "name": "Acinetobacter gerneri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0006"
+    },
+    {
+      "name": "Acinetobacter grimontii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0007"
+    },
+    {
+      "name": "Acinetobacter haemolyticus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0008"
+    },
+    {
+      "name": "Acinetobacter johnsonii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0009"
+    },
+    {
+      "name": "Acinetobacter junii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0010"
+    },
+    {
+      "name": "Acinetobacter lwoffii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0011"
+    },
+    {
+      "name": "Acinetobacter parvus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0012"
+    },
+    {
+      "name": "Acinetobacter p",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0013"
+    },
+    {
+      "name": "ittii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0014"
+    },
+    {
+      "name": "Acinetobacter radioresistens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0015"
+    },
+    {
+      "name": "Acinetobacter schindleri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0016"
+    },
+    {
+      "name": "Acinetobacter tandoii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0017"
+    },
+    {
+      "name": "Acinetobacter tjernbergiae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0018"
+    },
+    {
+      "name": "Acinetobacter towneri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0019"
+    },
+    {
+      "name": "Acinetobacter ursingii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0020"
+    },
+    {
+      "name": "Enterobacter spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ) / ESKAPE",
+      "code": "MIC-0021"
+    },
+    {
+      "name": "ы",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0022"
+    },
+    {
+      "name": "Enterobacter aerogenes",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0023"
+    },
+    {
+      "name": "Enterobacter amnigenus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0024"
+    },
+    {
+      "name": "Enterobacter arachidis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0025"
+    },
+    {
+      "name": "Enterobacter asburiae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0026"
+    },
+    {
+      "name": "Enterobacter bugandensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0027"
+    },
+    {
+      "name": "Enterobacter cancerogenous",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0028"
+    },
+    {
+      "name": "Enterobacter cloacae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0029"
+    },
+    {
+      "name": "Enterobacter cowanii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0030"
+    },
+    {
+      "name": "Enterobacter dissolvens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0031"
+    },
+    {
+      "name": "Enterobacter gergoviae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0032"
+    },
+    {
+      "name": "Enterobacter helveticus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0033"
+    },
+    {
+      "name": "Enterobacter hormaechei",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0034"
+    },
+    {
+      "name": "Enterobacter intermedius",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0035"
+    },
+    {
+      "name": "Enterobacter kobei",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0036"
+    },
+    {
+      "name": "Enterobacter ludwigii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0037"
+    },
+    {
+      "name": "Enterobacter mori",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0038"
+    },
+    {
+      "name": "Enterobacter nimipressuralis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0039"
+    },
+    {
+      "name": "Enterobacter oryzae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0040"
+    },
+    {
+      "name": "Enterobacter pulveris",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0041"
+    },
+    {
+      "name": "Enterobacter pyrinus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0042"
+    },
+    {
+      "name": "Enterobacter radicincitans",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0043"
+    },
+    {
+      "name": "Enterobacter taylorae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0044"
+    },
+    {
+      "name": "Enterobacter turicensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0045"
+    },
+    {
+      "name": "Enterobacter soli",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0046"
+    },
+    {
+      "name": "Klebsiella spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0047"
+    },
+    {
+      "name": "Klebsiella aerogenes",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0048"
+    },
+    {
+      "name": "Klebsiella granulomatis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0049"
+    },
+    {
+      "name": "Klebsiella grimontii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0050"
+    },
+    {
+      "name": "Klebsiella huaxiensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0051"
+    },
+    {
+      "name": "Klebsiella kielensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0052"
+    },
+    {
+      "name": "Klebsiella michiganensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0053"
+    },
+    {
+      "name": "Klebsiella milletis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0054"
+    },
+    {
+      "name": "Klebsiella oxytoca",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0055"
+    },
+    {
+      "name": "Klebsiella pneumoniae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ) / ESKAPE",
+      "code": "MIC-0056"
+    },
+    {
+      "name": "Klebsiella quasipneumoniae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0057"
+    },
+    {
+      "name": "Klebsiella quasivariicola",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0058"
+    },
+    {
+      "name": "Klebsiella senegalensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0059"
+    },
+    {
+      "name": "Klebsiella steroids",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0060"
+    },
+    {
+      "name": "Klebsiella variicola",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0061"
+    },
+    {
+      "name": "Escherichia coli",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0062"
+    },
+    {
+      "name": "Morganella morganii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0063"
+    },
+    {
+      "name": "P",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0064"
+    },
+    {
+      "name": "rovidencia",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0065"
+    },
+    {
+      "name": "spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0066"
+    },
+    {
+      "name": "P. stuartii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0067"
+    },
+    {
+      "name": "P. sneebia",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0068"
+    },
+    {
+      "name": "P. rettgeri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0069"
+    },
+    {
+      "name": "P. rustigianii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0070"
+    },
+    {
+      "name": "P. heimbachae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0071"
+    },
+    {
+      "name": "P. burhodogranariea",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0072"
+    },
+    {
+      "name": "P. alcalifaciens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0073"
+    },
+    {
+      "name": "Proteus spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0074"
+    },
+    {
+      "name": "roteus",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0075"
+    },
+    {
+      "name": "hauseri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0076"
+    },
+    {
+      "name": "mirabilis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0077"
+    },
+    {
+      "name": "myxofaciens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0078"
+    },
+    {
+      "name": "penneri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0079"
+    },
+    {
+      "name": "vulgaris",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0080"
+    },
+    {
+      "name": "Pseudomonas spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0081"
+    },
+    {
+      "name": "Pseudomonas alcaligenes",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0082"
+    },
+    {
+      "name": "Pseudomonas mendocina",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0083"
+    },
+    {
+      "name": "Pseudomonas pseudoalcaligenes",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0084"
+    },
+    {
+      "name": "Pseudomonas resinovorans",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0085"
+    },
+    {
+      "name": "Pseudomonas aeruginosa",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ) / ESKAPE",
+      "code": "MIC-0086"
+    },
+    {
+      "name": "Pseudomonas putida",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0087"
+    },
+    {
+      "name": "Pseudomonas desmolyticum",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0088"
+    },
+    {
+      "name": "Pseudomonas nitroreducens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0089"
+    },
+    {
+      "name": "Pseudomonas veronii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0090"
+    },
+    {
+      "name": "Pseudomonas stutzeri",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0091"
+    },
+    {
+      "name": "Moraxella spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0092"
+    },
+    {
+      "name": "Moraxella atlantae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0093"
+    },
+    {
+      "name": "Moraxella boevrei",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0094"
+    },
+    {
+      "name": "Moraxella bovis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0095"
+    },
+    {
+      "name": "Moraxella bovoculi",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0096"
+    },
+    {
+      "name": "Moraxella canis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0097"
+    },
+    {
+      "name": "Moraxella caprae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0098"
+    },
+    {
+      "name": "Moraxella catarrhalis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0099"
+    },
+    {
+      "name": "Moraxella caviae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0100"
+    },
+    {
+      "name": "Moraxella cuniculi",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0101"
+    },
+    {
+      "name": "Moraxella equi",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0102"
+    },
+    {
+      "name": "Moraxella lacunata",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0103"
+    },
+    {
+      "name": "Moraxella lincolnii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0104"
+    },
+    {
+      "name": "Moraxella nonliquefaciens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0105"
+    },
+    {
+      "name": "Moraxella oblonga",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0106"
+    },
+    {
+      "name": "Moraxella osloensis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0107"
+    },
+    {
+      "name": "Moraxella pluranimalium",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0108"
+    },
+    {
+      "name": "Moraxella porci",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0109"
+    },
+    {
+      "name": "Moraxella saccharolytica",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0110"
+    },
+    {
+      "name": "Serratia spp.",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0111"
+    },
+    {
+      "name": "Serratia aquatilis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0112"
+    },
+    {
+      "name": "Serratia entomophila",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0113"
+    },
+    {
+      "name": "Serratia ficaria",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0114"
+    },
+    {
+      "name": "Serratia fonticola",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0115"
+    },
+    {
+      "name": "Serratia glossinae",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0116"
+    },
+    {
+      "name": "Serratia grimesii",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0117"
+    },
+    {
+      "name": "Serratia liquefaciens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0118"
+    },
+    {
+      "name": "Serratia marcescens",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0119"
+    },
+    {
+      "name": "Serratia myotis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0120"
+    },
+    {
+      "name": "Serratia nematodiphila",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0121"
+    },
+    {
+      "name": "Serratia odorifera",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0122"
+    },
+    {
+      "name": "Serratia plymuthica",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0123"
+    },
+    {
+      "name": "Serratia proteamaculans",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0124"
+    },
+    {
+      "name": "Serratia quinivorans",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0125"
+    },
+    {
+      "name": "Serratia rubidaea",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0126"
+    },
+    {
+      "name": "Serratia symbiotica",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0127"
+    },
+    {
+      "name": "Serratia ureilytica",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0128"
+    },
+    {
+      "name": "Serratia vespertilionis",
+      "taxon_group": "Грамотрицательные бактерии (ГОБ)",
+      "code": "MIC-0129"
+    },
+    {
+      "name": "ГПБ",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0130"
+    },
+    {
+      "name": "Bacillus spp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0131"
+    },
+    {
+      "name": "Bacillus cereus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0132"
+    },
+    {
+      "name": "Bacillus Symun",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0133"
+    },
+    {
+      "name": "Bacillus acidicola",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0134"
+    },
+    {
+      "name": "Bacillus acidiproducens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0135"
+    },
+    {
+      "name": "Bacillus acidocaldarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0136"
+    },
+    {
+      "name": "Bacillus acidoterrestris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0137"
+    },
+    {
+      "name": "Bacillus aeolius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0138"
+    },
+    {
+      "name": "Bacillus aerius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0139"
+    },
+    {
+      "name": "Bacillus aerophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0140"
+    },
+    {
+      "name": "Bacillus agaradhaerens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0141"
+    },
+    {
+      "name": "Bacillus agri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0142"
+    },
+    {
+      "name": "Bacillus aidingensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0143"
+    },
+    {
+      "name": "Bacillus akibai",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0144"
+    },
+    {
+      "name": "Bacillus albus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0145"
+    },
+    {
+      "name": "Bacillus alcalophlus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0146"
+    },
+    {
+      "name": "Bacillus algicola",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0147"
+    },
+    {
+      "name": "Bacillus alginolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0148"
+    },
+    {
+      "name": "Bacillus alkalidiazotrophicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0149"
+    },
+    {
+      "name": "Bacillus alkalinitrilicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0150"
+    },
+    {
+      "name": "Bacillus alkalisediminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0151"
+    },
+    {
+      "name": "Bacillus alkalitelluris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0152"
+    },
+    {
+      "name": "Bacillus altitudinis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0153"
+    },
+    {
+      "name": "Bacillus alveayuensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0154"
+    },
+    {
+      "name": "Bacillus alvei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0155"
+    },
+    {
+      "name": "Bacillus amyloliquefaciens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0156"
+    },
+    {
+      "name": "Bacillus a. subsp. amyloliquefaciens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0157"
+    },
+    {
+      "name": "Bacillus a. subsp. plantarum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0158"
+    },
+    {
+      "name": "Bacillus aminovorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0159"
+    },
+    {
+      "name": "Bacillus amylolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0160"
+    },
+    {
+      "name": "Bacillus andreesenii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0161"
+    },
+    {
+      "name": "Bacillus aneurinilyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0162"
+    },
+    {
+      "name": "Bacillus anthracis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0163"
+    },
+    {
+      "name": "Bacillus aquimaris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0164"
+    },
+    {
+      "name": "Bacillus arenosi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0165"
+    },
+    {
+      "name": "Bacillus arseniciselenatis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0166"
+    },
+    {
+      "name": "Bacillus arsenicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0167"
+    },
+    {
+      "name": "Bacillus aurantiacus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0168"
+    },
+    {
+      "name": "Bacillus arvi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0169"
+    },
+    {
+      "name": "Bacillus aryabhattai",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0170"
+    },
+    {
+      "name": "Bacillus asahii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0171"
+    },
+    {
+      "name": "Bacillus atrophaeus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0172"
+    },
+    {
+      "name": "Bacillus axarquiensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0173"
+    },
+    {
+      "name": "Bacillus azotofixans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0174"
+    },
+    {
+      "name": "Bacillus azotoformans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0175"
+    },
+    {
+      "name": "Bacillus badius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0176"
+    },
+    {
+      "name": "Bacillus barbaricus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0177"
+    },
+    {
+      "name": "Bacillus bataviensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0178"
+    },
+    {
+      "name": "Bacillus beijingensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0179"
+    },
+    {
+      "name": "Bacillus benzoevorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0180"
+    },
+    {
+      "name": "Bacillus beringensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0181"
+    },
+    {
+      "name": "Bacillus berkeleyi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0182"
+    },
+    {
+      "name": "Bacillus beveridgei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0183"
+    },
+    {
+      "name": "Bacillus bogoriensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0184"
+    },
+    {
+      "name": "Bacillus boroniphilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0185"
+    },
+    {
+      "name": "Bacillus borstelensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0186"
+    },
+    {
+      "name": "Bacillus brevis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0187"
+    },
+    {
+      "name": "Bacillus butanolivorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0188"
+    },
+    {
+      "name": "Bacillus canaveralius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0189"
+    },
+    {
+      "name": "Bacillus carboniphilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0190"
+    },
+    {
+      "name": "Bacillus cecembensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0191"
+    },
+    {
+      "name": "Bacillus cellulosilyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0192"
+    },
+    {
+      "name": "Bacillus centrosporus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0193"
+    },
+    {
+      "name": "Bacillus chagannorensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0194"
+    },
+    {
+      "name": "Bacillus chitinolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0195"
+    },
+    {
+      "name": "Bacillus chondroitinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0196"
+    },
+    {
+      "name": "Bacillus choshinensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0197"
+    },
+    {
+      "name": "Bacillus chungangensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0198"
+    },
+    {
+      "name": "Bacillus cibi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0199"
+    },
+    {
+      "name": "Bacillus circulans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0200"
+    },
+    {
+      "name": "Bacillus clarkii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0201"
+    },
+    {
+      "name": "Bacillus clausii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0202"
+    },
+    {
+      "name": "Bacillus coagulans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0203"
+    },
+    {
+      "name": "Bacillus coahuilensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0204"
+    },
+    {
+      "name": "Bacillus cohnii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0205"
+    },
+    {
+      "name": "Bacillus composti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0206"
+    },
+    {
+      "name": "Bacillus curdlanolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0207"
+    },
+    {
+      "name": "Bacillus cycloheptanicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0208"
+    },
+    {
+      "name": "Bacillus cytotoxicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0209"
+    },
+    {
+      "name": "Bacillus daliensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0210"
+    },
+    {
+      "name": "Bacillus decisifrondis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0211"
+    },
+    {
+      "name": "Bacillus decolorationis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0212"
+    },
+    {
+      "name": "Bacillus deserti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0213"
+    },
+    {
+      "name": "Bacillus dipsosauri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0214"
+    },
+    {
+      "name": "Bacillus drentensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0215"
+    },
+    {
+      "name": "Bacillus edaphicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0216"
+    },
+    {
+      "name": "Bacillus ehimensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0217"
+    },
+    {
+      "name": "Bacillus eiseniae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0218"
+    },
+    {
+      "name": "Bacillus enclensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0219"
+    },
+    {
+      "name": "Bacillus endophyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0220"
+    },
+    {
+      "name": "Bacillus endoradicis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0221"
+    },
+    {
+      "name": "Bacillus farraginis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0222"
+    },
+    {
+      "name": "Bacillus fastidiosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0223"
+    },
+    {
+      "name": "Bacillus fengqiuensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0224"
+    },
+    {
+      "name": "Bacillus filobacterium rodentuim",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0225"
+    },
+    {
+      "name": "Bacillus firmus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0226"
+    },
+    {
+      "name": "Bacillus flexus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0227"
+    },
+    {
+      "name": "Bacillus foraminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0228"
+    },
+    {
+      "name": "Bacillus fordii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0229"
+    },
+    {
+      "name": "Bacillus formosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0230"
+    },
+    {
+      "name": "Bacillus fortis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0231"
+    },
+    {
+      "name": "Bacillus fumarioli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0232"
+    },
+    {
+      "name": "Bacillus funiculus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0233"
+    },
+    {
+      "name": "Bacillus fusiformis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0234"
+    },
+    {
+      "name": "Bacillus gaemokensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0235"
+    },
+    {
+      "name": "Bacillus galactophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0236"
+    },
+    {
+      "name": "Bacillus galactosidilyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0237"
+    },
+    {
+      "name": "Bacillus galliciensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0238"
+    },
+    {
+      "name": "Bacillus gelatini",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0239"
+    },
+    {
+      "name": "Bacillus gibsonii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0240"
+    },
+    {
+      "name": "Bacillus ginsengi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0241"
+    },
+    {
+      "name": "Bacillus ginsengihumi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0242"
+    },
+    {
+      "name": "Bacillus ginsengisoli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0243"
+    },
+    {
+      "name": "Bacillus glucanolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0244"
+    },
+    {
+      "name": "Bacillus gordonae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0245"
+    },
+    {
+      "name": "Bacillus gottheilii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0246"
+    },
+    {
+      "name": "Bacillus graminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0247"
+    },
+    {
+      "name": "Bacillus halmapalus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0248"
+    },
+    {
+      "name": "Bacillus haloalkaliphilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0249"
+    },
+    {
+      "name": "Bacillus halochares",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0250"
+    },
+    {
+      "name": "Bacillus halodenitrificans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0251"
+    },
+    {
+      "name": "Bacillus halodurans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0252"
+    },
+    {
+      "name": "Bacillus halophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0253"
+    },
+    {
+      "name": "Bacillus halosaccharovorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0254"
+    },
+    {
+      "name": "Bacillus haynesii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0255"
+    },
+    {
+      "name": "Bacillus hemicellulosilyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0256"
+    },
+    {
+      "name": "Bacillus hemicentroti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0257"
+    },
+    {
+      "name": "Bacillus herbersteinensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0258"
+    },
+    {
+      "name": "Bacillus horikoshii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0259"
+    },
+    {
+      "name": "Bacillus horneckiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0260"
+    },
+    {
+      "name": "Bacillus horti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0261"
+    },
+    {
+      "name": "Bacillus huizhouensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0262"
+    },
+    {
+      "name": "Bacillus humi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0263"
+    },
+    {
+      "name": "Bacillus hwajinpoensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0264"
+    },
+    {
+      "name": "Bacillus idriensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0265"
+    },
+    {
+      "name": "Bacillus indicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0266"
+    },
+    {
+      "name": "Bacillus infantis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0267"
+    },
+    {
+      "name": "Bacillus infernus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0268"
+    },
+    {
+      "name": "Bacillus insolitus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0269"
+    },
+    {
+      "name": "Bacillus invictae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0270"
+    },
+    {
+      "name": "Bacillus iranensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0271"
+    },
+    {
+      "name": "Bacillus isabeliae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0272"
+    },
+    {
+      "name": "Bacillus isronensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0273"
+    },
+    {
+      "name": "Bacillus jeotgali",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0274"
+    },
+    {
+      "name": "Bacillus kaustophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0275"
+    },
+    {
+      "name": "Bacillus kobensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0276"
+    },
+    {
+      "name": "Bacillus kochii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0277"
+    },
+    {
+      "name": "Bacillus kokeshiiformis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0278"
+    },
+    {
+      "name": "Bacillus koreensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0279"
+    },
+    {
+      "name": "Bacillus korlensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0280"
+    },
+    {
+      "name": "Bacillus kribbensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0281"
+    },
+    {
+      "name": "Bacillus krulwichiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0282"
+    },
+    {
+      "name": "Bacillus laevolacticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0283"
+    },
+    {
+      "name": "Bacillus larvae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0284"
+    },
+    {
+      "name": "Bacillus laterosporus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0285"
+    },
+    {
+      "name": "Bacillus lautus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0286"
+    },
+    {
+      "name": "Bacillus lehensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0287"
+    },
+    {
+      "name": "Bacillus lentimorbus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0288"
+    },
+    {
+      "name": "Bacillus lentus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0289"
+    },
+    {
+      "name": "Bacillus licheniformis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0290"
+    },
+    {
+      "name": "Bacillus ligniniphilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0291"
+    },
+    {
+      "name": "Bacillus litoralis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0292"
+    },
+    {
+      "name": "Bacillus locisalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0293"
+    },
+    {
+      "name": "Bacillus luciferensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0294"
+    },
+    {
+      "name": "Bacillus luteolus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0295"
+    },
+    {
+      "name": "Bacillus luteus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0296"
+    },
+    {
+      "name": "Bacillus macauensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0297"
+    },
+    {
+      "name": "Bacillus macerans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0298"
+    },
+    {
+      "name": "Bacillus macquariensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0299"
+    },
+    {
+      "name": "Bacillus macyae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0300"
+    },
+    {
+      "name": "Bacillus malacitensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0301"
+    },
+    {
+      "name": "Bacillus mannanilyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0302"
+    },
+    {
+      "name": "Bacillus marisflavi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0303"
+    },
+    {
+      "name": "Bacillus marismortui",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0304"
+    },
+    {
+      "name": "Bacillus marmarensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0305"
+    },
+    {
+      "name": "Bacillus massiliensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0306"
+    },
+    {
+      "name": "Bacillus megaterium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0307"
+    },
+    {
+      "name": "Bacillus mesentericus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0308"
+    },
+    {
+      "name": "Bacillus mesonae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0309"
+    },
+    {
+      "name": "Bacillus methanolicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0310"
+    },
+    {
+      "name": "Bacillus methylotrophicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0311"
+    },
+    {
+      "name": "Bacillus migulanus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0312"
+    },
+    {
+      "name": "Bacillus mojavensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0313"
+    },
+    {
+      "name": "Bacillus mucilaginosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0314"
+    },
+    {
+      "name": "Bacillus muralis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0315"
+    },
+    {
+      "name": "Bacillus murimartini",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0316"
+    },
+    {
+      "name": "Bacillus mycoides",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0317"
+    },
+    {
+      "name": "Bacillus naganoensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0318"
+    },
+    {
+      "name": "Bacillus nanhaiensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0319"
+    },
+    {
+      "name": "Bacillus nanhaiisediminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0320"
+    },
+    {
+      "name": "Bacillus nealsonii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0321"
+    },
+    {
+      "name": "Bacillus neidei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0322"
+    },
+    {
+      "name": "Bacillus neizhouensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0323"
+    },
+    {
+      "name": "Bacillus niabensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0324"
+    },
+    {
+      "name": "Bacillus niacini",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0325"
+    },
+    {
+      "name": "Bacillus novalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0326"
+    },
+    {
+      "name": "Bacillus oceanisediminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0327"
+    },
+    {
+      "name": "Bacillus odysseyi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0328"
+    },
+    {
+      "name": "Bacillus okhensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0329"
+    },
+    {
+      "name": "Bacillus okuhidensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0330"
+    },
+    {
+      "name": "Bacillus oleronius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0331"
+    },
+    {
+      "name": "Bacillus oryzaecorticis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0332"
+    },
+    {
+      "name": "Bacillus oshimensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0333"
+    },
+    {
+      "name": "Bacillus pabuli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0334"
+    },
+    {
+      "name": "Bacillus pakistanensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0335"
+    },
+    {
+      "name": "Bacillus pallidus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0336"
+    },
+    {
+      "name": "Bacillus panacisoli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0337"
+    },
+    {
+      "name": "Bacillus panaciterrae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0338"
+    },
+    {
+      "name": "Bacillus pantothenticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0339"
+    },
+    {
+      "name": "Bacillus parabrevis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0340"
+    },
+    {
+      "name": "Bacillus paraflexus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0341"
+    },
+    {
+      "name": "Bacillus pasteurii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0342"
+    },
+    {
+      "name": "Bacillus patagoniensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0343"
+    },
+    {
+      "name": "Bacillus peoriae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0344"
+    },
+    {
+      "name": "Bacillus persepolensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0345"
+    },
+    {
+      "name": "Bacillus persicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0346"
+    },
+    {
+      "name": "Bacillus pervagus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0347"
+    },
+    {
+      "name": "Bacillus plakortidis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0348"
+    },
+    {
+      "name": "Bacillus pocheonensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0349"
+    },
+    {
+      "name": "Bacillus polygoni",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0350"
+    },
+    {
+      "name": "Bacillus polymyxa",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0351"
+    },
+    {
+      "name": "Bacillus popilliae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0352"
+    },
+    {
+      "name": "Bacillus pseudalcalophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0353"
+    },
+    {
+      "name": "Bacillus pseudofirmus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0354"
+    },
+    {
+      "name": "Bacillus pseudomycoides",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0355"
+    },
+    {
+      "name": "Bacillus psychrodurans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0356"
+    },
+    {
+      "name": "Bacillus psychrophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0357"
+    },
+    {
+      "name": "Bacillus psychrosaccharolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0358"
+    },
+    {
+      "name": "Bacillus psychrotolerans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0359"
+    },
+    {
+      "name": "Bacillus pulvifaciens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0360"
+    },
+    {
+      "name": "Bacillus pumilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0361"
+    },
+    {
+      "name": "Bacillus purgationiresistens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0362"
+    },
+    {
+      "name": "Bacillus pycnus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0363"
+    },
+    {
+      "name": "Bacillus qingdaonensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0364"
+    },
+    {
+      "name": "Bacillus qingshengii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0365"
+    },
+    {
+      "name": "Bacillus reuszeri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0366"
+    },
+    {
+      "name": "Bacillus rhizosphaerae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0367"
+    },
+    {
+      "name": "Bacillus rigui",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0368"
+    },
+    {
+      "name": "Bacillus ruris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0369"
+    },
+    {
+      "name": "Bacillus safensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0370"
+    },
+    {
+      "name": "Bacillus salarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0371"
+    },
+    {
+      "name": "Bacillus salexigens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0372"
+    },
+    {
+      "name": "Bacillus saliphilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0373"
+    },
+    {
+      "name": "Bacillus schlegelii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0374"
+    },
+    {
+      "name": "Bacillus sediminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0375"
+    },
+    {
+      "name": "Bacillus selenatarsenatis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0376"
+    },
+    {
+      "name": "Bacillus selenitireducens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0377"
+    },
+    {
+      "name": "Bacillus seohaeanensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0378"
+    },
+    {
+      "name": "Bacillus shacheensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0379"
+    },
+    {
+      "name": "Bacillus shackletonii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0380"
+    },
+    {
+      "name": "Bacillus siamensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0381"
+    },
+    {
+      "name": "Bacillus silvestris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0382"
+    },
+    {
+      "name": "Bacillus simplex",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0383"
+    },
+    {
+      "name": "Bacillus siralis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0384"
+    },
+    {
+      "name": "Bacillus smithii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0385"
+    },
+    {
+      "name": "Bacillus soli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0386"
+    },
+    {
+      "name": "Bacillus solimangrovi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0387"
+    },
+    {
+      "name": "Bacillus solisalsi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0388"
+    },
+    {
+      "name": "Bacillus songklensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0389"
+    },
+    {
+      "name": "Bacillus sonorensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0390"
+    },
+    {
+      "name": "Bacillus sphaericus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0391"
+    },
+    {
+      "name": "Bacillus sporothermodurans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0392"
+    },
+    {
+      "name": "Bacillus stearothermophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0393"
+    },
+    {
+      "name": "Bacillus stratosphericus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0394"
+    },
+    {
+      "name": "Bacillus subterraneus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0395"
+    },
+    {
+      "name": "Bacillus subtilis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0396"
+    },
+    {
+      "name": "Bacillus s. subsp. inaquosorum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0397"
+    },
+    {
+      "name": "Bacillus s. subsp. spizizenii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0398"
+    },
+    {
+      "name": "Bacillus s. subsp. subtilis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0399"
+    },
+    {
+      "name": "Bacillus taeanensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0400"
+    },
+    {
+      "name": "Bacillus tequilensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0401"
+    },
+    {
+      "name": "Bacillus thermantarcticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0402"
+    },
+    {
+      "name": "Bacillus thermoaerophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0403"
+    },
+    {
+      "name": "Bacillus thermoamylovorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0404"
+    },
+    {
+      "name": "Bacillus thermocatenulatus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0405"
+    },
+    {
+      "name": "Bacillus thermocloacae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0406"
+    },
+    {
+      "name": "Bacillus thermocopriae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0407"
+    },
+    {
+      "name": "Bacillus thermodenitrificans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0408"
+    },
+    {
+      "name": "Bacillus thermoglucosidasius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0409"
+    },
+    {
+      "name": "Bacillus thermolactis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0410"
+    },
+    {
+      "name": "Bacillus thermoleovorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0411"
+    },
+    {
+      "name": "Bacillus thermophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0412"
+    },
+    {
+      "name": "Bacillus thermoproteolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0413"
+    },
+    {
+      "name": "Bacillus thermoruber",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0414"
+    },
+    {
+      "name": "Bacillus thermosphaericus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0415"
+    },
+    {
+      "name": "Bacillus thiaminolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0416"
+    },
+    {
+      "name": "Bacillus thioparans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0417"
+    },
+    {
+      "name": "Bacillus thuringiensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0418"
+    },
+    {
+      "name": "Bacillus tianshenii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0419"
+    },
+    {
+      "name": "Bacillus toyonensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0420"
+    },
+    {
+      "name": "Bacillus trypoxylicola",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0421"
+    },
+    {
+      "name": "Bacillus tusciae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0422"
+    },
+    {
+      "name": "Bacillus validus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0423"
+    },
+    {
+      "name": "Bacillus vallismortis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0424"
+    },
+    {
+      "name": "Bacillus vedderi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0425"
+    },
+    {
+      "name": "Bacillus velezensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0426"
+    },
+    {
+      "name": "Bacillus vietnamensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0427"
+    },
+    {
+      "name": "Bacillus vireti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0428"
+    },
+    {
+      "name": "Bacillus vulcani",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0429"
+    },
+    {
+      "name": "Bacillus wakoensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0430"
+    },
+    {
+      "name": "Bacillus xiamenensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0431"
+    },
+    {
+      "name": "Bacillus xiaoxiensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0432"
+    },
+    {
+      "name": "Bacillus zanthoxyli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0433"
+    },
+    {
+      "name": "Bacillus zhanjiangensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0434"
+    },
+    {
+      "name": "Staphylococcus spp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0435"
+    },
+    {
+      "name": "Staphylococcus argenteus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0436"
+    },
+    {
+      "name": "Staphylococcus arlettae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0437"
+    },
+    {
+      "name": "Staphylococcus agnetis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0438"
+    },
+    {
+      "name": "Staphylococcus aureus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0439"
+    },
+    {
+      "name": "дополнительно",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0440"
+    },
+    {
+      "name": "здесь",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0441"
+    },
+    {
+      "name": "еще",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0442"
+    },
+    {
+      "name": "выделить",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0443"
+    },
+    {
+      "name": "methicillin-resistant S. aureus",
+      "taxon_group": "Грамположительные бактерии (ГПБ) / ESKAPE",
+      "code": "MIC-0444"
+    },
+    {
+      "name": "Staphylococcus auricularis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0445"
+    },
+    {
+      "name": "Staphylococcus borealis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0446"
+    },
+    {
+      "name": "Staphylococcus caeli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0447"
+    },
+    {
+      "name": "Staphylococcus capitis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0448"
+    },
+    {
+      "name": "Staphylococcus caprae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0449"
+    },
+    {
+      "name": "Staphylococcus carnosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0450"
+    },
+    {
+      "name": "Staphylococcus caseolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0451"
+    },
+    {
+      "name": "Staphylococcus chromogenes",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0452"
+    },
+    {
+      "name": "Staphylococcus cohnii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0453"
+    },
+    {
+      "name": "Staphylococcus cornubiensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0454"
+    },
+    {
+      "name": "Staphylococcus condimenti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0455"
+    },
+    {
+      "name": "Staphylococcus debuckii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0456"
+    },
+    {
+      "name": "Staphylococcus delphini",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0457"
+    },
+    {
+      "name": "Staphylococcus devriesei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0458"
+    },
+    {
+      "name": "Staphylococcus edaphicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0459"
+    },
+    {
+      "name": "Staphylococcus epidermidis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0460"
+    },
+    {
+      "name": "Staphylococcus equorum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0461"
+    },
+    {
+      "name": "Staphylococcus felis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0462"
+    },
+    {
+      "name": "Staphylococcus fleurettii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0463"
+    },
+    {
+      "name": "Staphylococcus gallinarum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0464"
+    },
+    {
+      "name": "Staphylococcus haemolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0465"
+    },
+    {
+      "name": "Staphylococcus hominis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0466"
+    },
+    {
+      "name": "Staphylococcus hyicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0467"
+    },
+    {
+      "name": "Staphylococcus intermedius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0468"
+    },
+    {
+      "name": "Staphylococcus jettensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0469"
+    },
+    {
+      "name": "Staphylococcus kloosii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0470"
+    },
+    {
+      "name": "Staphylococcus leei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0471"
+    },
+    {
+      "name": "Staphylococcus lentus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0472"
+    },
+    {
+      "name": "Staphylococcus lugdunensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0473"
+    },
+    {
+      "name": "Staphylococcus lutrae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0474"
+    },
+    {
+      "name": "Staphylococcus lyticans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0475"
+    },
+    {
+      "name": "Staphylococcus massiliensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0476"
+    },
+    {
+      "name": "Staphylococcus microti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0477"
+    },
+    {
+      "name": "Staphylococcus muscae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0478"
+    },
+    {
+      "name": "Staphylococcus nepalensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0479"
+    },
+    {
+      "name": "Staphylococcus pasteuri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0480"
+    },
+    {
+      "name": "Staphylococcus petrasii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0481"
+    },
+    {
+      "name": "Staphylococcus pettenkoferi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0482"
+    },
+    {
+      "name": "Staphylococcus piscifermentans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0483"
+    },
+    {
+      "name": "Staphylococcus pseudintermedius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0484"
+    },
+    {
+      "name": "Staphylococcus pseudolugdunensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0485"
+    },
+    {
+      "name": "Staphylococcus pulvereri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0486"
+    },
+    {
+      "name": "Staphylococcus rostri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0487"
+    },
+    {
+      "name": "Staphylococcus saccharolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0488"
+    },
+    {
+      "name": "Staphylococcus saprophyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0489"
+    },
+    {
+      "name": "Staphylococcus schleiferi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0490"
+    },
+    {
+      "name": "Staphylococcus schweitzeri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0491"
+    },
+    {
+      "name": "Staphylococcus sciuri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0492"
+    },
+    {
+      "name": "Staphylococcus simiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0493"
+    },
+    {
+      "name": "Staphylococcus simulans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0494"
+    },
+    {
+      "name": "Staphylococcus singaporensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0495"
+    },
+    {
+      "name": "Staphylococcus stepanovicii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0496"
+    },
+    {
+      "name": "Staphylococcus succinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0497"
+    },
+    {
+      "name": "Staphylococcus vitulinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0498"
+    },
+    {
+      "name": "Staphylococcus warneri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0499"
+    },
+    {
+      "name": "Staphylococcus xylosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0500"
+    },
+    {
+      "name": "Staphylococcus Westin",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0501"
+    },
+    {
+      "name": "Streptococcus spp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0502"
+    },
+    {
+      "name": "Streptococcus acidominimus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0503"
+    },
+    {
+      "name": "Streptococcus agalactiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0504"
+    },
+    {
+      "name": "Streptococcus alactolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0505"
+    },
+    {
+      "name": "Streptococcus anginosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0506"
+    },
+    {
+      "name": "Streptococcus australis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0507"
+    },
+    {
+      "name": "Streptococcus caballi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0508"
+    },
+    {
+      "name": "Streptococcus cameli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0509"
+    },
+    {
+      "name": "Streptococcus canis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0510"
+    },
+    {
+      "name": "Streptococcus caprae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0511"
+    },
+    {
+      "name": "Streptococcus castoreus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0512"
+    },
+    {
+      "name": "Streptococcus constellatus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0513"
+    },
+    {
+      "name": "Streptococcus criceti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0514"
+    },
+    {
+      "name": "Streptococcus cristatus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0515"
+    },
+    {
+      "name": "Streptococcus cuniculi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0516"
+    },
+    {
+      "name": "Streptococcus danieliae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0517"
+    },
+    {
+      "name": "Streptococcus dentasini",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0518"
+    },
+    {
+      "name": "Streptococcus dentiloxodontae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0519"
+    },
+    {
+      "name": "Streptococcus dentirousetti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0520"
+    },
+    {
+      "name": "Streptococcus devriesei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0521"
+    },
+    {
+      "name": "Streptococcus didelphis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0522"
+    },
+    {
+      "name": "Streptococcus downei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0523"
+    },
+    {
+      "name": "Streptococcus dysgalactiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0524"
+    },
+    {
+      "name": "Streptococcus entericus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0525"
+    },
+    {
+      "name": "Streptococcus equi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0526"
+    },
+    {
+      "name": "Streptococcus equinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0527"
+    },
+    {
+      "name": "Streptococcus faecalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0528"
+    },
+    {
+      "name": "Streptococcus ferus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0529"
+    },
+    {
+      "name": "Streptococcus gallinaceus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0530"
+    },
+    {
+      "name": "Streptococcus gallolyticus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0531"
+    },
+    {
+      "name": "Streptococcus gordonii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0532"
+    },
+    {
+      "name": "Streptococcus halichoeri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0533"
+    },
+    {
+      "name": "Streptococcus halotolerans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0534"
+    },
+    {
+      "name": "Streptococcus henryi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0535"
+    },
+    {
+      "name": "Streptococcus himalayensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0536"
+    },
+    {
+      "name": "Streptococcus hongkongensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0537"
+    },
+    {
+      "name": "Streptococcus hyointestinalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0538"
+    },
+    {
+      "name": "Streptococcus hyovaginalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0539"
+    },
+    {
+      "name": "Streptococcus ictaluri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0540"
+    },
+    {
+      "name": "Streptococcus infantarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0541"
+    },
+    {
+      "name": "Streptococcus infantis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0542"
+    },
+    {
+      "name": "Streptococcus iniae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0543"
+    },
+    {
+      "name": "Streptococcus intermedius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0544"
+    },
+    {
+      "name": "Streptococcus lactarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0545"
+    },
+    {
+      "name": "Streptococcus loxodontisalivarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0546"
+    },
+    {
+      "name": "Streptococcus lutetiensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0547"
+    },
+    {
+      "name": "Streptococcus macacae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0548"
+    },
+    {
+      "name": "Streptococcus marimammalium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0549"
+    },
+    {
+      "name": "Streptococcus marmotae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0550"
+    },
+    {
+      "name": "Streptococcus massiliensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0551"
+    },
+    {
+      "name": "Streptococcus merionis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0552"
+    },
+    {
+      "name": "Streptococcus minor",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0553"
+    },
+    {
+      "name": "Streptococcus mitis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0554"
+    },
+    {
+      "name": "Streptococcus moroccensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0555"
+    },
+    {
+      "name": "Streptococcus mutans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0556"
+    },
+    {
+      "name": "Streptococcus oralis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0557"
+    },
+    {
+      "name": "Streptococcus oricebi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0558"
+    },
+    {
+      "name": "Streptococcus oriloxodontae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0559"
+    },
+    {
+      "name": "Streptococcus orisasini",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0560"
+    },
+    {
+      "name": "Streptococcus orisratti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0561"
+    },
+    {
+      "name": "Streptococcus orisuis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0562"
+    },
+    {
+      "name": "Streptococcus ovis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0563"
+    },
+    {
+      "name": "Streptococcus panodentis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0564"
+    },
+    {
+      "name": "Streptococcus pantholopis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0565"
+    },
+    {
+      "name": "Streptococcus parasanguinis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0566"
+    },
+    {
+      "name": "Streptococcus parasuis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0567"
+    },
+    {
+      "name": "Streptococcus parauberis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0568"
+    },
+    {
+      "name": "Streptococcus peroris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0569"
+    },
+    {
+      "name": "Streptococcus pharyngis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0570"
+    },
+    {
+      "name": "Streptococcus phocae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0571"
+    },
+    {
+      "name": "Streptococcus pluranimalium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0572"
+    },
+    {
+      "name": "Streptococcus plurextorum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0573"
+    },
+    {
+      "name": "Streptococcus pneumoniae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0574"
+    },
+    {
+      "name": "Streptococcus porci",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0575"
+    },
+    {
+      "name": "Streptococcus porcinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0576"
+    },
+    {
+      "name": "Streptococcus porcorum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0577"
+    },
+    {
+      "name": "Streptococcus pseudopneumoniae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0578"
+    },
+    {
+      "name": "Streptococcus pseudoporcinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0579"
+    },
+    {
+      "name": "Streptococcus pyogenes",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0580"
+    },
+    {
+      "name": "Streptococcus ratti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0581"
+    },
+    {
+      "name": "Streptococcus rifensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0582"
+    },
+    {
+      "name": "Streptococcus rubneri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0583"
+    },
+    {
+      "name": "Streptococcus rupicaprae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0584"
+    },
+    {
+      "name": "Streptococcus salivarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0585"
+    },
+    {
+      "name": "Streptococcus saliviloxodontae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0586"
+    },
+    {
+      "name": "Streptococcus sanguinis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0587"
+    },
+    {
+      "name": "Streptococcus sinensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0588"
+    },
+    {
+      "name": "Streptococcus sobrinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0589"
+    },
+    {
+      "name": "Streptococcus suis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0590"
+    },
+    {
+      "name": "Streptococcus tangierensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0591"
+    },
+    {
+      "name": "Streptococcus thermophilus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0592"
+    },
+    {
+      "name": "Streptococcus thoraltensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0593"
+    },
+    {
+      "name": "Streptococcus tigurinus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0594"
+    },
+    {
+      "name": "Streptococcus troglodytae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0595"
+    },
+    {
+      "name": "Streptococcus troglodytidis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0596"
+    },
+    {
+      "name": "Streptococcus uberis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0597"
+    },
+    {
+      "name": "Streptococcus urinalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0598"
+    },
+    {
+      "name": "Streptococcus ursoris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0599"
+    },
+    {
+      "name": "Streptococcus vestibularis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0600"
+    },
+    {
+      "name": "Streptococcus zooepidemicus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0601"
+    },
+    {
+      "name": "Viridans streptococci",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0602"
+    },
+    {
+      "name": "Streptococcus anginosus group",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0603"
+    },
+    {
+      "name": "Enterococcus ssp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0604"
+    },
+    {
+      "name": "Enterococcus avium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0605"
+    },
+    {
+      "name": "Enterococcus casseliflavus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0606"
+    },
+    {
+      "name": "Enterococcus durans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0607"
+    },
+    {
+      "name": "Enterococcus faecalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0608"
+    },
+    {
+      "name": "Enterococcus faecium",
+      "taxon_group": "Грамположительные бактерии (ГПБ) / ESKAPE",
+      "code": "MIC-0609"
+    },
+    {
+      "name": "Enterococcus raffinosus",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0610"
+    },
+    {
+      "name": "Enterococcus solitarius",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0611"
+    },
+    {
+      "name": "Clostridium spp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0612"
+    },
+    {
+      "name": "Clostridium botulinum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0613"
+    },
+    {
+      "name": "Clostridium perfringens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0614"
+    },
+    {
+      "name": "Clostridium tetani",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0615"
+    },
+    {
+      "name": "Clostridium difficile",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0616"
+    },
+    {
+      "name": "Clostridium histolyticum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0617"
+    },
+    {
+      "name": "Clostridium sordellii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0618"
+    },
+    {
+      "name": "Corynebacterium spp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0619"
+    },
+    {
+      "name": "Corynebacterium accolens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0620"
+    },
+    {
+      "name": "Neubauer et al. 1991",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0621"
+    },
+    {
+      "name": "Corynebacterium afermentans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0622"
+    },
+    {
+      "name": "Riegel et al. 1993",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0623"
+    },
+    {
+      "name": "Corynebacterium alimapuense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0624"
+    },
+    {
+      "name": "Claverias et al. 2019",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0625"
+    },
+    {
+      "name": "Claverias alkanolyticum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0626"
+    },
+    {
+      "name": "Lee and Reichenbach 2006",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0627"
+    },
+    {
+      "name": "Claverias ammoniagenes",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0628"
+    },
+    {
+      "name": "Collins 1987",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0629"
+    },
+    {
+      "name": "Collins amycolatum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0630"
+    },
+    {
+      "name": "Collins et al. 1988",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0631"
+    },
+    {
+      "name": "Collins anserum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0632"
+    },
+    {
+      "name": "Liu et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0633"
+    },
+    {
+      "name": "Collins appendicis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0634"
+    },
+    {
+      "name": "Yassin et al. 2002",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0635"
+    },
+    {
+      "name": "Collins aquatimens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0636"
+    },
+    {
+      "name": "Aravena-Román et al. 2012",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0637"
+    },
+    {
+      "name": "Collins aquilae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0638"
+    },
+    {
+      "name": "Fernández-Garayzábal et al. 2003",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0639"
+    },
+    {
+      "name": "Collins argentoratense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0640"
+    },
+    {
+      "name": "Riegel et al. 1995",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0641"
+    },
+    {
+      "name": "Collins asperum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0642"
+    },
+    {
+      "name": "De Briel et al. 1992",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0643"
+    },
+    {
+      "name": "Collins atrinae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0644"
+    },
+    {
+      "name": "Kim et al. 2015",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0645"
+    },
+    {
+      "name": "Collins atypicum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0646"
+    },
+    {
+      "name": "Hall et al. 2003",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0647"
+    },
+    {
+      "name": "Collins aurimucosum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0648"
+    },
+    {
+      "name": "Collins auris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0649"
+    },
+    {
+      "name": "Funke et al. 1995",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0650"
+    },
+    {
+      "name": "Collins auriscanis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0651"
+    },
+    {
+      "name": "Collins et al. 2000",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0652"
+    },
+    {
+      "name": "Collins belfantii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0653"
+    },
+    {
+      "name": "Dazas et al. 2018",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0654"
+    },
+    {
+      "name": "Collins beticola",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0655"
+    },
+    {
+      "name": "Abdou 1969",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0656"
+    },
+    {
+      "name": "Collins bouchesdurhonense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0657"
+    },
+    {
+      "name": "Ndongo et al. 2017",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0658"
+    },
+    {
+      "name": "Lo et al. 2019",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0659"
+    },
+    {
+      "name": "Collins bovis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0660"
+    },
+    {
+      "name": "Bergey et al. 1923",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0661"
+    },
+    {
+      "name": "Collins callunae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0662"
+    },
+    {
+      "name": "Yamada and Komagata 1972",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0663"
+    },
+    {
+      "name": "Collins camporealensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0664"
+    },
+    {
+      "name": "Fernández-Garayzábal et al. 1998",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0665"
+    },
+    {
+      "name": "Collins canis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0666"
+    },
+    {
+      "name": "Funke et al. 2010",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0667"
+    },
+    {
+      "name": "Collins capitovis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0668"
+    },
+    {
+      "name": "Collins et al. 2001",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0669"
+    },
+    {
+      "name": "Collins casei",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0670"
+    },
+    {
+      "name": "Brennan et al. 2001",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0671"
+    },
+    {
+      "name": "Collins caspium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0672"
+    },
+    {
+      "name": "Collins et al. 2004",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0673"
+    },
+    {
+      "name": "Collins choanae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0674"
+    },
+    {
+      "name": "Busse et al. 2019",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0675"
+    },
+    {
+      "name": "Collins ciconiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0676"
+    },
+    {
+      "name": "Fernández-Garayzábal et al. 2004",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0677"
+    },
+    {
+      "name": "Collins comes",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0678"
+    },
+    {
+      "name": "Schaffert et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0679"
+    },
+    {
+      "name": "Collins confusum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0680"
+    },
+    {
+      "name": "Funke et al. 1998",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0681"
+    },
+    {
+      "name": "Collins coyleae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0682"
+    },
+    {
+      "name": "Funke et al. 1997",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0683"
+    },
+    {
+      "name": "Collins crudilactis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0684"
+    },
+    {
+      "name": "Zimmermann et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0685"
+    },
+    {
+      "name": "Collins cystitidis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0686"
+    },
+    {
+      "name": "Yanagawa and Honda 1978",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0687"
+    },
+    {
+      "name": "Collins defluvii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0688"
+    },
+    {
+      "name": "Yu et al. 2017",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0689"
+    },
+    {
+      "name": "Collins dentalis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0690"
+    },
+    {
+      "name": "Benabdelkader et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0691"
+    },
+    {
+      "name": "Collins deserti",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0692"
+    },
+    {
+      "name": "Zhou et al. 2012",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0693"
+    },
+    {
+      "name": "Collins diphtheriae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0694"
+    },
+    {
+      "name": "Lehmann and Neumann 1896",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0695"
+    },
+    {
+      "name": "Collins doosanense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0696"
+    },
+    {
+      "name": "Lee et al. 2009",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0697"
+    },
+    {
+      "name": "Collins durum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0698"
+    },
+    {
+      "name": "Riegel et al. 1997",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0699"
+    },
+    {
+      "name": "Collins efficiens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0700"
+    },
+    {
+      "name": "Fudou et al. 2002",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0701"
+    },
+    {
+      "name": "Collins endometrii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0702"
+    },
+    {
+      "name": "Ballas et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0703"
+    },
+    {
+      "name": "Collins epidermidicanis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0704"
+    },
+    {
+      "name": "Frischmann et al. 2012",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0705"
+    },
+    {
+      "name": "Collins faecale",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0706"
+    },
+    {
+      "name": "Chen et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0707"
+    },
+    {
+      "name": "Chen falsenii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0708"
+    },
+    {
+      "name": "Sjödén et al. 1998",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0709"
+    },
+    {
+      "name": "Chen felinum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0710"
+    },
+    {
+      "name": "Collins flavescens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0711"
+    },
+    {
+      "name": "Barksdale et al. 1979",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0712"
+    },
+    {
+      "name": "Collins fournieri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0713"
+    },
+    {
+      "name": "corrig. Diop et al. 2018",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0714"
+    },
+    {
+      "name": "Collins frankenforstense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0715"
+    },
+    {
+      "name": "Wiertz et al. 2013",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0716"
+    },
+    {
+      "name": "Collins freiburgense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0717"
+    },
+    {
+      "name": "Funke et al. 2009",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0718"
+    },
+    {
+      "name": "Collins freneyi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0719"
+    },
+    {
+      "name": "Renaud et al. 2001",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0720"
+    },
+    {
+      "name": "Collins gerontici",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0721"
+    },
+    {
+      "name": "Collins glaucum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0722"
+    },
+    {
+      "name": "Yassin et al. 2003",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0723"
+    },
+    {
+      "name": "Collins glucuronolyticum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0724"
+    },
+    {
+      "name": "Collins glutamicum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0725"
+    },
+    {
+      "name": "Abe et al. 1967",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0726"
+    },
+    {
+      "name": "Collins glyciniphilum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0727"
+    },
+    {
+      "name": "Al-Dilaimi et al. 2015",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0728"
+    },
+    {
+      "name": "Collins gottingense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0729"
+    },
+    {
+      "name": "Atasayar et al. 2017",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0730"
+    },
+    {
+      "name": "Collins guangdongense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0731"
+    },
+    {
+      "name": "Li et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0732"
+    },
+    {
+      "name": "Collins haemomassiliense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0733"
+    },
+    {
+      "name": "Boxberger et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0734"
+    },
+    {
+      "name": "Collins halotolerans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0735"
+    },
+    {
+      "name": "Chen et al. 2004",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0736"
+    },
+    {
+      "name": "Chen hansenii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0737"
+    },
+    {
+      "name": "Renaud et al. 2007",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0738"
+    },
+    {
+      "name": "Chen heidelbergense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0739"
+    },
+    {
+      "name": "Braun et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0740"
+    },
+    {
+      "name": "Chen hindlerae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0741"
+    },
+    {
+      "name": "Bernard et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0742"
+    },
+    {
+      "name": "Chen humireducens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0743"
+    },
+    {
+      "name": "Wu et al. 2011",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0744"
+    },
+    {
+      "name": "Chen ihumii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0745"
+    },
+    {
+      "name": "Padmanabhan et al. 2014",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0746"
+    },
+    {
+      "name": "Chen ilicis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0747"
+    },
+    {
+      "name": "Mandel et al. 1961",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0748"
+    },
+    {
+      "name": "Chen imitans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0749"
+    },
+    {
+      "name": "Chen incognitum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0750"
+    },
+    {
+      "name": "Boxberger et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0751"
+    },
+    {
+      "name": "Chen jeddahense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0752"
+    },
+    {
+      "name": "Edouard et al. 2017",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0753"
+    },
+    {
+      "name": "Chen jeikeium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0754"
+    },
+    {
+      "name": "Jackman et al. 1988",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0755"
+    },
+    {
+      "name": "Chen kalinowskii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0756"
+    },
+    {
+      "name": "Chen kefirresidentii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0757"
+    },
+    {
+      "name": "Blasche et al. 2017",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0758"
+    },
+    {
+      "name": "Chen kroppenstedtii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0759"
+    },
+    {
+      "name": "Collins et al. 1998",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0760"
+    },
+    {
+      "name": "Collins kutscheri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0761"
+    },
+    {
+      "name": "Bergey et al. 1925",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0762"
+    },
+    {
+      "name": "Collins lactis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0763"
+    },
+    {
+      "name": "Collins lactofermentum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0764"
+    },
+    {
+      "name": "Gubler et al. 1994",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0765"
+    },
+    {
+      "name": "Collins jeikliangguodongiiium",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0766"
+    },
+    {
+      "name": "Zhu et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0767"
+    },
+    {
+      "name": "Collins lipophiloflavum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0768"
+    },
+    {
+      "name": "Collins lizhenjunii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0769"
+    },
+    {
+      "name": "Zhou et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0770"
+    },
+    {
+      "name": "Collins lowii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0771"
+    },
+    {
+      "name": "Bernard et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0772"
+    },
+    {
+      "name": "Collins lubricantis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0773"
+    },
+    {
+      "name": "Kämpfer et al. 2009",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0774"
+    },
+    {
+      "name": "Collins lujinxingii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0775"
+    },
+    {
+      "name": "Zhang et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0776"
+    },
+    {
+      "name": "Collins macginleyi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0777"
+    },
+    {
+      "name": "Collins marinum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0778"
+    },
+    {
+      "name": "Du et al. 2010",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0779"
+    },
+    {
+      "name": "Collins maris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0780"
+    },
+    {
+      "name": "Ben-Dov et al. 2009",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0781"
+    },
+    {
+      "name": "Collins massiliense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0782"
+    },
+    {
+      "name": "Merhej et al. 2009",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0783"
+    },
+    {
+      "name": "Collins mastitidis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0784"
+    },
+    {
+      "name": "Fernandez-Garayzabal et al. 1997",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0785"
+    },
+    {
+      "name": "Collins matruchotii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0786"
+    },
+    {
+      "name": "Collins 1983",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0787"
+    },
+    {
+      "name": "Collins minutissimum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0788"
+    },
+    {
+      "name": "Collins and Jones 1983",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0789"
+    },
+    {
+      "name": "Collins mucifaciens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0790"
+    },
+    {
+      "name": "Collins mustelae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0791"
+    },
+    {
+      "name": "Collins mycetoides",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0792"
+    },
+    {
+      "name": "Collins nasicanis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0793"
+    },
+    {
+      "name": "Baumgardt et al. 2015",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0794"
+    },
+    {
+      "name": "Collins neomassiliense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0795"
+    },
+    {
+      "name": "Collins nuruki",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0796"
+    },
+    {
+      "name": "Shin et al. 2011",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0797"
+    },
+    {
+      "name": "Collins occultum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0798"
+    },
+    {
+      "name": "Collins oculi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0799"
+    },
+    {
+      "name": "Collins otitidis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0800"
+    },
+    {
+      "name": "Baek et al. 2018",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0801"
+    },
+    {
+      "name": "Collins pacaense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0802"
+    },
+    {
+      "name": "Bellali et al. 2019",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0803"
+    },
+    {
+      "name": "Collins parakroppenstedtii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0804"
+    },
+    {
+      "name": "Luo et al. 2022",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0805"
+    },
+    {
+      "name": "Collins parvulum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0806"
+    },
+    {
+      "name": "Nakamura et al. 1983",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0807"
+    },
+    {
+      "name": "Collins pelargi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0808"
+    },
+    {
+      "name": "Kämpfer et al. 2015",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0809"
+    },
+    {
+      "name": "Collins phocae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0810"
+    },
+    {
+      "name": "Pascual et al. 1998",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0811"
+    },
+    {
+      "name": "Collins phoceense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0812"
+    },
+    {
+      "name": "Cresci et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0813"
+    },
+    {
+      "name": "Cresci pilbarense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0814"
+    },
+    {
+      "name": "Aravena-Roman et al. 2010",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0815"
+    },
+    {
+      "name": "Cresci pilosum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0816"
+    },
+    {
+      "name": "Cresci pollutisoli",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0817"
+    },
+    {
+      "name": "Negi et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0818"
+    },
+    {
+      "name": "Cresci propinquum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0819"
+    },
+    {
+      "name": "Riegel et al. 1994",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0820"
+    },
+    {
+      "name": "Cresci provencense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0821"
+    },
+    {
+      "name": "Cresci pseudodiphtheriticum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0822"
+    },
+    {
+      "name": "Cresci pseudokroppenstedtii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0823"
+    },
+    {
+      "name": "Cresci pseudopelargi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0824"
+    },
+    {
+      "name": "Cresci pseudotuberculosis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0825"
+    },
+    {
+      "name": "Eberson 1918",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0826"
+    },
+    {
+      "name": "Cresci pyruviciproducens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0827"
+    },
+    {
+      "name": "Tong et al. 2010",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0828"
+    },
+    {
+      "name": "Cresci qintianiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0829"
+    },
+    {
+      "name": "Cresci renale",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0830"
+    },
+    {
+      "name": "Ernst 1906",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0831"
+    },
+    {
+      "name": "Cresci resistens",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0832"
+    },
+    {
+      "name": "Otsuka et al. 2005",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0833"
+    },
+    {
+      "name": "Cresci riegelii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0834"
+    },
+    {
+      "name": "Cresci rouxii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0835"
+    },
+    {
+      "name": "Badell et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0836"
+    },
+    {
+      "name": "Cresci sanguinis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0837"
+    },
+    {
+      "name": "Jaén-Luchoro et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0838"
+    },
+    {
+      "name": "Cresci segmentosum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0839"
+    },
+    {
+      "name": "Collins senegalense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0840"
+    },
+    {
+      "name": "Ndiaye et al. 2019",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0841"
+    },
+    {
+      "name": "Collins silvaticum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0842"
+    },
+    {
+      "name": "Dangel et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0843"
+    },
+    {
+      "name": "Collins simulans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0844"
+    },
+    {
+      "name": "Wattiau et al. 2000",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0845"
+    },
+    {
+      "name": "Collins singulare",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0846"
+    },
+    {
+      "name": "Collins sphenisci",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0847"
+    },
+    {
+      "name": "Goyache et al. 2003",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0848"
+    },
+    {
+      "name": "Collins spheniscorum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0849"
+    },
+    {
+      "name": "Collins sputi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0850"
+    },
+    {
+      "name": "Yassin and Siering 2008",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0851"
+    },
+    {
+      "name": "Collins stationis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0852"
+    },
+    {
+      "name": "Bernard et al. 2010",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0853"
+    },
+    {
+      "name": "Collins striatum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0854"
+    },
+    {
+      "name": "Collins suicordis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0855"
+    },
+    {
+      "name": "Vela et al. 2003",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0856"
+    },
+    {
+      "name": "Collins sundsvallense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0857"
+    },
+    {
+      "name": "Collins et al. 1999",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0858"
+    },
+    {
+      "name": "Collins suranareeae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0859"
+    },
+    {
+      "name": "Nantapong et al. 2020",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0860"
+    },
+    {
+      "name": "Collins tapiri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0861"
+    },
+    {
+      "name": "Collins terpenotabidum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0862"
+    },
+    {
+      "name": "Takeuchi et al. 1999",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0863"
+    },
+    {
+      "name": "Collins testudinoris",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0864"
+    },
+    {
+      "name": "Collins thomssenii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0865"
+    },
+    {
+      "name": "Zimmermann et al. 1998",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0866"
+    },
+    {
+      "name": "Collins timonense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0867"
+    },
+    {
+      "name": "Collins trachiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0868"
+    },
+    {
+      "name": "Collins tuberculostearicum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0869"
+    },
+    {
+      "name": "Feurer et al. 2004",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0870"
+    },
+    {
+      "name": "Collins tuscaniense",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0871"
+    },
+    {
+      "name": "corrig. Riegel et al. 2006",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0872"
+    },
+    {
+      "name": "Collins uberis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0873"
+    },
+    {
+      "name": "Kittl et al. 2022",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0874"
+    },
+    {
+      "name": "Collins ulcerans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0875"
+    },
+    {
+      "name": "Collins ulceribovis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0876"
+    },
+    {
+      "name": "Yassin 2009",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0877"
+    },
+    {
+      "name": "Collins urealyticum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0878"
+    },
+    {
+      "name": "Pitcher et al. 1992",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0879"
+    },
+    {
+      "name": "Collins ureicelerivorans",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0880"
+    },
+    {
+      "name": "Yassin 2007",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0881"
+    },
+    {
+      "name": "Collins urinapleomorphum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0882"
+    },
+    {
+      "name": "Morand et al. 2017",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0883"
+    },
+    {
+      "name": "Collins urinipleomorphum",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0884"
+    },
+    {
+      "name": "corrig. Niang et al. 2021",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0885"
+    },
+    {
+      "name": "Collins urogenitale",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0886"
+    },
+    {
+      "name": "Collins uropygiale",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0887"
+    },
+    {
+      "name": "Braun et al. 2016",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0888"
+    },
+    {
+      "name": "Collins uterequi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0889"
+    },
+    {
+      "name": "Hoyles et al. 2013",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0890"
+    },
+    {
+      "name": "Collins variabile",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0891"
+    },
+    {
+      "name": "corrig. Collins 1987",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0892"
+    },
+    {
+      "name": "Collins vitaeruminis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0893"
+    },
+    {
+      "name": "corrig. Lanéelle et al. 1980",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0894"
+    },
+    {
+      "name": "Collins wankanglinii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0895"
+    },
+    {
+      "name": "Collins xerosis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0896"
+    },
+    {
+      "name": "Lehmann and Neumann 1899",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0897"
+    },
+    {
+      "name": "Collins yudongzhengii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0898"
+    },
+    {
+      "name": "Collins zhongnanshanii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0899"
+    },
+    {
+      "name": "Listeria spp.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0900"
+    },
+    {
+      "name": "Listeria aquatica",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0901"
+    },
+    {
+      "name": "Listeria booriae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0902"
+    },
+    {
+      "name": "Listeria cornellensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0903"
+    },
+    {
+      "name": "Listeria fleischmannii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0904"
+    },
+    {
+      "name": "Listeria grandensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0905"
+    },
+    {
+      "name": "Listeria grayi",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0906"
+    },
+    {
+      "name": "Listeria innocua",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0907"
+    },
+    {
+      "name": "Listeria ivanovii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0908"
+    },
+    {
+      "name": "Listeria marthii",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0909"
+    },
+    {
+      "name": "Listeria monocytogenes",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0910"
+    },
+    {
+      "name": "Listeria newyorkensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0911"
+    },
+    {
+      "name": "Listeria riparia",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0912"
+    },
+    {
+      "name": "Listeria rocourtiae",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0913"
+    },
+    {
+      "name": "Listeria seeligeri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0914"
+    },
+    {
+      "name": "Listeria weihenstephanensis",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0915"
+    },
+    {
+      "name": "l.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0916"
+    },
+    {
+      "name": "Listeria welshimeri",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0917"
+    },
+    {
+      "name": "Р",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0918"
+    },
+    {
+      "name": "аздел 3.",
+      "taxon_group": "Грамположительные бактерии (ГПБ)",
+      "code": "MIC-0919"
+    },
+    {
+      "name": "Candida spp.",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0920"
+    },
+    {
+      "name": "Candida albicans",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0921"
+    },
+    {
+      "name": "Candida ascalaphidarum",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0922"
+    },
+    {
+      "name": "Candida amphixiae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0923"
+    },
+    {
+      "name": "Candida antarctica",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0924"
+    },
+    {
+      "name": "Candida atlantica",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0925"
+    },
+    {
+      "name": "Candida atmosphaerica",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0926"
+    },
+    {
+      "name": "Candida auris",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0927"
+    },
+    {
+      "name": "Candida blankii",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0928"
+    },
+    {
+      "name": "Candida blattae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0929"
+    },
+    {
+      "name": "Candida bracarensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0930"
+    },
+    {
+      "name": "Candida bromeliacearum",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0931"
+    },
+    {
+      "name": "Candida carpophila",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0932"
+    },
+    {
+      "name": "Candida catenulata",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0933"
+    },
+    {
+      "name": "Candida cerambycidarum",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0934"
+    },
+    {
+      "name": "Candida chauliodes",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0935"
+    },
+    {
+      "name": "Candida corydali",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0936"
+    },
+    {
+      "name": "Candida dosseyi",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0937"
+    },
+    {
+      "name": "Candida dubliniensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0938"
+    },
+    {
+      "name": "Candida ergatensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0939"
+    },
+    {
+      "name": "Candida fructus",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0940"
+    },
+    {
+      "name": "Candida glabrata",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0941"
+    },
+    {
+      "name": "Candida guilliermondii",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0942"
+    },
+    {
+      "name": "Candida fermentati",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0943"
+    },
+    {
+      "name": "Candida haemulonii",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0944"
+    },
+    {
+      "name": "Candida humilis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0945"
+    },
+    {
+      "name": "Candida insectamens",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0946"
+    },
+    {
+      "name": "Candida insectorum",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0947"
+    },
+    {
+      "name": "Candida intermedia",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0948"
+    },
+    {
+      "name": "Candida jeffresii",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0949"
+    },
+    {
+      "name": "Candida kefyr",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0950"
+    },
+    {
+      "name": "Candida keroseneae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0951"
+    },
+    {
+      "name": "Candida krusei",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0952"
+    },
+    {
+      "name": "Candida lusitaniae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0953"
+    },
+    {
+      "name": "Candida lyxosophila",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0954"
+    },
+    {
+      "name": "Candida maltosa",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0955"
+    },
+    {
+      "name": "Candida marina",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0956"
+    },
+    {
+      "name": "Candida membranifaciens",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0957"
+    },
+    {
+      "name": "Candida milleri",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0958"
+    },
+    {
+      "name": "Candida mogii",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0959"
+    },
+    {
+      "name": "Candida oleophila",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0960"
+    },
+    {
+      "name": "Candida oregonensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0961"
+    },
+    {
+      "name": "Candida parapsilosis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0962"
+    },
+    {
+      "name": "Candida quercitrusa",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0963"
+    },
+    {
+      "name": "Candida rhizophoriensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0964"
+    },
+    {
+      "name": "Candida rugosa",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0965"
+    },
+    {
+      "name": "Candida sake",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0966"
+    },
+    {
+      "name": "Candida sharkiensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0967"
+    },
+    {
+      "name": "Candida shehatea",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0968"
+    },
+    {
+      "name": "Candida temnochilae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0969"
+    },
+    {
+      "name": "Candida tenuis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0970"
+    },
+    {
+      "name": "Candida theae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0971"
+    },
+    {
+      "name": "Candida tropicalis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0972"
+    },
+    {
+      "name": "Candida tsuchiyae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0973"
+    },
+    {
+      "name": "Candida sinolaborantium",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0974"
+    },
+    {
+      "name": "Candida sojae",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0975"
+    },
+    {
+      "name": "Candida viswanathii",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0976"
+    },
+    {
+      "name": "Candida ubatubensis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0977"
+    },
+    {
+      "name": "Candida utilis",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0978"
+    },
+    {
+      "name": "Candida zemplinina",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0979"
+    },
+    {
+      "name": "1.2. другие грибы редко встречаются, оставим для ручного ввода.",
+      "taxon_group": "Микромицеты",
+      "code": "MIC-0980"
+    }
+  ],
+  "ismp_abbreviations": [
+    {
+      "code": "ВАП",
+      "name": "Вентилятор-ассоциированная пневмония",
+      "description": "Пневмония, связанная с ИВЛ (ВАП)"
+    },
+    {
+      "code": "КА-ИК",
+      "name": "Катетер-ассоциированная инфекция кровотока",
+      "description": "Инфекция кровотока при наличии сосудистого катетера"
+    },
+    {
+      "code": "КА-ИМП",
+      "name": "Катетер-ассоциированная инфекция мочевых путей",
+      "description": "Инфекция мочевых путей при наличии катетера"
+    },
+    {
+      "code": "ИОХВ",
+      "name": "Инфекция области хирургического вмешательства",
+      "description": "Инфекция операционной раны/области вмешательства"
+    },
+    {
+      "code": "ПАП",
+      "name": "Госпитальная (внутрибольничная) пневмония",
+      "description": "Пневмония, связанная с пребыванием в стационаре"
+    },
+    {
+      "code": "БАК",
+      "name": "Бактериемия",
+      "description": "Наличие бактерий в крови (без уточнения очага)"
+    },
+    {
+      "code": "СЕПСИС",
+      "name": "Сепсис",
+      "description": "Системная инфекционная реакция организма"
+    }
+  ]
+}

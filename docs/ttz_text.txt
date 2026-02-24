@@ -1,0 +1,746 @@
+ТТЗ
+на
+комплексную
+интегрированную
+ц
+ифров
+ую
+систем
+у
+управления эпидемиологической безопасностью
+(на
+Python
+)
+Цель программы:
+сбор,
+обработка
+и анализ
+,
+централизованное
+х
+ранение,
+визуализация
+медицинских
+данных и информационное моделирование больших объемов информации в наглядные
+,
+структурированные
+формы
+и электронные медицинские записи
+(
+автоматизация процессов и
+сокращение времени на выполнение административных задач, обмен информацией и анализ медицинских данных),
+улучшение доступности
+медицинских данных
+и ускорение принятия решений
+(быстрый
+и
+безопасный обмен
+отчетами,
+электронными медицинскими записями (ЭМЗ) и другой
+клинической информацией между
+медицинским персоналом,
+этапами медицинской эвакуации, повышающий доступность
+необходимых медицинских
+данных
+,
+обеспечивающий
+непрерывное сопровождение и
+комплексный взгляд на
+каждого
+пациента
+, в перспективе
+–
+и
+нтероперабельность с различными информационными системами,
+мобильны
+ми
+приложени
+ями
+,
+носимы
+ми
+устройств
+ами
+хранения
+клинической
+информации
+и биосенсорами
+),
+повышение безопасности пациентов
+(
+цифровая форма записей минимизирует
+вероятност
+ь
+ошибок, связанных с ручн
+ой обработкой бумажных документов, алгоритмы машинного обучения защи
+щают от ошибок
+ручного
+ввод
+а
+данных
+,
+обеспечение точности
+диагнозов,
+назначения
+лекарственных
+препаратов
+, инвазивных вмешательств
+и процедур
+,
+строгая
+защита конфиденциальности медицинской информации,
+соблюдение этических аспектов использования данных,
+контроль доступа и предотвращение утечек данных
+),
+увеличение эффективности лечения
+пациентов
+(
+оптимизация лечебно-эвакуационных схем
+и тактики лечения
+, обеспечение
+преемственности
+медицинских процессов
+и повышени
+е их
+эффективности
+, прогностическая аналитика и предупреждение о развитии возможных осложнений
+),
+внедрение
+персонализированно
+го подхода в
+медицин
+е
+(интеграция
+геномных данных и
+персонализированных подходов к лечению
+инфекционных заболеваний, связанных с оказанием медицинской помощи
+(ИСМП)
+на основе
+имеющихся геномных
+данных
+пациента
+и актуальных микробных патогенов
+,
+что
+позвол
+и
+т создать индивидуальные программы лечения, учитывающие
+различные
+генетические особенности
+, для точного и персонализированного дозирования
+антибактериальных
+препаратов
+),
+выявление тенденций
+и паттернов
+эпидемиологического неблагополучия и
+прогнозирование развития эпидемического процесса ИСМП
+на этапе медицинской эвакуации
+и
+управление деятельностью
+медицинской
+службы
+(
+анализ данных ЭМЗ,
+сбор
+стратифицированных показателей заболеваемости ИСМП
+и
+выявление
+всех
+факторов риска
+их
+развития, формирование
+отчетов
+по
+количеству выявленных случаев развития ИСМП;
+по количеству выделенных
+и идентифицированных
+микроорганизмов
+;
+по статистике
+лабораторных
+исследований (количество
+пациентов
+, обследованных в лаборатории
+; количество проб материала и
+анализ микробного пейзажа по материалам
+(кровь, раневое отделяемое, моча, мокрота);
+анализ
+спектра
+чувствительности
+выделенных
+микроорганизмов
+к антибактериальным препаратам и дезинфицирующим средствам
+по отделениям
+(количество выполненных исследований: диско-диффузный метод (
+DDM
+)
+,
+минимальная подавляющая концентрация (
+MIC
+) и др.);
+анализ брака забора материала по отделениям
+)
+.
+Основные функции:
+Безопасное
+централизованное
+х
+ранение
+и обработка
+цифровых медицинских
+данных
+:
+используя алгоритмы машинного обучения,
+цифровая
+система
+должна
+анализировать на предмет недопустимых ошибок и
+посуточно сохранять в архив
+все введенные
+авторизированным
+оператором
+медицинские
+данные
+(персональные данные
+пациента,
+клиническая информация,
+результаты лабораторных исследований
+, включая
+показатели персонифицированной микробиологической диагностики
+и
+показатели санитарной микробиологии
+за данное
+клиническо
+е
+отделени
+е, с
+показателями
+чувствительности к антибактериальным препаратам и дезинфицирующим средствам)
+с формированием на каждого пациента
+электронной медицинской записи
+(электронная версия истории болезни пациента, включающая в себя
+:
+анамнез заболевания, эпидемиологический анамнез, диагнозы, результаты лабораторных исследований, используемые
+антибактериальные препараты и другую важную информацию
+;
+при выявлении у пациента случая ИСМП – формировать
+карт
+у
+эпидемиологического наблюдения за ИСМП
+)
+с идентификационным номером пациента
+.
+Автоматически, ежедневно п
+рисваивать
+новые
+лабораторные номера
+пробам
+биологического материала
+, в зависимости от
+кода
+вида материала (кровь, раневое отделяемое, моча, мокрота и др.)
+с привязкой к конкретному идентификатору пациента
+.
+Эл
+ектронная
+медицинская запись
+должна формироваться при клике на кнопку, включать в себя определенный перечень полей для внесения необходимой информации:
+отделение
+, номер и/б, ФИО, дата рождения (полных лет), пол, в/часть, в/звание, в/должность, личный номер, дата заболевания (ранения), дата поступления, дата исхода, исход, диагноз, осложнения
+, наличие инвазивных вмешательств
+)
+.
+Электронная
+медицинская запись
+(
+история болезни
+)
+<w:tblPr><w:tblStyle w:val="a6"/><w:tblW w:w="16459" w:type="dxa"/><w:tblInd w:w="-1042" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr><w:tblGrid><w:gridCol w:w="1179"/><w:gridCol w:w="895"/><w:gridCol w:w="1044"/><w:gridCol w:w="1044"/><w:gridCol w:w="658"/><w:gridCol w:w="856"/><w:gridCol w:w="1215"/><w:gridCol w:w="1466"/><w:gridCol w:w="1159"/><w:gridCol w:w="1124"/><w:gridCol w:w="1189"/><w:gridCol w:w="1466"/><w:gridCol w:w="1505"/><w:gridCol w:w="613"/><w:gridCol w:w="1046"/></w:tblGrid><w:tr w:rsidR="00BD5BC8" w:rsidTr="007D1FF6"><w:trPr><w:trHeight w:val="1999"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="1179" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>О
+тделение
+<w:tcPr><w:tcW w:w="895" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Номер и/б
+<w:tcPr><w:tcW w:w="1044" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>ФИО
+Интеллектуальное обучение и заполнение (по первым буквам
+фио
+)
+<w:tcPr><w:tcW w:w="1044" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Дата рождения
+(
+автоматический подсчет
+полных лет)
+контроль недопустимых ошибок
+<w:tcPr><w:tcW w:w="658" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Пол
+<w:tcPr><w:tcW w:w="856" w:type="dxa"/></w:tcPr><w:p w:rsidR="00714944" w:rsidRDefault="00714944" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Категория
+Войсковая
+Ч
+асть
+, Округ
+<w:tcPr><w:tcW w:w="1215" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Дата поступления
+(откуда поступил, перевелся)
+<w:tcPr><w:tcW w:w="1466" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Дата исхода
+(продолжительность лечения, сутки)
+<w:tcPr><w:tcW w:w="1159" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Дата заболевания (ранения, травмы)
+На какие сутки поступил
+(нужно
+высчитывать автоматически)
+<w:tcPr><w:tcW w:w="1124" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Степень тяжести
++
+баллы по шкале ВПХ (СП),
+ВПХ-П(ОР),
+SOFA
+(
+калькулятор баллов электронный
+)
+<w:tcPr><w:tcW w:w="1189" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t xml:space="preserve">Диагноз при поступлении, при выписке,
+осложнения
+(МКБ 10)
+<w:tcPr><w:tcW w:w="1466" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t xml:space="preserve">Наличие
+всех
+факторов риска
+-
+инвазивных вмешательств
+(дата начала- дата окончания
+каждого
+,
+продолжительност
+ь) кратность может быть любая –
+сосчитать в конце сумму дней по типу вмешательства
+<w:tcPr><w:tcW w:w="1505" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Антибиотикотерапия
+(дата начала-окончания,
+препарат,
+способ
+введения)
+<w:tcPr><w:tcW w:w="613" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Номер пробы
+<w:tcPr><w:tcW w:w="1046" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00164752" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="00164752"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Исследуемый материал
+(локация)
+<w:trPr><w:trHeight w:val="1463"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="1179" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="00BD5BC8" w:rsidRDefault="00F10548" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:b/><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:noProof/><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251675648" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>260350</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>348615</wp:posOffset></wp:positionV><wp:extent cx="0" cy="7277100"/><wp:effectExtent l="76200" t="0" r="57150" b="57150"/><wp:wrapNone/><wp:docPr id="1" name="Прямая со стрелкой 1"/><wp:cNvGraphicFramePr/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvCnPr/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="7277100"/></a:xfrm><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom><a:ln><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:tailEnd type="triangle"/></a:ln></wps:spPr><wps:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="0"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="tx1"/></a:fontRef></wps:style><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></mc:Choice><mc:Fallback><w:pict><v:shapetype w14:anchorId="61CCC243" id="_x0000_t32" coordsize="21600,21600" o:spt="32" o:oned="t" path="m,l21600,21600e" filled="f"><v:path arrowok="t" fillok="f" o:connecttype="none"/><o:lock v:ext="edit" shapetype="t"/></v:shapetype><v:shape id="Прямая со стрелкой 1" o:spid="_x0000_s1026" type="#_x0000_t32" style="position:absolute;margin-left:20.5pt;margin-top:27.45pt;width:0;height:573pt;z-index:251675648;visibility:visible;mso-wrap-style:square;mso-wrap-distance-left:9pt;mso-wrap-distance-top:0;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:0;mso-position-horizontal:absolute;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text" o:gfxdata="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&#xA;cgUAAAAA&#xA;" strokecolor="red" strokeweight=".5pt"><v:stroke endarrow="block" joinstyle="miter"/></v:shape></w:pict></mc:Fallback></mc:AlternateContent></w:r><w:r w:rsidR="00BD5BC8" w:rsidRPr="00BD5BC8"><w:rPr><w:b/><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Медицинская рота
+ОМедБ
+<w:tcPr><w:tcW w:w="895" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>11111
+<w:tcPr><w:tcW w:w="1044" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Иванов
+Иван Иванович
+<w:tcPr><w:tcW w:w="1044" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>дд.
+мм.год
+<w:tcPr><w:tcW w:w="658" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>муж
+/
+жен
+<w:tcPr><w:tcW w:w="856" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRDefault="00714944" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Офицер
+31135 Московский ВО
+<w:tcPr><w:tcW w:w="1215" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>(первичное обращение, перевод, повторная госпитализация)
+чч.
+мм.год
+<w:tcPr><w:tcW w:w="1466" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t xml:space="preserve">(выписан, переведен,
+умер)
+чч.
+мм.год
+(число койко-дней)
+<w:tcPr><w:tcW w:w="1159" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr></w:p><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="1124" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t xml:space="preserve">Средней тяжести, Тяжелое,
+Крайне тяжелое
+<w:tcPr><w:tcW w:w="1189" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>Микробиология актуальных для ВС РФ инфекций
+<w:tcPr><w:tcW w:w="1466" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>-центральный катетер
+-периферийный катетер
+-мочевой катетер
+-ИВЛ
+-
+оперативное вмешательство
+-все вмешательства должны отображаться списком!
+Первичная (повторная, вторичная) хирургическая обработки, дата, длительность в минутах, кто выполнял
+<w:tcPr><w:tcW w:w="1505" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="613" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:b/><w:bCs/><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr><w:r w:rsidRPr="006122A9"><w:rPr><w:b/><w:bCs/><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><w:t>лаб. номер
+<w:tcPr><w:tcW w:w="1046" w:type="dxa"/></w:tcPr><w:p w:rsidR="00BD5BC8" w:rsidRPr="006122A9" w:rsidRDefault="00BD5BC8" w:rsidP="00BD5BC8"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr></w:pPr></w:p></w:tc></w:tr></w:tbl><w:p w:rsidR="00BD5BC8" w:rsidRPr="00BD5BC8" w:rsidRDefault="007D1FF6" w:rsidP="00BD5BC8"><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:ind w:firstLine="709"/><w:jc w:val="right"/><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">
+При нажатии на номер лабораторной пробы должна отображать ЭМЗ (показатели микробиологической диагностики)
+Электронная медицинская запись (
+п
+оказатели микробиологической диагностики
+пациент
+а
+)
+<w:tblPr><w:tblStyle w:val="a6"/><w:tblW w:w="15558" w:type="dxa"/><w:tblInd w:w="-5" w:type="dxa"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr><w:tblGrid><w:gridCol w:w="953"/><w:gridCol w:w="939"/><w:gridCol w:w="1191"/><w:gridCol w:w="1148"/><w:gridCol w:w="887"/><w:gridCol w:w="887"/><w:gridCol w:w="945"/><w:gridCol w:w="1278"/><w:gridCol w:w="1156"/><w:gridCol w:w="1017"/><w:gridCol w:w="1314"/><w:gridCol w:w="1229"/><w:gridCol w:w="711"/><w:gridCol w:w="465"/><w:gridCol w:w="634"/><w:gridCol w:w="804"/></w:tblGrid><w:tr w:rsidR="00C7480B" w:rsidTr="00BD5BC8"><w:tc><w:tcPr><w:tcW w:w="953" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Штрих-код
+<w:tcPr><w:tcW w:w="939" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Пит. Среда
+<w:tcPr><w:tcW w:w="1191" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Первичное исследование / повторное
+Какие сутки после ранения (поступления)
+<w:tcPr><w:tcW w:w="1148" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:lastRenderedPageBreak/><w:t>Дата назначения исследования
+<w:tcPr><w:tcW w:w="887" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата забора
+<w:tcPr><w:tcW w:w="887" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата доставки
+<w:tcPr><w:tcW w:w="945" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата результата роста
+<w:tcPr><w:tcW w:w="1278" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Рост (+/-)
+/
+характеристика колонии
+<w:tcPr><w:tcW w:w="1156" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Микроскопия
+<w:tcPr><w:tcW w:w="1017" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Количество (КОЕ)
+<w:tcPr><w:tcW w:w="1314" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Микроорганизм
+(библиотека с кодами)
+Подбор по наименованию или коду
+<w:tcPr><w:tcW w:w="3843" w:type="dxa"/><w:gridSpan w:val="5"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:lastRenderedPageBreak/><w:t>Чувствительность к антимикробным препаратам
+(библиотека с кодами групп препаратов)
+<w:tc><w:tcPr><w:tcW w:w="953" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>(
+лаб. номер
+)
+<w:tcPr><w:tcW w:w="939" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>(ЖСА,
+Кровяной агар)
+<w:tcPr><w:tcW w:w="1191" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00847310" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>3 сутки после ранения
+5 сутки после поступления
+<w:tcPr><w:tcW w:w="1148" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="887" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="887" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="945" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="009E4EB7" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="1278" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>(слизистые, белые, прозрачные)
+Возможность ручного ввода должна быть
+<w:tcPr><w:tcW w:w="1156" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="1017" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="00DB1F53" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>10^6
+КОЕ
+<w:tcPr><w:tcW w:w="1314" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr><w:t>Klebsiella
+pneumoniae
+Возможность ручного ввода должна быть
+<w:tcPr><w:tcW w:w="1229" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Панель антибиотиков,
+Панель бактериофагов
+<w:tcPr><w:tcW w:w="711" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Группа
+<w:tcPr><w:tcW w:w="465" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="00A55FA8" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr><w:t>RIS
+<w:tcPr><w:tcW w:w="634" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr><w:t>MIC
+(МПК мг/л)
+<w:tcPr><w:tcW w:w="804" w:type="dxa"/></w:tcPr><w:p w:rsidR="00C7480B" w:rsidRPr="00A55FA8" w:rsidRDefault="00C7480B" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Диаметр лизиса
+<w:tblPr><w:tblStyle w:val="a6"/><w:tblW w:w="16374" w:type="dxa"/><w:tblInd w:w="-1070" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr><w:tblGrid><w:gridCol w:w="1491"/><w:gridCol w:w="815"/><w:gridCol w:w="1027"/><w:gridCol w:w="993"/><w:gridCol w:w="1842"/><w:gridCol w:w="1843"/><w:gridCol w:w="2835"/><w:gridCol w:w="2552"/><w:gridCol w:w="1417"/><w:gridCol w:w="1559"/></w:tblGrid><w:tr w:rsidR="00CD174E" w:rsidTr="00CD174E"><w:trPr><w:trHeight w:val="279"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="1491" w:type="dxa"/><w:vMerge w:val="restart"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr><w:r w:rsidRPr="00CD174E"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t>Отделение
+(количество штатных / развернутых коек)
+<w:tcPr><w:tcW w:w="14883" w:type="dxa"/><w:gridSpan w:val="9"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>Сентябрь 2025 г. (формирование отчетов по месяцам и годам: 2023 г., 2025 г.)
+<w:trPr><w:trHeight w:val="279"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="1491" w:type="dxa"/><w:vMerge/></w:tcPr><w:p w:rsidR="005A5B84" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="4677" w:type="dxa"/><w:gridSpan w:val="4"/><w:tcBorders><w:right w:val="single" w:sz="12" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="005A5B84" w:rsidRPr="00E334AB" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="00E334AB"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>Показатели оценки использования коечного фонда
+<w:tcPr><w:tcW w:w="4678" w:type="dxa"/><w:gridSpan w:val="2"/><w:tcBorders><w:left w:val="single" w:sz="12" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="005A5B84" w:rsidRPr="00ED67EE" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="00E334AB"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">Показатели
+санитарной микробиологии в отделении
+<w:tcPr><w:tcW w:w="5528" w:type="dxa"/><w:gridSpan w:val="3"/><w:tcBorders><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="005A5B84" w:rsidRPr="00ED67EE" w:rsidRDefault="009368FA" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="009368FA"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>показатели микробиологической диагностики пациента
+<w:trPr><w:trHeight w:val="1102"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="1491" w:type="dxa"/><w:vMerge/><w:tcBorders><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="815" w:type="dxa"/><w:tcBorders><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00D40BC1" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="00D40BC1"><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">ЧПБ*
+(
+Пб+Вб+Уб
+)
+<w:tcPr><w:tcW w:w="1027" w:type="dxa"/><w:tcBorders><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00D40BC1" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="00D40BC1"><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">Средняя занятость койки
+(дней в году
+)
+<w:tcPr><w:tcW w:w="993" w:type="dxa"/><w:tcBorders><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00ED67EE" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="00D40BC1"><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>Оборот койки (пациентов в год)
+<w:tcPr><w:tcW w:w="1842" w:type="dxa"/><w:tcBorders><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="12" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00D40BC1" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:pPr><w:r w:rsidRPr="00D40BC1"><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>Средняя длительность
+лечения
+/
+(СВО)
+<w:tcPr><w:tcW w:w="1843" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="12" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00ED67EE" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>Количество выполненных исследований календарном в месяце с различных объектов
+<w:tcPr><w:tcW w:w="2835" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="005A5B84" w:rsidRPr="0095070E" w:rsidRDefault="005A5B84" w:rsidP="005A5B84"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr><w:r w:rsidRPr="0095070E"><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t>%
+положительных результатов смывов
+опер. поле/ руки/ стерильность/ внешняя среда
+<w:tcPr><w:tcW w:w="2552" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="005A5B84" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t xml:space="preserve">∑
+п
+ац
+иентов, у которых отбирался материал
+<w:tcPr><w:tcW w:w="1417" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="009368FA" w:rsidRDefault="009368FA" w:rsidP="005A5B84"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="009368FA"><w:rPr><w:rFonts w:eastAsia="Calibri" w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>Среднее
+количество высеянных организмов
+(
+)
+<w:tcPr><w:tcW w:w="1559" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="009368FA" w:rsidRDefault="009368FA" w:rsidP="005A5B84"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>максимальное количество
+высеянных организмов
+<w:trPr><w:trHeight w:val="269"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="1491" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="005A5B84" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:pPr><w:r w:rsidRPr="005A5B84"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t>Медицинская рота
+(25/40)
+<w:tcPr><w:tcW w:w="815" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>478
+<w:tcPr><w:tcW w:w="1027" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>333,6
+<w:tcPr><w:tcW w:w="993" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>8,8
+<w:tcPr><w:tcW w:w="1842" w:type="dxa"/><w:tcBorders><w:right w:val="single" w:sz="12" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:b/><w:bCs/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:b/><w:bCs/><w:szCs w:val="28"/></w:rPr><w:t>38,1
+(
+39,5
+)
+<w:tcPr><w:tcW w:w="1843" w:type="dxa"/><w:tcBorders><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>15
+лаб. номер
+<w:tcPr><w:tcW w:w="2835" w:type="dxa"/><w:tcBorders><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="005A5B84" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>0/
+19
+/0/17
+<w:tcPr><w:tcW w:w="2552" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tcBorders></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00D85C2F" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/><w:lang w:val="en-US"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>229
+<w:tcPr><w:tcW w:w="1417" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00D54CEB" w:rsidRDefault="00CD174E" w:rsidP="00CD174E"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r w:rsidRPr="00DF3CD1"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:b/><w:bCs/><w:szCs w:val="28"/><w:lang w:val="en-US"/></w:rPr><w:t>3,
+1
+<w:tcPr><w:tcW w:w="1559" w:type="dxa"/></w:tcPr><w:p w:rsidR="009368FA" w:rsidRDefault="00CD174E" w:rsidP="009368FA"><w:pPr><w:jc w:val="center"/><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr></w:pPr><w:r w:rsidRPr="009368FA"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:szCs w:val="28"/></w:rPr><w:t>13
+Ссылка на ЭМЗ истории болезни
+<w:trPr><w:trHeight w:val="279"/></w:trPr><w:tc><w:tcPr><w:tcW w:w="16374" w:type="dxa"/><w:gridSpan w:val="10"/></w:tcPr><w:p w:rsidR="005A5B84" w:rsidRPr="00251DB5" w:rsidRDefault="009368FA" w:rsidP="00CD174E"><w:pPr><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:bCs/><w:noProof/><w:sz w:val="14"/><w:szCs w:val="14"/></w:rPr><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251673600" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1" wp14:anchorId="5010A7F8" wp14:editId="2A08C57D"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>4183380</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>-478789</wp:posOffset></wp:positionV><wp:extent cx="1333500" cy="1352550"/><wp:effectExtent l="0" t="0" r="76200" b="57150"/><wp:wrapNone/><wp:docPr id="4" name="Прямая со стрелкой 4"/><wp:cNvGraphicFramePr/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp><wps:cNvCnPr/><wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1333500" cy="1352550"/></a:xfrm><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom><a:ln><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:tailEnd type="triangle"/></a:ln></wps:spPr><wps:style><a:lnRef idx="2"><a:schemeClr val="accent2"/></a:lnRef><a:fillRef idx="0"><a:schemeClr val="accent2"/></a:fillRef><a:effectRef idx="1"><a:schemeClr val="accent2"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="tx1"/></a:fontRef></wps:style><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic><wp14:sizeRelH relativeFrom="margin"><wp14:pctWidth>0</wp14:pctWidth></wp14:sizeRelH><wp14:sizeRelV relativeFrom="margin"><wp14:pctHeight>0</wp14:pctHeight></wp14:sizeRelV></wp:anchor></w:drawing></mc:Choice><mc:Fallback><w:pict><v:shape w14:anchorId="4B724365" id="Прямая со стрелкой 4" o:spid="_x0000_s1026" type="#_x0000_t32" style="position:absolute;margin-left:329.4pt;margin-top:-37.7pt;width:105pt;height:106.5pt;z-index:251673600;visibility:visible;mso-wrap-style:square;mso-width-percent:0;mso-height-percent:0;mso-wrap-distance-left:9pt;mso-wrap-distance-top:0;mso-wrap-distance-right:9pt;mso-wrap-distance-bottom:0;mso-position-horizontal:absolute;mso-position-horizontal-relative:text;mso-position-vertical:absolute;mso-position-vertical-relative:text;mso-width-percent:0;mso-height-percent:0;mso-width-relative:margin;mso-height-relative:margin" o:gfxdata="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&#xA;BQYAAAAABAAEAPMAAACABQAAAAA=&#xA;" strokecolor="red" strokeweight="1pt"><v:stroke endarrow="block" joinstyle="miter"/></v:shape></w:pict></mc:Fallback></mc:AlternateContent></w:r><w:r w:rsidR="005A5B84" w:rsidRPr="00251DB5"><w:rPr><w:rFonts w:cs="Times New Roman"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>*ЧПБ – численность пользованных больных
+(Пб – поступившие,
+Вб
+– выписанные,
+Уб
+– умершие больные)
+При нажатии на
+отделение
+должна отображать
+ся история с
+ЭМЗ (показатели
+санитарной
+микробиолог
+ии
+)
+Электронная медицинская запись (
+показатели санитарной микробиологии в отделении
+)
+<w:tblPr><w:tblStyle w:val="a6"/><w:tblW w:w="0" w:type="auto"/><w:tblInd w:w="-998" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr><w:tblGrid><w:gridCol w:w="993"/><w:gridCol w:w="993"/><w:gridCol w:w="1134"/><w:gridCol w:w="850"/><w:gridCol w:w="893"/><w:gridCol w:w="644"/><w:gridCol w:w="804"/><w:gridCol w:w="915"/><w:gridCol w:w="1234"/><w:gridCol w:w="1117"/><w:gridCol w:w="984"/><w:gridCol w:w="1268"/><w:gridCol w:w="1187"/><w:gridCol w:w="690"/><w:gridCol w:w="455"/><w:gridCol w:w="617"/><w:gridCol w:w="780"/></w:tblGrid><w:tr w:rsidR="00CD174E" w:rsidTr="00D93985"><w:tc><w:tcPr><w:tcW w:w="993" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Штрих-код
+<w:tcPr><w:tcW w:w="993" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Исследуемый материал
+(точка забора)
+<w:tcPr><w:tcW w:w="1134" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Отделение (помещение)
+<w:tcPr><w:tcW w:w="850" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Пит. Среда
+<w:tcPr><w:tcW w:w="893" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата назначения исследования
+<w:tcPr><w:tcW w:w="644" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата забора
+<w:tcPr><w:tcW w:w="804" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата доставки
+<w:tcPr><w:tcW w:w="915" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Дата результата роста
+<w:tcPr><w:tcW w:w="1234" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Рост (+/-)
+/
+характеристика колонии
+<w:tcPr><w:tcW w:w="1117" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Микроскопия
+<w:tcPr><w:tcW w:w="984" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r w:rsidRPr="009E4EB7"><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Количество (КОЕ)
+<w:tcPr><w:tcW w:w="1268" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Микроорганизм
+(библиотека с кодами)
+Подбор по наименованию или коду
+<w:tcPr><w:tcW w:w="3729" w:type="dxa"/><w:gridSpan w:val="5"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:lastRenderedPageBreak/><w:t>Чувствительность к антимикробным препаратам
+(библиотека с кодами групп препаратов)
+<w:tc><w:tcPr><w:tcW w:w="993" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>(
+лаб. номер
+)
+<w:tcPr><w:tcW w:w="993" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Смывы
+Пробы воздуха
+Материалы для исследования на стерильность
+<w:tcPr><w:tcW w:w="1134" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>ОПВ
+<w:tcPr><w:tcW w:w="850" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>(ЖСА,
+Кровяной агар)
+<w:tcPr><w:tcW w:w="893" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00D93985" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="644" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00D93985" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="804" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00D93985" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="915" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="009E4EB7" w:rsidRDefault="00D93985" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:proofErr w:type="spellStart"/><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>чч.
+мм.год
+<w:tcPr><w:tcW w:w="1234" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>(слизистые, белые, прозрачные)
+Возможность ручного ввода должна быть
+<w:tcPr><w:tcW w:w="1117" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00D93985" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>стафилококки
+<w:tcPr><w:tcW w:w="984" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00DB1F53" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>10^6
+КОЕ
+<w:tcPr><w:tcW w:w="1268" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="001B044B" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr><w:t>Klebsiella
+pneumoniae
+Семейство/род
+Возможность ручного ввода должна быть
+<w:tcPr><w:tcW w:w="1187" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Панель антибиотиков,
+Панель бактериофагов
+(редактируемая)
+<w:tcPr><w:tcW w:w="690" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Группа
+<w:tcPr><w:tcW w:w="455" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00A55FA8" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr><w:t>RIS
+<w:tcPr><w:tcW w:w="617" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/><w:lang w:val="en-US"/></w:rPr><w:t>MIC
+(МПК мг/л)
+<w:tcPr><w:tcW w:w="780" w:type="dxa"/></w:tcPr><w:p w:rsidR="00CD174E" w:rsidRPr="00A55FA8" w:rsidRDefault="00CD174E" w:rsidP="005A5B84"><w:pPr><w:jc w:val="both"/><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr><w:t>Диаметр лизиса
+2.
+Поиск и анализ:
+должна быть реализована функция поиска
+ЭМЗ
+по
+настраиваемым временным интервалам и датам, кодам диагнозов, степени тяжести (в т.ч. балльным кодам материала,
+номерам историй болезни,
+номерам проб, отделениям,
+категории пациента,
+ФИО пациента,
+полу пациента,
+ФИО врача
+,
+воинской части
+,
+военному округу,
+наименованию антибактериального препарата и микроорганизма
+(группе микроорганизмов)
+. По найденным данным система должна:
+- показывать отчет с
+нужными
+показателями
+:
+заболеваемости ИСМП (МКБ-10)
+, количеству исследований, количеству исследованных проб и пациентов
+.
+- строить графики для оценки уровня заболеваемости ИСМП (по дням, неделям, месяцам, годам) для выбранной группы или класса заболеваний.
+- строить сравнительные диаграммы (гистограммы) для анализа
+чувствительности различных микроорганизмов к антибактериальным препаратам разных классов
+или внутри одного класса
+, влияния имеющихся факторов риска развития ИСМП на тяжесть течения
+.
+3.
+Централизованный доступ
+, управление
+и о
+бмен данными:
+- выгрузка, возможность экспорта
+ЭМЗ
+и
+отчет
+ов
+в электронном виде для передачи
+как по вертикали (выше/ нижестоящим
+этапам эвакуации
+), так и по горизонтали (внутри организации (части, подразделения)
+- загрузка: возможность импорта полученных
+ЭМЗ
+и
+отчетов от этапов эвакуации в систему вышестоящего командования для централизованного накопления данных и последующей обработки/анализа.
+Ключевые требования:
+безопасность и конфиденциальность,
+интероперабельность с различными используемыми информационными системами,
+единый поток информации между различными этапами эвакуации
+,
+неизменяемость
+ЭМЗ и
+форм отчета, сохранение истории данных по частям, функционал поиска, визуализация данных (график, диаграммы), импорт/экспорт отчетов.
+Функционал входа:
+Администратор регистрирует новых пользователей, присваивая им логин и пароль.
+Пользователь
+авторизуется в системе вводя
+логин
+(используется как ФИО ответственного лица в отчетах и должно отображаться в выходном документе)
+и
+пароль
+для входа в
+систему
+.
+Функционал заполнения адресных данных:
+После входа пользователь попадает на экран для ручного заполнения
+всех
+обязательных полей
+ЭМЗ
+.
+Навигация: на экране присутствуют кнопки «Сохранить» для записи данных, «Назад» для возврата и корректировки и «Далее» для перехода.
+Ключевые требования к экрану:
+- все поля
+для удобства визуализации
+размещаются на одной странице/форме.
+- поля
+,
+обязательны
+е
+для заполнения
+, не могут быть пропущены пользователем.
+В случае отсутствия данных писать «н/д»
+Эпидемиологическое наблюдение за ИСМП
+.
+Рассчитываемые п
+оказатели заболеваемости ИСМП:
+-
+частота эпизодов ИСМП, на 1000 пролеченных пациентов;
+-
+заболеваемость ИСМП, на 1000 пролеченных пациентов;
+-
+распространенность ИСМП заданного периода, на 1000 пациентов;
+-
+распространенность ИСМП заданного момента, на 1000 пациентов;
+-
+плотность инцидентности ИСМП, на 1000 пациентов;
+-
+инцидентность ИОХВ, на 1000 операций;
+-
+инцидентность ИОХВ, на 1000 прооперированных пациентов;
+-
+инцидентность ИК, на 1000 пролеченных пациентов;
+-
+инцидентность КА-ИК, на 1000 катетеризированных пациентов;
+-
+инцидентность КА-ИК, на 1000 пациенто-дней катетеризации сосудов;
+-
+инцидентность КА-ИМП, на 1000 катетеризированных пациентов;
+-
+инцидентность КА-ИМП, на 1000 пациенто-дней катетеризации мочевого пузыря;
+-
+инцидентность ВАП, на 1000 пациентов с ИВЛ;
+-
+инцидентность ВАП, на 1000 пациенто-дней ИВЛ;
+-
+инцидентность ИСМП нозологической формы, на 1000 пациентов.
+Показатели, позволяющие определить действие ряда факторов риска (
+стратифицированные показатели
+), – частоту инфекций:
+- нижних дыхательных путей на 1000 пациенто-дней искусственной вентиляции легких и структуру их (у пациентов, подвергавшихся искусственной вентиляции легких (ИВЛ);
+- кровотока на 1000 пациенто-дней сосудистых катетеризаций и структуру их (у пациентов, подвергавшихся катетеризации сосудов);
+- мочевыводящих путей на 1000 пациенто-дней
+уринарных
+катетеризаций и структуру их (у пациентов, подвергавшихся катетеризации мочевого пузыря).
+ИСТОЧНИКИ ИНФОРМАЦИИ ДЛЯ РАСЧЕТОВ:
+<w:t>Все данные о пациентах с ИСМП («числители» и часть «знаменателей») - по результатам эпидемиологического расследования каждого случая инфекции + рутинно обязательно собираемые данные.
+Рутинно обязательно собираемые данные («знаменатели»):
+-койко-дни каждого пациента
+-Число пациентов с ИВЛ в операции
+-Длительность ИВЛ в операции у пациента
+-Число пациентов с ИВЛ
+-Длительность ИВЛ у пациента
+-Число катетеризаций мочевого пузыря (в
+оперблоке
+, в реанимации, в ПИТ, в палате)
+-Длительность катетеризации мочевого пузыря у пациента на каждом из этапов оказания медицинской помощи
+-Число катетеризаций сосудов по типу катетеризации (в
+оперблоке
+, в реанимации, в ПИТ, в палате)
+-Длительность катетеризации сосудов у пациента на каждом из этапов оказания медицинской помощи
+Функционал расчета:
+Кумулятивная инцидентность
+ИСМП
+Расчет осуществляется по следующей формуле:
+где:
+</w:r><w:r w:rsidR="00816794"><w:t>КИ
+–
+показатель кумулятивной инцидентности
+n
+– число случаев заболевания, в
+озникших
+(«накопившихся») за определенный период времени
+N
+– численность
+популяции риска в тот же период времени
+1000 – должна быть предусмотрена возможность настраивать степень множителя
+10
+n
+(для расчетов на 100 – общая частота ИОХВ на 100 операций)
+Плотность инцидентности
+ИСМП
+Расчет осуществляется по следующей формуле:
+где:
+</w:r><w:r w:rsidR="007257CB"><w:t>ПИ
+-
+показатель кумулятивной инцидентности
+n
+–
+ч
+астота возникновения новых случаев заболевания, возникших
+за определенный период времени (период наблюдения)
+pT
+–
+суммарное время воздействия факторов риска, добавленного всеми членами популяции риска
+Превалентность
+ИСМП
+Расчет осуществляется по следующей формуле:
+где:
+П
+–
+показатель
+превалентности
+P
+– число всех существующих в определенный момент (короткий период) времени случаев ИСМП
+N
+– численность популяции риска в этот же период времени
+Стратифицированный показатель
+инцидентности
+ИСМП
+.
+<w:t xml:space="preserve">
+<w:t xml:space="preserve">Стратифицированный показатель инцидентности
+(
+катетер-ассоциированной инфекции кровотока (КА-ИК)
+, ИВЛ-ассоциированной пневмонией (вентилятор-ассоциированной пневмония –ВАП), катетер-ассоциированной инфекции мочевыделительных путей (КА-ИМП))
+Расчет осуществляется по следующей формуле:
+<w:tab w:val="num" w:pos="0"/></w:tabs><w:ind w:left="0"/><w:jc w:val="center"/><w:rPr><w:sz w:val="32"/><w:szCs w:val="24"/></w:rPr></w:pPr><w:r w:rsidRPr="00082674"><w:rPr><w:sz w:val="32"/><w:szCs w:val="24"/></w:rPr><w:t>СИ=
+q
+СИ  –
+стратифицированная
+инцидентность
+А
+–
+все случаи заболеваний
+(например, ВАП, КА-ИМП, КА-ИК), возникших за период t
+–
+суммарно
+время риска возникновения заболевания, добавленное всеми членами популяции риска (t1+t2+...
+tn
+). Каждый человек, у которого заболевание не возникло, добавляет в знаменатель полное время воздействия фактора (экспозиции). У заболевших для расчета знаменателя используется время, проведенное до возникновения заболевания
+n –
+число лиц под наблюдением
+q –
+относительный коэффициент (на 1000 пациенто-дней ИВЛ, на 1000 пациенто-дней катетеризации мочевого пузыря, на 1000 пациенто
+-дней катетеризации сосудов

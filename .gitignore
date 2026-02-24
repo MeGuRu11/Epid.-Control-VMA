@@ -1,0 +1,27 @@
+.venv/
+env/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.spec
+data/
+*.db
+
+# Артефакты и временные файлы
+.coverage
+pip_install.log
+pytest_artifacts/
+pytest_cache_local/
+tmp_run/
+
+# Claude Code
+.claude/

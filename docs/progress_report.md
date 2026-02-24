@@ -1,0 +1,1060 @@
+﻿﻿# Сводка проекта
+
+Короткий контекст для новых чатов: что за продукт, где мы находимся и что делать дальше.
+
+Дата обновления: 2026-02-13
+
+## Кратко о продукте
+
+Desktop-приложение для стационара: ЭМЗ пациента, микробиологические лабораторные пробы, санитарная микробиология, поиск, аналитика и отчеты.
+
+## Стек и архитектура
+
+- Python 3.11+.
+- UI: PySide6 (Qt6).
+- База данных: SQLite + SQLAlchemy 2.x, миграции Alembic.
+- Структура: UI -> Application -> Domain -> Infrastructure.
+
+## База данных и данные
+
+- FTS5 используется для поиска (по ФИО, МКБ и микроорганизмам); rebuild только при ошибках.
+- Бэкапы SQLite должны выполняться через `sqlite3.Connection.backup()` или `VACUUM INTO`.
+
+## Текущие приоритеты
+
+- Определить следующий приоритетный блок улучшений.
+
+## Принятые решения
+
+- Windows-first, но без зависимостей, привязанных к Win32.
+- Данные хранятся локально в SQLite.
+- Тесты нужно запускать после каждого изменения.
+
+## Журнал работ
+
+### 2026-02-09
+
+- Исправлены нарушения markdownlint в `docs/context.md` (уникальные заголовки и нумерация списков).
+- Перезаписан `docs/progress_report.md` в корректной кодировке UTF-8 с BOM.
+- Стабилизирован FTS (rebuild только при ошибках; правки в `app/main.py`, `app/application/services/patient_service.py`).
+- Добавлен безопасный бэкап SQLite через `sqlite3.Connection.backup()` (правки в `app/application/services/backup_service.py`).
+- Включен PRAGMA foreign_keys=ON для SQLite (правки в `app/infrastructure/db/engine.py`).
+- Добавлены ON DELETE CASCADE для дочерних таблиц в моделях и миграции (правки в `app/infrastructure/db/models_sqlalchemy.py`, `app/infrastructure/db/migrations/versions/0016_fk_cascade.py`).
+- Включены WAL и busy_timeout для SQLite (правки в `app/infrastructure/db/engine.py`).
+- Уточнена кодировка сообщений в сервисах: добавлены coding cookie и нормализованы строки (правки в `app/application/services/reference_service.py`, `app/application/services/patient_service.py`, `app/application/services/backup_service.py`).
+- Добавлены валидаторы числовых полей в ЭМЗ (SOFA, ВПХ-П, длительность интервенций) в `app/ui/emz/emz_form.py`.
+- Улучшен выбор пациента: диалог с FTS-поиском и списком последних пациентов, интеграция в селектор и контекстную панель (правки в `app/ui/widgets/patient_search_dialog.py`, `app/ui/widgets/patient_selector.py`, `app/ui/widgets/context_bar.py`, сервисы и репозитории пациента).
+- Добавлены фильтры и пагинация в списке лабораторных проб (правки в `app/ui/lab/lab_samples_view.py`).
+- Добавлены фильтры по номеру/росту/дате и пагинация в истории санитарных проб (правки в `app/ui/sanitary/sanitary_history.py`).
+- Переведены в фон операции создания/восстановления бэкапа в админке (правки в `app/ui/admin/user_admin_view.py`).
+- Переведены в фон поиск и обновление сводки в аналитике (правки в `app/ui/analytics/analytics_view.py`).
+- Добавлена серверная валидация дат ЭМЗ (травма ≤ поступление ≤ исход) в `app/application/services/emz_service.py`.
+- Переведен в фон поиск пациента в ЭМК (правки в `app/ui/patient/patient_emk_view.py`).
+- Переведена в фон загрузка госпитализаций пациента в ЭМК (правки в `app/ui/patient/patient_emk_view.py`).
+- Переведены в фон поиск и загрузка последних пациентов в диалоге поиска (правки в `app/ui/widgets/patient_search_dialog.py`).
+- Закрыт пункт "Долгие операции в фон".
+- Проверена кодировка UI-строк в `app/ui` (все файлы читаются как UTF-8, кракозябры не обнаружены).
+- Исправлены ошибки `ruff check` (импорты, лишние coding cookie, SIM105, N802) и восстановлен запуск приложения.
+- Актуализирован `docs/context.md` (FTS5 помечен как выполненный, мастер импорта/экспорта обновлен, добавлен статус фоновых операций).
+- Тесты: `python -m pytest` (7 passed).
+- Повторно выполнены проверки: `python -m ruff check .` (есть предупреждения "Отказано в доступе"), `python -m pytest` (7 passed).
+- В лаборатории фильтры скрыты по умолчанию, добавлен переключатель показа/скрытия (правки в `app/ui/lab/lab_samples_view.py`).
+- В «Поиск и ЭМК» усилена видимость кнопки «Поиск» и добавлено принудительное снятие busy-режима при ошибках/сбросе (правки в `app/ui/patient/patient_emk_view.py`).
+- В «Поиск и ЭМК» поиск по ID теперь сразу загружает пациента и госпитализации, а busy-режим снимается даже при ошибках (правки в `app/ui/patient/patient_emk_view.py`).
+- Перезаписан блок импорта библиотек графиков в `app/main.py` для устранения подозрительного синтаксиса, повторно прогнаны проверки.
+- Удален случайно вставленный фрагмент изображения в строке импорта `pyqtgraph` (правки в `app/main.py`).
+- Поиск пациента по ID переведен на синхронный путь (без фонового потока), чтобы исключить зависание кнопок (правки в `app/ui/patient/patient_emk_view.py`).
+- Загрузка госпитализаций в ЭМК переведена на синхронный путь, чтобы исключить пустую таблицу из-за фонового потока (правки в `app/ui/patient/patient_emk_view.py`).
+- Фильтр госпитализаций в ЭМК переведен на «пустые» даты по умолчанию (спецзначение вместо 01.01.2024), чтобы не скрывать записи (правки в `app/ui/patient/patient_emk_view.py`).
+- Добавлена явная подсказка в ЭМК, если у пациента нет госпитализаций или фильтры скрывают все записи (правки в `app/ui/patient/patient_emk_view.py`).
+
+### 2026-02-12
+
+- Исправлен поиск пациента в «Закрепить пациента»: поле теперь принимает ФИО или ID, добавлен прямой поиск по ID в контекстной панели (правки в `app/ui/widgets/context_bar.py`).
+- В диалоге выбора пациента добавлена поддержка поиска по ID (правки в `app/ui/widgets/patient_search_dialog.py`).
+- Усилена синхронизация закрепленного контекста между разделами: при выборе пациента/госпитализации контекст сразу применяется к ЭМК, Лаборатории и ЭМЗ (правки в `app/ui/main_window.py`, `app/ui/patient/patient_emk_view.py`, `app/ui/emz/emz_form.py`).
+- В ЭМК добавлено программное выделение выбранной госпитализации по `emr_case_id` при контекстной синхронизации (правки в `app/ui/patient/patient_emk_view.py`).
+- Тесты: `python -m ruff check .` (успешно, есть предупреждения `os error 5: Отказано в доступе` для временных каталогов), `python -m pytest` (7 passed).
+- Закрыт риск Zip Slip: импорт ZIP теперь использует безопасную распаковку с валидацией путей (`_safe_extract_zip`) вместо `extractall` (правки в `app/application/services/exchange_service.py`).
+- Оптимизирован импорт Excel: удалено чтение всех строк в память через `list(iter_rows)`, добавлена потоковая обработка (`read_only=True`) (правки в `app/application/services/exchange_service.py`).
+- Исправлен callback `on_finished` в аналитике (убран tuple-return из lambda, выделен отдельный метод) для корректной типизации (правки в `app/ui/analytics/analytics_view.py`).
+- Исправлена типизация `DateInputAutoFlow._is_combo_popup` (правки в `app/ui/widgets/date_input_flow.py`).
+- Исправлена аннотация pytest fixture `tmp_path` как generator (правки в `tests/conftest.py`).
+- Добавлены unit-тесты на безопасность распаковки ZIP (`tests/unit/test_exchange_zip_security.py`).
+- Проверки после изменений: `python -m mypy app tests` (0 ошибок), `python -m ruff check .` (успешно), `python -m pytest` (13 passed), `python -m compileall app tests scripts` (успешно).
+- Проверка БД: `python -m alembic current` (`0016_fk_cascade (head)`), `PRAGMA integrity_check=ok`, `foreign_key_check=0`, FTS-таблицы/триггеры присутствуют.
+- Унифицирована FTS-логика в отдельный менеджер `FtsManager` (новый файл `app/infrastructure/db/fts_manager.py`) для startup и runtime-repair.
+- `app/main.py` переведен на вызов `FtsManager.ensure_all()` вместо встроенного блока DDL/trigger SQL.
+- `PatientService` переведен на `FtsManager` (убраны дублирующие FTS-методы reset/rebuild/drop внутри сервиса).
+- DI обновлен: `FtsManager` создается в `app/container.py` и передается в `PatientService`.
+- Добавлены тесты: `tests/unit/test_fts_manager.py` (идемпотентность + восстановление FTS) и `tests/integration/test_patient_service_fts_repair.py` (repair после ручного удаления `patients_fts`).
+- Проверки после унификации: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок), `python -m pytest` (16 passed), `python -m compileall app tests scripts` (успешно).
+- Улучшена диагностика импорта ZIP: небезопасные пути теперь возвращают явную ошибку `Небезопасный ZIP-архив: ...` с причиной (`path traversal`, абсолютный путь, префикс диска).
+- Добавлен fallback для временных директорий импорта/экспорта (`_working_temp_dir`) с проверкой права записи и резервным путём в `tmp_run`.
+- Добавлены интеграционные тесты импорта ZIP на уровне API сервиса: `tests/integration/test_exchange_service_import_zip.py` (malicious path / отсутствует `manifest.json` / отсутствует файл из `manifest`).
+- Переписаны unit-тесты проверки безопасной распаковки ZIP в корректной кодировке (`tests/unit/test_exchange_zip_security.py`).
+- Повторные проверки после изменений: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 122 файлах), `python -m pytest` (19 passed).
+- Начат блок P1 (расширение тестов сервисов):
+  - добавлены интеграционные тесты `tests/integration/test_reference_service.py`:
+    - проверка `seed_defaults` (группы/антибиотики/микроорганизмы + корректное обновление ISMP-справочника);
+    - проверка `seed_defaults_if_empty` (вызов только для пустых целевых таблиц).
+  - добавлены интеграционные тесты `tests/integration/test_patient_service_delete.py`:
+    - удаление пациента с каскадной очисткой связанных ЭМЗ/лабораторных сущностей и audit-записей;
+    - проверка ошибки при удалении несуществующего пациента.
+- Проверки после P1-обновления тестов: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 124 файлах), `python -m pytest` (23 passed).
+- Продолжен блок P1 (расширение покрытия сервисов):
+  - добавлены тесты `tests/integration/test_patient_service_core.py`:
+    - `create_or_get` обновляет существующего пациента по идентичности (ФИО + ДР);
+    - `search_by_name` корректно работает по fallback, если `patients_fts` удалена;
+    - `update_details` проверяет политику `None` для полей пациента.
+  - добавлены тесты `tests/integration/test_reference_service_crud.py`:
+    - CRUD-поток для отделений и типов материала;
+    - проверки валидации и ошибок `not found` для `ReferenceService`.
+- Повторные проверки: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 126 файлах), `python -m pytest` (28 passed).
+- Добавлен следующий блок P1 по `ReferenceService`:
+  - новый файл тестов `tests/integration/test_reference_service_catalogs.py`;
+  - покрыты CRUD-сценарии и поиск для антибиотиков/групп, микроорганизмов, фагов, ИСМП-сокращений и МКБ-10;
+  - покрыты ошибки `not found` для update-операций справочников.
+- Актуальные проверки после шага: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 127 файлах), `python -m pytest` (31 passed).
+- Начат P2 (декомпозиция startup/bootstrap в `main.py` без изменения поведения):
+  - добавлен модуль `app/bootstrap/startup.py` с выделением блоков:
+    - проверка предпосылок старта (`check_startup_prerequisites`);
+    - миграции/совместимость схемы (`run_migrations`, `ensure_schema_compatibility`, `initialize_database`);
+    - FTS инициализация (`ensure_fts_objects`);
+    - post-startup операции (`seed_core_data`, `warn_missing_plot_dependencies`, `has_users`).
+  - `app/main.py` упрощен: добавлен `_create_application()`, инициализация БД переведена на `initialize_database(...)`, удалены дубли startup-логики.
+- Проверки после рефакторинга: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 129 файлах), `python -m pytest` (31 passed).
+- Продолжен P2: декомпозиция `app/ui/patient/patient_emk_view.py` без изменения поведения:
+  - выделены чистые функции форматирования/фильтрации/выбора госпитализаций в `app/ui/patient/emk_utils.py`;
+  - `patient_emk_view` переведен на более мелкие UI-builder методы (`_build_search_box`, `_build_results_box`, `_build_patient_box`, `_build_cases_box`) вместо монолитного `_build_ui`;
+  - фильтрация госпитализаций и форматирование дат/пола переведены на helper-функции.
+- Проверки после шага: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 130 файлах), `python -m pytest` (31 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжен P2: декомпозиция `app/ui/analytics/analytics_view.py` без изменения поведения:
+  - выделены общие вычисления и форматирование в `app/ui/analytics/view_utils.py` (нормализация периода, сравнение окон, быстрые периоды, форматирование дат);
+  - `analytics_view` переведен на util-функции вместо локальных дублирующих методов/вычислений.
+- Добавлены unit-тесты для утилит аналитики: `tests/unit/test_analytics_view_utils.py`.
+- Проверки после шага: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 132 файлах), `python -m pytest` (34 passed).
+- Продолжена декомпозиция `app/ui/analytics/analytics_view.py`:
+  - `_build_ui` разбит на локальные builder-методы секций (`_build_filters_section`, `_build_saved_filters_section`, `_build_actions_row`, `_build_dashboard_box`, `_build_ismp_box`, `_build_top_box`, `_build_results_box`);
+  - инициализация фильтров вынесена в `_init_filter_widgets`, разметка фильтров — в `_build_filters_grid`.
+- Повторные проверки после рефакторинга UI: `python -m ruff check .` (успешно), `python -m mypy app tests` (0 ошибок в 132 файлах), `python -m pytest` (34 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжен P2: декомпозиция `app/ui/emz/emz_form.py` без изменения поведения:
+  - монолитный `_build_ui` разбит на набор builder-методов (`_build_title_row`, `_build_quick_actions_row`, `_build_patient_hint_row`, `_build_form_box`, `_build_table_boxes`, `_build_collapsible_table_box`, `_build_scroll_area`, `_build_content_layout`);
+  - инициализация полей/таблиц вынесена в отдельные методы (`_init_form_widgets`, `_build_tables`, `_initialize_table_rows`).
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 132 файлах), `python -m pytest` (34 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - вынесены pure-утилиты в `app/ui/emz/form_utils.py` (`parse_datetime_text`, `format_datetime`, `sex_code_to_label`);
+  - в `EmzForm` добавлены helper-методы `_table_dt_value` и `_set_patient_identity_fields`, чтобы убрать дубли парсинга дат и заполнения данных пациента;
+  - логика сбора/валидации дат в таблицах (`_collect_interventions`, `_collect_abx`, `_validate_tables_dt`) переведена на общий helper без изменения поведения.
+- Добавлены unit-тесты для новых утилит: `tests/unit/test_emz_form_utils.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 134 файлах), `python -m pytest` (40 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлены внутренние table-helpers `_resize_table_columns`, `_prepare_table_for_fill`, `_setup_all_detail_tables`, `_reset_detail_tables`;
+  - дубли в `_reset_form`, `_start_new_case` и `_fill_*` заменены на общие методы подготовки/сброса таблиц;
+  - унифицирован resize колонок таблиц (двухпроходный resize сохранен в одном helper для стабильного поведения).
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 134 файлах), `python -m pytest` (40 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - валидация дат таблиц разбита на helper-методы `_validate_datetime_cell` и `_validate_datetime_range`;
+  - сохранение ЭМЗ разбито на этапы (`_build_payload`, `_save_new_case`, `_save_existing_case`, `_notify_case_changed`) без изменения пользовательского сценария;
+  - маппинг типов диагнозов вынесен в `app/ui/emz/form_utils.py` (`diagnosis_kind_to_dto`, `diagnosis_kind_to_ui`) и подключен в `_collect_diagnoses`/`_fill_table_from_dto`.
+- Добавлены unit-тесты маппинга диагнозов в `tests/unit/test_emz_form_utils.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 134 файлах), `python -m pytest` (42 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - вынесены mapper-функции DTO в `app/ui/emz/form_mappers.py` (`map_diagnosis`, `map_intervention`, `map_antibiotic_course`, `map_ismp_case`);
+  - методы `_collect_diagnoses`, `_collect_interventions`, `_collect_abx`, `_collect_ismp` переведены на новый mapper-слой без изменения поведения.
+- Добавлены unit-тесты для mapper-слоя: `tests/unit/test_emz_form_mappers.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 136 файлах), `python -m pytest` (48 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен validator-слой в `app/ui/emz/form_validators.py` (`validate_required_fields`, `validate_datetime_cell`, `validate_datetime_range`);
+  - в `EmzForm` валидация `_validate_required` и `_validate_tables_dt` переведена на validator-функции (UI оставлен как orchestration + вывод статуса).
+- Добавлены unit-тесты validator-слоя: `tests/unit/test_emz_form_validators.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 138 файлах), `python -m pytest` (53 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен presenter-слой в `app/ui/emz/form_presenters.py` (`format_admission_label`, `format_save_message`, `split_date_or_datetime`, `text_or_empty`, `int_or_empty`);
+  - в `EmzForm` добавлены локальные оркестраторы `_apply_case_access_state`, `_set_datetime_field_from_case_value`, `_apply_case_header_fields`, чтобы упростить `_apply_detail`;
+  - форматирование статусов сохранения/даты поступления переведено на presenter-функции без изменения поведения.
+- Добавлены unit-тесты presenter-слоя: `tests/unit/test_emz_form_presenters.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 140 файлах), `python -m pytest` (59 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена локальная декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен отдельный шаг применения выбранного пациента для сценария новой госпитализации (`_apply_patient_selection_for_new_case`);
+  - `_load_case(...)` переведен на этот helper, убраны дубли в ветке `patient_id`;
+  - удалены неиспользуемые методы форматирования (`_format_dt`, `_format_admission_label`, `_format_open_message`), чтобы сократить шум в `EmzForm`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 140 файлах), `python -m pytest` (59 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - `refresh_references` разбит на отдельные шаги (`_restore_department_selection`, `_refresh_diagnosis_reference_rows`, `_refresh_abx_reference_rows`, `_refresh_ismp_reference_rows`);
+  - проверка дат таблиц переведена на общий валидатор `validate_table_datetime_rows` из `app/ui/emz/form_validators.py`.
+- Добавлен unit-тест нового валидатора: `tests/unit/test_emz_form_validators.py::test_validate_table_datetime_rows_returns_first_error`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 140 файлах), `python -m pytest` (60 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен applier-слой `app/ui/emz/form_table_appliers.py` для заполнения таблиц диагнозов/интервенций/антибиотиков/ИСМП;
+  - методы `EmzForm._fill_table_from_dto`, `EmzForm._fill_interventions`, `EmzForm._fill_abx`, `EmzForm._fill_ismp` переведены на новый слой без изменения поведения.
+- Добавлены unit-тесты applier-слоя: `tests/unit/test_emz_form_table_appliers.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 142 файлах), `python -m pytest` (64 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен setup/refresh helper-слой `app/ui/emz/form_table_setups.py` для логики инициализации и обновления ссылочных виджетов таблиц;
+  - методы `EmzForm._setup_icd_rows`, `EmzForm._setup_abx_rows`, `EmzForm._setup_intervention_rows`, `EmzForm._setup_ismp_rows`, `EmzForm._refresh_diagnosis_reference_rows`, `EmzForm._refresh_abx_reference_rows`, `EmzForm._refresh_ismp_reference_rows` переведены на функции нового слоя без изменения поведения.
+- Добавлены unit-тесты setup/refresh слоя: `tests/unit/test_emz_form_table_setups.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 144 файлах), `python -m pytest` (69 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен case-selector helper `app/ui/emz/form_case_selectors.py` для определения «последней» госпитализации;
+  - в `EmzForm._open_last_case` убран локальный алгоритм выбора кейса, используется `pick_latest_case_id(...)` без изменения поведения.
+- Добавлены unit-тесты case-selector helper: `tests/unit/test_emz_form_case_selectors.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 146 файлах), `python -m pytest` (72 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен mode-presenter helper `app/ui/emz/form_mode_presenters.py` для UI-состояний режимов (`patient_hint`, edit-mode кнопки, состояние «новой госпитализации»);
+  - методы `EmzForm._set_patient_read_only`, `EmzForm.set_edit_mode`, `EmzForm._start_new_case` переведены на функции helper-слоя без изменения поведения.
+- Добавлены unit-тесты mode-presenter helper: `tests/unit/test_emz_form_mode_presenters.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 148 файлах), `python -m pytest` (76 passed), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен field-resolver helper `app/ui/emz/form_field_resolvers.py` (парсинг числовых полей, нормализация пола, резолв `department_id`);
+  - методы `EmzForm._parse_int`, `EmzForm._normalize_sex`, `EmzForm._resolve_department_id` переведены на новый helper-слой без изменения поведения.
+- Добавлены unit-тесты field-resolver helper: `tests/unit/test_emz_form_field_resolvers.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 150 файлах), `python -m pytest` (81 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен request-builder helper `app/ui/emz/form_request_builders.py` (сборка `EmzCreateRequest`, `EmzUpdateRequest` и payload обновления данных пациента);
+  - методы `EmzForm._save_new_case` и `EmzForm._save_existing_case` переведены на новый helper-слой без изменения поведения.
+- Добавлены unit-тесты request-builder helper: `tests/unit/test_emz_form_request_builders.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 152 файлах), `python -m pytest` (84 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен patient-identity helper `app/ui/emz/form_patient_identity.py` (структура и маппинг идентификационных полей пациента из patient/case объектов);
+  - в `EmzForm` добавлен `_apply_patient_identity_data(...)`, а методы `load_case`, `_apply_detail`, `refresh_patient`, `_apply_patient_selection_for_new_case` переведены на helper-слой без изменения поведения.
+- Добавлены unit-тесты patient-identity helper: `tests/unit/test_emz_form_patient_identity.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 154 файлах), `python -m pytest` (87 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - выделен table-collector helper `app/ui/emz/form_table_collectors.py` для сбора DTO из таблиц (`diagnoses`, `interventions`, `abx`, `ismp`);
+  - методы `EmzForm._collect_diagnoses`, `EmzForm._collect_interventions`, `EmzForm._collect_abx`, `EmzForm._collect_ismp` переведены на helper-слой без изменения поведения.
+- Добавлены unit-тесты table-collector helper: `tests/unit/test_emz_form_table_collectors.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 156 файлах), `python -m pytest` (91 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - в `app/ui/emz/form_request_builders.py` добавлен helper `build_emz_version_payload(...)` для сборки `EmzVersionPayload`;
+  - метод `EmzForm._build_payload` переведен на helper-слой без изменения поведения.
+- Обновлены unit-тесты request-builder слоя: `tests/unit/test_emz_form_request_builders.py` (добавлен сценарий для `build_emz_version_payload`).
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 156 файлах), `python -m pytest` (92 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлен orchestration helper-слой `app/ui/emz/form_orchestrators.py` (`collect_save_case_context`, `run_save_case`, `run_load_case`);
+  - метод `EmzForm.on_save_clicked` переведен на helper-оркестрацию сохранения;
+  - метод `EmzForm.load_case` переведен на helper-оркестрацию загрузки кейса/пациента;
+  - добавлен локальный helper `EmzForm._get_patient_identity_data(...)` для унификации загрузки identity-данных.
+- Добавлены unit-тесты orchestration helper-слоя: `tests/unit/test_emz_form_orchestrators.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 158 файлах), `python -m pytest` (101 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлен table-actions helper-слой `app/ui/emz/form_table_actions.py` (`add_diagnosis_row`, `add_intervention_row`, `add_abx_row`, `add_ismp_row`, `delete_table_row`);
+  - методы `EmzForm._add_diagnosis_row`, `EmzForm._add_intervention_row`, `EmzForm._add_abx_row`, `EmzForm._add_ismp_row`, `EmzForm._delete_table_row` переведены на helper-слой без изменения поведения.
+- Добавлены unit-тесты table-actions helper-слоя: `tests/unit/test_emz_form_table_actions.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 160 файлах), `python -m pytest` (108 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлен widget-factory helper-слой `app/ui/emz/form_widget_factories.py` (фабрики combobox/date widgets + переиспользуемое наполнение ICD combo);
+  - методы `EmzForm._create_dt_cell`, `EmzForm._create_date_cell`, `EmzForm._create_diag_type_combo`, `EmzForm._create_intervention_type_combo`, `EmzForm._create_icd_combo`, `EmzForm._refresh_icd_combo`, `EmzForm._create_abx_combo`, `EmzForm._create_ismp_type_combo` переведены на helper-слой без изменения поведения.
+- Добавлены unit-тесты widget-factory helper-слоя: `tests/unit/test_emz_form_widget_factories.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 162 файлах), `python -m pytest` (116 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлен helper-слой ICD-search orchestration `app/ui/emz/form_icd_search.py` (`wire_icd_search`, `resolve_icd_items`, `refresh_icd_combo`);
+  - методы `EmzForm._wire_icd_search` и `EmzForm._refresh_icd_combo` переведены на helper-слой без изменения поведения.
+- Добавлены unit-тесты ICD-search helper-слоя: `tests/unit/test_emz_form_icd_search.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 164 файлах), `python -m pytest` (120 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлен helper-слой orchestration справочников/таблиц `app/ui/emz/form_reference_orchestrators.py`;
+  - методы `EmzForm._setup_all_detail_tables`, `EmzForm._load_references`, `EmzForm.refresh_references` переведены на helper-слой;
+  - callbacks для заполнения DTO-таблиц (`_fill_table_from_dto`, `_fill_abx`, `_fill_ismp`) переведены на специализированные setup-функции helper-слоя без изменения поведения.
+- Добавлены unit-тесты helper-слоя: `tests/unit/test_emz_form_reference_orchestrators.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 166 файлах), `python -m pytest` (125 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Продолжена декомпозиция `app/ui/emz/emz_form.py`:
+  - добавлен helper-слой UI-state orchestration `app/ui/emz/form_ui_state_orchestrators.py` (read-only состояния, reset полей формы/госпитализации, видимость quick-action кнопок, notify выбора кейса);
+  - методы `EmzForm._set_patient_read_only`, `EmzForm._set_form_read_only`, `EmzForm.set_edit_mode`, `EmzForm._reset_form`, `EmzForm._start_new_case` переведены на helper-слой без изменения поведения.
+- Добавлены unit-тесты helper-слоя: `tests/unit/test_emz_form_ui_state_orchestrators.py`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 168 файлах), `python -m pytest` (131 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+- Финальная чистка `app/ui/emz/emz_form.py` в рамках текущего этапа:
+  - удалены лишние thin-wrapper методы `EmzForm._create_diag_type_combo` и `EmzForm._create_intervention_type_combo`;
+  - все вызовы переведены напрямую на factory-функции `create_diag_type_combo` / `create_intervention_type_combo`.
+- Проверки после шага: `python -m ruff check .` (успешно; есть предупреждения `os error 5` для временных каталогов), `python -m mypy app tests` (0 ошибок в 168 файлах), `python -m pytest` (131 passed, запуск с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за `WinError 5` в `AppData\\Local`), `python -m compileall app tests scripts` (успешно).
+
+### 2026-02-13
+
+- Закрыт P1-пункт «Матрица прав (admin/operator)»:
+  - добавлен единый policy-модуль ролей `app/application/security/role_matrix.py` (`access_admin_view`, `manage_users`, `manage_references`, `manage_backups`);
+  - UI переведен на policy: `app/ui/main_window.py`, `app/ui/references/reference_view.py`, `app/ui/admin/user_admin_view.py`;
+  - `MainWindow` усилен guard-проверкой: недопустимая навигация в admin-view для `operator` принудительно переводится на Home.
+- Усилен backend-контроль прав:
+  - в `ReferenceService` write-операции (`add/update/delete`) получили `actor_id` и проверку admin-доступа с аудитом отказа (`access_denied`);
+  - в `BackupService` добавлена проверка admin-доступа для `create_backup`/`restore_backup` с аудитом отказа.
+- Обновлен DI-контейнер: `ReferenceService` и `BackupService` получают `user_repo`/`audit_repo` через `app/container.py`.
+- Добавлены тесты:
+  - `tests/unit/test_role_matrix.py`;
+  - `tests/integration/test_reference_service_acl.py`;
+  - `tests/integration/test_backup_service_acl.py`.
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 173 файлах;
+  - `python -m pytest` — 135 passed (с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`);
+  - `python -m compileall app tests scripts` — успешно.
+- Закрыт P1-пункт «Лог ошибок и отчёт по результату импорта»:
+  - `ExchangeService.import_excel/import_csv/import_json/import_zip` теперь формируют единый импорт-отчёт: `summary` (`rows_total`, `added`, `updated`, `skipped`, `errors`), `details` по scope и `errors` c `row`/`message`;
+  - при ошибках импорта сервис пишет JSON-лог рядом с исходным файлом (`*_import_errors_YYYYMMDD_HHMMSS.json`) и возвращает `error_log_path`;
+  - для ZIP-импорта отчёт и лог ошибок теперь проксируются из вложенного Excel-импорта на уровень ZIP.
+- Обновлён мастер импорта (`app/ui/import_export/import_export_wizard.py`):
+  - после импорта показывается развёрнутый отчёт (summary + детали по таблицам + путь к логу ошибок);
+  - если есть ошибки, мастер завершает операцию статусом «с ошибками» (warning), без падения всей операции.
+- Добавлены тесты импорта отчётов/логов:
+  - `tests/integration/test_exchange_service_import_reports.py` (CSV/Excel/ZIP сценарии).
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 174 файлах;
+  - `python -m pytest` — 138 passed (с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`);
+  - `python -m compileall app tests scripts` — успешно.
+- Закрыт блок «Шаблоны отчётов + SHA256»:
+  - в `ReportingService` добавлено управляемое хранилище артефактов `data/artifacts/reports/<type>/<YYYY>/<MM>` с копированием экспортированного файла и логированием SHA256 в `report_run`;
+  - добавлены API истории/верификации: `list_report_runs(...)` и `verify_report_run(report_run_id)` с проверкой наличия файла и сверкой SHA256;
+  - в аналитике добавлен экран истории отчётов (`app/ui/analytics/analytics_view.py`): фильтры, таблица запусков, открытие артефакта и действия проверки хэшей;
+  - после экспорта XLSX/PDF история отчётов автоматически обновляется в UI.
+- Добавлены тесты артефактов отчётов:
+  - `tests/integration/test_reporting_service_artifacts.py` (сценарии: успешная верификация, mismatch, отсутствующий файл).
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 175 файлах;
+  - `python -m pytest` — 141 passed (с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`);
+  - `python -m compileall app tests scripts` — успешно.
+- Начат P2-блок «Оптимизация производительности»: добавлены индексы под фактические фильтры аналитики.
+  - новая миграция `app/infrastructure/db/migrations/versions/0017_analytics_filter_indexes.py`;
+  - добавлены индексы для сценариев `date/department/category/growth/microorganism/antibiotic/icd/is_current`:
+    - `patients(category)`;
+    - `lab_sample(emr_case_id, taken_at)`;
+    - `lab_sample(growth_flag, taken_at)`;
+    - `lab_microbe_isolation(microorganism_id, lab_sample_id)`;
+    - `lab_abx_susceptibility(antibiotic_id, lab_sample_id)`;
+    - `emr_case_version(is_current, admission_date, emr_case_id)`;
+    - `emr_diagnosis(icd10_code, emr_case_version_id)`;
+    - `ismp_case(start_date, emr_case_id, ismp_type)`.
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 176 файлах;
+  - `python -m pytest` — 141 passed (с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`);
+  - `python -m compileall app tests scripts` — успешно;
+  - `python -m alembic heads` — `0017_analytics_filter_indexes (head)`.
+- Продолжен P2-блок «Оптимизация производительности»: оптимизированы тяжелые запросы аналитики.
+  - `app/infrastructure/db/repositories/analytics_repo.py`:
+    - фильтрация выборки переведена на `EXISTS`-условия и единый подзапрос ID проб;
+    - убрано декартово размножение строк от одновременных join `lab_microbe_isolation` и `lab_abx_susceptibility`;
+    - `search_samples` теперь возвращает одну строку на пробу с детерминированным отображением микроорганизма/антибиотика через scalar-subquery;
+    - добавлен `get_aggregates(...)` на стороне репозитория с корректным подсчетом `top_microbes` без cross-product артефактов.
+  - `app/application/services/analytics_service.py`:
+    - `get_aggregates` переведен на новый репозиторный агрегатор;
+    - `search_samples` адаптирован к строковым значениям микроорганизма/антибиотика.
+- Добавлены интеграционные тесты:
+  - `tests/integration/test_analytics_service_queries.py`:
+    - проверка «одна проба = одна строка в выдаче»;
+    - проверка корректного `top_microbes` без двойного счета;
+    - проверка цепочки фильтров (`department/material/microbe/abx/icd/growth/category/lab_no`) через `EXISTS`.
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 177 файлах;
+  - `python -m pytest` — 144 passed (с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`);
+  - `python -m compileall app tests scripts` — успешно.
+- Закрыт последний подпункт P2 «Кэш расчётов для аналитики»:
+  - в `app/application/services/analytics_service.py` добавлен in-memory TTL-кэш без изменения внешнего API сервиса;
+  - кэшируемые методы: `get_aggregates`, `get_department_summary`, `get_trend_by_day`, `compare_periods`, `get_ismp_metrics`;
+  - добавлены настройки кэша в конструкторе (`cache_ttl_seconds`, `cache_max_entries`) и метод `clear_cache()`;
+  - реализованы детерминированные ключи кэша по нормализованному payload и защитное deep-copy на чтение/запись.
+- Добавлены unit-тесты кэша:
+  - `tests/unit/test_analytics_service_cache.py`:
+    - cache hit/miss для `get_aggregates`;
+    - истечение TTL;
+    - кэширование `compare_periods`;
+    - кэширование `get_ismp_metrics`.
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 178 файлах;
+  - `python -m pytest` — 148 passed (с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`);
+  - `python -m compileall app tests scripts` — успешно.
+- Проведена консолидация документации:
+  - `docs/context.md` обновлён как главный единый документ на базе `docs/code_audit_findings.md` и `docs/MASTER_TZ_CODEX.md`;
+  - добавлен консолидированный остаточный план работ (что реально осталось сделать) с приоритетами P1/P2;
+  - добавлены обязательные критерии самопроверки из `MASTER_TZ`;
+  - устранены неточности статусов в кратком блоке и размечен исторический раздел «в первую очередь».
+- Проведена финальная консолидация контекста:
+  - в `docs/context.md` перенесены детализированные этапы мастер-плана (I-VI), результаты аудита 1-9, ручной UI чек-лист и уточненный итерационный план;
+  - добавлен отдельный незакрытый пункт по hotfix рекурсивного сброса контекста в ЭМЗ;
+  - после переноса смысловой нагрузки удалены файлы `docs/code_audit_findings.md` и `docs/MASTER_TZ_CODEX.md`.
+- Исправлена проблема `Pylance reportMissingImports` для `PySide6`:
+  - подтверждено, что `PySide6` установлен в системном `Python312` (`%LOCALAPPDATA%\\Programs\\Python\\Python312\\python.exe`);
+  - выявлено, что в рабочем `venv` пакет `PySide6` отсутствует, а установка через `pip` недоступна в текущем index;
+  - workspace зафиксирован на системный интерпретатор через `.vscode/settings.json` (`python.defaultInterpreterPath`), чтобы Pylance корректно резолвил `PySide6.*`.
+- Закрыт P1 hotfix-риск рекурсивного сброса контекста (RecursionError в `clear_context`):
+  - в `app/ui/main_window.py` добавлен re-entrant guard (`_case_selection_in_progress`) в `_on_case_selected`;
+  - повторный вход в `_on_case_selected` во время текущей синхронизации контекста теперь блокируется;
+  - предотвращён цикл `EmzForm.clear_context -> notify_case_selection -> MainWindow._on_case_selected -> EmzForm.clear_context`.
+- Добавлены unit-тесты на поведение обработчика контекста:
+  - `tests/unit/test_main_window_context_selection.py`:
+    - загрузка кейса выполняется один раз при непустом контексте;
+    - ре-энтрантный callback из `clear_context` не вызывает повторный проход и рекурсию.
+- Проверки после hotfix:
+  - `python -m pytest tests/unit/test_main_window_context_selection.py` — 2 passed;
+  - `python -m ruff check app/ui/main_window.py tests/unit/test_main_window_context_selection.py` — успешно.
+- Закрыт P1-пункт `PatientEditDialog` и read-only режим пациентского блока в ЭМЗ:
+  - `MainWindow` переведен с `EmzEditDialog` на `PatientEditDialog` для редактирования паспортных данных пациента;
+  - точки входа подключены из обоих экранов: `EmzForm` и `PatientEmkView`;
+  - `PatientEmkView` упростил callback редактирования пациента (только `patient_id`, без обязательного выбора госпитализации);
+  - в `EmzForm` кнопка «Редактировать пациента» теперь показывается в read-only режиме (через `apply_patient_read_only_state`);
+  - после сохранения из диалога выполняется обновление карточки пациента в ЭМК, read-only полей ЭМЗ и контекст-бара.
+- Добавлены/обновлены unit-тесты:
+  - `tests/unit/test_main_window_context_selection.py` — покрыт post-save поток `_after_patient_edit_saved`;
+  - `tests/unit/test_emz_form_ui_state_orchestrators.py` — проверено отображение кнопки редактирования пациента в read-only состоянии.
+- Проверки после шага:
+  - `python -m ruff check app/ui/main_window.py app/ui/patient/patient_emk_view.py app/ui/emz/emz_form.py app/ui/emz/form_ui_state_orchestrators.py app/ui/emz/form_mode_presenters.py tests/unit/test_main_window_context_selection.py tests/unit/test_emz_form_ui_state_orchestrators.py` — успешно;
+  - `python -m mypy app/ui/main_window.py app/ui/patient/patient_emk_view.py app/ui/emz/emz_form.py app/ui/emz/form_ui_state_orchestrators.py app/ui/emz/form_mode_presenters.py tests/unit/test_main_window_context_selection.py tests/unit/test_emz_form_ui_state_orchestrators.py` — 0 ошибок;
+  - `python -m pytest tests/unit/test_main_window_context_selection.py tests/unit/test_emz_form_ui_state_orchestrators.py` — 10 passed.
+- Финальные проверки после обновления тестов подсказок и интеграции:
+  - `python -m pytest` — 152 passed;
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 179 файлах;
+  - `python -m compileall app tests scripts` — успешно.
+- Продолжен P2-блок декомпозиции UI: `app/ui/sanitary/sanitary_history.py`.
+  - добавлен helper-слой `app/ui/sanitary/history_view_helpers.py`;
+  - в `SanitaryHistoryDialog` вынесены функции фильтрации/сортировки, пагинации, расчета summary и сборки meta-строки карточек;
+  - метод `_paginate` удален из диалога, логика перенесена в helper `paginate_samples(...)`;
+  - UI-поведение и внешний API диалога не изменены.
+- Добавлены unit-тесты helper-слоя:
+  - `tests/unit/test_sanitary_history_view_helpers.py` (7 сценариев).
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 181 файле;
+  - `python -m pytest` — 159 passed;
+  - `python -m compileall app tests scripts` — успешно.
+- Продолжен P2-блок декомпозиции UI: `app/ui/lab/lab_sample_detail.py`.
+  - добавлен helper-слой `app/ui/lab/lab_sample_detail_helpers.py`;
+  - в helper вынесены правила сборки/валидации payload для таблиц чувствительности и фагов;
+  - вынесена логика определения наличия результатных данных и сборки `LabSampleResultUpdate`;
+  - `LabSampleDetailDialog` переведен на helper-слой без изменения внешнего поведения UI.
+- Добавлены unit-тесты helper-слоя:
+  - `tests/unit/test_lab_sample_detail_helpers.py` (7 сценариев).
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 183 файлах;
+  - `python -m pytest` — 166 passed;
+  - `python -m compileall app tests scripts` — успешно.
+- Завершен финальный P2-проход по `app/ui/analytics/analytics_view.py`:
+  - добавлен helper-слой `app/ui/analytics/report_history_helpers.py`;
+  - вынесены форматирование верификации отчета, нормализация строки истории и контракт ширин колонок;
+  - `AnalyticsSearchView` переведен на helper-слой в блоке истории отчетов (без изменения UI-поведения).
+- Добавлены unit-тесты helper-слоя:
+  - `tests/unit/test_analytics_report_history_helpers.py` (4 сценария).
+- Проверки после шага:
+  - `python -m ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `python -m mypy app tests` — 0 ошибок в 185 файлах;
+  - `python -m pytest` — 170 passed;
+  - `python -m compileall app tests scripts` — успешно.
+- Проведен ручной технический аудит проекта (кодировка/язык/логика/модули/БД):
+  - проверен набор текстовых файлов `app/tests/scripts/docs` на mojibake и UTF-8 совместимость;
+  - по паттернам «крякозябр» (`�`, `Ð`, `Ñ`, `Ã`, `Â`) совпадений не найдено;
+  - БД и миграции: `alembic head/current = 0017_analytics_filter_indexes`, `PRAGMA integrity_check=ok`, `foreign_key_check=0`, FTS-таблицы присутствуют;
+  - quality-gates: `ruff` OK, `mypy` OK, `pytest` 170 passed, `compileall` OK.
+- Выявленные точки внимания по результатам аудита:
+  - `app/ui/widgets/patient_selector.py`: broad `except Exception: pass` в `_apply` скрывает ошибки callback `on_select` и может маскировать реальную проблему;
+  - часть русских UI/сервисных строк хранится в unicode-экранированном виде (`\\uXXXX`) вместо читаемого UTF-8 (например `app/ui/widgets/patient_search_dialog.py`, `app/ui/emz/form_utils.py`, `app/application/services/auth_service.py`), что ухудшает сопровождаемость.
+- Закрыты риски из ручного аудита по обработке ошибок patient widgets и читаемости строк:
+  - `app/ui/widgets/patient_selector.py`: в `_apply` убран `except Exception: pass`; добавлена явная ветка валидации ID и отображение ошибки `on_select` без тихого fallback в поиск;
+  - `app/ui/widgets/patient_search_dialog.py`: в `_load_recent` заменено тихое подавление ошибок на явный статус пользователю (`Не удалось загрузить последних пациентов: ...`);
+  - `app/ui/emz/form_utils.py`, `app/application/services/auth_service.py`, `app/ui/widgets/patient_search_dialog.py`: unicode-экранированные русские строки заменены на читаемые UTF-8;
+  - `app/ui/emz/form_utils.py`: `except Exception` в парсере дат сужен до `ValueError`.
+- Добавлены unit-тесты:
+  - `tests/unit/test_patient_widgets_error_handling.py`:
+    - ошибка `on_select` в `PatientSelector._apply` отображается как error-статус и не открывает поиск;
+    - невалидный ID в `PatientSelector._apply` дает warning-статус;
+    - ошибка загрузки recent в `PatientSearchDialog._load_recent` отображается в status-label.
+- Проверки после шага:
+  - `ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `mypy app tests` — 0 ошибок в 186 файлах;
+  - `pytest` — 173 passed;
+  - `python -m compileall app` — успешно.
+- Подготовлен подробный набор ручных регрессионных сценариев: `docs/manual_regression_scenarios.md`.
+  - добавлены предусловия стенда и путь к БД;
+  - зафиксирован единый набор тестовых данных (учетки, справочники, пациенты, кейсы);
+  - описаны пошаговые сценарии с ожидаемыми результатами по всем ключевым модулям: Auth/RBAC, Справочники, Контекст/ЭМК/ЭМЗ, Лаборатория, Санитария, Аналитика/артефакты отчетов, Импорт/Экспорт, Backup.
+- Проверена генерация отчетов на предмет кодировки/кириллицы (XLSX/CSV/PDF) на реальных артефактах.
+- Выявлен и устранен риск битой кириллицы в PDF-экспорте:
+  - добавлен модуль `app/infrastructure/reporting/pdf_fonts.py` с регистрацией Unicode TTF-шрифта (Windows/Linux) и fallback через `EPIDCONTROL_PDF_FONT`;
+  - `app/application/services/reporting_service.py` (`export_analytics_pdf`) переведен на явный `FONTNAME` с Unicode-шрифтом;
+  - `app/application/services/exchange_service.py` (`export_pdf`) переведен на явный `FONTNAME` с Unicode-шрифтом.
+- Практическая проверка артефактов в `tmp_run/report_encoding_check2`:
+  - XLSX: листы/заголовки/данные с кириллицей читаются корректно (`xlsx_ok_summary=True`, `xlsx_ok_name=True`);
+  - CSV: UTF-8-SIG, кириллический заголовок и ФИО читаются корректно;
+  - PDF: присутствует `ToUnicode`, отсутствует `ZapfDingbats` fallback, что подтверждает корректное Unicode-отображение кириллицы.
+- Проверки после правок:
+  - `ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов);
+  - `mypy app tests` — 0 ошибок в 187 файлах;
+  - `pytest` — 173 passed.
+- Проведен целевой аудит корректности аналитики и блока импорт/экспорт.
+- Выявлен и исправлен дефект граничной даты в аналитике:
+  - проблема: фильтр `date_to` для `DateTime`-полей (`LabSample.taken_at`, `EmrCaseVersion.admission_date`) исключал записи конечного дня после 00:00;
+  - исправление в `app/infrastructure/db/repositories/analytics_repo.py`:
+    - введены helper-границы `_date_floor(...)` и `_date_ceiling_exclusive(...)`;
+    - фильтрация переведена на полуинтервал `[date_from 00:00; date_to+1day 00:00)`;
+    - обновлены запросы `search_samples`, `get_aggregates`, `get_department_summary`, `get_trend_by_day`, `get_aggregate_counts`, `get_ismp_metrics`.
+- Добавлены интеграционные тесты границ дат:
+  - `tests/integration/test_analytics_date_boundaries.py`:
+    - включение записей на конечный день в `get_aggregates`;
+    - включение конечного дня в `get_trend_by_day`;
+    - корректность `compare_periods` на однодневных диапазонах;
+    - включение `admission_date` конечного дня в `get_ismp_metrics` и проверка формул `incidence/incidence_density/prevalence`.
+- Выполнена независимая верификация на контролируемом датасете (скрипт в `tmp_run/qa_analytics_exchange`):
+  - `ANALYTICS_VALIDATION=PASS`;
+  - `EXCHANGE_VALIDATION=PASS` (round-trip Excel/ZIP/CSV между отдельными БД, сверка counts).
+- Проверки после исправления:
+  - `pytest` — 177 passed;
+  - `mypy app tests` — 0 ошибок в 188 файлах;
+  - `ruff check .` — успешно (есть предупреждения `os error 5` для временных каталогов).
+- Исправлен ввод даты рождения в ЭМЗ (без подмешивания времени `HH:mm`):
+  - причина: в Qt `QDateEdit` наследуется от `QDateTimeEdit`, и авто-flow ввода ошибочно применял datetime-ветку к date-only полям;
+  - фикс в `app/ui/widgets/date_input_flow.py`:
+    - добавлен детектор date-only по `displayFormat` (`_is_date_only_edit(...)`);
+    - выбор секции фокуса/длины буфера/форматирования переведен на date-only vs datetime логику;
+    - для date-only полей теперь строго формат `dd.MM.yyyy` и буфер 8 цифр.
+- Добавлены unit-тесты регрессии:
+  - `tests/unit/test_date_input_flow.py`:
+    - корректное различение date-only/datetime при наследовании `QDateEdit <- QDateTimeEdit`;
+    - date-only поле не получает время даже при длинном буфере;
+    - datetime поле сохраняет формат с временем.
+- Проверки после фикса:
+  - `ruff check app/ui/widgets/date_input_flow.py tests/unit/test_date_input_flow.py` — успешно;
+  - `mypy app/ui/widgets/date_input_flow.py tests/unit/test_date_input_flow.py` — 0 ошибок;
+  - `pytest tests/unit/test_date_input_flow.py` — 3 passed.
+- Реализован модуль Form100 (v1) по плану: DB + backend + UI + роли + аудит + ZIP/PDF.
+- Добавлены новые сущности и миграция:
+  - `form100_card`, `form100_mark`, `form100_stage` в `app/infrastructure/db/models_sqlalchemy.py`;
+  - миграция `app/infrastructure/db/migrations/versions/0018_form100_module.py` (down_revision=`0017_analytics_filter_indexes`).
+- Реализован backend Form100:
+  - DTO: `app/application/dto/form100_dto.py`;
+  - доменные правила/валидации/дифф: `app/domain/rules/form100_rules.py`;
+  - repo: `app/infrastructure/db/repositories/form100_repo.py`;
+  - service: `app/application/services/form100_service.py`;
+  - инфраструктура обмена/печати: `app/infrastructure/export/form100_export.py`, `app/infrastructure/import/form100_import.py`, `app/infrastructure/reporting/form100_pdf_report.py`.
+- Реализованы публичные операции сервиса Form100:
+  - list/get/create/update/add_stage/replace_marks/sign/delete;
+  - export/import ZIP-пакета Form100;
+  - export PDF карточки.
+- Реализованы ролевые ограничения v1:
+  - `admin/operator`: create/read/update/list/add_stage/replace_marks/sign;
+  - `admin` only: delete.
+- Аудит Form100 внедрен в `audit_log.payload_json` со схемой `form100.audit.v1` и `before/after` по изменённым полям.
+- Интеграция в приложение:
+  - DI: `app/container.py` (repo/service регистрации, wiring в exchange/reporting);
+  - UI модуль: `app/ui/form100/*`;
+  - меню/stack/context: `app/ui/main_window.py`, `app/ui/widgets/context_bar.py`;
+  - мастер обмена: `app/ui/import_export/import_export_wizard.py` (формат `Form100 ZIP`).
+- Расширены сервисы:
+  - `ExchangeService`: `export_form100_package_zip`, `import_form100_package_zip`;
+  - `ReportingService`: `export_form100_pdf` с записью в `report_run` и артефактами/hash.
+- Добавлены тесты:
+  - unit: `tests/unit/test_form100_rules.py`;
+  - integration: `tests/integration/test_form100_service.py`.
+- Проверки после внедрения:
+  - `ruff check ...` — успешно;
+  - `mypy app` — успешно (0 ошибок в 154 source files);
+  - `pytest` — 186 passed;
+  - `python -m compileall app` — успешно.
+- UI-полировка Form100 (локализация и таблица):
+  - в `app/ui/form100/form100_view.py` статус-фильтр переведен на русские подписи (`Черновик`/`Подписано`) при сохранении внутренних значений (`DRAFT`/`SIGNED`);
+  - в `app/ui/form100/form100_view.py` таблица карточек настроена на растяжение последней колонки (`Обновлено`) до правого края (`horizontalHeader().setStretchLastSection(True)`);
+  - в `app/ui/form100/form100_view.py` кнопки локализованы: `Экспорт ZIP`, `Импорт ZIP`, `Экспорт PDF`;
+  - в `app/ui/form100/form100_view.py` отображение статуса в таблице переведено на русские значения через `_status_label(...)`.
+- Локализация блока bodymap:
+  - в `app/ui/form100/form100_editor.py` заголовок секции изменен на `Схема тела`;
+  - в `app/ui/form100/widgets/bodymap_editor.py` подписи/ошибки локализованы (`Метки схемы тела`), добавлен tooltip с описанием структуры JSON-меток.
+- Проверки после правок:
+  - `ruff check app/ui/form100/form100_view.py app/ui/form100/form100_editor.py app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `python -m compileall app/ui/form100` — успешно.
+- Замена JSON-ввода bodymap на визуальный редактор для врачей:
+  - `app/ui/form100/widgets/bodymap_editor.py` полностью переведен на UX без JSON-поля;
+  - добавлен режим `Открыть окно рисования` с отдельным диалогом и двумя холстами: `Вид спереди` / `Вид сзади`;
+  - реализованы инструменты меток: `Рана (X)`, `Ожог (область)`, `Жгут (линия)`, `Ампутация (область)`, `Заметка (пин)`;
+  - реализованы действия редактирования: отмена последней метки, очистка стороны, очистка всех меток, удаление ближайшей метки ПКМ;
+  - сохранение осталось совместимым с backend/экспортом: формируются те же `Form100MarkDto` (`side/type/shape_json/meta_json`), без изменения API.
+- Добавлены unit-тесты для нормализации/агрегации меток:
+  - `tests/unit/test_form100_bodymap_editor.py`.
+- Проверки после внедрения визуального редактора:
+  - `ruff check app/ui/form100/widgets/bodymap_editor.py tests/unit/test_form100_bodymap_editor.py` — успешно;
+  - `mypy app/ui/form100/widgets/bodymap_editor.py tests/unit/test_form100_bodymap_editor.py` — успешно;
+  - `pytest -q tests/unit/test_form100_bodymap_editor.py tests/integration/test_form100_service.py` — 7 passed;
+  - `python -m compileall app/ui/form100/widgets/bodymap_editor.py app/ui/form100/form100_editor.py` — успешно.
+- Улучшен шаблон bodymap под вид бланка Формы 100:
+  - в `app/ui/form100/widgets/bodymap_editor.py` заменен базовый каркасный контур на силуэт человека (перед/зад) с геометрией головы, шеи, туловища, рук и ног;
+  - добавлена фон-подложка холста и анатомические ориентиры (центральная линия, ключевые линии для front/back), чтобы рисование меток соответствовало логике бумажной формы;
+  - сохранение/чтение меток осталось в прежнем контракте (`Form100MarkDto`, `shape_json/meta_json`), backend/экспорт/импорт не менялись.
+- Проверки после доработки шаблона:
+  - `ruff check app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `mypy app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `pytest -q tests/unit/test_form100_bodymap_editor.py tests/integration/test_form100_service.py` — 7 passed;
+  - `python -m compileall app/ui/form100/widgets/bodymap_editor.py` — успешно.
+- Фиксация таблицы карточек Form100:
+  - в `app/ui/form100/form100_view.py` отключено ручное изменение ширины колонок (`QHeaderView.ResizeMode.Fixed`, `setSectionsMovable(False)`);
+  - добавлен перерасчет фиксированных ширин по пропорциям от доступной ширины таблицы, чтобы все 8 колонок оставались видимыми без горизонтального скролла;
+  - добавлен вызов перерасчета при `refresh_cards()` и `resizeEvent()`.
+- Проверки после фиксации таблицы:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `python -m compileall app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+- Подключен референсный шаблон тела из файла пользователя:
+  - добавлена загрузка `app/image/main/form_100_body.png` в визуальный `BodymapEditor`;
+  - для комбинированного изображения реализован автосплит на front/back (горизонтальные/вертикальные варианты; для текущего шаблона используются первые два сегмента как `Вид спереди` и `Вид сзади`);
+  - в `BodymapCanvas` добавлен рендер шаблона-изображения с fallback на векторный силуэт, если файл отсутствует/нечитабелен.
+- Проверки после подключения шаблона:
+  - `ruff check app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `mypy app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `pytest -q tests/unit/test_form100_bodymap_editor.py tests/integration/test_form100_service.py` — 7 passed.
+- Точная корректировка сплита `form_100_body.png` по обратной связи:
+  - в `app/ui/form100/widgets/bodymap_editor.py` переработана `_split_combined_template(...)` с безопасным `clamped copy`;
+  - для горизонтального шаблона с 4 сегментами добавлены направленные смещения crop-окон:
+    - `front` расширен вправо, чтобы не обрезать правую кисть/пальцы;
+    - `back` сдвинут левее и расширен вправо, чтобы не обрезать левую кисть.
+- Проверки после корректировки сплита:
+  - `ruff check app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `mypy app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `pytest -q tests/unit/test_form100_bodymap_editor.py tests/integration/test_form100_service.py` — 7 passed.
+- Точечный фикс артефакта в `Вид сзади`:
+  - в `app/ui/form100/widgets/bodymap_editor.py` скорректирован crop для back-сегмента: окно сдвинуто вправо относительно границы сегмента и расширено вправо;
+  - это убирает попадание руки от соседней фигуры (`Вид спереди`) слева на холсте `Вид сзади`.
+- Проверки после точечного фикса:
+  - `ruff check app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `mypy app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `pytest -q tests/unit/test_form100_bodymap_editor.py tests/integration/test_form100_service.py` — 7 passed.
+- Дополнительная подстройка `Вид сзади` (устранение артефакта справа):
+  - в `app/ui/form100/widgets/bodymap_editor.py` back-crop переведен на симметричную подрезку сегмента (`back_trim_left` + `back_trim_right`) вместо расширения вправо;
+  - это убирает попадание фрагмента соседней фигуры справа, сохраняя целостность основной фигуры.
+- Проверки после дополнительной подстройки:
+  - `ruff check app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `mypy app/ui/form100/widgets/bodymap_editor.py` — успешно;
+  - `pytest -q tests/unit/test_form100_bodymap_editor.py tests/integration/test_form100_service.py` — 7 passed.
+- Фикс layout-бага Form100 при выборе фильтра `Подписано`:
+  - в `app/ui/form100/form100_view.py` убрано жёсткое минимальное ограничение ширины таблицы, из-за которого схлопывалась правая панель редактора;
+  - переработан `_apply_cards_table_column_widths()` на адаптивное сжатие/расширение с min-ширинами колонок, чтобы колонка `Обновлено` оставалась читаемой, а правая часть не уезжала;
+  - стабилизирована ширина `status_filter` (`connect_combo_autowidth(..., min_width=120)` + `setMaximumWidth(140)`), чтобы переключение `Все/Черновик/Подписано` не ломало геометрию шапки;
+  - `QSplitter` возвращен к приоритету редактора (stretch 1:2), чтобы блоки функций и схема тела оставались доступными.
+- Проверки после фикса layout:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `python -m compileall app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+- Корректировка ширины таблицы карточек Form100 (регресс по колонке `Обновлено`):
+  - в `app/ui/form100/form100_view.py` заменен предыдущий алгоритм сжатия на фиксированные базовые ширины колонок;
+  - колонка `Обновлено` зафиксирована в базовом размере и больше не ужимается до нечитаемого состояния;
+  - ширина самой левой области в `QSplitter` увеличена (баланс 1:1 вместо 1:2), чтобы таблица входила целиком без ручного растягивания;
+  - ручное изменение ширин колонок по-прежнему отключено (`QHeaderView.ResizeMode.Fixed`, `setSectionsMovable(False)`).
+- Проверки после корректировки:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `python -m compileall app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+- Финальная фиксация таблицы Form100 по UI-замечанию (статичное поле + статичные колонки):
+  - в `app/ui/form100/form100_view.py` заданы фиксированные ширины колонок без автосжатия (`_cards_base_widths`);
+  - увеличена базовая ширина проблемных колонок (`Статус`, `Версия`, `Подразделение`, `Обновлено`), чтобы заголовки не обрезались;
+  - зафиксирована ширина поля таблицы (`_cards_panel_width`, `setFixedWidth(...)`) и отключена возможность ручного перетягивания разделителя (`splitter.setHandleWidth(0)`);
+  - добавлен `_enforce_splitter_sizes()` для поддержания стабильной геометрии таблицы и правой панели.
+- Проверки после финальной фиксации:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `python -m compileall app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+- Перевод таблицы Form100 на адаптив под любые экраны:
+  - в `app/ui/form100/form100_view.py` убрана привязка к фиксированной ширине поля таблицы;
+  - добавлен адаптивный расчёт геометрии (`_apply_cards_layout`, `_enforce_splitter_sizes`) с учетом минимальной ширины редактора и доступной ширины окна;
+  - колонки оставлены статичными для пользователя (ручной resize отключен), но их ширины теперь автоматически пересчитываются под текущую ширину таблицы:
+    - режим `preferred` при достаточной ширине;
+    - режим `min + distribute` при среднем размере;
+    - режим `floor shrink` для узких экранов.
+- Проверки после адаптивного перевода:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `python -m compileall app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+- Усилена читаемость колонок `Подразделение` и `Обновлено` на малых экранах:
+  - в `app/ui/form100/form100_view.py` увеличены пороги сжатия:
+    - `Подразделение`: `min 124 -> 138`, `floor 96 -> 112`;
+    - `Обновлено`: `min 118 -> 130`, `floor 96 -> 110`.
+- Проверки после усиления порогов:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+- Адаптация Form100 под малые экраны (универсальная, без привязки к конкретному монитору):
+  - в `app/ui/form100/form100_view.py` шапка `Поиск карточек` перестроена в 2 строки:
+    - строка 1: поиск + фильтр статуса + `Найти`;
+    - строка 2: кнопки действий в компактной сетке (`QGridLayout`) вместо длинной горизонтальной ленты;
+  - кнопки действий сделаны компактнее (`compact_button(..., min_width=112, max_width=180)`), чтобы снижать риск «ломки» шапки на малых dpi/дюймах;
+  - добавлен responsive-переключатель ориентации `QSplitter`:
+    - узкий экран (`< 1380 px`): вертикальная компоновка (таблица сверху, форма снизу);
+    - широкий экран: горизонтальная компоновка (таблица слева, форма справа);
+  - перерасчет размеров сплиттера теперь учитывает текущую ориентацию.
+- Проверки после responsive-доработки:
+  - `ruff check app/ui/form100/form100_view.py` — успешно;
+  - `mypy app/ui/form100/form100_view.py` — успешно;
+  - `python -m compileall app/ui/form100/form100_view.py` — успешно;
+  - `pytest -q tests/integration/test_form100_service.py` — 3 passed.
+
+### 2026-02-16
+
+- Обновлена проектная документация по палитре UI в `docs/context.md`:
+  - добавлен раздел `16) Цветовая система UI (рекомендуемая палитра)`;
+  - добавлены структурированные блоки `Core / Accent / Status / Charts / Bodymap`;
+  - для каждого цвета зафиксированы `где применяется` и `для чего`.
+- Добавлены правила использования палитры:
+  - новые экраны используют только зафиксированные цвета;
+  - статусные стили берутся централизованно из `app/ui/widgets/notifications.py`;
+  - при добавлении нового цвета требуется обновление документации.
+- Актуализирован раздел структуры UI в `docs/context.md`:
+  - переписан раздел `7) UI (PySide6)` под текущую реализацию;
+  - добавлена таблица разделов приложения с назначением, функционалом, ролями и основными файлами;
+  - добавлены сквозные сценарии контекста/обновления справочников/обновления сводки.
+- Исправлены замечания `markdownlint` (`MD060`) в `docs/context.md`:
+  - таблицы переведены в единый стиль разделителей с пробелами (`| --- | ... |`);
+  - устранены ошибки на строках разделов `7.2` и `16.x`.
+
+### 2026-02-18
+
+- Стартована и внедрена premium UI-интеграция из `Test_UI` в боевой проект без изменений backend/DB/сервисов:
+  - добавлены UI feature flags в `app/config.py`:
+    - `ui_premium_enabled` (`EPIDCONTROL_UI_PREMIUM`, default `1`);
+    - `ui_animation_policy` (`EPIDCONTROL_UI_ANIMATION`: `adaptive/full/minimal`, default `adaptive`);
+    - `ui_density` (`EPIDCONTROL_UI_DENSITY`: `compact/normal`, default `normal`).
+  - добавлены новые UI-модули:
+    - `app/ui/theme.py` (единая палитра и глобальный QSS);
+    - `app/ui/runtime_ui.py` (`UiRuntimeConfig`, adaptive policy по экрану/DPI);
+    - `app/ui/widgets/transition_stack.py` (анимированные переходы страниц);
+    - `app/ui/widgets/toast.py` (toast manager, fade-in/fade-out, позиционирование);
+    - `app/ui/widgets/animated_background.py` (subtle/showcase animated background);
+    - `app/ui/widgets/responsive_actions.py` (адаптивная раскладка кнопок).
+- Shell-интеграция:
+  - `app/main.py`: подключение новой темы через `apply_theme(...)`;
+  - `app/ui/main_window.py`:
+    - переход с `QStackedWidget` на `TransitionStack` с directional animation;
+    - добавлен слой `MedicalBackground` (включается по runtime policy);
+    - сохранена текущая top-menu навигация и вся логика контекста/ролей.
+- UX/адаптив:
+  - `app/ui/widgets/context_bar.py`: добавлен responsive reflow для узких экранов + адаптивная панель быстрых действий;
+  - `app/ui/form100/form100_view.py`: actions переведены на `ResponsiveActionsPanel`, сохранены статичные колонки;
+  - `app/ui/analytics/analytics_view.py`: основные action-кнопки и actions истории отчётов переведены на responsive layout;
+  - `app/ui/patient/patient_emk_view.py`: quick actions переведены на responsive layout;
+  - `app/ui/import_export/import_export_view.py`: quick actions переведены на responsive layout.
+- Уведомления:
+  - `app/ui/widgets/notifications.py`: сохранены `show_error/show_warning/show_info`;
+  - добавлен `show_toast(...)`;
+  - политика переключена на неблокирующие toast для `info/warning/success`, `error` оставлен modal + лог.
+- Добавлены новые unit-тесты:
+  - `tests/unit/test_ui_theme_tokens.py`;
+  - `tests/unit/test_transition_stack.py`;
+  - `tests/unit/test_toast_manager.py`;
+  - `tests/unit/test_responsive_actions.py`;
+  - `tests/unit/test_form100_table_layout.py`;
+  - `tests/unit/test_main_window_ui_shell.py`.
+- Проверки после внедрения:
+  - `ruff check app tests` — успешно;
+  - `pytest -q` — `200 passed`;
+  - целевой набор новых/затронутых тестов — `14 passed`.
+- Продолжена шлифовка Stage 6 (централизация стилей):
+  - `app/ui/widgets/context_bar.py`:
+    - убраны inline-стили у toggle/helper/подзаголовков;
+    - добавлены objectName-селекторы (`contextToggle`, `muted`) для управления из глобальной темы;
+  - `app/ui/widgets/notifications.py`:
+    - `set_status/clear_status` переведены с локального `setStyleSheet(...)` на динамические свойства (`statusLevel`) + реполиш;
+    - сохранены текущие контракты API (`set_status`, `clear_status`, `show_*`) без изменения внешнего поведения;
+  - `app/ui/theme.py`:
+    - добавлены QSS-правила для `statusLabel`, `chipClear`, `contextToggle`.
+- Проверки после шлифовки Stage 6:
+  - `ruff check app tests` — успешно;
+  - `pytest -q` — `202 passed`.
+- Добавлен тест на статусные label:
+  - `tests/unit/test_notifications_status.py` — проверка `statusLevel` при `set_status/clear_status`.
+- Продолжена централизация стилей диалогов:
+  - `app/ui/login_dialog.py`:
+    - удалён локальный `_apply_styles()` и inline QSS;
+    - введены `objectName` для элементов (`loginAppTitle`, `loginTimeValue`, `loginCardTitle`, `loginCardHint` и др.);
+  - `app/ui/first_run_dialog.py`:
+    - удалён локальный `_apply_styles()` и inline-цвета для form-label;
+    - введены `objectName` (`firstRunTitle`, `firstRunSubtitle`, `firstRunMedicalLine`, `firstRunInfoBadge`, `firstRunFormLabel`);
+  - `app/ui/theme.py`:
+    - добавлены централизованные стили для `QDialog#loginDialog` и `QDialog#firstRunDialog` с сохранением текущего визуального паттерна.
+- Проверки после централизации dialog-styles:
+  - `ruff check app tests` — успешно;
+  - `pytest -q` — `202 passed`.
+- Продолжение Stage 6 (миграция inline-стилей в тему, волна 2):
+  - `app/ui/admin/user_admin_view.py`:
+    - убраны локальные `setStyleSheet(...)` у role hint / groupbox title / status;
+    - добавлены objectName (`muted`, `adminStatus`) для централизованной темы;
+  - `app/ui/references/reference_view.py`:
+    - role hint переведен на `objectName="muted"`;
+  - `app/ui/home/home_view.py`:
+    - `_user_info_label` переведён на `objectName="homeUserInfo"`;
+    - `statBadge` переведен с inline-color на property `toneKey` + правила в `theme.py`;
+    - подпись метрики переведена на `objectName="muted"`;
+  - `app/ui/patient/patient_edit_dialog.py`:
+    - subtitle/status переведены на theme-driven стиль;
+    - валидация использует `clear_status/set_status` вместо ручной окраски;
+  - `app/ui/patient/patient_emk_view.py`, `app/ui/emz/emz_form.py`:
+    - вспомогательные подписи переведены на `objectName="muted"`;
+  - `app/ui/widgets/case_search_dialog.py`, `app/ui/widgets/patient_search_dialog.py`:
+    - статусные лейблы переведены на `statusLabel`, добавлено использование `clear_status/set_status`;
+  - `app/ui/form100/widgets/validation_banner.py`:
+    - баннер переведен с inline QSS на `objectName="validationBanner"`.
+  - `app/ui/theme.py`:
+    - добавлены правила для `adminStatus`, `homeUserInfo`, `validationBanner`, `statBadge[toneKey=...]`.
+- Проверки после волны 2:
+  - `ruff check app tests` — успешно;
+  - `pytest -q` — `202 passed`.
+- Продолжение Stage 6 (миграция inline-стилей в тему, волна 3):
+  - `app/ui/lab/lab_samples_view.py`:
+    - карточки списка проб переведены на theme objectName (`listCard`, `cardStatusDot`, `cardTitle`, `cardMeta`);
+    - `count_label` переведён на `muted`;
+  - `app/ui/lab/lab_sample_detail.py`:
+    - `qc_due_at` переведён на `objectName="muted"`;
+  - `app/ui/sanitary/sanitary_dashboard.py` и `app/ui/sanitary/sanitary_history.py`:
+    - summary/dept/meta подписи переведены на objectName;
+    - карточки списка и статусные точки переведены на theme-driven стиль (через свойства `tone`);
+  - `app/ui/theme.py`:
+    - добавлены правила `listCard`, `cardStatusDot[tone=...]`, `cardTitle`, `cardMeta[tone=...]`.
+- Результат по остаткам inline QSS:
+  - в `app/ui` оставлен только `toast.py` (осознанно: динамический вид toast-компонента).
+- Проверки после волны 3:
+  - `ruff check app tests` — успешно;
+  - `pytest -q` — `202 passed`.
+- Продолжение Stage 6 (миграция inline-стилей в тему, волна 4):
+  - `app/ui/widgets/toast.py`:
+    - удалён локальный `setStyleSheet(...)`;
+    - введены `objectName="toast"` и свойство `toastLevel`.
+  - `app/ui/theme.py`:
+    - добавлены правила `QWidget#toast[toastLevel=...]` + оформление `QWidget#toast QLabel`.
+  - итог: в `app/ui` больше нет локальных `setStyleSheet(...)`; стили централизованы в `theme.py`.
+- Проверки после волны 4:
+  - `rg -n "setStyleSheet\\(" app/ui app/main.py` — только вызов `app.setStyleSheet(...)` в `theme.py`;
+  - `ruff check app tests` — успешно;
+  - `pytest -q` — `202 passed`.
+- Зафиксирована защита от возврата inline-стилей:
+  - добавлен `tests/unit/test_ui_no_inline_styles.py`;
+  - тест запрещает `setStyleSheet(...)` в `app/ui/**`, кроме `app/ui/theme.py`.
+- Проверки после добавления guard-теста:
+  - `pytest -q tests/unit/test_ui_no_inline_styles.py` — `1 passed`;
+  - `pytest -q` — `203 passed`.
+- Адаптив верхней навигации и action-toolbar (малые экраны/DPI):
+  - `app/ui/main_window.py`:
+    - добавлены режимы подписей меню `full/compact/mini` с динамическим выбором по доступной ширине menubar;
+    - реализованы карты коротких названий пунктов (`Главн.`, `Ф100`, `Имп/Эксп`, `Админ` и т.д.);
+    - добавлены runtime-свойства `compactNav`/`miniNav` для theme-правил;
+    - адаптация выполняется при `resize`, смене сессии и переключении раздела;
+  - `app/ui/theme.py`:
+    - добавлены QSS-правила для `QMenuBar[compactNav="true"]` и `QMenuBar[miniNav="true"]` (уменьшенные отступы/радиусы);
+  - `app/ui/emz/emz_form.py`:
+    - quick actions переведены с фиксированного `QHBoxLayout` на `ResponsiveActionsPanel`;
+    - добавлен resize-driven compact режим для кнопок ЭМЗ.
+- Тесты по адаптивной навигации:
+  - расширен `tests/unit/test_main_window_ui_shell.py` (проверка перехода меню в `compact/mini` на узком окне и возврата в `full` на широком).
+- Проверки после адаптивного шага:
+  - `ruff check app tests` — успешно;
+  - `pytest -q tests/unit/test_main_window_ui_shell.py` — `2 passed`;
+  - `pytest -q` — `204 passed`.
+- Продолжение адаптивного шага (Lab/Sanitary action rows):
+  - `app/ui/lab/lab_samples_view.py`:
+    - верхние кнопки действий переведены на `ResponsiveActionsPanel`;
+    - добавлен resize-driven compact режим (`< 1400 px`);
+  - `app/ui/sanitary/sanitary_dashboard.py`:
+    - верхние кнопки действий переведены на `ResponsiveActionsPanel`;
+    - добавлен resize-driven compact режим (`< 1340 px`);
+  - `app/ui/sanitary/sanitary_history.py`:
+    - блок `Действия` переведен на `ResponsiveActionsPanel`;
+    - добавлен resize-driven compact режим (`< 1300 px`).
+- Добавлены unit-тесты:
+  - `tests/unit/test_lab_sanitary_actions_layout.py`:
+    - проверка наличия `ResponsiveActionsPanel` в `LabSamplesView`, `SanitaryDashboard`, `SanitaryHistoryDialog`;
+    - проверка переключения compact режима на узкой/широкой ширине.
+- Проверки после Lab/Sanitary адаптива:
+  - `ruff check app tests` — успешно;
+  - `pytest -q tests/unit/test_lab_sanitary_actions_layout.py` — `2 passed`;
+  - `pytest -q` — `206 passed`.
+- Stage 7 (документация premium UI) — актуализация:
+  - `docs/context.md`:
+    - в разделе `17.6` обновлен факт тестов до `202 passed`;
+    - добавлен `17.7 Гайд по стилю и objectName` (правила по отказу от inline QSS и централизации в `theme.py`);
+    - добавлен `17.8 Чеклист для нового UI-экрана` (адаптив, таблицы, уведомления, проверки).
+- Доработка окна авторизации (видимость анимации на разных экранах):
+  - `app/ui/login_dialog.py`:
+    - добавлен адаптивный расчёт начального и минимального размера окна (`_apply_initial_size`);
+    - стартовый размер теперь вычисляется от `availableGeometry()` экрана (с безопасными min/max ограничениями), вместо размера "по содержимому";
+    - это обеспечивает более крупную область фона/анимации при сохранении корректной работы на малых экранах.
+  - Проверки:
+    - `python -m compileall app/ui/login_dialog.py` — успешно;
+    - `ruff check app/ui/login_dialog.py` — успешно.
+- Доработка компоновки логин-экрана (центровка + крупные дата/время):
+  - `app/ui/login_dialog.py`:
+    - заголовок приложения переведен в центр и увеличен;
+    - дата/время вынесены в отдельный крупный центрированный виджет `loginTimePanel`;
+    - добавлена центровка окна авторизации по центру экрана при первом показе (`showEvent` + `_center_dialog_on_screen`).
+  - `app/ui/theme.py`:
+    - добавлены стили для `QFrame#loginTimePanel`;
+    - усилены стили `loginAppTitle`, `loginTimeCaption`, `loginTimeValue` под новую компоновку.
+  - Проверки:
+    - `ruff check app/ui/login_dialog.py app/ui/theme.py` — успешно;
+    - `python -m compileall app/ui/login_dialog.py app/ui/theme.py` — успешно.
+- Доработка диалога создания первого администратора:
+  - `app/ui/first_run_dialog.py`:
+    - добавлен адаптивный стартовый/минимальный размер окна (`_apply_initial_size`);
+    - добавлена центровка окна по экрану при первом показе (`showEvent` + `_center_dialog_on_screen`);
+    - выровнены по центру заголовок и описание;
+    - карточка формы ограничена по ширине и центрирована для более чистого премиум-лейаута;
+    - информационные блоки снизу центрированы и переведены в многострочный режим.
+  - `app/ui/theme.py`:
+    - обновлены стили `firstRunTitle/Subtitle/InfoBadge` под новый визуальный размер и акценты.
+  - Проверки:
+    - `ruff check app/ui/first_run_dialog.py app/ui/theme.py` — успешно;
+    - `python -m compileall app/ui/first_run_dialog.py app/ui/theme.py` — успешно.
+- Глобальная компактность UI (все разделы: кнопки, таблицы, сводные показатели):
+  - `app/ui/widgets/button_utils.py`:
+    - уменьшены дефолтные размеры `compact_button`: `min_width 140 -> 112`, `max_width 260 -> 220`.
+  - `app/ui/widgets/responsive_actions.py`:
+    - кнопки больше не растягиваются на всю ширину колонки (`Expanding -> Minimum`);
+    - кнопки центрируются внутри ячеек adaptive-grid, что устраняет визуально «огромные» плашки на широких экранах.
+  - `app/ui/theme.py`:
+    - уменьшен базовый шрифт интерфейса (`13 -> 12`, compact `12 -> 11`);
+    - уменьшены отступы/высота кнопок;
+    - для таблиц уменьшены шрифт и отступы заголовков (`QHeaderView::section`), чтобы заголовки лучше помещались;
+    - добавлены стили `statCard` и `metricValue`, чтобы блок «Сводные показатели» выглядел плотнее и не создавал эффект пустого экрана.
+  - Проверки:
+    - `ruff check app/ui/widgets/button_utils.py app/ui/widgets/responsive_actions.py app/ui/theme.py` — успешно;
+    - `pytest -q tests/unit/test_responsive_actions.py tests/unit/test_lab_sanitary_actions_layout.py tests/unit/test_main_window_ui_shell.py` — `6 passed`;
+    - `python -m compileall app/ui/widgets/button_utils.py app/ui/widgets/responsive_actions.py app/ui/theme.py` — успешно.
+- Точечная донастройка `ЭМЗ` + `Форма 100` (после пользовательского фидбека по крупным кнопкам и колонкам):
+  - `app/ui/widgets/responsive_actions.py`:
+    - убрано принудительное растягивание колонок action-grid, кнопки теперь не «разъезжаются» на всю ширину строки;
+    - в результате action-строки в разделах выглядят компактнее и ровнее.
+  - `app/ui/emz/emz_form.py`:
+    - уменьшен базовый `min_button_width` панели быстрых действий (`136 -> 104`);
+    - порог compact-режима обновлен (`1460 -> 1380`) для более раннего аккуратного reflow.
+  - `app/ui/form100/form100_view.py`:
+    - снижена минимальная ширина редактора (`560 -> 520`) для отдачи большего места таблице карточек;
+    - увеличены и перераспределены ширины колонок таблицы карточек (в т.ч. приоритет для `ФИО`, `Подразделение`, `Обновлено`);
+    - скорректированы минимальные/floor-ширины, чтобы заголовки были читаемее на узких экранах;
+    - увеличена доля ширины сплиттера под таблицу (`0.40 -> 0.46`);
+    - action-панель формы 100 дополнительно уплотнена (`min_button_width 108 -> 102`, compact threshold `1480 -> 1400`).
+  - Проверки:
+    - `ruff check app/ui/widgets/responsive_actions.py app/ui/emz/emz_form.py app/ui/form100/form100_view.py` — успешно;
+    - `pytest -q tests/unit/test_responsive_actions.py tests/unit/test_form100_table_layout.py tests/unit/test_main_window_ui_shell.py tests/unit/test_lab_sanitary_actions_layout.py` — `7 passed`;
+    - `python -m compileall app/ui/widgets/responsive_actions.py app/ui/emz/emz_form.py app/ui/form100/form100_view.py` — успешно.
+- Финальная визуальная подгонка (1366x768 / 1920x1080) по action-row и плотности экранов:
+  - `app/ui/widgets/button_utils.py`:
+    - дефолт `compact_button` дополнительно уплотнен (`min 104`, `max 200`).
+  - `app/ui/widgets/responsive_actions.py`:
+    - уменьшены интервалы сетки действий (горизонталь/вертикаль);
+    - spacing теперь адаптивный в `compact`;
+    - сохранено центрирование кнопок, убрано их избыточное визуальное растяжение.
+  - `app/ui/emz/emz_form.py`:
+    - quick-action кнопки ЭМЗ сделаны компактнее (`min 96`, `max 180`) при сохранении адаптивного переноса.
+  - `app/ui/form100/form100_view.py`:
+    - action-кнопки формы 100 дополнительно уменьшены (`min 92..96`, `max 140..160`) для аккуратного размещения на меньших экранах.
+  - `app/ui/widgets/context_bar.py`:
+    - быстрые кнопки в «Закрепить пациента» уменьшены (`min 88`, `max 164`);
+    - панель действий дополнительно уплотнена (`min_button_width=84`).
+  - `app/ui/home/home_view.py`:
+    - блок «Сводные показатели» сделан менее пустым:
+      - колонки grid теперь растягиваются равномерно;
+      - карточки статистики занимают доступную ширину;
+      - удалён лишний внутренний stretch, из-за которого контент выглядел «прижатым» к левому краю.
+  - `app/ui/theme.py`:
+    - уменьшены глобальная высота кнопок и отступы;
+    - таблицы уплотнены (`QTableWidget/QTableView` и `QHeaderView::section` до `10px`) для лучшего вмещения заголовков;
+    - добавлено локальное правило для `contextActions` (ещё компактнее).
+  - Проверки:
+    - `ruff check app/ui/widgets/button_utils.py app/ui/widgets/responsive_actions.py app/ui/emz/emz_form.py app/ui/form100/form100_view.py app/ui/widgets/context_bar.py app/ui/home/home_view.py app/ui/theme.py` — успешно;
+    - `pytest -q tests/unit/test_responsive_actions.py tests/unit/test_main_window_ui_shell.py tests/unit/test_lab_sanitary_actions_layout.py tests/unit/test_form100_table_layout.py` — `7 passed`;
+    - `python -m compileall app/ui/widgets/button_utils.py app/ui/widgets/responsive_actions.py app/ui/emz/emz_form.py app/ui/form100/form100_view.py app/ui/widgets/context_bar.py app/ui/home/home_view.py app/ui/theme.py` — успешно.
+
+- Реализован Form100 V2 под feature-flag `EPIDCONTROL_FORM100_V2_ENABLED`:
+  - добавлены новые V2-модули:
+    - `app/domain/models/form100_v2.py`;
+    - `app/domain/rules/form100_rules_v2.py`;
+    - `app/application/dto/form100_v2_dto.py`;
+    - `app/application/services/form100_service_v2.py`;
+    - `app/infrastructure/db/repositories/form100_repo_v2.py`;
+    - `app/infrastructure/export/form100_export_v2.py`;
+    - `app/infrastructure/import/form100_import_v2.py`;
+    - `app/infrastructure/reporting/form100_pdf_report_v2.py`;
+    - `app/ui/form100_v2/*` (view/editor/bodymap).
+  - добавлена миграция `0019_form100_v2_schema.py`:
+    - создана схема `form100` + `form100_data`;
+    - добавлен `legacy_card_id` для трассировки;
+    - реализован перенос данных из legacy `form100_card/form100_mark/form100_stage`.
+  - выполнена интеграция в контейнер и существующие сервисы:
+    - `app/container.py`: регистрация V2 repo/service;
+    - `app/application/services/exchange_service.py`: `export/import_form100_v2_package_zip`;
+    - `app/application/services/reporting_service.py`: `export_form100_v2_pdf` и маршрутизация PDF для V2;
+    - `app/ui/main_window.py`: переключение legacy/V2 по feature-flag;
+    - `app/ui/import_export/import_export_wizard.py`: добавлен формат `Form100 V2 ZIP`.
+- Валидации/аудит/роли Form100 V2:
+  - workflow зафиксирован как `DRAFT -> SIGNED`;
+  - optimistic lock через `version`;
+  - аудит в `audit_log.payload_json` в формате `form100.audit.v2` с diff изменённых key-path;
+  - роли `admin/operator` на рабочие операции, admin-only на удаление.
+- Добавлены тесты Form100 V2:
+  - `tests/unit/test_form100_v2_rules.py`;
+  - `tests/integration/test_form100_v2_service.py`.
+- Проверки по итогам внедрения Form100 V2:
+  - `ruff check app tests` — успешно;
+  - `pytest -q tests/unit/test_form100_v2_rules.py tests/integration/test_form100_v2_service.py` — `6 passed`;
+  - `pytest -q` — `212 passed`;
+  - `python -m compileall app/application/dto/form100_v2_dto.py app/domain/models/form100_v2.py app/domain/rules/form100_rules_v2.py app/infrastructure/db/repositories/form100_repo_v2.py app/application/services/form100_service_v2.py app/infrastructure/export/form100_export_v2.py app/infrastructure/import/form100_import_v2.py app/infrastructure/reporting/form100_pdf_report_v2.py app/ui/form100_v2` — успешно.
+
+- Актуализирована документация:
+  - `docs/context.md`:
+    - обновлен статус Этапа VI (`Форма 100 МО РФ v2.2`) на реализованный;
+    - добавлен новый раздел `18) Form100 V2 (новый контур)` (feature-flag, схема БД, API, UI/bodymap, ZIP/PDF, покрытие тестами);
+    - обновлены остаточный план и итерационный план (Form100 V2 закрыт, фокус на стабилизации/регрессии).
+
+- Продолжение стабилизации Form100 V2 (добавлено покрытие по недостающим сценариям):
+  - добавлены интеграционные тесты:
+    - `tests/integration/test_form100_v2_roles.py` — проверка матрицы прав (удаление только `admin`);
+    - `tests/integration/test_form100_v2_zip_roundtrip.py` — roundtrip в режиме `append` + проверка отказа при нарушении hash в ZIP;
+    - `tests/integration/test_form100_v2_migration.py` — выполнение миграции `0019_form100_v2_schema` (создание V2-таблиц, перенос legacy-строки, корректный downgrade без удаления legacy-таблиц).
+  - проверки:
+    - `ruff check tests/integration/test_form100_v2_roles.py tests/integration/test_form100_v2_zip_roundtrip.py tests/integration/test_form100_v2_migration.py` — успешно;
+    - `mypy tests/integration/test_form100_v2_roles.py tests/integration/test_form100_v2_zip_roundtrip.py tests/integration/test_form100_v2_migration.py` — успешно;
+    - `pytest -q tests/integration/test_form100_v2_roles.py tests/integration/test_form100_v2_zip_roundtrip.py tests/integration/test_form100_v2_migration.py` — `3 passed`;
+    - `pytest -q` — `215 passed` (есть 2 deprecation warning от sqlite адаптера datetime в Python 3.12, на функционал не влияет).
+
+- Продолжение внедрения `forma_100_section.md` в UI Form100 V2:
+  - переработан `app/ui/form100_v2/form100_editor.py`:
+    - в блок `Корешок` добавлены недостающие поля:
+      - `stub_issued_date`, `stub_issued_time`;
+      - `stub_pss_pgs_dose`, `stub_toxoid_type`, `stub_antidote_type`;
+      - чек-лист `stub_med_help_underline` (без ручного JSON-ввода пользователем);
+      - `stub_injury_date/stub_injury_time` переведены на `QDateEdit/QTimeEdit`;
+    - в блок `Основной бланк` добавлены:
+      - `main_issued_date`, `main_issued_time`;
+      - `main_injury_date/main_injury_time` переведены на `QDateEdit/QTimeEdit`;
+    - в блок `Нижний` поле `tourniquet_time` переведено на `QTimeEdit`;
+    - расширены `load_card` / `_build_data_payload` / `clear_form` / `set_read_only` под новые поля;
+    - добавлен безопасный парсинг дат/времени из legacy/V2 payload (`dd.MM.yyyy`, `yyyy-MM-dd`, `HH:mm`, `HH:mm:ss`).
+  - добавлены unit-тесты UI-редактора:
+    - `tests/unit/test_form100_v2_editor_fields.py`:
+      - проверка сериализации новых полей в payload;
+      - проверка загрузки новых полей из `Form100CardV2Dto`.
+  - проверки:
+    - `ruff check app/ui/form100_v2/form100_editor.py tests/unit/test_form100_v2_editor_fields.py` — успешно;
+    - `mypy app/ui/form100_v2/form100_editor.py tests/unit/test_form100_v2_editor_fields.py` — успешно;
+    - `pytest -q tests/unit/test_form100_v2_editor_fields.py tests/integration/test_form100_v2_service.py tests/integration/test_form100_v2_roles.py tests/integration/test_form100_v2_zip_roundtrip.py tests/integration/test_form100_v2_migration.py` — `7 passed`;
+    - `pytest -q` — `217 passed` (2 warnings по sqlite datetime adapter в Python 3.12, не блокирует).
+
+---
+
+## 2026-02-24 — Настройка окружения и исправление ошибок линтера/типизации
+
+- **Окружение**: пересоздан `venv/` под Python 3.12.10 (старый venv был от стороннего проекта); установлены все зависимости из `requirements.txt` + `requirements-dev.txt`.
+- **Исправлены ошибки ruff (2 шт.)**:
+  - `app/domain/constants.py`: `MilitaryCategory(str, Enum)` и `IsmpType(str, Enum)` → `StrEnum` (UP042).
+- **Исправлены ошибки mypy (13 шт.) в 5 файлах**:
+  - `app/ui/widgets/transition_stack.py`: добавлен `# type: ignore[arg-type]` для `setGraphicsEffect(None)` (Qt допускает None, стабы — нет).
+  - `app/ui/widgets/responsive_actions.py`: добавлена защита от `None` в `_clear_layout` (`takeAt` может вернуть `None`).
+  - `app/ui/first_run_dialog.py`, `app/ui/login_dialog.py`, `app/ui/main_window.py`: добавлен `assert isinstance(app, QApplication)` после проверки на `None` (уточнение типа от `QCoreApplication` до `QApplication`).
+  - `app/ui/main_window.py`: `_form100_view` переаннотирован как `Form100ViewV2 | Form100View` вместо `QWidget`.
+- **Проверки по итогам**:
+  - `ruff check app/` — `All checks passed`;
+  - `mypy app/` — `Success: no issues found in 174 source files`;
+  - `pytest -q` — `217 passed`.
+- **Проанализирован `errors.md`** (94 ошибки Pylance, все в `app/main.py`):
+  - Большинство (91) — артефакты Pylance: PySide6 не в PYTHONPATH редактора, отсутствие stub-файлов, отсутствие type hints в `_TeeStream`-классе.
+  - 1 реальная проблема: `_STDERR_TEE` назван в стиле константы (UPPER_CASE), но переопределяется внутри функции (`reportConstantRedefinition`).
+- **Исправлен `app/main.py`**: `_STDERR_TEE` → `_stderr_tee` (lowercase), чтобы соответствовать Python-конвенции для изменяемой модульной переменной. Проверки: `ruff` — passed, `mypy` — passed, `pytest` — `217 passed`.
+
