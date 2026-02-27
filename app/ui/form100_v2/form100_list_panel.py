@@ -53,7 +53,8 @@ class _PreviewPanel(QFrame):
 
         self._badge = QLabel()
         self._badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._badge.setFixedHeight(32)
+        self._badge.setMinimumHeight(28)
+        self._badge.setMaximumHeight(36)
         self._badge.setStyleSheet("border-radius: 6px; font-size: 12px; font-weight: bold;")
         root.addWidget(self._badge)
 
@@ -75,7 +76,7 @@ class _PreviewPanel(QFrame):
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setStyleSheet("background: #D4CEC8; border: none;")
-        sep.setFixedHeight(1)
+        sep.setMaximumHeight(1)
         root.addWidget(sep)
 
         self._diag_lbl = QLabel()
@@ -175,6 +176,8 @@ class Form100ListPanel(QDialog):
 
         # ── Сплиттер ─────────────────────────────────────────────────────────
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setChildrenCollapsible(False)
+        self._splitter = splitter
 
         # Левая: таблица
         left = QWidget()
@@ -207,15 +210,36 @@ class Form100ListPanel(QDialog):
         # Правая: превью
         self._preview = _PreviewPanel()
         splitter.addWidget(self._preview)
-
-        splitter.setSizes([500, 380])
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
         root.addWidget(splitter, 1)
 
         # Кнопки из превью
         self._preview.open_btn.clicked.connect(self._open_selected)
         self._preview.close_btn.clicked.connect(self.reject)
 
+        self._apply_responsive_layout()
         self._load_cards()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_responsive_layout()
+
+    def _apply_responsive_layout(self) -> None:
+        width = max(1, self.width())
+        if width < 1200:
+            left, right = 62, 38
+        elif width < 1600:
+            left, right = 58, 42
+        else:
+            left, right = 55, 45
+        total = max(1, self._splitter.width())
+        self._splitter.setSizes(
+            [
+                max(260, total * left // 100),
+                max(240, total * right // 100),
+            ]
+        )
 
     # ── Данные ───────────────────────────────────────────────────────────────
 
