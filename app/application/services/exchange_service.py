@@ -158,16 +158,16 @@ def _parse_value(value: Any, column) -> Any:
     if isinstance(column.type, Date):
         try:
             return date.fromisoformat(value)
-        except Exception:
+        except (TypeError, ValueError):
             parts = value.split(".")
             return date(int(parts[2]), int(parts[1]), int(parts[0]))
     if isinstance(column.type, DateTime):
         try:
             return datetime.fromisoformat(value)
-        except Exception:
+        except (TypeError, ValueError):
             try:
                 return datetime.strptime(value, "%d.%m.%Y %H:%M").replace(tzinfo=UTC)
-            except Exception:
+            except (TypeError, ValueError):
                 return datetime.strptime(value, "%d.%m.%Y %H:%M:%S").replace(tzinfo=UTC)
     return value
 

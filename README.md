@@ -1,33 +1,46 @@
-# Codex EMZ/Lab
+# Epid Control
 
-Desktop EMZ + microbiology app (PySide6 + SQLite).
+Desktop-application for EMZ and microbiology workflows (PySide6 + SQLite).
 
-## Setup
-- Python 3.11+
-- `python -m venv .venv && .venv/Scripts/activate` (Windows) or `source .venv/bin/activate` (Linux)
-- `pip install -r requirements-dev.txt`
-- `pre-commit install` (optional)
-
-## Database
-- Paths in `app/config.py` (platformdirs, default SQLite `app.db` in user data dir).
-- Run migrations: `alembic upgrade head` (URL can be overridden with `DATABASE_URL`).
+## Quick Start
+1. Use Python 3.11+ (3.12 recommended).
+2. Create and activate a virtual environment:
+   - Windows: `python -m venv venv` and `venv\Scripts\activate`
+   - Linux/macOS: `python -m venv .venv` and `source .venv/bin/activate`
+3. Install dependencies: `pip install -r requirements-dev.txt`
 
 ## Run
-- `python -m app.main`
-- Ensure there is at least one user in `users` table (create manually or via `UserAdminService`).
+- Start app: `python -m app.main`
+- DB path and runtime settings are configured via `app/config.py` and ENV variables:
+  - `EPIDCONTROL_DATA_DIR`
+  - `EPIDCONTROL_DB_FILE`
+  - `DATABASE_URL`
+- Manual DB migrations: `alembic upgrade head`
 
-## Tests
-- `pytest`
-- Unit: `tests/unit/test_password_hash.py`
-- Integration: `tests/integration/test_auth_service.py`
-- Integration EMZ: `tests/integration/test_emz_service.py`
-- Integration lab/sanitary: `tests/integration/test_lab_service.py`, `tests/integration/test_sanitary_service.py`
+## Local Quality Gates
+Run before merge:
 
-## References seed
-- Optional helper to prefill departments/material types: `python scripts/seed_references.py`
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1
+```
 
-## Docs
-- Регрессионный тест: `docs/manual_test.md`
-- Руководство пользователя: `docs/user_guide.md`
-- Техническое руководство: `docs/tech_guide.md`
-- Сборка/релиз: `docs/build_release.md`
+This script runs:
+- `ruff check app tests`
+- `mypy app tests`
+- `pytest -q`
+- `python -m compileall -q app tests scripts`
+
+## CI
+- Automatic quality checks are configured in `.github/workflows/quality-gates.yml`.
+
+## Helpful Scripts
+- Seed reference data: `python scripts/seed_references.py`
+- Build EXE/installer: see `scripts/` and `docs/build_release.md`
+
+## Documentation
+- Context and roadmap: `docs/context.md`
+- Progress log: `docs/progress_report.md`
+- Manual regression scenarios: `docs/manual_regression_scenarios.md`
+- User guide: `docs/user_guide.md`
+- Technical guide: `docs/tech_guide.md`
+- Build and release guide: `docs/build_release.md`

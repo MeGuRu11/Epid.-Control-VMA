@@ -98,13 +98,15 @@ def _parse_datetime(value: Any) -> datetime | None:
         text = value.strip()
         if text.endswith("Z"):
             text = f"{text[:-1]}+00:00"
+        parsed: datetime | None = None
         try:
             parsed = datetime.fromisoformat(text)
+        except ValueError:
+            parsed = None
+        if parsed is not None:
             if parsed.tzinfo is None:
                 parsed = parsed.replace(tzinfo=UTC)
             return parsed
-        except ValueError:
-            pass
         date_and_time = text.split(" ")
         if len(date_and_time) == 2 and "." in date_and_time[0]:
             date_parts = date_and_time[0].split(".")
@@ -129,10 +131,13 @@ def _parse_date(value: Any) -> date | None:
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, str):
+        parsed_date: date | None = None
         try:
-            return date.fromisoformat(value)
+            parsed_date = date.fromisoformat(value)
         except ValueError:
-            pass
+            parsed_date = None
+        if parsed_date is not None:
+            return parsed_date
         parts = value.split(".")
         if len(parts) == 3:
             try:

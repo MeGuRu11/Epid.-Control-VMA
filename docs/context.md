@@ -16,6 +16,7 @@
 - Исправлены ключевые ошибки валидации и рекурсивного сброса контекста; добавлены сообщения об ошибках.
 - Долгие операции переведены в фон (импорт/экспорт/отчеты/бэкапы, аналитика, поиск пациента).
 - Локальные quality-gates: `ruff`, `mypy`, `pytest`, `compileall` — зелёные.
+- Добавлен CI quality-gate workflow: `.github/workflows/quality-gates.yml` (ruff + mypy + pytest + compileall).
 
 В процессе:
 
@@ -1033,6 +1034,7 @@ resources/
   - устранены типизационные и callback-дефекты в UI/tests.
 - Этап 7 `Статконтроль и БД` — закрыто:
   - quality-gates: `mypy=0 ошибок`, `ruff=OK`, `pytest=green`, `compileall=OK`;
+  - CI automation: проверки запускаются автоматически на `push` и `pull_request`.
   - БД в целостном состоянии (`integrity_check=ok`, `foreign_key_check=0`), миграции на `head`.
 - Этап 8 `Унификация FTS` — закрыто:
   - FTS-логика централизована в `FtsManager` для startup/runtime repair;

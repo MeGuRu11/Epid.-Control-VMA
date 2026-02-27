@@ -12,11 +12,19 @@ def test_responsive_actions_reflow_changes_columns_by_width(qapp) -> None:
 
     panel.resize(260, 120)
     qapp.processEvents()
-    narrow_columns = panel._columns_for_width()
+    narrow_columns = panel._columns_for_width(
+        min_button_width=panel._min_button_width,
+        spacing=panel._grid.horizontalSpacing(),
+        button_count=len(buttons),
+    )
 
     panel.resize(600, 120)
     qapp.processEvents()
-    wide_columns = panel._columns_for_width()
+    wide_columns = panel._columns_for_width(
+        min_button_width=panel._min_button_width,
+        spacing=panel._grid.horizontalSpacing(),
+        button_count=len(buttons),
+    )
 
     assert narrow_columns < wide_columns
 

@@ -312,13 +312,16 @@ class Form100Wizard(QDialog):
         # в”Ђв”Ђ Р›РµРІР°СЏ РїР°РЅРµР»СЊ: РёРЅРґРёРєР°С‚РѕСЂ С€Р°РіРѕРІ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
         step_panel = QFrame()
         step_panel.setObjectName("wizardStepPanel")
-        step_panel.setFixedWidth(190)
+        step_panel.setMinimumWidth(164)
+        step_panel.setMaximumWidth(228)
+        step_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         step_panel.setStyleSheet(
             "#wizardStepPanel {"
             f"  background-color: {_PANEL_BG};"
             "  border-right: 1px solid #D4CEC8;"
             "}"
         )
+        self._step_panel = step_panel
         sp_lay = QVBoxLayout(step_panel)
         sp_lay.setContentsMargins(16, 28, 16, 20)
         sp_lay.setSpacing(0)
@@ -441,47 +444,94 @@ class Form100Wizard(QDialog):
         # в”Ђв”Ђ РќР°РІРёРіР°С†РёРѕРЅРЅР°СЏ РїР°РЅРµР»СЊ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
         nav_bar = QFrame()
         nav_bar.setObjectName("wizardNavBar")
-        nav_bar.setFixedHeight(56)
+        nav_bar.setMinimumHeight(52)
         nav_bar.setStyleSheet(
             "#wizardNavBar {"
             f"  background-color: {_NAV_BAR_BG};"
             "  border-top: 1px solid #E0DAD3;"
             "}"
         )
+        self._nav_bar = nav_bar
         nav_lay = QHBoxLayout(nav_bar)
         nav_lay.setContentsMargins(20, 8, 20, 8)
         nav_lay.setSpacing(10)
 
         self._btn_back = QPushButton("в†ђ РќР°Р·Р°Рґ")
         self._btn_back.setObjectName("secondary")
-        self._btn_back.setFixedWidth(100)
+        self._btn_back.setMinimumWidth(86)
+        self._btn_back.setMaximumWidth(136)
         self._btn_back.clicked.connect(self._go_back)
 
         self._btn_next = QPushButton("Р”Р°Р»РµРµ в†’")
-        self._btn_next.setFixedWidth(100)
+        self._btn_next.setMinimumWidth(86)
+        self._btn_next.setMaximumWidth(136)
         self._btn_next.clicked.connect(self._go_next)
 
         self._btn_save = QPushButton("РЎРѕС…СЂР°РЅРёС‚СЊ")
-        self._btn_save.setFixedWidth(110)
+        self._btn_save.setMinimumWidth(94)
+        self._btn_save.setMaximumWidth(152)
         self._btn_save.clicked.connect(self._save)
         self._btn_save.setEnabled(not is_locked)
 
-        btn_cancel = QPushButton("РћС‚РјРµРЅР°")
-        btn_cancel.setObjectName("ghost")
-        btn_cancel.setFixedWidth(90)
-        btn_cancel.clicked.connect(self.reject)
+        self._btn_cancel = QPushButton("РћС‚РјРµРЅР°")
+        self._btn_cancel.setObjectName("ghost")
+        self._btn_cancel.setMinimumWidth(82)
+        self._btn_cancel.setMaximumWidth(124)
+        self._btn_cancel.clicked.connect(self.reject)
 
         nav_lay.addWidget(self._btn_back)
         nav_lay.addWidget(self._btn_next)
         nav_lay.addStretch(1)
         nav_lay.addWidget(self._btn_save)
-        nav_lay.addWidget(btn_cancel)
+        nav_lay.addWidget(self._btn_cancel)
 
         right_lay.addWidget(nav_bar)
 
         self._step4.btn_sign.clicked.connect(self._sign)
 
+        self._apply_responsive_metrics()
         self._goto_step(0)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_responsive_metrics()
+
+    def _apply_responsive_metrics(self) -> None:
+        width = max(1, self.width())
+        if width < 1366:
+            panel_min, panel_max = 150, 172
+            nav_height = 50
+            back_min, back_max = 82, 110
+            next_min, next_max = 82, 110
+            save_min, save_max = 88, 126
+            cancel_min, cancel_max = 80, 104
+        elif width < 1600:
+            panel_min, panel_max = 160, 192
+            nav_height = 52
+            back_min, back_max = 84, 122
+            next_min, next_max = 84, 122
+            save_min, save_max = 92, 138
+            cancel_min, cancel_max = 82, 116
+        else:
+            panel_min, panel_max = 172, 228
+            nav_height = 56
+            back_min, back_max = 88, 136
+            next_min, next_max = 88, 136
+            save_min, save_max = 96, 152
+            cancel_min, cancel_max = 84, 124
+
+        self._step_panel.setMinimumWidth(panel_min)
+        self._step_panel.setMaximumWidth(panel_max)
+        self._nav_bar.setMinimumHeight(nav_height)
+
+        self._btn_back.setMinimumWidth(back_min)
+        self._btn_back.setMaximumWidth(back_max)
+        self._btn_next.setMinimumWidth(next_min)
+        self._btn_next.setMaximumWidth(next_max)
+        self._btn_save.setMinimumWidth(save_min)
+        self._btn_save.setMaximumWidth(save_max)
+        self._btn_cancel.setMinimumWidth(cancel_min)
+        self._btn_cancel.setMaximumWidth(cancel_max)
 
     # в”Ђв”Ђ РќР°РІРёРіР°С†РёСЏ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 

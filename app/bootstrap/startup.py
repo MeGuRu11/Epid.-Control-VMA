@@ -10,6 +10,7 @@ from alembic import command
 from alembic.config import Config
 from PySide6.QtWidgets import QMessageBox
 from sqlalchemy import inspect, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.infrastructure.db.engine import get_engine
@@ -39,7 +40,7 @@ def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
         test_file = db_file.parent / ".write_test"
         test_file.write_text("ok", encoding="utf-8")
         test_file.unlink(missing_ok=True)
-    except Exception:
+    except OSError:
         QMessageBox.critical(
             None,
             "Ошибка",
@@ -152,7 +153,7 @@ def has_users(session_factory: _SessionFactory) -> bool:
     try:
         with session_factory() as session:
             return session.execute(select(User.id).limit(1)).first() is not None
-    except Exception:  # noqa: BLE001
+    except SQLAlchemyError:
         logging.getLogger(__name__).exception("Failed to check users")
         return False
 
@@ -189,11 +190,11 @@ def warn_missing_plot_dependencies() -> None:
     missing = []
     try:
         import pyqtgraph  # noqa: F401
-    except Exception:
+    except ImportError:
         missing.append("pyqtgraph")
     try:
         import matplotlib  # noqa: F401
-    except Exception:
+    except ImportError:
         missing.append("matplotlib")
     if missing:
         QMessageBox.warning(
