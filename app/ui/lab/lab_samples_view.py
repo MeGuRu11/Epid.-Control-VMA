@@ -6,6 +6,7 @@ from typing import Any, cast
 
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QDateEdit,
     QDialog,
@@ -24,10 +25,10 @@ from PySide6.QtWidgets import (
 from app.application.services.lab_service import LabService
 from app.application.services.reference_service import ReferenceService
 from app.ui.lab.lab_sample_detail import LabSampleDetailDialog
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_warning
 from app.ui.widgets.patient_selector import PatientSelector
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
 
@@ -65,18 +66,41 @@ class LabSamplesView(QWidget):
         layout.addWidget(title)
 
         quick_new = QPushButton("Новая проба")
+        quick_new.setObjectName("primaryButton")
         compact_button(quick_new)
         quick_new.clicked.connect(self._open_new_dialog)
         quick_save = QPushButton("Сохранить пробу")
+        quick_save.setObjectName("secondaryButton")
         compact_button(quick_save)
         quick_save.clicked.connect(self._edit_selected)
         quick_open_patient = QPushButton("Открыть пациента")
         compact_button(quick_open_patient)
         quick_open_patient.clicked.connect(self._open_patient)
-        self._quick_actions_panel = ResponsiveActionsPanel(min_button_width=132, max_columns=3)
-        self._quick_actions_panel.set_buttons([quick_new, quick_save, quick_open_patient])
-        self._quick_actions_panel.set_compact(self.width() < 1400)
-        layout.addWidget(self._quick_actions_panel)
+        self._quick_actions_bar = QWidget()
+        self._quick_actions_bar.setObjectName("sectionActionBar")
+        self._quick_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._quick_actions_bar)
+        self._quick_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._quick_actions_layout.setSpacing(10)
+
+        self._quick_work_group = QWidget()
+        self._quick_work_group.setObjectName("sectionActionGroup")
+        work_layout = QHBoxLayout(self._quick_work_group)
+        work_layout.setContentsMargins(0, 0, 0, 0)
+        work_layout.setSpacing(8)
+        work_layout.addWidget(quick_open_patient)
+        work_layout.addWidget(quick_save)
+
+        self._quick_create_group = QWidget()
+        self._quick_create_group.setObjectName("sectionActionGroup")
+        create_layout = QHBoxLayout(self._quick_create_group)
+        create_layout.setContentsMargins(0, 0, 0, 0)
+        create_layout.addWidget(quick_new)
+
+        self._quick_actions_layout.addWidget(self._quick_work_group)
+        self._quick_actions_layout.addStretch()
+        self._quick_actions_layout.addWidget(self._quick_create_group)
+        self._update_quick_actions_layout()
+        layout.addWidget(self._quick_actions_bar)
 
         header_row = QHBoxLayout()
         self.count_label = QLabel("Проб: 0")
@@ -174,8 +198,15 @@ class LabSamplesView(QWidget):
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        if hasattr(self, "_quick_actions_panel"):
-            self._quick_actions_panel.set_compact(self.width() < 1400)
+        if hasattr(self, "_quick_actions_layout"):
+            self._update_quick_actions_layout()
+
+    def _update_quick_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._quick_actions_layout,
+            self._quick_actions_bar,
+            [self._quick_work_group, self._quick_create_group],
+        )
 
     def _toggle_filters(self, checked: bool) -> None:
         self.filter_box.setVisible(checked)

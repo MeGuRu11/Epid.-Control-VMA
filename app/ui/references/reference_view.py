@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QFormLayout,
     QGroupBox,
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
 from app.application.dto.auth_dto import SessionContext
 from app.application.security import can_manage_references
 from app.application.services.reference_service import ReferenceService
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error
 
@@ -103,31 +105,65 @@ class ReferenceView(QWidget):
         self.form_fields = QFormLayout()
         form_layout.addLayout(self.form_fields)
 
-        actions = QHBoxLayout()
         self.add_btn = QPushButton("Добавить")
         compact_button(self.add_btn)
         self.add_btn.clicked.connect(self._add_item)
         self.save_btn = QPushButton("Сохранить")
+        self.save_btn.setObjectName("primaryButton")
         compact_button(self.save_btn)
         self.save_btn.clicked.connect(self._update_item)
         self.delete_btn = QPushButton("Удалить")
+        self.delete_btn.setObjectName("secondaryButton")
         compact_button(self.delete_btn)
         self.delete_btn.clicked.connect(self._delete_item)
         self.clear_btn = QPushButton("Очистить")
+        self.clear_btn.setObjectName("secondaryButton")
         compact_button(self.clear_btn)
         self.clear_btn.clicked.connect(self._clear_form)
-        actions.addWidget(self.add_btn)
-        actions.addWidget(self.save_btn)
-        actions.addWidget(self.delete_btn)
-        actions.addWidget(self.clear_btn)
-        actions.addStretch()
-        form_layout.addLayout(actions)
+        self._form_actions_bar = QWidget()
+        self._form_actions_bar.setObjectName("sectionActionBar")
+        self._form_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._form_actions_bar)
+        self._form_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._form_actions_layout.setSpacing(10)
+
+        self._form_main_group = QWidget()
+        self._form_main_group.setObjectName("sectionActionGroup")
+        form_main_layout = QHBoxLayout(self._form_main_group)
+        form_main_layout.setContentsMargins(0, 0, 0, 0)
+        form_main_layout.setSpacing(8)
+        form_main_layout.addWidget(self.add_btn)
+        form_main_layout.addWidget(self.save_btn)
+        form_main_layout.addWidget(self.delete_btn)
+
+        self._form_clear_group = QWidget()
+        self._form_clear_group.setObjectName("sectionActionGroup")
+        form_clear_layout = QHBoxLayout(self._form_clear_group)
+        form_clear_layout.setContentsMargins(0, 0, 0, 0)
+        form_clear_layout.addWidget(self.clear_btn)
+
+        self._form_actions_layout.addWidget(self._form_main_group)
+        self._form_actions_layout.addStretch()
+        self._form_actions_layout.addWidget(self._form_clear_group)
+        form_layout.addWidget(self._form_actions_bar)
 
         content.addWidget(self.form_box, 2)
         main_layout.addLayout(content)
 
         self._admin_widgets = [self.add_btn, self.save_btn, self.delete_btn]
         self._build_form_fields()
+        self._update_form_actions_layout()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        if hasattr(self, "_form_actions_layout"):
+            self._update_form_actions_layout()
+
+    def _update_form_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._form_actions_layout,
+            self._form_actions_bar,
+            [self._form_main_group, self._form_clear_group],
+        )
 
     def _apply_role_policy(self) -> None:
         is_admin = can_manage_references(self.session.role)

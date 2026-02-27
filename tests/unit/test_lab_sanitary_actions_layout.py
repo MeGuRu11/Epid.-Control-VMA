@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QBoxLayout, QWidget
 
 from app.ui.lab.lab_samples_view import LabSamplesView
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
 from app.ui.sanitary.sanitary_history import SanitaryHistoryDialog
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 
 
 class _DummyPatientSelector(QWidget):
@@ -28,17 +28,17 @@ def test_lab_samples_view_uses_responsive_actions(monkeypatch, qapp) -> None:
         list_microorganisms=list,
     )
     lab = SimpleNamespace(list_samples=lambda _pid, _case: [])
-    view = LabSamplesView(lab_service=lab, reference_service=ref)
+    view = LabSamplesView(lab_service=lab, reference_service=ref)  # type: ignore[arg-type]
     view.show()
     qapp.processEvents()
 
-    assert isinstance(view._quick_actions_panel, ResponsiveActionsPanel)
-    view.resize(900, 700)
+    assert hasattr(view, "_quick_actions_layout")
+    view.resize(440, 700)
     qapp.processEvents()
-    assert view._quick_actions_panel._compact is True
+    assert view._quick_actions_layout.direction() == QBoxLayout.Direction.TopToBottom
     view.resize(1800, 900)
     qapp.processEvents()
-    assert view._quick_actions_panel._compact is False
+    assert view._quick_actions_layout.direction() == QBoxLayout.Direction.LeftToRight
 
 
 def test_sanitary_views_use_responsive_actions(qapp) -> None:
@@ -50,23 +50,31 @@ def test_sanitary_views_use_responsive_actions(qapp) -> None:
         list_samples_by_department=lambda _dep_id: [],
     )
 
-    dashboard = SanitaryDashboard(sanitary_service=sanitary, reference_service=ref)
+    dashboard = SanitaryDashboard(sanitary_service=sanitary, reference_service=ref)  # type: ignore[arg-type]
     dashboard.show()
     qapp.processEvents()
-    assert isinstance(dashboard._quick_actions_panel, ResponsiveActionsPanel)
+    assert hasattr(dashboard, "_quick_actions_layout")
+    assert hasattr(dashboard, "_filter_layout")
+    dashboard.resize(440, 700)
+    qapp.processEvents()
+    assert dashboard._filter_layout.direction() == QBoxLayout.Direction.TopToBottom
+    dashboard.resize(1700, 900)
+    qapp.processEvents()
+    assert dashboard._filter_layout.direction() == QBoxLayout.Direction.LeftToRight
 
     history = SanitaryHistoryDialog(
-        sanitary_service=sanitary,
-        reference_service=ref,
+        sanitary_service=cast(Any, sanitary),
+        reference_service=cast(Any, ref),
         department_id=1,
         department_name="Тест",
     )
     history.show()
     qapp.processEvents()
-    assert isinstance(history._actions_panel, ResponsiveActionsPanel)
-    history.resize(980, 700)
+    panel = history._actions_panel
+    assert isinstance(panel.is_compact(), bool)
+    panel.set_compact(True)
     qapp.processEvents()
-    assert history._actions_panel._compact is True
-    history.resize(1600, 900)
+    assert panel.is_compact() is True
+    panel.set_compact(False)
     qapp.processEvents()
-    assert history._actions_panel._compact is False
+    assert panel.is_compact() is False

@@ -30,6 +30,11 @@ if config.config_file_name:
         logging.getLogger(__name__).warning(
             "logging.config not available; skipping Alembic fileConfig",
         )
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning(
+            "Alembic fileConfig failed (%s); continuing with existing logging",
+            exc,
+        )
 
 target_metadata = Base.metadata
 

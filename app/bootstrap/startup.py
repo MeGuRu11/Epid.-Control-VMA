@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any
 
@@ -8,10 +10,13 @@ from alembic import command
 from alembic.config import Config
 from PySide6.QtWidgets import QMessageBox
 from sqlalchemy import inspect, select
+from sqlalchemy.orm import Session
 
 from app.infrastructure.db.engine import get_engine
 from app.infrastructure.db.fts_manager import FtsManager
 from app.infrastructure.db.models_sqlalchemy import User
+
+_SessionFactory = Callable[[], AbstractContextManager[Session]]
 
 
 def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
@@ -131,7 +136,7 @@ def ensure_schema_compatibility(
         return False
 
 
-def ensure_fts_objects(session_factory) -> bool:
+def ensure_fts_objects(session_factory: _SessionFactory) -> bool:
     fts_manager = FtsManager(session_factory=session_factory)
     if fts_manager.ensure_all():
         return True
@@ -143,7 +148,7 @@ def ensure_fts_objects(session_factory) -> bool:
     return False
 
 
-def has_users(session_factory) -> bool:
+def has_users(session_factory: _SessionFactory) -> bool:
     try:
         with session_factory() as session:
             return session.execute(select(User.id).limit(1)).first() is not None
@@ -158,7 +163,7 @@ def initialize_database(
     db_file: Path,
     database_url: str,
     log_dir: Path,
-    session_factory,
+    session_factory: _SessionFactory,
 ) -> bool:
     if not check_startup_prerequisites(root_dir, db_file):
         return False

@@ -19,6 +19,7 @@ from app.application.services.patient_service import PatientService
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.emz_repo import EmzRepository
 from app.infrastructure.db.repositories.patient_repo import PatientRepository
+from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 
 
@@ -64,11 +65,13 @@ class EmzService:
         self,
         emz_repo: EmzRepository | None = None,
         patient_repo: PatientRepository | None = None,
+        user_repo: UserRepository | None = None,
         audit_repo: AuditLogRepository | None = None,
         session_factory: Callable = session_scope,
     ) -> None:
         self.emr_repo = emz_repo or EmzRepository()
         self.patient_repo = patient_repo or PatientRepository()
+        self.user_repo = user_repo or UserRepository()
         self.patient_service = PatientService(patient_repo=self.patient_repo, session_factory=session_factory)
         self.audit_repo = audit_repo or AuditLogRepository()
         self.session_factory = session_factory
@@ -421,6 +424,23 @@ class EmzService:
 
     def delete_emr(self, emr_case_id: int, actor_id: int | None) -> None:
         with self.session_factory() as session:
+            self._require_admin(session, actor_id)
             deleted = self.emr_repo.delete_case(session, emr_case_id)
             if not deleted:
                 raise ValueError("Госпитализация ЭМЗ не найдена")
+            self.audit_repo.add_event(
+                session,
+                user_id=actor_id,
+                entity_type="emr_case",
+                entity_id=str(emr_case_id),
+                action="delete_emr",
+                payload_json=json.dumps({"emr_case_id": emr_case_id}),
+            )
+
+    def _require_admin(self, session, actor_id: int | None) -> None:
+        if actor_id is None:
+            raise ValueError("Операция доступна только администратору")
+        actor = self.user_repo.get_by_id(session, actor_id)
+        if actor and str(actor.role) == "admin":
+            return
+        raise ValueError("Операция доступна только администратору")

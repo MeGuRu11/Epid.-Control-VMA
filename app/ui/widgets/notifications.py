@@ -14,6 +14,17 @@ STATUS_COLORS = {
 }
 
 
+def _pill_max_width(label: QLabel) -> int:
+    raw = label.property("status_pill_max_width")
+    if raw is None:
+        return 560
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return 560
+    return max(180, min(1200, value))
+
+
 def _refresh_status_style(label: QLabel) -> None:
     style = label.style()
     style.unpolish(label)
@@ -33,7 +44,7 @@ def set_status(label: QLabel, message: str, level: str = "info") -> None:
     use_pill = bool(label.property("status_pill"))
     if use_pill:
         label.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
-        label.setMaximumWidth(label.sizeHint().width() + 12)
+        label.setMaximumWidth(min(_pill_max_width(label), label.sizeHint().width() + 16))
     else:
         label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
     _refresh_status_style(label)
@@ -44,7 +55,7 @@ def clear_status(label: QLabel) -> None:
     label.setObjectName("statusLabel")
     label.setProperty("statusLevel", "")
     if label.property("status_pill"):
-        label.setMaximumWidth(label.sizeHint().width() + 12)
+        label.setMaximumWidth(_pill_max_width(label))
         label.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
     else:
         label.setMaximumWidth(16777215)

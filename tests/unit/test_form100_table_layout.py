@@ -33,7 +33,7 @@ class _FakeForm100Service:
 
 def test_form100_table_has_fixed_header_sections_and_non_movable_columns(qapp) -> None:
     view = Form100View(
-        form100_service=_FakeForm100Service(),
+        form100_service=_FakeForm100Service(),  # type: ignore[arg-type]
         reporting_service=None,
         session=SessionContext(user_id=1, login="admin", role="admin"),
     )

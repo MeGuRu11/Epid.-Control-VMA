@@ -5,6 +5,7 @@ from typing import cast
 
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QCheckBox,
     QComboBox,
     QDateEdit,
@@ -22,8 +23,8 @@ from PySide6.QtWidgets import (
 from app.application.services.reference_service import ReferenceService
 from app.application.services.sanitary_service import SanitaryService
 from app.ui.sanitary.sanitary_history import SanitaryHistoryDialog
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 
 
 class SanitaryDashboard(QWidget):
@@ -55,18 +56,45 @@ class SanitaryDashboard(QWidget):
         layout.addLayout(title_row)
 
         quick_open = QPushButton("Открыть историю отделения")
+        quick_open.setObjectName("primaryButton")
         compact_button(quick_open)
         quick_open.clicked.connect(self._open_selected)
         quick_refresh = QPushButton("Обновить")
+        quick_refresh.setObjectName("secondaryButton")
         compact_button(quick_refresh)
         quick_refresh.clicked.connect(self.refresh)
-        self._quick_actions_panel = ResponsiveActionsPanel(min_button_width=146, max_columns=2)
-        self._quick_actions_panel.set_buttons([quick_open, quick_refresh])
-        self._quick_actions_panel.set_compact(self.width() < 1340)
-        layout.addWidget(self._quick_actions_panel)
+        self._quick_actions_bar = QWidget()
+        self._quick_actions_bar.setObjectName("sectionActionBar")
+        self._quick_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._quick_actions_bar)
+        self._quick_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._quick_actions_layout.setSpacing(10)
+
+        self._quick_ops_group = QWidget()
+        self._quick_ops_group.setObjectName("sectionActionGroup")
+        ops_layout = QHBoxLayout(self._quick_ops_group)
+        ops_layout.setContentsMargins(0, 0, 0, 0)
+        ops_layout.addWidget(quick_refresh)
+
+        self._quick_open_group = QWidget()
+        self._quick_open_group.setObjectName("sectionActionGroup")
+        open_layout = QHBoxLayout(self._quick_open_group)
+        open_layout.setContentsMargins(0, 0, 0, 0)
+        open_layout.addWidget(quick_open)
+
+        self._quick_actions_layout.addWidget(self._quick_ops_group)
+        self._quick_actions_layout.addStretch()
+        self._quick_actions_layout.addWidget(self._quick_open_group)
+        self._update_quick_actions_layout()
+        layout.addWidget(self._quick_actions_bar)
 
         filter_box = QGroupBox("Фильтры")
-        filter_row = QHBoxLayout(filter_box)
+        filter_shell = QVBoxLayout(filter_box)
+        filter_shell.setContentsMargins(8, 8, 8, 8)
+        filter_shell.setSpacing(0)
+        self._filter_bar = QWidget(filter_box)
+        self._filter_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._filter_bar)
+        self._filter_layout.setContentsMargins(0, 0, 0, 0)
+        self._filter_layout.setSpacing(10)
         self.filter_enabled = QCheckBox("Фильтр по дате")
         self.filter_enabled.setChecked(False)
         self.filter_enabled.stateChanged.connect(self.refresh)
@@ -90,15 +118,28 @@ class SanitaryDashboard(QWidget):
         self.growth_filter.addItem("Рост: отрицательные", 0)
         self.growth_filter.addItem("Рост: не указан", -1)
         self.growth_filter.currentIndexChanged.connect(self.refresh)
-        filter_row.addWidget(self.filter_enabled)
-        filter_row.addWidget(QLabel("с"))
-        filter_row.addWidget(self.date_from)
-        filter_row.addWidget(QLabel("по"))
-        filter_row.addWidget(self.date_to)
-        filter_row.addWidget(QLabel("Поиск"))
-        filter_row.addWidget(self.search_input)
-        filter_row.addWidget(self.growth_filter)
-        filter_row.addStretch()
+        self._filter_date_group = QWidget()
+        date_layout = QHBoxLayout(self._filter_date_group)
+        date_layout.setContentsMargins(0, 0, 0, 0)
+        date_layout.setSpacing(8)
+        date_layout.addWidget(self.filter_enabled)
+        date_layout.addWidget(QLabel("с"))
+        date_layout.addWidget(self.date_from)
+        date_layout.addWidget(QLabel("по"))
+        date_layout.addWidget(self.date_to)
+
+        self._filter_query_group = QWidget()
+        query_layout = QHBoxLayout(self._filter_query_group)
+        query_layout.setContentsMargins(0, 0, 0, 0)
+        query_layout.setSpacing(8)
+        query_layout.addWidget(QLabel("Поиск"))
+        query_layout.addWidget(self.search_input)
+        query_layout.addWidget(self.growth_filter)
+
+        self._filter_layout.addWidget(self._filter_date_group)
+        self._filter_layout.addWidget(self._filter_query_group)
+        filter_shell.addWidget(self._filter_bar)
+        self._update_filter_layout()
         layout.addWidget(filter_box)
 
         list_box = QGroupBox("Список отделений")
@@ -114,8 +155,24 @@ class SanitaryDashboard(QWidget):
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        if hasattr(self, "_quick_actions_panel"):
-            self._quick_actions_panel.set_compact(self.width() < 1340)
+        if hasattr(self, "_quick_actions_layout"):
+            self._update_quick_actions_layout()
+        if hasattr(self, "_filter_layout"):
+            self._update_filter_layout()
+
+    def _update_quick_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._quick_actions_layout,
+            self._quick_actions_bar,
+            [self._quick_ops_group, self._quick_open_group],
+        )
+
+    def _update_filter_layout(self) -> None:
+        update_action_bar_direction(
+            self._filter_layout,
+            self._filter_bar,
+            [self._filter_date_group, self._filter_query_group],
+        )
 
     def _build_department_item(
         self, name: str, count: int, positives: int, last_text: str

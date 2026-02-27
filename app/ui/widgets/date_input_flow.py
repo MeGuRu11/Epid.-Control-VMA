@@ -2,7 +2,14 @@
 
 from PySide6.QtCore import QDate, QDateTime, QEvent, QObject, Qt, QTime
 from PySide6.QtGui import QKeyEvent
-from PySide6.QtWidgets import QAbstractItemView, QComboBox, QDateEdit, QDateTimeEdit, QLineEdit
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QComboBox,
+    QDateEdit,
+    QDateTimeEdit,
+    QLineEdit,
+)
 
 
 class DateInputAutoFlow(QObject):
@@ -10,63 +17,70 @@ class DateInputAutoFlow(QObject):
     _ACTIVE_PROP = "_flow_active"
 
     def eventFilter(self, obj: object, event: QEvent) -> bool:  # noqa: N802
-        if event.type() == QEvent.Type.Wheel:
-            if isinstance(obj, QComboBox):
-                return True
-            if self._is_combo_popup(obj):
-                return True
+        try:
+            if event.type() == QEvent.Type.Wheel:
+                if isinstance(obj, QComboBox):
+                    return True
+                if self._is_combo_popup(obj):
+                    return True
 
-        target: QDateEdit | QDateTimeEdit | None = None
-        editor: QLineEdit | None = None
-        if isinstance(obj, (QDateTimeEdit, QDateEdit)):
-            target = obj
-            editor = obj.lineEdit()
-        elif isinstance(obj, QLineEdit):
-            parent = obj.parent()
-            if isinstance(parent, (QDateTimeEdit, QDateEdit)):
-                target = parent
-                editor = obj
+            target: QDateEdit | QDateTimeEdit | None = None
+            editor: QLineEdit | None = None
+            if isinstance(obj, (QDateTimeEdit, QDateEdit)):
+                target = obj
+                editor = obj.lineEdit()
+            elif isinstance(obj, QLineEdit):
+                parent = obj.parent()
+                if isinstance(parent, (QDateTimeEdit, QDateEdit)):
+                    target = parent
+                    editor = obj
 
-        if target is None:
-            return False
-
-        if event.type() == QEvent.Type.Wheel:
-            return True
-        if event.type() == QEvent.Type.MouseButtonPress:
-            target.setProperty(self._ACTIVE_PROP, False)
-            target.setProperty(self._BUFFER_PROP, "")
-            return False
-        if event.type() == QEvent.Type.FocusIn:
-            target.setProperty(self._ACTIVE_PROP, True)
-            target.setProperty(self._BUFFER_PROP, "")
-            if not self._is_date_only_edit(target):
-                target.setCurrentSection(QDateTimeEdit.Section.DaySection)
-            else:
-                target.setCurrentSection(QDateEdit.Section.DaySection)
-            if editor is not None:
-                editor.selectAll()
-                editor.setCursorPosition(0)
-            return False
-        if event.type() == QEvent.Type.KeyPress:
-            key_event = event if isinstance(event, QKeyEvent) else None
-            if key_event is None or editor is None:
+            if target is None:
                 return False
-            key_text = key_event.text()
-            if not (key_text.isdigit() or key_event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete)):
+
+            if event.type() == QEvent.Type.Wheel:
+                return True
+            if event.type() == QEvent.Type.MouseButtonPress:
+                target.setProperty(self._ACTIVE_PROP, False)
+                target.setProperty(self._BUFFER_PROP, "")
                 return False
-            buffer = str(target.property(self._BUFFER_PROP) or "")
-            if editor.hasSelectedText():
-                buffer = ""
-            if key_event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
-                buffer = buffer[:-1]
-            else:
-                max_len = 12 if not self._is_date_only_edit(target) else 8
-                if len(buffer) < max_len:
-                    buffer = buffer + key_text
-            target.setProperty(self._BUFFER_PROP, buffer)
-            self._apply_buffer(target, editor, buffer)
+            if event.type() == QEvent.Type.FocusIn:
+                target.setProperty(self._ACTIVE_PROP, True)
+                target.setProperty(self._BUFFER_PROP, "")
+                if not self._is_date_only_edit(target):
+                    target.setCurrentSection(QDateTimeEdit.Section.DaySection)
+                else:
+                    target.setCurrentSection(QDateEdit.Section.DaySection)
+                if editor is not None:
+                    editor.selectAll()
+                    editor.setCursorPosition(0)
+                return False
+            if event.type() == QEvent.Type.KeyPress:
+                key_event = event if isinstance(event, QKeyEvent) else None
+                if key_event is None or editor is None:
+                    return False
+                key_text = key_event.text()
+                if not (key_text.isdigit() or key_event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete)):
+                    return False
+                buffer = str(target.property(self._BUFFER_PROP) or "")
+                if editor.hasSelectedText():
+                    buffer = ""
+                if key_event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
+                    buffer = buffer[:-1]
+                else:
+                    max_len = 12 if not self._is_date_only_edit(target) else 8
+                    if len(buffer) < max_len:
+                        buffer = buffer + key_text
+                target.setProperty(self._BUFFER_PROP, buffer)
+                self._apply_buffer(target, editor, buffer)
+                return True
+            return False
+        except KeyboardInterrupt:
+            # Allow Ctrl+C from terminal without noisy Qt "Python override" tracebacks.
+            app = QApplication.instance()
+            if app is not None:
+                app.quit()
             return True
-        return False
 
     @staticmethod
     def _is_combo_popup(obj: object) -> bool:

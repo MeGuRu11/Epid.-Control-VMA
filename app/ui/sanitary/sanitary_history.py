@@ -171,16 +171,10 @@ class SanitaryHistoryDialog(QDialog):
         refresh_btn.clicked.connect(self.refresh)
         self._actions_panel = ResponsiveActionsPanel(min_button_width=124, max_columns=2)
         self._actions_panel.set_buttons([new_btn, refresh_btn])
-        self._actions_panel.set_compact(self.width() < 1300)
         actions_layout.addWidget(self._actions_panel)
         layout.addWidget(actions_box)
 
         self.refresh()
-
-    def resizeEvent(self, event) -> None:  # noqa: N802
-        super().resizeEvent(event)
-        if hasattr(self, "_actions_panel"):
-            self._actions_panel.set_compact(self.width() < 1300)
 
     def refresh(self) -> None:
         self.list_widget.clear()

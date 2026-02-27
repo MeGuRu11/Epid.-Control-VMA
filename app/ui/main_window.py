@@ -22,7 +22,6 @@ from app.container import Container
 from app.ui.admin.user_admin_view import UserAdminView
 from app.ui.analytics.analytics_view import AnalyticsSearchView
 from app.ui.emz.emz_form import EmzForm
-from app.ui.form100.form100_view import Form100View
 from app.ui.form100_v2.form100_view import Form100ViewV2
 from app.ui.home.home_view import HomeView
 from app.ui.import_export.import_export_view import ImportExportView
@@ -196,7 +195,6 @@ class MainWindow(QMainWindow):
 
         home_action = self._add_nav_action(menubar, "Главная", self._home_view)
         emr_action = self._add_nav_action(menubar, "ЭМЗ", self._emr_form)
-        form100_action = self._add_nav_action(menubar, "Форма 100", self._form100_view)
         emk_action = self._add_nav_action(menubar, "Поиск и ЭМК", self._emk_view)
         lab_action = self._add_nav_action(menubar, "Лаборатория", self._lab_view)
         menubar.addSeparator()
@@ -220,7 +218,6 @@ class MainWindow(QMainWindow):
         self._nav_actions = {
             self._home_view: home_action,
             self._emr_form: emr_action,
-            self._form100_view: form100_action,
             self._emk_view: emk_action,
             self._lab_view: lab_action,
             self._sanitary_view: sanitary_action,
@@ -347,10 +344,12 @@ class MainWindow(QMainWindow):
             patient_service=self.container.patient_service,
             emz_service=self.container.emz_service,
             reference_service=self.container.reference_service,
+            session=self.session,
             on_open_emz=self._open_emz_from_emk,
             on_open_lab=self._open_lab_from_emk,
             on_edit_patient=self._open_patient_edit_dialog,
             on_data_changed=self._notify_data_changed,
+            on_open_form100=self._open_form100_from_emk,
         )
         self._analytics_view = AnalyticsSearchView(
             analytics_service=self.container.analytics_service,
@@ -363,20 +362,12 @@ class MainWindow(QMainWindow):
             exchange_service=self.container.exchange_service,
             session=self.session,
         )
-        if settings.form100_v2_enabled:
-            self._form100_view: Form100ViewV2 | Form100View = Form100ViewV2(
-                form100_service=self.container.form100_v2_service,
-                reporting_service=self.container.reporting_service,
-                session=self.session,
-                on_data_changed=self._notify_data_changed,
-            )
-        else:
-            self._form100_view = Form100View(
-                form100_service=self.container.form100_service,
-                reporting_service=self.container.reporting_service,
-                session=self.session,
-                on_data_changed=self._notify_data_changed,
-            )
+        self._form100_view = Form100ViewV2(
+            form100_service=self.container.form100_v2_service,
+            reporting_service=self.container.reporting_service,
+            session=self.session,
+            on_data_changed=self._notify_data_changed,
+        )
         self._sanitary_view = SanitaryDashboard(
             sanitary_service=self.container.sanitary_service,
             reference_service=self.container.reference_service,
@@ -394,7 +385,6 @@ class MainWindow(QMainWindow):
         )
         self._stack.addWidget(self._home_view)
         self._stack.addWidget(self._emr_form)
-        self._stack.addWidget(self._form100_view)
         self._stack.addWidget(self._emk_view)
         self._stack.addWidget(self._lab_view)
         self._stack.addWidget(self._sanitary_view)
@@ -402,6 +392,7 @@ class MainWindow(QMainWindow):
         self._stack.addWidget(self._exchange_view)
         self._stack.addWidget(self._ref_view)
         self._stack.addWidget(self._admin_view)
+        self._home_view.pageRequested.connect(self._on_home_page_requested)
         self._set_active_view(self._home_view)
 
     def _apply_session(self, session: SessionContext) -> None:
@@ -410,9 +401,9 @@ class MainWindow(QMainWindow):
         self._home_view.set_session(session)
         self._analytics_view.set_session(session)
         self._exchange_view.set_session(session)
-        self._form100_view.set_session(session)
         self._ref_view.set_session(session)
         self._admin_view.set_session(session)
+        self._emk_view.set_session(session)
         if self._admin_action:
             is_admin = can_access_admin_view(session.role)
             self._admin_action.setEnabled(is_admin)
@@ -449,7 +440,6 @@ class MainWindow(QMainWindow):
         self._current_case_id = None
         self._context_bar.clear_context()
         self._emr_form.clear_context()
-        self._form100_view.clear_context()
         self._emk_view.clear_context()
         self._lab_view.clear_context()
 
@@ -514,7 +504,7 @@ class MainWindow(QMainWindow):
             self._set_active_view(self._lab_view)
             return
         if key == "form100":
-            self._set_active_view(self._form100_view)
+            self._set_active_view(self._emk_view)
             return
         if key == "sanitary":
             self._set_active_view(self._sanitary_view)
@@ -529,7 +519,6 @@ class MainWindow(QMainWindow):
         self._sanitary_view.refresh_references()
         self._analytics_view.refresh_references()
         self._emk_view.refresh_references()
-        self._form100_view.refresh_references()
 
     def _refresh_home(self, force: bool = False) -> None:
         if force or self._home_dirty:
@@ -549,6 +538,32 @@ class MainWindow(QMainWindow):
     def _open_lab_from_emk(self, patient_id: int | None, emr_case_id: int | None) -> None:
         self._on_case_selected(patient_id, emr_case_id)
         self._set_active_view(self._lab_view)
+
+    def _open_form100_from_emk(self, patient_id: int | None, emr_case_id: int | None) -> None:
+        from app.ui.form100_v2.form100_list_panel import Form100ListPanel
+
+        panel = Form100ListPanel(
+            form100_service=self.container.form100_v2_service,
+            session=self.session,
+            patient_id=patient_id,
+            emr_case_id=emr_case_id,
+            on_data_changed=self._notify_data_changed,
+            parent=self,
+        )
+        panel.exec()
+
+    def _on_home_page_requested(self, key: str) -> None:
+        _map: dict[str, QWidget] = {
+            "patient":   self._emk_view,
+            "emr":       self._emr_form,
+            "form100":   self._emk_view,
+            "lab":       self._lab_view,
+            "sanitary":  self._sanitary_view,
+            "analytics": self._analytics_view,
+        }
+        target = _map.get(key)
+        if target is not None:
+            self._set_active_view(target)
 
     def _open_patient_edit_dialog(self, patient_id: int) -> None:
         dlg = PatientEditDialog(

@@ -15,6 +15,7 @@ from app.application.dto.form100_v2_dto import (
     Form100DataV2Dto,
     Form100SignV2Request,
     Form100UpdateV2Request,
+    Form100V2Filters,
 )
 from app.application.services import reporting_service as reporting_service_module
 from app.application.services.analytics_service import AnalyticsService
@@ -92,6 +93,29 @@ def make_create_request() -> Form100CreateV2Request:
         },
         ),
     )
+
+
+def seed_patient_cases(session_factory: Callable[[], AbstractContextManager[Session]]) -> tuple[int, int, int, int]:
+    with session_factory() as session:
+        patient_1 = models.Patient(full_name="Patient One", sex="M")
+        patient_2 = models.Patient(full_name="Patient Two", sex="M")
+        session.add(patient_1)
+        session.add(patient_2)
+        session.flush()
+
+        patient_1_id = cast(int, patient_1.id)
+        patient_2_id = cast(int, patient_2.id)
+        case_1 = models.EmrCase(patient_id=patient_1_id, hospital_case_no="CASE-P1")
+        case_2 = models.EmrCase(patient_id=patient_2_id, hospital_case_no="CASE-P2")
+        session.add(case_1)
+        session.add(case_2)
+        session.flush()
+        return (
+            patient_1_id,
+            cast(int, case_1.id),
+            patient_2_id,
+            cast(int, case_2.id),
+        )
 
 
 def test_form100_v2_create_update_sign_audit(tmp_path: Path) -> None:
@@ -195,3 +219,21 @@ def test_form100_v2_exchange_and_reporting(tmp_path: Path, monkeypatch: pytest.M
         report_rows = session.query(models.ReportRun).filter(models.ReportRun.report_type == "form100_v2").all()
     assert any(row.package_format == "form100_v2+zip" for row in exchange_rows)
     assert len(report_rows) == 1
+
+
+def test_form100_v2_list_cards_filters_by_patient(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "form100_v2_patient_filter.db")
+    _admin_id, operator_id = seed_users(session_factory)
+    patient_1_id, case_1_id, _patient_2_id, case_2_id = seed_patient_cases(session_factory)
+    service = Form100ServiceV2(session_factory=session_factory)
+
+    req_1 = make_create_request().model_copy(update={"emr_case_id": case_1_id})
+    req_2 = make_create_request().model_copy(
+        update={"emr_case_id": case_2_id, "main_id_tag": "B00002"}
+    )
+    card_1 = service.create_card(req_1, actor_id=operator_id)
+    service.create_card(req_2, actor_id=operator_id)
+
+    rows = service.list_cards(filters=Form100V2Filters(patient_id=patient_1_id), limit=50)
+
+    assert [row.id for row in rows] == [card_1.id]

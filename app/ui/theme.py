@@ -62,6 +62,7 @@ def _build_qss(settings: Settings) -> str:
     * {{
         color: {COL["text_primary"]};
         font-size: {font_size}px;
+        outline: none;
     }}
     QWidget {{
         background: {COL["bg"]};
@@ -77,8 +78,13 @@ def _build_qss(settings: Settings) -> str:
     QGroupBox::title {{
         subcontrol-origin: margin;
         left: 10px;
-        padding: 0 4px;
+        padding: 0 6px;
+        background: {COL["bg"]};
         font-weight: 700;
+    }}
+    QLabel {{
+        border: none;
+        background: transparent;
     }}
     QLabel#pageTitle {{
         font-size: 22px;
@@ -97,49 +103,110 @@ def _build_qss(settings: Settings) -> str:
     }}
     QLabel#validationBanner {{
         background: #FDECEC;
-        border: 1px solid #E9B7B7;
+        border: none;
         border-radius: 6px;
         padding: 6px;
         color: #7A2424;
     }}
     QLabel#statusLabel {{
-        color: {COL["muted"]};
+        color: {COL["text"]};
         background: transparent;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         padding: 0;
+        font-weight: 700;
     }}
     QLabel#statusLabel[statusLevel="info"] {{
-        color: {COL["info"]};
-        background: {COL["info_bg"]};
-        border: 1px solid #C9C6C1;
-        padding: 6px 10px;
+        color: #2F4F58;
+        background: #E8F4F2;
+        border: 1px solid #9FCFC6;
+        padding: 6px 12px;
     }}
     QLabel#statusLabel[statusLevel="success"] {{
-        color: {COL["success"]};
-        background: {COL["success_bg"]};
-        border: 1px solid {COL["success"]};
-        padding: 6px 10px;
+        color: #2D5A40;
+        background: #E8F7EE;
+        border: 1px solid #9AD8A6;
+        padding: 6px 12px;
     }}
     QLabel#statusLabel[statusLevel="warning"] {{
-        color: {COL["warn"]};
-        background: {COL["warn_bg"]};
-        border: 1px solid {COL["warn"]};
-        padding: 6px 10px;
+        color: #6E5525;
+        background: #FFF4DB;
+        border: 1px solid #E7C980;
+        padding: 6px 12px;
     }}
     QLabel#statusLabel[statusLevel="error"] {{
-        color: {COL["error"]};
-        background: {COL["error_bg"]};
-        border: 1px solid {COL["error"]};
-        padding: 6px 10px;
+        color: #7F2F2A;
+        background: #FDE7E5;
+        border: 1px solid #E3A39D;
+        padding: 6px 12px;
     }}
     QLabel#chipLabel {{
-        background: {COL["surface2"]};
-        border: 1px solid {COL["border"]};
-        border-radius: 10px;
-        padding: 2px 8px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 1px 2px;
         color: {COL["text"]};
         font-weight: 600;
+    }}
+    QGroupBox#patientCard {{
+        background: rgba(255, 249, 242, 0.72);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QLabel#patientName {{
+        color: {COL["text_primary"]};
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+    }}
+    QLabel#patientSubtitle {{
+        color: {COL["text_muted"]};
+        font-size: 11px;
+        font-weight: 600;
+    }}
+    QWidget#patientIdCard {{
+        background: rgba(161, 227, 216, 0.2);
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QLabel#patientIdCaption {{
+        color: {COL["text_muted"]};
+        font-size: 10px;
+        font-weight: 700;
+    }}
+    QLabel#patientIdBadge {{
+        color: {COL["text_primary"]};
+        font-size: 18px;
+        font-weight: 800;
+    }}
+    QWidget#patientSeparator {{
+        background: {COL["border_soft"]};
+        border: none;
+    }}
+    QWidget#patientFieldCard {{
+        background: rgba(255, 249, 242, 0.88);
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QLabel#patientFieldTitle {{
+        color: {COL["text_muted"]};
+        font-size: 10px;
+        font-weight: 700;
+    }}
+    QLabel#patientFieldValue {{
+        color: {COL["text"]};
+        font-size: 13px;
+        font-weight: 700;
+    }}
+    QLabel#patientLabel {{
+        color: {COL["text_muted"]};
+        font-size: 10px;
+        font-weight: 700;
+    }}
+    QLabel#patientValue {{
+        color: {COL["text"]};
+        font-size: 13px;
+        font-weight: 700;
     }}
     QWidget#listCard {{
         background: {COL["surface"]};
@@ -171,8 +238,8 @@ def _build_qss(settings: Settings) -> str:
         color: {COL["error"]};
     }}
     QLabel#statBadge {{
-        border-radius: 8px;
-        padding: 4px 6px;
+        border-radius: 6px;
+        padding: 2px 6px;
         font-weight: 700;
         color: {COL["text_primary"]};
     }}
@@ -200,11 +267,11 @@ def _build_qss(settings: Settings) -> str:
     QWidget#statCard {{
         background: rgba(255, 249, 242, 0.78);
         border: 1px solid {COL["border"]};
-        border-radius: 12px;
-        min-height: 78px;
+        border-radius: 10px;
+        min-height: 58px;
     }}
     QLabel#metricValue {{
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 800;
         color: {COL["text_primary"]};
     }}
@@ -218,7 +285,7 @@ def _build_qss(settings: Settings) -> str:
         font-weight: 700;
     }}
     QToolButton#contextToggle {{
-        border: 1px solid {COL["border"]};
+        border: none;
         border-radius: 6px;
         padding: 2px;
         background: transparent;
@@ -230,6 +297,15 @@ def _build_qss(settings: Settings) -> str:
         background: rgba(239, 230, 218, 0.88);
         border: 1px solid {COL["border"]};
         border-radius: 12px;
+    }}
+    QWidget#sectionActionBar {{
+        background: rgba(255, 249, 242, 0.72);
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QWidget#sectionActionGroup {{
+        background: transparent;
+        border: none;
     }}
     QLineEdit, QComboBox, QDateEdit, QDateTimeEdit, QTextEdit, QPlainTextEdit, QSpinBox {{
         background: {COL["surface"]};
@@ -245,7 +321,7 @@ def _build_qss(settings: Settings) -> str:
     }}
     QPushButton {{
         background: {COL["accent2"]};
-        border: 1px solid {COL["accent_border"]};
+        border: none;
         border-radius: 10px;
         padding: {button_py};
         color: {COL["text_primary"]};
@@ -260,24 +336,33 @@ def _build_qss(settings: Settings) -> str:
     }}
     QPushButton:disabled {{
         background: {COL["surface"]};
-        border-color: {COL["border"]};
         color: {COL["muted"]};
     }}
     QPushButton#secondaryButton {{
         background: {COL["surface"]};
-        border-color: {COL["border"]};
+        color: {COL["muted"]};
+    }}
+    QWidget#sectionActionBar QPushButton#primaryButton {{
+        background: {COL["accent"]};
+        font-weight: 800;
+        padding: 6px 14px;
+    }}
+    QWidget#sectionActionBar QPushButton#primaryButton:hover {{
+        background: {COL["accent_pressed"]};
+    }}
+    QWidget#sectionActionBar QPushButton#primaryButton:disabled {{
+        background: {COL["surface"]};
         color: {COL["muted"]};
     }}
     QPushButton#logoutButton {{
         background: transparent;
-        border: 1px solid {COL["border"]};
+        border: none;
         border-radius: 8px;
         padding: 4px 12px;
         color: {COL["text"]};
     }}
     QPushButton#logoutButton:hover {{
         background: {COL["error"]};
-        border-color: {COL["error"]};
         color: {COL["surface2"]};
     }}
     QTableWidget, QTableView {{
@@ -414,7 +499,6 @@ def _build_qss(settings: Settings) -> str:
         background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
             stop:0 rgba(255, 249, 242, 0.7), stop:1 rgba(239, 230, 218, 0.6));
         border: 1px solid rgba(255, 255, 255, 0.65);
-        outline: 1px solid rgba(225, 217, 207, 0.8);
         border-radius: 14px;
     }}
     QDialog#loginDialog QLabel#loginCardTitle {{
@@ -458,7 +542,7 @@ def _build_qss(settings: Settings) -> str:
     QDialog#firstRunDialog QLabel#firstRunInfoBadge {{
         color: {COL["text"]};
         background: rgba(255, 249, 242, 0.6);
-        border: 1px solid rgba(225, 217, 207, 0.6);
+        border: none;
         border-radius: 10px;
         padding: 8px 12px;
         font-weight: 600;

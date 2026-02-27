@@ -96,6 +96,13 @@ class Form100RepositoryV2:
         filters = filters or {}
         stmt = select(models.Form100V2)
 
+        patient_id = filters.get("patient_id")
+        if isinstance(patient_id, int):
+            stmt = stmt.join(
+                models.EmrCase,
+                models.EmrCase.id == models.Form100V2.emr_case_id,
+            ).where(models.EmrCase.patient_id == patient_id)
+
         query_text = str(filters.get("query") or "").strip()
         if query_text:
             like = f"%{query_text}%"

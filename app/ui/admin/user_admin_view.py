@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QCheckBox,
     QComboBox,
     QFileDialog,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -23,6 +25,7 @@ from app.application.security import can_manage_backups, can_manage_users
 from app.application.services.backup_service import BackupService
 from app.application.services.dashboard_service import DashboardService
 from app.application.services.user_admin_service import UserAdminService
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
@@ -52,7 +55,17 @@ class UserAdminView(QWidget):
         self._refresh_all()
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
+        root_layout = QVBoxLayout(self)
+        root_layout.setSpacing(0)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        root_layout.addWidget(scroll)
+
+        page = QWidget()
+        scroll.setWidget(page)
+        layout = QVBoxLayout(page)
         layout.setSpacing(12)
         layout.setContentsMargins(12, 12, 12, 12)
 
@@ -62,6 +75,7 @@ class UserAdminView(QWidget):
         header.addWidget(title)
         header.addStretch()
         self.refresh_btn = QPushButton("Обновить")
+        self.refresh_btn.setObjectName("secondaryButton")
         compact_button(self.refresh_btn)
         self.refresh_btn.clicked.connect(self._refresh_all)
         header.addWidget(self.refresh_btn)
@@ -71,9 +85,22 @@ class UserAdminView(QWidget):
         self.role_hint.setObjectName("muted")
         layout.addWidget(self.role_hint)
 
-        users_frame = QGroupBox("Список пользователей")
-        users_frame_layout = QVBoxLayout(users_frame)
+        self._content_container = QWidget()
+        self._content_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._content_container)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
+        self._content_layout.setSpacing(12)
 
+        self._left_col = QWidget()
+        left_col_layout = QVBoxLayout(self._left_col)
+        left_col_layout.setContentsMargins(0, 0, 0, 0)
+        left_col_layout.setSpacing(12)
+        self._right_col = QWidget()
+        right_col_layout = QVBoxLayout(self._right_col)
+        right_col_layout.setContentsMargins(0, 0, 0, 0)
+        right_col_layout.setSpacing(12)
+
+        self._users_frame = QGroupBox("Список пользователей")
+        users_frame_layout = QVBoxLayout(self._users_frame)
         filter_row = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Поиск по логину")
@@ -89,34 +116,12 @@ class UserAdminView(QWidget):
         self.user_table.setAlternatingRowColors(True)
         self.user_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.user_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self.user_table.setMinimumHeight(200)
+        self.user_table.setMinimumHeight(220)
         users_frame_layout.addWidget(self.user_table)
+        left_col_layout.addWidget(self._users_frame)
 
-        users_actions = QHBoxLayout()
-        users_actions.addStretch()
-        users_frame_layout.addLayout(users_actions)
-
-        layout.addWidget(users_frame)
-
-        backup_box = QGroupBox("Резервные копии")
-        backup_layout = QVBoxLayout(backup_box)
-        self.backup_status = QLabel("Последняя резервная копия: -")
-        backup_layout.addWidget(self.backup_status)
-        backup_actions = QHBoxLayout()
-        self.backup_create_btn = QPushButton("Создать резервную копию")
-        compact_button(self.backup_create_btn)
-        self.backup_create_btn.clicked.connect(self._create_backup)
-        self.backup_restore_btn = QPushButton("Восстановить из файла")
-        compact_button(self.backup_restore_btn)
-        self.backup_restore_btn.clicked.connect(self._restore_backup)
-        backup_actions.addWidget(self.backup_create_btn)
-        backup_actions.addWidget(self.backup_restore_btn)
-        backup_actions.addStretch()
-        backup_layout.addLayout(backup_actions)
-        layout.addWidget(backup_box)
-
-        audit_box = QGroupBox("События аудита")
-        audit_layout = QVBoxLayout(audit_box)
+        self._audit_box = QGroupBox("События аудита")
+        audit_layout = QVBoxLayout(self._audit_box)
         self.audit_table = QTableWidget(0, 5)
         self.audit_table.setHorizontalHeaderLabels(
             ["Время", "Пользователь", "Действие", "Тип", "ID"]
@@ -124,12 +129,47 @@ class UserAdminView(QWidget):
         self.audit_table.horizontalHeader().setStretchLastSection(True)
         self.audit_table.verticalHeader().setVisible(False)
         self.audit_table.setAlternatingRowColors(True)
-        self.audit_table.setMinimumHeight(220)
+        self.audit_table.setMinimumHeight(260)
         audit_layout.addWidget(self.audit_table)
-        layout.addWidget(audit_box)
+        left_col_layout.addWidget(self._audit_box)
+        left_col_layout.addStretch()
 
-        create_box = QGroupBox("Создать пользователя")
-        create_layout = QVBoxLayout(create_box)
+        self._backup_box = QGroupBox("Резервные копии")
+        backup_layout = QVBoxLayout(self._backup_box)
+        self.backup_status = QLabel("Последняя резервная копия: -")
+        backup_layout.addWidget(self.backup_status)
+        self.backup_create_btn = QPushButton("Создать резервную копию")
+        self.backup_create_btn.setObjectName("primaryButton")
+        compact_button(self.backup_create_btn)
+        self.backup_create_btn.clicked.connect(self._create_backup)
+        self.backup_restore_btn = QPushButton("Восстановить из файла")
+        self.backup_restore_btn.setObjectName("secondaryButton")
+        compact_button(self.backup_restore_btn)
+        self.backup_restore_btn.clicked.connect(self._restore_backup)
+        self._backup_actions_bar = QWidget()
+        self._backup_actions_bar.setObjectName("sectionActionBar")
+        self._backup_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._backup_actions_bar)
+        self._backup_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._backup_actions_layout.setSpacing(10)
+        self._backup_main_group = QWidget()
+        self._backup_main_group.setObjectName("sectionActionGroup")
+        backup_main_layout = QHBoxLayout(self._backup_main_group)
+        backup_main_layout.setContentsMargins(0, 0, 0, 0)
+        backup_main_layout.setSpacing(8)
+        backup_main_layout.addWidget(self.backup_restore_btn)
+        self._backup_create_group = QWidget()
+        self._backup_create_group.setObjectName("sectionActionGroup")
+        backup_create_layout = QHBoxLayout(self._backup_create_group)
+        backup_create_layout.setContentsMargins(0, 0, 0, 0)
+        backup_create_layout.addWidget(self.backup_create_btn)
+        self._backup_actions_layout.addWidget(self._backup_main_group)
+        self._backup_actions_layout.addStretch()
+        self._backup_actions_layout.addWidget(self._backup_create_group)
+        backup_layout.addWidget(self._backup_actions_bar)
+        right_col_layout.addWidget(self._backup_box)
+
+        self._create_box = QGroupBox("Создать пользователя")
+        create_layout = QVBoxLayout(self._create_box)
         create_form = QFormLayout()
         self.create_login = QLineEdit()
         self.create_password = QLineEdit()
@@ -143,16 +183,25 @@ class UserAdminView(QWidget):
         create_form.addRow("Роль", self.create_role)
         create_layout.addLayout(create_form)
         create_btn = QPushButton("Создать")
+        create_btn.setObjectName("primaryButton")
         compact_button(create_btn)
         create_btn.clicked.connect(self._create_user)
-        create_actions = QHBoxLayout()
-        create_actions.addWidget(create_btn)
-        create_actions.addStretch()
-        create_layout.addLayout(create_actions)
-        layout.addWidget(create_box)
+        self._create_actions_bar = QWidget()
+        self._create_actions_bar.setObjectName("sectionActionBar")
+        self._create_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._create_actions_bar)
+        self._create_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._create_group = QWidget()
+        self._create_group.setObjectName("sectionActionGroup")
+        create_group_layout = QHBoxLayout(self._create_group)
+        create_group_layout.setContentsMargins(0, 0, 0, 0)
+        create_group_layout.addWidget(create_btn)
+        self._create_actions_layout.addStretch()
+        self._create_actions_layout.addWidget(self._create_group)
+        create_layout.addWidget(self._create_actions_bar)
+        right_col_layout.addWidget(self._create_box)
 
-        manage_box = QGroupBox("Сброс пароля / статус")
-        manage_layout = QVBoxLayout(manage_box)
+        self._manage_box = QGroupBox("Сброс пароля / статус")
+        manage_layout = QVBoxLayout(self._manage_box)
         reset_form = QFormLayout()
         self.reset_password = QLineEdit()
         self.reset_password.setEchoMode(QLineEdit.EchoMode.Password)
@@ -161,25 +210,44 @@ class UserAdminView(QWidget):
         reset_form.addRow("", self.reset_deactivate)
         manage_layout.addLayout(reset_form)
         reset_btn = QPushButton("Сбросить пароль")
+        reset_btn.setObjectName("primaryButton")
         compact_button(reset_btn)
         reset_btn.clicked.connect(self._reset_password)
         self.activate_btn = QPushButton("Активировать")
+        self.activate_btn.setObjectName("secondaryButton")
         compact_button(self.activate_btn)
         self.activate_btn.clicked.connect(lambda: self._set_active(True))
         self.deactivate_btn = QPushButton("Деактивировать")
+        self.deactivate_btn.setObjectName("secondaryButton")
         compact_button(self.deactivate_btn)
         self.deactivate_btn.clicked.connect(lambda: self._set_active(False))
-        manage_actions = QHBoxLayout()
-        manage_actions.addWidget(reset_btn)
-        manage_actions.addWidget(self.activate_btn)
-        manage_actions.addWidget(self.deactivate_btn)
-        manage_actions.addStretch()
-        manage_layout.addLayout(manage_actions)
-        layout.addWidget(manage_box)
+        self._manage_actions_bar = QWidget()
+        self._manage_actions_bar.setObjectName("sectionActionBar")
+        self._manage_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._manage_actions_bar)
+        self._manage_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._manage_actions_layout.setSpacing(10)
+        self._manage_main_group = QWidget()
+        self._manage_main_group.setObjectName("sectionActionGroup")
+        manage_main_layout = QHBoxLayout(self._manage_main_group)
+        manage_main_layout.setContentsMargins(0, 0, 0, 0)
+        manage_main_layout.setSpacing(8)
+        manage_main_layout.addWidget(reset_btn)
+        manage_main_layout.addWidget(self.activate_btn)
+        manage_main_layout.addWidget(self.deactivate_btn)
+        self._manage_actions_layout.addWidget(self._manage_main_group)
+        self._manage_actions_layout.addStretch()
+        manage_layout.addWidget(self._manage_actions_bar)
+        right_col_layout.addWidget(self._manage_box)
 
         self.status = QLabel("")
         self.status.setObjectName("adminStatus")
-        layout.addWidget(self.status)
+        self.status.setWordWrap(True)
+        right_col_layout.addWidget(self.status)
+        right_col_layout.addStretch()
+
+        self._content_layout.addWidget(self._left_col, 2)
+        self._content_layout.addWidget(self._right_col, 1)
+        layout.addWidget(self._content_container)
         layout.addStretch()
 
         self._admin_widgets = [
@@ -196,6 +264,56 @@ class UserAdminView(QWidget):
             self.backup_create_btn,
             self.backup_restore_btn,
         ]
+        self._update_backup_actions_layout()
+        self._update_create_actions_layout()
+        self._update_manage_actions_layout()
+        self._update_content_layout()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._update_backup_actions_layout()
+        self._update_create_actions_layout()
+        self._update_manage_actions_layout()
+        self._update_content_layout()
+
+    def _update_content_layout(self) -> None:
+        if not hasattr(self, "_content_layout"):
+            return
+        left_required = max(self._users_frame.sizeHint().width(), self._audit_box.sizeHint().width())
+        right_required = max(
+            self._backup_box.sizeHint().width(),
+            self._create_box.sizeHint().width(),
+            self._manage_box.sizeHint().width(),
+        )
+        needed = left_required + right_required + self._content_layout.spacing() + 32
+        target = (
+            QBoxLayout.Direction.LeftToRight
+            if self._content_container.width() >= needed
+            else QBoxLayout.Direction.TopToBottom
+        )
+        if self._content_layout.direction() != target:
+            self._content_layout.setDirection(target)
+
+    def _update_backup_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._backup_actions_layout,
+            self._backup_actions_bar,
+            [self._backup_main_group, self._backup_create_group],
+        )
+
+    def _update_create_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._create_actions_layout,
+            self._create_actions_bar,
+            [self._create_group],
+        )
+
+    def _update_manage_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._manage_actions_layout,
+            self._manage_actions_bar,
+            [self._manage_main_group],
+        )
 
     def _apply_role_policy(self) -> None:
         is_admin = can_manage_users(self.session.role)

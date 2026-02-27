@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from PySide6.QtCore import QDateTime, QEasingCurve, QLocale, QPropertyAnimation, QTimer
+from PySide6.QtCore import QDateTime, QEasingCurve, QLocale, QPropertyAnimation, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
@@ -101,6 +101,8 @@ class ClockCard(QWidget):
 
 
 class HomeView(QWidget):
+    pageRequested = Signal(str)  # noqa: N815
+
     def __init__(
         self,
         session: SessionContext,
@@ -111,6 +113,7 @@ class HomeView(QWidget):
         self.session = session
         self.dashboard_service = dashboard_service
         self._stats_labels: dict[str, QLabel] = {}
+        self._stat_cards: list[QWidget] = []
         self._build_ui()
         self._load_stats()
 
@@ -160,19 +163,17 @@ class HomeView(QWidget):
         meta_row.addStretch()
         layout.addLayout(meta_row)
 
-        stats_box = QGroupBox("Сводные показатели")
-        grid = QGridLayout(stats_box)
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(12)
-        self._add_stat(grid, 0, 0, "Пациенты", "patients")
-        self._add_stat(grid, 0, 1, "Истории болезни (ЭМЗ)", "emr_cases")
-        self._add_stat(grid, 1, 0, "Лабораторные пробы", "lab_samples")
-        self._add_stat(grid, 1, 1, "Санитарные пробы", "sanitary_samples")
-        self._add_stat(grid, 2, 0, "Новые пациенты (30 дней)", "new_patients")
-        self._add_stat(grid, 2, 1, "Топ-отделение (30 дней)", "top_department")
-        grid.setColumnStretch(0, 1)
-        grid.setColumnStretch(1, 1)
-        layout.addWidget(stats_box)
+        self._stats_box = QGroupBox("Сводные показатели")
+        self._stats_grid = QGridLayout(self._stats_box)
+        self._stats_grid.setHorizontalSpacing(12)
+        self._stats_grid.setVerticalSpacing(12)
+        self._add_stat("Пациенты", "patients")
+        self._add_stat("Истории болезни (ЭМЗ)", "emr_cases")
+        self._add_stat("Лабораторные пробы", "lab_samples")
+        self._add_stat("Санитарные пробы", "sanitary_samples")
+        self._add_stat("Новые пациенты (30 дней)", "new_patients")
+        self._add_stat("Топ-отделение (30 дней)", "top_department")
+        layout.addWidget(self._stats_box)
 
         layout.addStretch()
 
@@ -188,13 +189,18 @@ class HomeView(QWidget):
         self._clock_timer.timeout.connect(self._update_clock)
         self._clock_timer.start(1000)
         self._update_clock()
+        self._reflow_stat_cards()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._reflow_stat_cards()
 
     def set_session(self, session: SessionContext) -> None:
         self.session = session
         self._user_info_label.setText(f"Пользователь: {session.login} ({session.role})")
         self.refresh_stats()
 
-    def _add_stat(self, grid: QGridLayout, row: int, col: int, label: str, key: str) -> None:
+    def _add_stat(self, label: str, key: str) -> None:
         badge_map = {
             "patients": "PT",
             "emr_cases": "EM",
@@ -213,7 +219,10 @@ class HomeView(QWidget):
         badge = QLabel(badge_text)
         badge.setObjectName("statBadge")
         badge.setProperty("toneKey", key if key in badge_map else "default")
+        badge.setFixedSize(40, 24)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_layout = QVBoxLayout()
+        info_layout.setSpacing(2)
         name_label = QLabel(label)
         name_label.setObjectName("muted")
         value_label = QLabel("0")
@@ -224,7 +233,31 @@ class HomeView(QWidget):
         card_layout.addWidget(badge)
         card_layout.addLayout(info_layout)
         self._stats_labels[key] = value_label
-        grid.addWidget(card, row, col)
+        self._stat_cards.append(card)
+
+    def _reflow_stat_cards(self) -> None:
+        if not hasattr(self, "_stats_grid"):
+            return
+        while self._stats_grid.count():
+            item = self._stats_grid.takeAt(0)
+            if item is None:
+                continue
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(self._stats_box)
+        if not self._stat_cards:
+            return
+        card_min = max(card.minimumSizeHint().width() for card in self._stat_cards)
+        spacing = max(0, self._stats_grid.horizontalSpacing())
+        margins = self._stats_grid.contentsMargins()
+        two_col_needed = card_min * 2 + spacing + margins.left() + margins.right()
+        columns = 2 if self._stats_box.width() >= two_col_needed else 1
+        for idx, card in enumerate(self._stat_cards):
+            row = idx // columns
+            col = idx % columns
+            self._stats_grid.addWidget(card, row, col)
+        self._stats_grid.setColumnStretch(0, 1)
+        self._stats_grid.setColumnStretch(1, 1 if columns == 2 else 0)
 
     def _load_stats(self) -> None:
         try:

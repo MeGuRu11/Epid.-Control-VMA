@@ -70,6 +70,7 @@ class Form100V2Filters(BaseModel):
     status: Literal["DRAFT", "SIGNED"] | None = None
     unit: str | None = None
     id_tag: str | None = None
+    patient_id: int | None = None
     emr_case_id: int | None = None
     created_from: date | None = None
     created_to: date | None = None

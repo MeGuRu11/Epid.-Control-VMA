@@ -6,6 +6,8 @@ import sys
 import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from types import TracebackType
+from typing import TextIO
 
 # Ensure project root on sys.path when running as script or bundled app
 _MEIPASS = getattr(sys, "_MEIPASS", None)
@@ -13,7 +15,7 @@ ROOT_DIR = Path(_MEIPASS) if _MEIPASS else Path(__file__).resolve().parent.paren
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from PySide6.QtCore import QtMsgType, qInstallMessageHandler  # noqa: E402
+from PySide6.QtCore import QMessageLogContext, QtMsgType, qInstallMessageHandler  # noqa: E402
 from PySide6.QtGui import QIcon  # noqa: E402
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox  # noqa: E402
 
@@ -56,38 +58,49 @@ def _install_stderr_tee(log_path: Path) -> None:
     atexit.register(log_file.close)
 
     class _TeeStream:
-        def __init__(self, *streams) -> None:
-            self._streams = [stream for stream in streams if stream is not None]
+        def __init__(self, *streams: TextIO | None) -> None:
+            # Keep only non-null stream-like objects to avoid failures in windowed/bundled runs.
+            self._streams: list[object] = [s for s in streams if s is not None]
 
         def write(self, data: str) -> int:
             written = 0
             for stream in self._streams:
                 try:
-                    written = stream.write(data)
+                    if not hasattr(stream, "write"):
+                        continue
+                    result = stream.write(data)  # type: ignore[call-arg]
+                    if isinstance(result, int):
+                        written = result
+                except Exception:  # noqa: BLE001
+                    continue
+                try:
                     if hasattr(stream, "flush"):
-                        stream.flush()
+                        stream.flush()  # type: ignore[call-arg]
                 except Exception:  # noqa: BLE001
                     continue
             return written
 
         def flush(self) -> None:
             for stream in self._streams:
-                if hasattr(stream, "flush"):
-                    try:
-                        stream.flush()
-                    except Exception:  # noqa: BLE001
-                        continue
+                try:
+                    if hasattr(stream, "flush"):
+                        stream.flush()  # type: ignore[call-arg]
+                except Exception:  # noqa: BLE001
+                    continue
 
         def isatty(self) -> bool:
             return any(getattr(stream, "isatty", lambda: False)() for stream in self._streams)
 
         def fileno(self) -> int:
             for stream in self._streams:
-                if hasattr(stream, "fileno"):
-                    try:
-                        return stream.fileno()
-                    except Exception:  # noqa: BLE001
-                        continue
+                try:
+                    fileno_fn = getattr(stream, "fileno", None)
+                    if callable(fileno_fn):
+                        fd_obj: object = fileno_fn()
+                        if isinstance(fd_obj, int):
+                            return fd_obj
+                except Exception:  # noqa: BLE001
+                    continue
             return -1
 
     _stderr_tee = log_file
@@ -95,7 +108,10 @@ def _install_stderr_tee(log_path: Path) -> None:
 
 
 def _install_exception_hook(log_path: Path) -> None:
-    def _handle_exception(exc_type, exc, tb) -> None:
+    def _handle_exception(exc_type: type[BaseException], exc: BaseException, tb: TracebackType | None) -> None:
+        if issubclass(exc_type, KeyboardInterrupt):
+            logging.getLogger(__name__).info("Interrupted by user (KeyboardInterrupt)")
+            return
         logging.getLogger(__name__).error("Unhandled exception", exc_info=(exc_type, exc, tb))
         if QApplication.instance() is not None:
             QMessageBox.critical(
@@ -118,7 +134,7 @@ def _install_qt_message_handler() -> None:
         "QWidgetEffectSourcePrivate::pixmap: Painter not active",
     )
 
-    def _handle_qt_message(msg_type: QtMsgType, _context, message: str) -> None:
+    def _handle_qt_message(msg_type: QtMsgType, _context: QMessageLogContext, message: str) -> None:
         now = time.monotonic()
         if message.startswith(suppress_prefixes):
             last_time = last_msg.get(message)
@@ -198,4 +214,8 @@ def _apply_initial_window_size(window: QMainWindow, app: QApplication) -> None:
     window.move(x, y)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        logging.getLogger(__name__).info("Interrupted by user (KeyboardInterrupt)")
+        sys.exit(130)

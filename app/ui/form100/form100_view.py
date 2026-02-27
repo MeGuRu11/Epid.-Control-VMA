@@ -53,7 +53,6 @@ class Form100View(QWidget):
         self._cards_resize_priority = [3, 5, 7, 1, 4, 6, 2, 0]
         self._cards_min_total = sum(self._cards_min_widths) + 8
         self._editor_min_width = 520
-        self._vertical_breakpoint_px = 1380
         self._build_ui()
         self.refresh_cards()
 
@@ -194,12 +193,12 @@ class Form100View(QWidget):
         self._apply_responsive_splitter_orientation()
         self._enforce_splitter_sizes()
         self._apply_cards_table_column_widths()
-        self._actions_panel.set_compact(self.width() < 1400)
 
     def _apply_responsive_splitter_orientation(self) -> None:
         if not hasattr(self, "_splitter"):
             return
-        should_be_vertical = self.width() < self._vertical_breakpoint_px
+        required_horizontal = self._cards_min_total + self._editor_min_width + 140
+        should_be_vertical = self.width() < required_horizontal
         target = Qt.Orientation.Vertical if should_be_vertical else Qt.Orientation.Horizontal
         if self._splitter.orientation() != target:
             self._splitter.setOrientation(target)

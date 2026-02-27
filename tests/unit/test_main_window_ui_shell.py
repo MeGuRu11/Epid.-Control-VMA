@@ -25,7 +25,7 @@ def test_main_window_uses_transition_stack_and_shell_layers(monkeypatch, qapp) -
     )
     window = MainWindow(
         session=SessionContext(user_id=1, login="admin", role="admin"),
-        container=container,
+        container=container,  # type: ignore[arg-type]
     )
     qapp.processEvents()
 
@@ -73,7 +73,7 @@ def test_main_window_nav_menu_adapts_titles_on_small_width(monkeypatch, qapp) ->
     )
     window = MainWindow(
         session=SessionContext(user_id=1, login="admin", role="admin"),
-        container=container,
+        container=container,  # type: ignore[arg-type]
     )
     window.show()
     qapp.processEvents()

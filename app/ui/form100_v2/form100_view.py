@@ -46,6 +46,12 @@ class Form100ViewV2(QWidget):
         self.session = session
         self.on_data_changed = on_data_changed
         self._rows_by_index: list[str] = []
+        self._cards_preferred_widths = [68, 104, 82, 220, 92, 192, 108, 170]
+        self._cards_min_widths = [54, 90, 72, 162, 82, 154, 92, 140]
+        self._cards_floor_widths = [44, 74, 60, 128, 70, 120, 74, 108]
+        self._cards_resize_priority = [3, 5, 7, 1, 6, 4, 2, 0]
+        self._cards_min_total = sum(self._cards_min_widths) + 8
+        self._editor_min_width = 560
         self._build_ui()
         self.refresh_cards()
 
@@ -138,33 +144,94 @@ class Form100ViewV2(QWidget):
         self._splitter.setStretchFactor(0, 1)
         self._splitter.setStretchFactor(1, 2)
         root.addWidget(self._splitter)
-        self._apply_cards_table_column_widths()
-        self._enforce_splitter_sizes()
+        self._apply_cards_layout()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        self._actions_panel.set_compact(self.width() < 1480)
-        self._apply_cards_table_column_widths()
+        self._apply_cards_layout()
+
+    def _apply_cards_layout(self) -> None:
+        self._apply_responsive_splitter_orientation()
         self._enforce_splitter_sizes()
+        self._apply_cards_table_column_widths()
 
     def _apply_cards_table_column_widths(self) -> None:
-        widths = [68, 104, 82, 220, 92, 192, 108, 170]
+        if self.cards_table.columnCount() != len(self._cards_preferred_widths):
+            return
+
         available = max(1, self.cards_table.viewport().width())
-        total = sum(widths)
-        if available > total:
-            extra = available - total
-            widths[3] += int(extra * 0.45)
-            widths[5] += int(extra * 0.35)
-            widths[7] += extra - int(extra * 0.45) - int(extra * 0.35)
+        preferred = self._cards_preferred_widths
+        min_widths = self._cards_min_widths
+        floor_widths = self._cards_floor_widths
+        widths = min_widths.copy()
+
+        min_total = sum(min_widths)
+        pref_total = sum(preferred)
+        if available >= pref_total:
+            widths = preferred.copy()
+            delta = available - pref_total
+            widths[3] += int(delta * 0.42)
+            widths[5] += int(delta * 0.34)
+            widths[7] += delta - int(delta * 0.42) - int(delta * 0.34)
+        elif available > min_total:
+            widths = min_widths.copy()
+            extra = available - min_total
+            caps = [p - m for p, m in zip(preferred, min_widths, strict=False)]
+            for idx in self._cards_resize_priority:
+                if extra <= 0:
+                    break
+                add = min(caps[idx], extra)
+                if add > 0:
+                    widths[idx] += add
+                    extra -= add
+            if extra > 0:
+                widths[7] += extra
+        else:
+            widths = min_widths.copy()
+            overflow = min_total - available
+            for idx in self._cards_resize_priority:
+                if overflow <= 0:
+                    break
+                cut = min(widths[idx] - floor_widths[idx], overflow)
+                if cut > 0:
+                    widths[idx] -= cut
+                    overflow -= cut
+            if overflow > 0:
+                widths[-1] = max(20, widths[-1] - overflow)
+
         for idx, width in enumerate(widths):
-            self.cards_table.setColumnWidth(idx, width)
+            self.cards_table.setColumnWidth(idx, max(12, width))
+
+    def _apply_responsive_splitter_orientation(self) -> None:
+        required_horizontal = self._cards_min_total + self._editor_min_width + 150
+        should_be_vertical = self.width() < required_horizontal
+        target = Qt.Orientation.Vertical if should_be_vertical else Qt.Orientation.Horizontal
+        if self._splitter.orientation() != target:
+            self._splitter.setOrientation(target)
+            self._splitter.setSizes([1, 1])
 
     def _enforce_splitter_sizes(self) -> None:
+        if self._splitter.orientation() == Qt.Orientation.Vertical:
+            total = self._splitter.height()
+            if total <= 0:
+                return
+            top = max(230, int(total * 0.34))
+            bottom = max(340, total - top)
+            if top + bottom != total:
+                bottom = max(1, total - top)
+            self._splitter.setSizes([top, bottom])
+            return
+
         total = self._splitter.width()
         if total <= 0:
             return
-        left = max(520, int(total * 0.44))
-        right = max(640, total - left)
+        preferred_left = int(total * 0.44)
+        max_left = max(320, total - self._editor_min_width)
+        if max_left < self._cards_min_total:
+            left = max(220, int(total * 0.36))
+        else:
+            left = min(max(self._cards_min_total, preferred_left), max_left)
+        right = max(340, total - left)
         if left + right != total:
             right = max(1, total - left)
         self._splitter.setSizes([left, right])

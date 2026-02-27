@@ -7,6 +7,7 @@ from typing import cast
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QCompleter,
     QDateEdit,
@@ -43,10 +44,10 @@ from app.ui.analytics.view_utils import (
     normalize_date_range,
     quick_period_bounds,
 )
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error, show_info, show_warning
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
 
 
@@ -125,10 +126,10 @@ class AnalyticsSearchView(QWidget):
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        if hasattr(self, "_main_actions_panel"):
-            self._main_actions_panel.set_compact(self.width() < 1420)
-        if hasattr(self, "_history_actions_panel"):
-            self._history_actions_panel.set_compact(self.width() < 1460)
+        if hasattr(self, "_main_actions_layout"):
+            self._update_main_actions_layout()
+        if hasattr(self, "_history_actions_layout"):
+            self._update_history_actions_layout()
 
     def _build_filters_section(self, content_layout: QVBoxLayout) -> None:
         self.filters_box = QGroupBox("Параметры поиска")
@@ -297,15 +298,38 @@ class AnalyticsSearchView(QWidget):
         compact_button(self.search_btn)
         self.search_btn.clicked.connect(self.on_search)
         self._export_xlsx_btn = QPushButton("Экспорт XLSX")
+        self._export_xlsx_btn.setObjectName("secondaryButton")
         compact_button(self._export_xlsx_btn)
         self._export_xlsx_btn.clicked.connect(self._export_xlsx)
         self._export_pdf_btn = QPushButton("Экспорт PDF")
+        self._export_pdf_btn.setObjectName("secondaryButton")
         compact_button(self._export_pdf_btn)
         self._export_pdf_btn.clicked.connect(self._export_pdf)
-        self._main_actions_panel = ResponsiveActionsPanel(min_button_width=120, max_columns=4)
-        self._main_actions_panel.set_buttons([self.search_btn, self._export_xlsx_btn, self._export_pdf_btn])
-        self._main_actions_panel.set_compact(self.width() < 1420)
-        content_layout.addWidget(self._main_actions_panel)
+        self._main_actions_bar = QWidget()
+        self._main_actions_bar.setObjectName("sectionActionBar")
+        self._main_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._main_actions_bar)
+        self._main_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._main_actions_layout.setSpacing(10)
+
+        self._main_export_group = QWidget()
+        self._main_export_group.setObjectName("sectionActionGroup")
+        export_layout = QHBoxLayout(self._main_export_group)
+        export_layout.setContentsMargins(0, 0, 0, 0)
+        export_layout.setSpacing(8)
+        export_layout.addWidget(self._export_xlsx_btn)
+        export_layout.addWidget(self._export_pdf_btn)
+
+        self._main_search_group = QWidget()
+        self._main_search_group.setObjectName("sectionActionGroup")
+        search_layout = QHBoxLayout(self._main_search_group)
+        search_layout.setContentsMargins(0, 0, 0, 0)
+        search_layout.addWidget(self.search_btn)
+
+        self._main_actions_layout.addWidget(self._main_export_group)
+        self._main_actions_layout.addStretch()
+        self._main_actions_layout.addWidget(self._main_search_group)
+        content_layout.addWidget(self._main_actions_bar)
+        self._update_main_actions_layout()
 
     def _build_summary_row(self, content_layout: QVBoxLayout) -> None:
         summary_row = QHBoxLayout()
@@ -354,14 +378,36 @@ class AnalyticsSearchView(QWidget):
         compact_button(verify_selected_btn)
         verify_selected_btn.clicked.connect(self._verify_selected_report)
         open_artifact_btn = QPushButton("Открыть артефакт")
+        open_artifact_btn.setObjectName("primaryButton")
         compact_button(open_artifact_btn)
         open_artifact_btn.clicked.connect(self._open_report_artifact)
-        self._history_actions_panel = ResponsiveActionsPanel(min_button_width=138, max_columns=4)
-        self._history_actions_panel.set_buttons(
-            [refresh_history_btn, verify_all_btn, verify_selected_btn, open_artifact_btn]
-        )
-        self._history_actions_panel.set_compact(self.width() < 1460)
-        history_layout.addWidget(self._history_actions_panel)
+        self._history_actions_bar = QWidget()
+        self._history_actions_bar.setObjectName("sectionActionBar")
+        self._history_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._history_actions_bar)
+        self._history_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._history_actions_layout.setSpacing(10)
+
+        self._history_common_group = QWidget()
+        self._history_common_group.setObjectName("sectionActionGroup")
+        history_common_layout = QHBoxLayout(self._history_common_group)
+        history_common_layout.setContentsMargins(0, 0, 0, 0)
+        history_common_layout.setSpacing(8)
+        history_common_layout.addWidget(refresh_history_btn)
+        history_common_layout.addWidget(verify_all_btn)
+
+        self._history_target_group = QWidget()
+        self._history_target_group.setObjectName("sectionActionGroup")
+        history_target_layout = QHBoxLayout(self._history_target_group)
+        history_target_layout.setContentsMargins(0, 0, 0, 0)
+        history_target_layout.setSpacing(8)
+        history_target_layout.addWidget(verify_selected_btn)
+        history_target_layout.addWidget(open_artifact_btn)
+
+        self._history_actions_layout.addWidget(self._history_common_group)
+        self._history_actions_layout.addStretch()
+        self._history_actions_layout.addWidget(self._history_target_group)
+        history_layout.addWidget(self._history_actions_bar)
+        self._update_history_actions_layout()
 
         self.report_history_table = QTableWidget(0, 8)
         self.report_history_table.setHorizontalHeaderLabels(
@@ -418,6 +464,20 @@ class AnalyticsSearchView(QWidget):
         self.trend_chart.setMinimumHeight(340)
         dashboard_layout.addWidget(self.trend_chart)
         return dashboard_box
+
+    def _update_main_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._main_actions_layout,
+            self._main_actions_bar,
+            [self._main_export_group, self._main_search_group],
+        )
+
+    def _update_history_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._history_actions_layout,
+            self._history_actions_bar,
+            [self._history_common_group, self._history_target_group],
+        )
 
     def _build_ismp_box(self) -> QGroupBox:
         ismp_box = QGroupBox("ИСМП показатели")

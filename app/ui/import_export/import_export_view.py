@@ -3,6 +3,7 @@
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QGroupBox,
     QHBoxLayout,
@@ -18,9 +19,9 @@ from PySide6.QtWidgets import (
 from app.application.dto.auth_dto import SessionContext
 from app.application.services.exchange_service import ExchangeService
 from app.ui.import_export.import_export_wizard import ImportExportWizard
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
 
 
@@ -55,26 +56,52 @@ class ImportExportView(QWidget):
         }
 
         actions_box = QGroupBox("Быстрые действия")
-        actions_layout = QHBoxLayout(actions_box)
+        actions_layout = QVBoxLayout(actions_box)
         wizard_btn = QPushButton("Открыть мастер импорта/экспорта")
+        wizard_btn.setObjectName("primaryButton")
         wizard_btn.clicked.connect(self._open_wizard)
-        wizard_btn.setMinimumWidth(260)
-        wizard_btn.setMaximumWidth(360)
+        compact_button(wizard_btn, min_width=132, max_width=300)
         refresh_history_btn = QPushButton("Обновить историю пакетов")
+        refresh_history_btn.setObjectName("secondaryButton")
         compact_button(refresh_history_btn)
         refresh_history_btn.clicked.connect(self._load_history)
         open_history_btn = QPushButton("Открыть файл")
+        open_history_btn.setObjectName("secondaryButton")
         compact_button(open_history_btn)
         open_history_btn.clicked.connect(self._open_history_file)
-        self._actions_panel = ResponsiveActionsPanel(min_button_width=190, max_columns=3)
-        self._actions_panel.set_buttons([wizard_btn, refresh_history_btn, open_history_btn])
-        self._actions_panel.set_compact(self.width() < 1420)
-        actions_layout.addWidget(self._actions_panel)
+        self._quick_actions_bar = QWidget()
+        self._quick_actions_bar.setObjectName("sectionActionBar")
+        self._quick_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._quick_actions_bar)
+        self._quick_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._quick_actions_layout.setSpacing(10)
+
+        self._quick_history_group = QWidget()
+        self._quick_history_group.setObjectName("sectionActionGroup")
+        history_group_layout = QHBoxLayout(self._quick_history_group)
+        history_group_layout.setContentsMargins(0, 0, 0, 0)
+        history_group_layout.setSpacing(8)
+        history_group_layout.addWidget(refresh_history_btn)
+        history_group_layout.addWidget(open_history_btn)
+
+        self._quick_wizard_group = QWidget()
+        self._quick_wizard_group.setObjectName("sectionActionGroup")
+        wizard_layout = QHBoxLayout(self._quick_wizard_group)
+        wizard_layout.setContentsMargins(0, 0, 0, 0)
+        wizard_layout.addWidget(wizard_btn)
+
+        self._quick_actions_layout.addWidget(self._quick_history_group)
+        self._quick_actions_layout.addStretch()
+        self._quick_actions_layout.addWidget(self._quick_wizard_group)
+        actions_layout.addWidget(self._quick_actions_bar)
+        self._update_quick_actions_layout()
         layout.addWidget(actions_box)
 
         history_box = QGroupBox("История пакетов обмена")
         history_layout = QVBoxLayout(history_box)
-        filter_row = QHBoxLayout()
+        self._history_filter_bar = QWidget()
+        self._history_filter_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._history_filter_bar)
+        self._history_filter_layout.setContentsMargins(0, 0, 0, 0)
+        self._history_filter_layout.setSpacing(10)
         self.direction_filter = QComboBox()
         self.direction_filter.addItem("Выбрать", None)
         self.direction_filter.addItem("Экспорт", "export")
@@ -87,11 +114,24 @@ class ImportExportView(QWidget):
         clear_filters_btn = QPushButton("Сбросить фильтры")
         compact_button(clear_filters_btn)
         clear_filters_btn.clicked.connect(self._clear_filters)
-        filter_row.addWidget(QLabel("Направление"))
-        filter_row.addWidget(self.direction_filter)
-        filter_row.addWidget(self.query_filter)
-        filter_row.addWidget(clear_filters_btn)
-        history_layout.addLayout(filter_row)
+        self._history_direction_group = QWidget()
+        direction_layout = QHBoxLayout(self._history_direction_group)
+        direction_layout.setContentsMargins(0, 0, 0, 0)
+        direction_layout.setSpacing(8)
+        direction_layout.addWidget(QLabel("Направление"))
+        direction_layout.addWidget(self.direction_filter)
+
+        self._history_query_group = QWidget()
+        query_layout = QHBoxLayout(self._history_query_group)
+        query_layout.setContentsMargins(0, 0, 0, 0)
+        query_layout.setSpacing(8)
+        query_layout.addWidget(self.query_filter)
+        query_layout.addWidget(clear_filters_btn)
+
+        self._history_filter_layout.addWidget(self._history_direction_group)
+        self._history_filter_layout.addWidget(self._history_query_group, 1)
+        history_layout.addWidget(self._history_filter_bar)
+        self._update_history_filter_layout()
 
         self.history_table = QTableWidget(0, 6)
         self.history_table.setHorizontalHeaderLabels(
@@ -112,8 +152,24 @@ class ImportExportView(QWidget):
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        if hasattr(self, "_actions_panel"):
-            self._actions_panel.set_compact(self.width() < 1420)
+        if hasattr(self, "_quick_actions_layout"):
+            self._update_quick_actions_layout()
+        if hasattr(self, "_history_filter_layout"):
+            self._update_history_filter_layout()
+
+    def _update_quick_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._quick_actions_layout,
+            self._quick_actions_bar,
+            [self._quick_history_group, self._quick_wizard_group],
+        )
+
+    def _update_history_filter_layout(self) -> None:
+        update_action_bar_direction(
+            self._history_filter_layout,
+            self._history_filter_bar,
+            [self._history_direction_group, self._history_query_group],
+        )
 
     def _open_wizard(self) -> None:
         wizard = ImportExportWizard(

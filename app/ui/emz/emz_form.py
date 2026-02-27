@@ -7,6 +7,7 @@ from typing import Any, cast
 from PySide6.QtCore import QDate, QDateTime, Qt, QTime
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QDateEdit,
     QDateTimeEdit,
@@ -125,9 +126,9 @@ from app.ui.emz.form_widget_factories import (
     create_intervention_type_combo,
     create_ismp_type_combo,
 )
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, set_status, show_error
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
     connect_combo_resize_on_first_row,
@@ -216,12 +217,32 @@ class EmzForm(QWidget):
         self.quick_save_btn.setObjectName("primaryButton")
         compact_button(self.quick_save_btn, min_width=96, max_width=180)
         self.quick_save_btn.clicked.connect(self.on_save_clicked)
-        self._quick_actions_panel = ResponsiveActionsPanel(min_button_width=104, max_columns=4)
-        self._quick_actions_panel.set_buttons(
-            [self.quick_new_btn, self.quick_last_btn, self.quick_clear_btn, self.quick_save_btn]
-        )
-        self._quick_actions_panel.set_compact(self.width() < 1380)
-        main_layout.addWidget(self._quick_actions_panel)
+        self._quick_actions_bar = QWidget()
+        self._quick_actions_bar.setObjectName("sectionActionBar")
+        self._quick_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._quick_actions_bar)
+        self._quick_actions_layout.setContentsMargins(12, 8, 12, 8)
+        self._quick_actions_layout.setSpacing(10)
+
+        self._quick_case_actions = QWidget()
+        self._quick_case_actions.setObjectName("sectionActionGroup")
+        case_actions_layout = QHBoxLayout(self._quick_case_actions)
+        case_actions_layout.setContentsMargins(0, 0, 0, 0)
+        case_actions_layout.setSpacing(8)
+        case_actions_layout.addWidget(self.quick_new_btn)
+        case_actions_layout.addWidget(self.quick_last_btn)
+        case_actions_layout.addWidget(self.quick_clear_btn)
+
+        self._quick_save_actions = QWidget()
+        self._quick_save_actions.setObjectName("sectionActionGroup")
+        save_actions_layout = QHBoxLayout(self._quick_save_actions)
+        save_actions_layout.setContentsMargins(0, 0, 0, 0)
+        save_actions_layout.addWidget(self.quick_save_btn)
+
+        self._quick_actions_layout.addWidget(self._quick_case_actions)
+        self._quick_actions_layout.addStretch()
+        self._quick_actions_layout.addWidget(self._quick_save_actions)
+        main_layout.addWidget(self._quick_actions_bar)
+        self._update_quick_actions_layout()
 
     def _build_patient_hint_row(self, main_layout: QVBoxLayout) -> None:
         patient_hint_row = QHBoxLayout()
@@ -236,6 +257,13 @@ class EmzForm(QWidget):
         self.edit_patient_btn.setVisible(False)
         patient_hint_row.addWidget(self.edit_patient_btn)
         main_layout.addLayout(patient_hint_row)
+
+    def _update_quick_actions_layout(self) -> None:
+        update_action_bar_direction(
+            self._quick_actions_layout,
+            self._quick_actions_bar,
+            [self._quick_case_actions, self._quick_save_actions],
+        )
 
     def _build_form_box(self) -> None:
         self.form_box = QGroupBox("Пациент и госпитализация", self)
@@ -443,16 +471,16 @@ class EmzForm(QWidget):
         content_layout.addStretch()
         return content_layout
 
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        if hasattr(self, "_quick_actions_layout"):
+            self._update_quick_actions_layout()
+
     def _build_footer_row(self) -> QHBoxLayout:
         footer_row = QHBoxLayout()
         footer_row.addWidget(self.status_label)
         footer_row.addStretch()
         return footer_row
-
-    def resizeEvent(self, event) -> None:  # noqa: N802
-        super().resizeEvent(event)
-        if hasattr(self, "_quick_actions_panel"):
-            self._quick_actions_panel.set_compact(self.width() < 1380)
 
     def _initialize_table_rows(self) -> None:
         self._load_references()
@@ -814,6 +842,7 @@ class EmzForm(QWidget):
             quick_last_btn=self.quick_last_btn,
             quick_clear_btn=self.quick_clear_btn,
         )
+        self._update_quick_actions_layout()
 
     def _reset_form(self, *, emit_context: bool = True) -> None:
         self.emr_case_id = None

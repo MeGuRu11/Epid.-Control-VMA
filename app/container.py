@@ -81,6 +81,7 @@ def build_container() -> Container:
     emz_service = EmzService(
         emz_repo=emz_repo,
         patient_repo=patient_repo,
+        user_repo=user_repo,
         audit_repo=audit_repo,
         session_factory=session_scope,
     )

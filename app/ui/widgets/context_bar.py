@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from app.application.services.emz_service import EmzService
 from app.application.services.patient_service import PatientService
+from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
@@ -67,9 +68,9 @@ class ContextBar(QWidget):
         context_title.setToolTip("Задаёт текущего пациента и госпитализацию для всех разделов.")
         header_row.addWidget(context_title)
         header_row.addStretch()
-        helper = QLabel("Быстрый выбор пациента и/или госпитализации для удобной работы.")
-        helper.setObjectName("muted")
-        header_row.addWidget(helper)
+        self._header_helper = QLabel("Быстрый выбор пациента и/или госпитализации для удобной работы.")
+        self._header_helper.setObjectName("muted")
+        header_row.addWidget(self._header_helper)
         layout.addLayout(header_row)
 
         self.content_widget = QWidget()
@@ -108,7 +109,10 @@ class ContextBar(QWidget):
         controls_row.setSpacing(12)
         self._controls_row = controls_row
 
-        patient_block = QVBoxLayout()
+        self._patient_controls_group = QWidget()
+        patient_block = QVBoxLayout(self._patient_controls_group)
+        patient_block.setContentsMargins(0, 0, 0, 0)
+        patient_block.setSpacing(4)
         patient_label = QLabel("Пациент")
         patient_label.setObjectName("muted")
         patient_block.addWidget(patient_label)
@@ -133,9 +137,12 @@ class ContextBar(QWidget):
         self.last_patient_btn.setEnabled(False)
         patient_row.addWidget(self.last_patient_btn)
         patient_block.addLayout(patient_row)
-        controls_row.addLayout(patient_block)
+        controls_row.addWidget(self._patient_controls_group)
 
-        case_block = QVBoxLayout()
+        self._case_controls_group = QWidget()
+        case_block = QVBoxLayout(self._case_controls_group)
+        case_block.setContentsMargins(0, 0, 0, 0)
+        case_block.setSpacing(4)
         case_label = QLabel("Госпитализация")
         case_label.setObjectName("muted")
         case_block.addWidget(case_label)
@@ -159,7 +166,7 @@ class ContextBar(QWidget):
         case_row.addWidget(select_case_btn)
         case_row.addWidget(reset_btn)
         case_block.addLayout(case_row)
-        controls_row.addLayout(case_block)
+        controls_row.addWidget(self._case_controls_group)
         controls_row.addStretch()
         content_layout.addLayout(controls_row)
         content_layout.addSpacing(8)
@@ -262,12 +269,18 @@ class ContextBar(QWidget):
         self._update_layout_mode()
 
     def _update_layout_mode(self) -> None:
-        compact_mode = self.width() < 1180
-        target_direction = (
-            QBoxLayout.Direction.TopToBottom if compact_mode else QBoxLayout.Direction.LeftToRight
+        update_action_bar_direction(
+            self._controls_row,
+            self.content_widget,
+            [self._patient_controls_group, self._case_controls_group],
+            extra_width=28,
         )
-        if self._controls_row.direction() != target_direction:
-            self._controls_row.setDirection(target_direction)
+        stacked_controls = self._controls_row.direction() == QBoxLayout.Direction.TopToBottom
+        helper_required_width = self._header_helper.sizeHint().width() + 420
+        self._header_helper.setVisible(self.width() >= helper_required_width)
+        actions_required_width = self._actions_panel.sizeHint().width() + 16
+        actions_available = self.content_widget.width()
+        compact_mode = stacked_controls or actions_available < actions_required_width
         self._actions_panel.set_compact(compact_mode)
 
     def _select_case_by_id(self) -> None:
