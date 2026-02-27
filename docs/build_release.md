@@ -1,69 +1,75 @@
-# Сборка и релиз (Windows)
+# Build and Release (Windows)
 
-## 1. Предусловия
-- Python 3.11+ (рекомендуется 3.12).
-- Установлены зависимости проекта:
+## 1. Prerequisites
+- Python 3.11+ (3.12 recommended).
+- Install dependencies:
   - `pip install -r requirements-dev.txt`
-- Для инсталлятора:
-  - NSIS (для `build_nsis.bat`) и/или
-  - Inno Setup (для `build_installer.ps1`).
+- For installers:
+  - NSIS (for `scripts\build_nsis.bat`),
+  - Inno Setup 6 (for `scripts\build_installer.ps1`).
 
-## 2. Обязательный pre-release quality gate
+## 2. Mandatory quality gate before release
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1
 ```
 
-Релиз допускается только при полностью зеленом прогоне.
+Ship a release only when this run is fully green.
 
-## 3. Сборка EXE
+## 3. Build EXE
 
 ```powershell
 scripts\build_exe.bat
 ```
 
-Ожидаемый артефакт:
+What the script does:
+1. Checks that `PyInstaller` is installed.
+2. Cleans `build/` and `dist/` by default.
+3. Builds `EpidControl.exe`.
+4. Creates `dist\RELEASE_INFO.txt` (version + timestamp).
+5. Runs `scripts\verify_exe.ps1`.
+
+Expected artifacts:
 - `dist\EpidControl.exe`
+- `dist\RELEASE_INFO.txt`
 
-Проверка:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\verify_exe.ps1
-```
-
-## 4. Сборка установщика
-
-### NSIS
+## 4. Build NSIS installer
 
 ```powershell
 scripts\build_nsis.bat
 ```
 
-### Inno Setup
+Highlights:
+- Version is injected from `pyproject.toml`.
+- Installer has clear components:
+  - required application files,
+  - desktop shortcut,
+  - Start Menu shortcuts.
+- Uninstall metadata is written to registry.
+
+Expected artifact:
+- `dist\EpidControlSetup_NSIS.exe`
+
+## 5. Build Inno Setup installer (optional)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build_installer.ps1
 ```
 
-## 5. Smoke-тест на чистой машине
-1. Установить приложение из собранного инсталлятора/EXE.
-2. Запустить приложение.
-3. Убедиться, что БД создается и миграции применяются.
-4. Проверить логин и открытие ключевых вкладок.
-5. Выполнить короткий сценарий из `docs/manual_regression_scenarios.md`.
+Expected artifact:
+- `dist\EpidControlSetup.exe` (name comes from `OutputBaseFilename` in `installer.iss`).
 
-## 6. Release checklist
-- [ ] Quality-gates пройдены (ruff/mypy/pytest/compileall).
-- [ ] EXE собирается без ошибок.
-- [ ] Инсталлятор собирается без ошибок.
-- [ ] Smoke-тест на чистой машине пройден.
-- [ ] `docs/user_guide.md` и `docs/tech_guide.md` актуализированы.
-- [ ] Обновлен `docs/progress_report.md`.
+## 6. Quick smoke test after build
+1. Install app via NSIS or Inno installer.
+2. Launch the app.
+3. Verify startup, DB creation, and migrations.
+4. Verify login and key tabs open correctly.
+5. Run a short flow from `docs/manual_regression_scenarios.md`.
 
-## 7. Частые проблемы
-- `python312.dll not found`:
-  - проверить тип сборки и содержимое `dist\_internal` (для onedir).
-- NSIS/ISCC не найдены:
-  - установить NSIS/Inno Setup и добавить в `PATH`.
-- Ошибки доступа к директории данных:
-  - запустить с `EPIDCONTROL_DATA_DIR` в доступный путь.
+## 7. Common issues
+- `makensis.exe` / `ISCC.exe` not found:
+  - install NSIS/Inno Setup and add tool path to `PATH`.
+- `dist\EpidControl.exe` missing when building installer:
+  - run `scripts\build_exe.bat` first.
+- Access denied errors:
+  - run terminal as Administrator.

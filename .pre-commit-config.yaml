@@ -1,20 +1,40 @@
+minimum_pre_commit_version: "3.5.0"
+default_stages: [pre-commit]
+
 repos:
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
     hooks:
-      - id: black
-        language_version: python3
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1500"]
+      - id: check-yaml
+      - id: check-toml
+      - id: debug-statements
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.6
+    rev: v0.6.9
     hooks:
       - id: ruff
-        args: [--fix]
+        args: ["--fix"]
+      - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
+    rev: v1.11.2
     hooks:
       - id: mypy
-        additional_dependencies: []
         pass_filenames: false
-        args: [app]
+        args: ["app", "scripts", "tests"]
+        additional_dependencies:
+          - sqlalchemy>=2.0
+          - pydantic>=2.4,<3
+
+  - repo: local
+    hooks:
+      - id: compileall
+        name: compileall (app/tests/scripts)
+        entry: python -m compileall -q app tests scripts
+        language: system
+        pass_filenames: false
