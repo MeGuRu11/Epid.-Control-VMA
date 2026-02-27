@@ -8,6 +8,7 @@ from typing import Any
 
 from alembic import command
 from alembic.config import Config
+from alembic.util.exc import CommandError
 from PySide6.QtWidgets import QMessageBox
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -18,6 +19,11 @@ from app.infrastructure.db.fts_manager import FtsManager
 from app.infrastructure.db.models_sqlalchemy import User
 
 _SessionFactory = Callable[[], AbstractContextManager[Session]]
+
+
+def _is_multiple_heads_error(exc: BaseException) -> bool:
+    text = str(exc)
+    return "MultipleHeads" in str(type(exc)) or "Multiple head" in text
 
 
 def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
@@ -61,12 +67,12 @@ def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Pa
         try:
             command.upgrade(cfg, "head")
             return True
-        except Exception as exc:  # noqa: BLE001
-            if "MultipleHeads" in str(type(exc)) or "Multiple head" in str(exc):
+        except CommandError as exc:
+            if _is_multiple_heads_error(exc):
                 try:
                     command.upgrade(cfg, "heads")
                     return True
-                except Exception:  # noqa: BLE001
+                except CommandError:
                     logging.getLogger(__name__).exception("Failed to upgrade multiple heads")
                     raise
             raise
@@ -83,7 +89,7 @@ def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Pa
                 handle.write(f"DB: {db_file}\n")
                 handle.write(f"Migrations: {root_dir / 'app' / 'infrastructure' / 'db' / 'migrations'}\n")
                 handle.write(traceback.format_exc())
-        except Exception:  # noqa: BLE001
+        except OSError:
             logger.exception("Failed to write migration error log")
         QMessageBox.critical(
             None,

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -91,10 +92,12 @@ class UserAdminView(QWidget):
         self._content_layout.setSpacing(12)
 
         self._left_col = QWidget()
+        self._left_col.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         left_col_layout = QVBoxLayout(self._left_col)
         left_col_layout.setContentsMargins(0, 0, 0, 0)
         left_col_layout.setSpacing(12)
         self._right_col = QWidget()
+        self._right_col.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         right_col_layout = QVBoxLayout(self._right_col)
         right_col_layout.setContentsMargins(0, 0, 0, 0)
         right_col_layout.setSpacing(12)
@@ -116,7 +119,7 @@ class UserAdminView(QWidget):
         self.user_table.setAlternatingRowColors(True)
         self.user_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.user_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self.user_table.setMinimumHeight(220)
+        self.user_table.setMinimumHeight(200)
         users_frame_layout.addWidget(self.user_table)
         left_col_layout.addWidget(self._users_frame)
 
@@ -129,7 +132,7 @@ class UserAdminView(QWidget):
         self.audit_table.horizontalHeader().setStretchLastSection(True)
         self.audit_table.verticalHeader().setVisible(False)
         self.audit_table.setAlternatingRowColors(True)
-        self.audit_table.setMinimumHeight(260)
+        self.audit_table.setMinimumHeight(240)
         audit_layout.addWidget(self.audit_table)
         left_col_layout.addWidget(self._audit_box)
         left_col_layout.addStretch()
@@ -245,8 +248,8 @@ class UserAdminView(QWidget):
         right_col_layout.addWidget(self.status)
         right_col_layout.addStretch()
 
-        self._content_layout.addWidget(self._left_col, 2)
-        self._content_layout.addWidget(self._right_col, 1)
+        self._content_layout.addWidget(self._left_col, 3)
+        self._content_layout.addWidget(self._right_col, 2)
         layout.addWidget(self._content_container)
         layout.addStretch()
 
@@ -279,13 +282,18 @@ class UserAdminView(QWidget):
     def _update_content_layout(self) -> None:
         if not hasattr(self, "_content_layout"):
             return
-        left_required = max(self._users_frame.sizeHint().width(), self._audit_box.sizeHint().width())
+        left_required = max(
+            620,
+            self._users_frame.sizeHint().width(),
+            self._audit_box.sizeHint().width(),
+        )
         right_required = max(
+            520,
             self._backup_box.sizeHint().width(),
             self._create_box.sizeHint().width(),
             self._manage_box.sizeHint().width(),
         )
-        needed = left_required + right_required + self._content_layout.spacing() + 32
+        needed = left_required + right_required + self._content_layout.spacing() + 40
         target = (
             QBoxLayout.Direction.LeftToRight
             if self._content_container.width() >= needed
@@ -293,6 +301,17 @@ class UserAdminView(QWidget):
         )
         if self._content_layout.direction() != target:
             self._content_layout.setDirection(target)
+
+        if target == QBoxLayout.Direction.LeftToRight:
+            self._left_col.setMinimumWidth(560)
+            self._right_col.setMinimumWidth(500)
+            self._content_layout.setStretch(0, 3)
+            self._content_layout.setStretch(1, 2)
+        else:
+            self._left_col.setMinimumWidth(0)
+            self._right_col.setMinimumWidth(0)
+            self._content_layout.setStretch(0, 0)
+            self._content_layout.setStretch(1, 0)
 
     def _update_backup_actions_layout(self) -> None:
         update_action_bar_direction(

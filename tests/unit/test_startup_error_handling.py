@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import cast
 
+from alembic.util.exc import CommandError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -68,3 +69,54 @@ def test_warn_missing_plot_dependencies_reports_missing(monkeypatch) -> None:
 
     startup.warn_missing_plot_dependencies()
     assert len(warning_calls) == 1
+
+
+def test_run_migrations_falls_back_to_heads_on_multiple_heads_error(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root_dir = tmp_path
+    (root_dir / "alembic.ini").write_text("[alembic]\n", encoding="utf-8")
+    db_file = root_dir / "app.db"
+    log_dir = root_dir / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    calls: list[str] = []
+
+    def _upgrade(_cfg, target: str) -> None:  # noqa: ANN001
+        calls.append(target)
+        if target == "head":
+            raise CommandError("Multiple heads are present")
+
+    monkeypatch.setattr(startup.command, "upgrade", _upgrade)
+
+    assert startup.run_migrations(root_dir, "sqlite:///tmp.db", log_dir, db_file) is True
+    assert calls == ["head", "heads"]
+
+
+def test_run_migrations_writes_error_log_when_upgrade_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root_dir = tmp_path
+    (root_dir / "alembic.ini").write_text("[alembic]\n", encoding="utf-8")
+    db_file = root_dir / "app.db"
+    log_dir = root_dir / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    critical_calls: list[tuple] = []
+    monkeypatch.setattr(startup.QMessageBox, "critical", lambda *args, **kwargs: critical_calls.append(args))
+
+    def _raise_upgrade(_cfg, _target: str) -> None:  # noqa: ANN001
+        raise CommandError("boom")
+
+    monkeypatch.setattr(startup.command, "upgrade", _raise_upgrade)
+
+    ok = startup.run_migrations(root_dir, "sqlite:///tmp.db", log_dir, db_file)
+    assert ok is False
+    assert len(critical_calls) == 1
+
+    error_log = log_dir / "migration_error.log"
+    assert error_log.exists()
+    log_text = error_log.read_text(encoding="utf-8")
+    assert "Migration error" in log_text
