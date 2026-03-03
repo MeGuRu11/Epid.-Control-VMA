@@ -34,6 +34,7 @@ Thumbs.db
 build/
 dist/
 *.spec
+!EpidControl.spec
 *.egg-info/
 .eggs/
 pip-wheel-metadata/

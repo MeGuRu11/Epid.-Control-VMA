@@ -69,7 +69,7 @@ if (-not $SkipClean) {
 }
 
 Write-Step "Running PyInstaller..."
-& $python -m PyInstaller --noconfirm --clean EpidControl.spec
+& $python -m PyInstaller --noconfirm --clean $specPath
 if ($LASTEXITCODE -ne 0) {
     throw "PyInstaller build failed."
 }
