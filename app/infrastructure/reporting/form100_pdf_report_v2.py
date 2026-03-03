@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import Any
 
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.pdfgen import canvas
+from reportlab.platypus.flowables import KeepInFrame, Flowable
 
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 
@@ -16,39 +20,24 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     width, height = landscape(A4)
-    pdf = canvas.Canvas(str(file_path), pagesize=(width, height))
+    doc = SimpleDocTemplate(
+        str(file_path),
+        pagesize=(width, height),
+        leftMargin=10 * mm,
+        rightMargin=10 * mm,
+        topMargin=10 * mm,
+        bottomMargin=10 * mm,
+        title=f"Форма 100 {card.get('id', '')}"
+    )
+
     font = get_pdf_unicode_font_name()
-    pdf.setTitle(f"Форма 100 {card.get('id', '')}")
+    styles = getSampleStyleSheet()
+    normal_style = styles["Normal"]
 
-    _draw_form100_layout(pdf, width=width, height=height, card=card, font=font)
-
-    pdf.showPage()
-    pdf.save()
-
-
-def _safe(value: Any) -> str:
-    if value is None:
-        return ""
-    return str(value)
-
-
-def _draw_form100_layout(
-    pdf: canvas.Canvas, *, width: float, height: float, card: dict[str, Any], font: str
-) -> None:
-    margin = 8 * mm
-    stub_w = 75 * mm
-    stub_left = margin
-    stub_right = margin + stub_w
-
-    black_w = 10 * mm
-    yellow_w = 12 * mm
-    red_h = 12 * mm
-    blue_h = 12 * mm
-
-    main_left = stub_right + black_w
-    main_right = width - margin - yellow_w
-    main_top = height - margin - red_h
-    main_bottom = margin + blue_h
+    p_small = ParagraphStyle("PdfCellSmall", parent=normal_style, fontName=font, fontSize=7, leading=8)
+    p_normal = ParagraphStyle("PdfCell", parent=normal_style, fontName=font, fontSize=9, leading=10)
+    p_bold = ParagraphStyle("PdfCellBold", parent=normal_style, fontName=font, fontSize=10, leading=11)
+    p_title = ParagraphStyle("PdfTitle", parent=normal_style, fontName=font, fontSize=14, alignment=1, spaceAfter=5)
 
     data = card.get("data") or {}
     main = data.get("main") or {}
@@ -56,192 +45,166 @@ def _draw_form100_layout(
     flags = data.get("flags") or {}
     annotations = data.get("bodymap_annotations") or []
 
-    pdf.setLineWidth(1)
+    def _s(key: str, default: str = "") -> str:
+        v = main.get(key) or bottom.get(key) or card.get(key)
+        return str(v) if v is not None else default
 
-    # 1. Colored Bands
-    # BLACK (ИЗОЛЯЦИЯ)
-    pdf.setFillColorRGB(0.1, 0.1, 0.1, alpha=0.9 if flags.get("flag_isolation") else 0.15)
-    pdf.rect(stub_right, margin, black_w, height - 2 * margin, fill=1, stroke=1)
+    datetime_str = f"{_s('main_date')} {_s('main_time')}".strip()
+    
+    # 1. Colored bands can be created as a header row in the main table or we can just use colored background cells.
+    # Platypus Table is excellent for this.
 
-    # YELLOW (САНИТАРНАЯ ОБРАБОТКА)
-    pdf.setFillColorRGB(0.96, 0.84, 0.2, alpha=0.9 if flags.get("flag_sanitation") else 0.15)
-    pdf.rect(main_right, margin, yellow_w, height - 2 * margin, fill=1, stroke=1)
+    elements = []
 
-    # RED (НЕОТЛОЖНАЯ ПОМОЩЬ)
-    pdf.setFillColorRGB(0.8, 0.1, 0.1, alpha=0.9 if flags.get("flag_emergency") else 0.15)
-    pdf.rect(stub_right, main_top, width - margin - stub_right, red_h, fill=1, stroke=1)
-
-    # BLUE (РАДИАЦИОННОЕ ПОРАЖЕНИЕ)
-    pdf.setFillColorRGB(0.1, 0.4, 0.8, alpha=0.9 if flags.get("flag_radiation") else 0.15)
-    pdf.rect(stub_right, margin, width - margin - stub_right, blue_h, fill=1, stroke=1)
-
-    # Main structural frames
-    pdf.setFillColorRGB(0, 0, 0, alpha=1)
-    pdf.rect(stub_left, margin, stub_w, height - 2 * margin, fill=0, stroke=1)
-    pdf.rect(main_left, main_bottom, main_right - main_left, main_top - main_bottom, fill=0, stroke=1)
-
-    # Draw Band Titles
-    pdf.setFillColorRGB(1, 1, 1, alpha=0.9)
-    pdf.setFont(font, 12)
-    center_x = main_left + (main_right - main_left) / 2
-    pdf.drawCentredString(center_x, main_top + 3 * mm, "НЕОТЛОЖНАЯ ПОМОЩЬ")
-    pdf.drawCentredString(center_x, margin + 3 * mm, "РАДИАЦИОННОЕ ПОРАЖЕНИЕ")
-
-    pdf.saveState()
-    pdf.translate(stub_right + 6 * mm, margin + (height - 2 * margin) / 2)
-    pdf.rotate(90)
-    pdf.drawCentredString(0, 0, "ИЗОЛЯЦИЯ")
-    pdf.restoreState()
-
-    pdf.setFillColorRGB(0, 0, 0, alpha=0.9)
-    pdf.saveState()
-    pdf.translate(main_right + 7 * mm, margin + (height - 2 * margin) / 2)
-    pdf.rotate(90)
-    pdf.drawCentredString(0, 0, "САНИТАРНАЯ ОБРАБОТКА")
-    pdf.restoreState()
-
-    # Parse standard fields
-    full_name = _safe(main.get("main_full_name") or card.get("main_full_name"))
-    unit = _safe(main.get("main_unit") or card.get("main_unit"))
-    id_tag = _safe(main.get("main_id_tag") or card.get("main_id_tag"))
-    rank = _safe(main.get("main_rank"))
-    diagnosis = _safe(bottom.get("main_diagnosis") or card.get("main_diagnosis"))
-    signature = _safe(bottom.get("doctor_signature") or card.get("signed_by"))
-    datetime_str = _safe(main.get("main_date", "")) + " " + _safe(main.get("main_time", ""))
-
-    # --- 2. Fill Stub ---
-    pdf.setFillColorRGB(0, 0, 0, alpha=1)
-    pdf.setFont(font, 10)
-    pdf.drawCentredString(stub_left + stub_w / 2, height - margin - 7 * mm, "КОРЕШОК ПЕРВИЧНОЙ")
-    pdf.drawCentredString(stub_left + stub_w / 2, height - margin - 12 * mm, "МЕДИЦИНСКОЙ КАРТОЧКИ")
-    pdf.line(stub_left, height - margin - 14 * mm, stub_right, height - margin - 14 * mm)
-
-    sy = height - margin - 20 * mm
-    pdf.setFont(font, 9)
-    pdf.drawString(stub_left + 2 * mm, sy, f"Дата: {datetime_str}")
-    sy -= 7 * mm
-    pdf.drawString(stub_left + 2 * mm, sy, f"в/зв {rank}   в/ч {unit}")
-    sy -= 7 * mm
-    _draw_clipped_text(pdf, font, 9, stub_left + 2 * mm, sy, f"ФИО: {full_name}", stub_w - 4 * mm)
-    sy -= 7 * mm
-    _draw_clipped_text(pdf, font, 9, stub_left + 2 * mm, sy, f"Жетон №: {id_tag}", stub_w - 4 * mm)
-
-    sy -= 15 * mm
-    pdf.setFont(font, 10)
-    pdf.drawCentredString(stub_left + stub_w / 2, sy, "МЕДИЦИНСКАЯ ПОМОЩЬ")
-    sy -= 2 * mm
-    pdf.line(stub_left, sy, stub_right, sy)
-
-    # Simple Stub Med Table
-    pdf.setFont(font, 8)
-    med_items = [
-        "Антибиотик:", "Сыворотка ПСС:", "Анатоксин:", "Антидот:",
-        "Обезболивающее:", "Переливание крови:", "Жгут / Санобработка:"
+    # Building a large grid
+    # Stub (Корешок) = Column 1 (0 to 1) 
+    # Gap = Column 2
+    # Main Card = Column 3 to 10
+    
+    col_widths = [
+        35*mm, 35*mm,  # Stub
+        2*mm,          # Gap Cut Line
+        15*mm,         # Colored Isolation
+        30*mm, 30*mm, 30*mm, 30*mm, 30*mm, 20*mm, # Main parts
+        15*mm,         # Yellow Sanitation
     ]
-    for item in med_items:
-        sy -= 6 * mm
-        pdf.drawString(stub_left + 2 * mm, sy, item)
-        pdf.line(stub_left, sy - 2 * mm, stub_right, sy - 2 * mm)
 
-    pdf.setFont(font, 10)
-    pdf.drawString(stub_left + 2 * mm, margin + 8 * mm, "Диагноз:")
-    _draw_clipped_text(pdf, font, 8, stub_left + 2 * mm, margin + 4 * mm, diagnosis, stub_w - 4 * mm)
+    t_data = []
 
-    # --- 3. Fill Main Card ---
-    my = main_top - 8 * mm
-    pdf.setFont(font, 14)
-    pdf.drawCentredString(center_x, my, "Первичная медицинская карточка     Форма 100")
-    my -= 8 * mm
-    pdf.setFont(font, 9)
-    pdf.drawString(main_left + 3 * mm, my, f"Выдана: {_safe(bottom.get('issued_by'))}")
-    pdf.line(main_left, my - 2 * mm, main_right, my - 2 * mm)
+    # ROW 0: Titles
+    t1 = Paragraph("<b>КОРЕШОК ПЕРВИЧНОЙ<br/>МЕДИЦИНСКОЙ КАРТОЧКИ</b>", p_bold)
+    t1.alignment = 1
+    t2 = Paragraph("<b>ПЕРВИЧНАЯ МЕДИЦИНСКАЯ КАРТОЧКА (Форма 100)</b>", p_title)
+    
+    # Colored Cells logic
+    c_red = colors.Color(0.8, 0.1, 0.1, alpha=0.9 if flags.get("flag_emergency") else 0.15)
+    c_blue = colors.Color(0.1, 0.4, 0.8, alpha=0.9 if flags.get("flag_radiation") else 0.15)
+    c_black = colors.Color(0.1, 0.1, 0.1, alpha=0.9 if flags.get("flag_isolation") else 0.15)
+    c_yellow = colors.Color(0.96, 0.84, 0.2, alpha=0.9 if flags.get("flag_sanitation") else 0.15)
+    
+    class RotatedText(Flowable):
+        def __init__(self, text, font, size):
+            Flowable.__init__(self)
+            self.text = text
+            self.font = font
+            self.size = size
+        def draw(self):
+            self.canv.saveState()
+            self.canv.rotate(90)
+            self.canv.setFillColorRGB(1,1,1)
+            self.canv.setFont(self.font, self.size)
+            self.canv.drawString(20, -10, self.text)
+            self.canv.restoreState()
 
-    my -= 6 * mm
-    pdf.drawString(main_left + 3 * mm, my, f"Дата: {datetime_str}")
-    pdf.drawString(main_left + 80 * mm, my, f"в/зв {rank}   в/ч {unit}")
-    my -= 6 * mm
-    pdf.drawString(main_left + 3 * mm, my, f"ФИО: {full_name}")
-    pdf.drawString(main_left + 80 * mm, my, f"Жетон №: {id_tag}")
-    pdf.line(main_left, my - 3 * mm, main_right, my - 3 * mm)
+    h_black = RotatedText("ИЗОЛЯЦИЯ", font, 11)
+    h_yellow = RotatedText("САНОБРАБОТКА", font, 11)
 
-    # 3.1 Medical Help Table
-    table_x = main_left + 3 * mm
-    table_y = my - 10 * mm
-    pdf.setFont(font, 10)
-    pdf.drawCentredString(table_x + 35 * mm, table_y, "МЕДИЦИНСКАЯ ПОМОЩЬ")
-    pdf.rect(table_x, table_y - 45 * mm, 70 * mm, 42 * mm)
+    t_data.append([
+        t1, "", "", h_black, Paragraph("<b>НЕОТЛОЖНАЯ ПОМОЩЬ</b>", ParagraphStyle("R", parent=p_bold, textColor=colors.white, alignment=1)), "", "", "", "", "", h_yellow
+    ])
 
-    ty = table_y - 6 * mm
-    pdf.setFont(font, 8)
-    for item in med_items:
-        pdf.drawString(table_x + 2 * mm, ty + 1 * mm, item)
-        pdf.line(table_x, ty, table_x + 70 * mm, ty)
-        ty -= 6 * mm
-    pdf.line(table_x + 45 * mm, table_y - 3 * mm, table_x + 45 * mm, table_y - 45 * mm) # dose column line
+    t_data.append([
+        Paragraph("<b>МЕДИЦИНСКАЯ ПОМОЩЬ</b>", p_bold), "", "", "", t2, "", "", "", "", "", ""
+    ])
 
-    # 3.2 Silhouette
-    bx = center_x
-    by = table_y - 8 * mm
-    _draw_bodymap(pdf, font, bx, by, annotations)
+    # Stub content
+    stub_info = [
+        Paragraph(f"Дата: <b>{datetime_str}</b>", p_normal),
+        Paragraph(f"в/зв <b>{_s('main_rank')}</b>   в/ч <b>{_s('main_unit')}</b>", p_normal),
+        Paragraph(f"ФИО: <b>{_s('main_full_name')}</b>", p_normal),
+        Paragraph(f"Жетон: <b>{_s('main_id_tag')}</b>", p_normal),
+        Paragraph("<b>Диагноз:</b><br/>" + _s('main_diagnosis'), p_normal),
+    ]
+    
+    # Main Content
+    main_info = [
+        Paragraph(f"Выдана: <b>{_s('issued_by', 'Не указано')}</b>", p_normal),
+        Paragraph(f"Дата: <b>{datetime_str}</b>", p_normal),
+        Paragraph(f"Звание: <b>{_s('main_rank')}</b>", p_normal),
+        Paragraph(f"Подразделение: <b>{_s('main_unit')}</b>", p_normal),
+    ]
 
-    # 3.3 Evacuation & Signatures
-    pdf.setFont(font, 10)
-    pdf.drawString(main_left + 3 * mm, main_bottom + 12 * mm, "Диагноз:")
-    _draw_clipped_text(pdf, font, 9, main_left + 20 * mm, main_bottom + 12 * mm, diagnosis, main_right - main_left - 80 * mm)
+    t_data.append([
+        stub_info[0], stub_info[1], "", "", main_info[0], "", main_info[1], "", "", "", ""
+    ])
+    t_data.append([
+        stub_info[2], stub_info[3], "", "", main_info[2], "", main_info[3], "", "", "", ""
+    ])
+    t_data.append([
+        stub_info[4], "", "", "", Paragraph(f"ФИО: <b>{_s('main_full_name')}</b>", p_normal), "", "", Paragraph(f"Жетон: <b>{_s('main_id_tag')}</b>", p_normal), "", "", ""
+    ])
 
-    pdf.line(main_left, main_bottom + 8 * mm, main_right, main_bottom + 8 * mm)
-    pdf.drawString(main_right - 70 * mm, main_bottom + 3 * mm, f"Врач: {signature}")
+    # Big Block: Diagnosis and Help
+    med_help_str = "<b>ОКАЗАННАЯ ПОМОЩЬ:</b><br/>"
+    for item in ["Антибиотик", "Сыворотка ПСС", "Анатоксин", "Антидот", "Обезболивающее", "Переливание крови", "Жгут"]:
+        med_help_str += f"- {item}: ______________<br/>"
 
-    # Evacuation blocks on right
-    ev_x = main_right - 75 * mm
-    ev_y = table_y - 5 * mm
-    pdf.setFont(font, 9)
-    pdf.drawString(ev_x, ev_y, "Санитарная обработка (подчеркнуть):")
-    pdf.drawString(ev_x + 3 * mm, ev_y - 5 * mm, "полная, частичная, не проводилась")
-    pdf.drawString(ev_x, ev_y - 12 * mm, "Эвакуировать (куда): " + _safe(bottom.get("evac_destination")))
+    t_data.append([
+        "", "", "", "", Paragraph("<b>Диагноз:</b><br/>" + _s('main_diagnosis'), p_normal), "", "", Paragraph(med_help_str, p_normal), "", "", ""
+    ])
 
-    pdf.rect(ev_x, ev_y - 35 * mm, 70 * mm, 20 * mm)
-    pdf.drawString(ev_x + 2 * mm, ev_y - 20 * mm, "Транспорт:    [АВТО]  [ПОЕЗД]  [САМОЛЕТ]  [ВЕРТОЛ]")
-    pdf.drawString(ev_x + 2 * mm, ev_y - 30 * mm, "Положение:    [ЛЕЖА]  [СИДЯ]")
+    # Bodymap Text
+    bodymap_str = "<b>СХЕМА ТРАВМ:</b><br/>"
+    for ann in annotations[:10]:
+        bodymap_str += f"- {_s('annotation_type', ann)} ({_s('silhouette', ann)})<br/>"
 
-    pdf.drawString(ev_x, ev_y - 45 * mm, "Очередность эвакуации:  I    II    III")
+    t_data.append([
+        "", "", "", "", Paragraph(bodymap_str, p_small), "", "", "", "", "", ""
+    ])
 
+    # Bottom fields
+    t_data.append([
+        Paragraph("<b>РАДИАЦИЯ</b>", p_bold), "", "", "", Paragraph(f"<b>Эвакуировать в:</b> {_s('evac_destination')}", p_normal), "", Paragraph("<b>Транспорт:</b> [АВТО] [ВЕРТ]", p_normal), "", Paragraph(f"<b>Врач:</b> {_s('doctor_signature', _s('signed_by'))}", p_normal), "", ""
+    ])
 
-def _draw_bodymap(pdf: canvas.Canvas, font: str, bx: float, by: float, annotations: list[dict[str, Any]]) -> None:
-    # Stick figure approximation for body schematic
-    pdf.circle(bx, by, 7 * mm)
-    pdf.roundRect(bx - 10 * mm, by - 40 * mm, 20 * mm, 30 * mm, 3 * mm)
-    pdf.line(bx - 10 * mm, by - 14 * mm, bx - 25 * mm, by - 35 * mm)
-    pdf.line(bx + 10 * mm, by - 14 * mm, bx + 25 * mm, by - 35 * mm)
-    pdf.line(bx - 5 * mm, by - 40 * mm, bx - 8 * mm, by - 65 * mm)
-    pdf.line(bx + 5 * mm, by - 40 * mm, bx + 8 * mm, by - 65 * mm)
+    # Normalize Rows to have same len
+    max_len = len(col_widths)
+    for i, r in enumerate(t_data):
+        while len(r) < max_len:
+            r.append("")
 
-    pdf.setFont(font, 7)
-    pdf.drawCentredString(bx, by - 70 * mm, "СХЕМА ТРАВМ")
-    for i, ann in enumerate(annotations[:5]):
-        label = f"- {_safe(ann.get('annotation_type'))} ({_safe(ann.get('silhouette'))})"
-        pdf.drawString(bx + 30 * mm, by - i * 6 * mm, label)
+    table = Table(t_data, colWidths=col_widths)
+    table.setStyle(TableStyle([
+        # Stub Spans
+        ('SPAN', (0,0), (1,0)),
+        ('SPAN', (0,1), (1,1)),
+        ('SPAN', (0,4), (1,6)),
+        ('SPAN', (0,7), (1,7)),
+        
+        # Main Title Spans
+        ('SPAN', (4,0), (9,0)),
+        ('SPAN', (4,1), (9,1)),
+        ('SPAN', (4,2), (5,2)), ('SPAN', (6,2), (9,2)),
+        ('SPAN', (4,3), (5,3)), ('SPAN', (6,3), (9,3)),
+        ('SPAN', (4,4), (6,4)), ('SPAN', (7,4), (9,4)),
+        
+        # Diagnosis and Help Spans
+        ('SPAN', (4,5), (6,6)), ('SPAN', (7,5), (9,6)),
+        
+        # Bodymap Span
+        ('SPAN', (4,7), (9,7)),
+        
+        # Bottom Span
+        ('SPAN', (4,7), (5,7)), ('SPAN', (6,7), (7,7)), ('SPAN', (8,7), (9,7)),
 
+        # Tall Colored Column Spans
+        ('SPAN', (3,0), (3,7)), # Black band
+        ('SPAN', (10,0), (10,7)), # Yellow band
 
-def _draw_clipped_text(
-    pdf: canvas.Canvas, font: str, size: int, x: float, y: float, text: str, max_width: float
-) -> None:
-    if not text:
-        return
-    if stringWidth(text, font, size) <= max_width:
-        pdf.setFont(font, size)
-        pdf.drawString(x, y, text)
-        return
-    ellipsis = "..."
-    left = 0
-    right = len(text)
-    while left < right:
-        mid = (left + right + 1) // 2
-        candidate = text[:mid].rstrip() + ellipsis
-        if stringWidth(candidate, font, size) <= max_width:
-            left = mid
-        else:
-            right = mid - 1
-    clipped = text[:left].rstrip() + ellipsis
-    pdf.setFont(font, size)
-    pdf.drawString(x, y, clipped)
+        # Coloring Top Bands
+        ('BACKGROUND', (4,0), (9,0), c_red),
+        ('BACKGROUND', (4,7), (9,7), c_blue),
+        
+        # Coloring Edge Bands
+        ('BACKGROUND', (3,0), (3,7), c_black),
+        ('BACKGROUND', (10,0), (10,7), c_yellow),
+        
+        # Grid lines
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 2*mm),
+        ('RIGHTPADDING', (0,0), (-1,-1), 2*mm),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
