@@ -442,7 +442,7 @@ class Form100ServiceV2:
                     file_path=str(file_path),
                     sha256=package_hash,
                     created_by=actor_id,
-                    notes=json.dumps({"card_id": card_id, "filters": filter_payload}, ensure_ascii=False),
+                    notes=json.dumps({"card_id": card_id, "filters": filter_payload, "counts": counts}, ensure_ascii=False),
                 )
             )
             self.audit_repo.add_event(
@@ -493,6 +493,7 @@ class Form100ServiceV2:
             added = 0
             updated = 0
             skipped = 0
+            errors_list = []
             with self.session_factory() as session:
                 for item in cards:
                     incoming_id = str(item.get("id") or "").strip() or str(uuid4())
@@ -513,10 +514,10 @@ class Form100ServiceV2:
                     }
                     try:
                         validate_card_payload_v2({**card_payload, **incoming_data})
-                    except (TypeError, ValueError, KeyError):
-                        if mode == "append":
-                            skipped += 1
-                            continue
+                    except (TypeError, ValueError, KeyError) as exc:
+                        errors_list.append({"id": incoming_id, "error": str(exc)})
+                        skipped += 1
+                        continue
                     if existing is None:
                         added += 1
                         self.repo.create_card(
@@ -572,7 +573,13 @@ class Form100ServiceV2:
                     payload_json=json.dumps(
                         {
                             "schema": "form100.audit.v2",
-                            "summary": {"rows_total": len(cards), "added": added, "updated": updated, "skipped": skipped},
+                            "summary": {
+                                "rows_total": len(cards),
+                                "added": added,
+                                "updated": updated,
+                                "skipped": skipped,
+                                "errors": len(errors_list)
+                            },
                             "actor_role": actor_role,
                         },
                         ensure_ascii=False,
@@ -582,9 +589,15 @@ class Form100ServiceV2:
         return {
             "path": str(file_path),
             "counts": {"form100": len(cards)},
-            "summary": {"rows_total": len(cards), "added": added, "updated": updated, "skipped": skipped, "errors": 0},
-            "error_count": 0,
-            "errors": [],
+            "summary": {
+                "rows_total": len(cards),
+                "added": added,
+                "updated": updated,
+                "skipped": skipped,
+                "errors": len(errors_list)
+            },
+            "error_count": len(errors_list),
+            "errors": errors_list,
         }
 
     def _store_imported_pdf(self, *, card_id: str, source_pdf: Path) -> Path:

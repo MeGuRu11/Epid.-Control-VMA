@@ -139,6 +139,17 @@ class AnalyticsRepository:
 
         return stmt.distinct().subquery()
 
+    def _apply_base_filters(
+        self, stmt, date_from: date | None, date_to: date | None, patient_category: str | None
+    ):
+        if date_from:
+            stmt = stmt.where(LabSample.taken_at >= self._date_floor(date_from))
+        if date_to:
+            stmt = stmt.where(LabSample.taken_at < self._date_ceiling_exclusive(date_to))
+        if patient_category:
+            stmt = stmt.where(Patient.category == patient_category)
+        return stmt
+
     def get_department_summary(
         self,
         session: Session,
@@ -160,12 +171,7 @@ class AnalyticsRepository:
             .outerjoin(Department, Department.id == EmrCase.department_id)
             .group_by(Department.id, Department.name)
         )
-        if date_from:
-            stmt = stmt.where(LabSample.taken_at >= self._date_floor(date_from))
-        if date_to:
-            stmt = stmt.where(LabSample.taken_at < self._date_ceiling_exclusive(date_to))
-        if patient_category:
-            stmt = stmt.where(Patient.category == patient_category)
+        stmt = self._apply_base_filters(stmt, date_from, date_to, patient_category)
         rows = session.execute(stmt).all()
         result = []
         for row in rows:
@@ -203,12 +209,7 @@ class AnalyticsRepository:
             .group_by(day_col)
             .order_by(day_col.asc())
         )
-        if date_from:
-            stmt = stmt.where(LabSample.taken_at >= self._date_floor(date_from))
-        if date_to:
-            stmt = stmt.where(LabSample.taken_at < self._date_ceiling_exclusive(date_to))
-        if patient_category:
-            stmt = stmt.where(Patient.category == patient_category)
+        stmt = self._apply_base_filters(stmt, date_from, date_to, patient_category)
         rows = session.execute(stmt).all()
         result = []
         for row in rows:
@@ -228,12 +229,7 @@ class AnalyticsRepository:
             func.count(LabSample.id).label("total"),
             func.sum(case((LabSample.growth_flag == 1, 1), else_=0)).label("positives"),
         ).select_from(LabSample).join(Patient, Patient.id == LabSample.patient_id)
-        stmt = stmt.where(
-            LabSample.taken_at >= self._date_floor(date_from),
-            LabSample.taken_at < self._date_ceiling_exclusive(date_to),
-        )
-        if patient_category:
-            stmt = stmt.where(Patient.category == patient_category)
+        stmt = self._apply_base_filters(stmt, date_from, date_to, patient_category)
         row = session.execute(stmt).one()
         total = row.total or 0
         positives = row.positives or 0

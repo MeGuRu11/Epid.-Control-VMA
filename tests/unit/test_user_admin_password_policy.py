@@ -29,17 +29,17 @@ def test_create_user_dto_rejects_short_password() -> None:
 def test_create_user_accepts_valid_password(service: UserAdminService) -> None:
     request = CreateUserRequest(login="testuser", password="a" * MIN_PASSWORD_LENGTH, role="operator")
     mock_session = MagicMock()
-    service.session_factory.return_value.__enter__ = MagicMock(return_value=mock_session)
-    service.session_factory.return_value.__exit__ = MagicMock(return_value=False)
+    service.session_factory.return_value.__enter__ = MagicMock(return_value=mock_session)  # type: ignore
+    service.session_factory.return_value.__exit__ = MagicMock(return_value=False)  # type: ignore
 
     admin_user = MagicMock()
     admin_user.role = "admin"
-    service.user_repo.get_by_id.return_value = admin_user
-    service.user_repo.get_by_login.return_value = None
+    service.user_repo.get_by_id.return_value = admin_user  # type: ignore
+    service.user_repo.get_by_login.return_value = None  # type: ignore
 
     created_user = MagicMock()
     created_user.id = 42
-    service.user_repo.create.return_value = created_user
+    service.user_repo.create.return_value = created_user  # type: ignore
 
     with patch("app.application.services.user_admin_service.hash_password", return_value="hashed"):
         result = service.create_user(request, actor_id=1)
@@ -56,16 +56,16 @@ def test_reset_password_dto_rejects_short_password() -> None:
 def test_reset_password_accepts_valid_password(service: UserAdminService) -> None:
     request = ResetPasswordRequest(user_id=2, new_password="b" * MIN_PASSWORD_LENGTH, deactivate=False)
     mock_session = MagicMock()
-    service.session_factory.return_value.__enter__ = MagicMock(return_value=mock_session)
-    service.session_factory.return_value.__exit__ = MagicMock(return_value=False)
+    service.session_factory.return_value.__enter__ = MagicMock(return_value=mock_session)  # type: ignore
+    service.session_factory.return_value.__exit__ = MagicMock(return_value=False)  # type: ignore
 
     admin_user = MagicMock()
     admin_user.role = "admin"
-    service.user_repo.get_by_id.return_value = admin_user
+    service.user_repo.get_by_id.return_value = admin_user  # type: ignore
 
     target_user = MagicMock()
     target_user.id = 2
-    service.user_repo.get_by_id.return_value = admin_user
+    service.user_repo.get_by_id.return_value = admin_user  # type: ignore
 
     with patch("app.application.services.user_admin_service.hash_password", return_value="hashed"):
         service.reset_password(request, actor_id=1)  # should not raise

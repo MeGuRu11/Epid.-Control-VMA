@@ -26,7 +26,7 @@ from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
 from app.ui.form100_v2.form100_editor import Form100EditorV2
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.notifications import error_text, show_error, show_info
+from app.ui.widgets.notifications import error_text, show_error, show_info, show_warning
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
@@ -373,15 +373,19 @@ class Form100ViewV2(QWidget):
                 actor_id=self.session.user_id,
                 mode="merge",
             )
-            summary = result.get("summary", {})
-            show_info(
-                self,
-                (
-                    f"Импорт завершён: rows={summary.get('rows_total', 0)}, "
-                    f"+{summary.get('added', 0)} ~{summary.get('updated', 0)} "
-                    f"-{summary.get('skipped', 0)}"
-                ),
+            summary = result.get("summary") or {}
+            err_count = result.get("error_count", 0)
+            msg = (
+                f"Импорт завершён: всего={summary.get('rows_total', 0)}, "
+                f"добавлено={summary.get('added', 0)}, "
+                f"обновлено={summary.get('updated', 0)}, "
+                f"пропущено={summary.get('skipped', 0)}"
             )
+            if err_count > 0:
+                msg += f", ошибок={err_count}"
+                show_warning(self, msg)
+            else:
+                show_info(self, msg)
             self.refresh_cards()
             if self.on_data_changed:
                 self.on_data_changed()

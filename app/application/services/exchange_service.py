@@ -14,9 +14,10 @@ from uuid import uuid4
 
 from openpyxl import Workbook, load_workbook
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -645,27 +646,58 @@ class ExchangeService:
         if table_name not in CSV_TABLES:
             raise ValueError("Неизвестная таблица PDF")
         model_cls = CSV_TABLES[table_name]
+        unicode_font = get_pdf_unicode_font_name()
+
+        styles = getSampleStyleSheet()
+        normal_style = styles["Normal"]
+        cell_style = ParagraphStyle(
+            "PdfCell",
+            parent=normal_style,
+            fontName=unicode_font,
+            fontSize=6,
+            leading=7,
+            wordWrap="CJK",
+        )
+
         with self.session_factory() as session:
             rows = session.query(model_cls).all()
             columns = [c.name for c in model_cls.__table__.columns]
-            data = [_get_csv_headers(table_name, columns)]
+            headers = _get_csv_headers(table_name, columns)
+            data = [[Paragraph(h, cell_style) for h in headers]]
             for row in rows:
                 record = _model_to_dict(row)
-                data.append(["" if record.get(col) is None else str(record.get(col)) for col in columns])
+                data.append(
+                    [Paragraph("" if record.get(col) is None else str(record.get(col)), cell_style) for col in columns]
+                )
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        unicode_font = get_pdf_unicode_font_name()
-        doc = SimpleDocTemplate(str(file_path), pagesize=A4)
-        table = Table(data, repeatRows=1)
+        doc = SimpleDocTemplate(
+            str(file_path),
+            pagesize=landscape(A4),
+            leftMargin=5 * mm,
+            rightMargin=5 * mm,
+            topMargin=10 * mm,
+            bottomMargin=10 * mm,
+        )
+
+        # Approximate dynamic widths by equally dividing usable landscape space
+        usable_width = landscape(A4)[0] - 10 * mm
+        num_cols = len(columns)
+        col_widths = [usable_width / num_cols] * num_cols
+
+        table = Table(data, repeatRows=1, colWidths=col_widths)
         table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("FONTNAME", (0, 0), (-1, -1), unicode_font),
-                    ("FONTSIZE", (0, 0), (-1, -1), 7),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                    ("FONTSIZE", (0, 0), (-1, -1), 6),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
                 ]
             )
         )

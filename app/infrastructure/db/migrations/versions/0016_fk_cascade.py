@@ -115,7 +115,7 @@ def _create_ismp_case(ondelete: str | None) -> None:
         sa.Column("start_date", sa.Date(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.CheckConstraint(
-            "ismp_type in ('\u0412\u0410\u041f','\u041a\u0410-\u0418\u041a','\u041a\u0410-\u0418\u041c\u041f','\u0418\u041e\u0425\u0412','\u041f\u0410\u041f','\u0411\u0410\u041a','\u0421\u0415\u041f\u0421\u0418\u0421')",
+            "ismp_type in ('ВАП','КА-ИК','КА-ИМП','ИОХВ','ПАП','БАК','СЕПСИС')",
             name="ck_ismp_case_ismp_type",
         ),
     )

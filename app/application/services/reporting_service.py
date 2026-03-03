@@ -11,9 +11,10 @@ from uuid import uuid4
 
 from openpyxl import Workbook
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -52,8 +53,20 @@ def _format_value(value: Any) -> Any:
         return value.strftime("%d.%m.%Y %H:%M")
     if isinstance(value, date):
         return value.strftime("%d.%m.%Y")
+    if isinstance(value, str):
+        if "T" in value and len(value) >= 19:
+            try:
+                dt = datetime.fromisoformat(value)
+                return dt.strftime("%d.%m.%Y %H:%M")
+            except ValueError:
+                pass
+        elif len(value) == 10 and "-" in value:
+            try:
+                d = date.fromisoformat(value)
+                return d.strftime("%d.%m.%Y")
+            except ValueError:
+                pass
     return value
-
 
 def _format_filter_label(key: str) -> str:
     return FILTER_LABELS.get(key, key)
@@ -175,43 +188,79 @@ class ReportingService:
             ["Положительные", str(agg.get("positives", 0))],
             ["Доля положительных", f"{agg.get('positive_share', 0) * 100:.1f}%"],
         ]
+
+        styles = getSampleStyleSheet()
+        normal_style = styles["Normal"]
+        cell_style = ParagraphStyle(
+            "PdfCell",
+            parent=normal_style,
+            fontName=unicode_font,
+            fontSize=7,
+            leading=8,
+            wordWrap="CJK",
+        )
+
         filter_data = [["Фильтр", "Значение"]]
         for key, value in filters.items():
             filter_data.append(
-                [_format_filter_label(key), self._format_filter_value(key, value, filter_maps)]
+                [
+                    Paragraph(_format_filter_label(key), cell_style),
+                    Paragraph(self._format_filter_value(key, value, filter_maps), cell_style)
+                ]
             )
 
-        table_data = [
-            [
-                "ID",
-                "Лаб. номер",
-                "ФИО пациента",
-                "Категория",
-                "Дата взятия",
-                "Отделение",
-                "Материал",
-                "Микроорганизм",
-                "Антибиотик",
-            ]
+        headers = [
+            "ID",
+            "Лаб. номер",
+            "ФИО пациента",
+            "Категория",
+            "Дата взятия",
+            "Отделение",
+            "Материал",
+            "Микроорганизм",
+            "Антибиотик",
         ]
+        table_data = [[Paragraph(h, cell_style) for h in headers]]
         for row in rows:
             table_data.append(
                 [
                     str(row.lab_sample_id),
-                    row.lab_no,
-                    row.patient_name,
-                    row.patient_category or "",
+                    Paragraph(str(row.lab_no or ""), cell_style),
+                    Paragraph(row.patient_name or "", cell_style),
+                    Paragraph(row.patient_category or "", cell_style),
                     _format_value(row.taken_at) or "",
-                    row.department_name or "",
-                    row.material_type or "",
-                    row.microorganism or "",
-                    row.antibiotic or "",
+                    Paragraph(row.department_name or "", cell_style),
+                    Paragraph(row.material_type or "", cell_style),
+                    Paragraph(row.microorganism or "", cell_style),
+                    Paragraph(row.antibiotic or "", cell_style),
                 ]
             )
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        doc = SimpleDocTemplate(str(file_path), pagesize=A4)
-        summary_table = Table(summary_data)
+        doc = SimpleDocTemplate(
+            str(file_path),
+            pagesize=landscape(A4),
+            leftMargin=10 * mm,
+            rightMargin=10 * mm,
+            topMargin=15 * mm,
+            bottomMargin=15 * mm,
+        )
+
+        # Calculate optimal generic column widths for A4 landscape (277mm usable width roughly)
+        available_width = landscape(A4)[0] - 20 * mm
+        col_widths = [
+            available_width * 0.05,  # ID
+            available_width * 0.08,  # Lab No
+            available_width * 0.15,  # Patient
+            available_width * 0.08,  # Category
+            available_width * 0.08,  # Date
+            available_width * 0.12,  # Department
+            available_width * 0.12,  # Material
+            available_width * 0.15,  # Microorganism
+            available_width * 0.17,  # Antibiotic
+        ]
+
+        summary_table = Table(summary_data, colWidths=[available_width * 0.3, available_width * 0.7])
         summary_table.setStyle(
             TableStyle(
                 [
@@ -222,29 +271,35 @@ class ReportingService:
                 ]
             )
         )
-        filter_table = Table(filter_data, repeatRows=1)
+        filter_table = Table(filter_data, repeatRows=1, colWidths=[available_width * 0.3, available_width * 0.7])
         filter_table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("FONTNAME", (0, 0), (-1, -1), unicode_font),
                     ("FONTSIZE", (0, 0), (-1, -1), 7),
                     ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
                 ]
             )
         )
-        data_table = Table(table_data, repeatRows=1)
+        data_table = Table(table_data, repeatRows=1, colWidths=col_widths)
         data_table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("FONTNAME", (0, 0), (-1, -1), unicode_font),
                     ("FONTSIZE", (0, 0), (-1, -1), 7),
                     ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
                 ]
             )
         )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -49,9 +50,9 @@ def _to_float(value: object, default: float = 0.5) -> float:
 
 def _active_silhouettes(gender: str) -> set[str]:
     return {"male_front", "male_back"}
-
-
-import sys
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / "app" / "image" / "main"
+    return Path(__file__).resolve().parents[4] / "app" / "image" / "main"
 
 
 def _get_image_root() -> Path:

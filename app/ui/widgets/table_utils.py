@@ -19,7 +19,7 @@ def resize_columns_to_content(
             header_item = table.horizontalHeaderItem(col)
             header_text = header_item.text() if header_item else ""
             header_width = metrics.horizontalAdvance(header_text)
-            
+
         max_cell_width = 0
         for row in range(table.rowCount()):
             item = table.item(row, col)

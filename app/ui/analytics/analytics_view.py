@@ -200,11 +200,11 @@ class AnalyticsSearchView(QWidget):
         self.date_from = QDateEdit()
         self.date_from.setCalendarPopup(True)
         self.date_from.setDisplayFormat("dd.MM.yyyy")
-        self.date_from.setMinimumDate(QDate(2024, 1, 1))
+        self.date_from.setMinimumDate(QDate(2000, 1, 1))
         self.date_to = QDateEdit()
         self.date_to.setCalendarPopup(True)
         self.date_to.setDisplayFormat("dd.MM.yyyy")
-        self.date_to.setMinimumDate(QDate(2024, 1, 1))
+        self.date_to.setMinimumDate(QDate(2000, 1, 1))
         self.department = QComboBox()
         self.department.addItem("Выбрать", None)
         for dep in self.reference_service.list_departments():
@@ -282,7 +282,7 @@ class AnalyticsSearchView(QWidget):
         saved_layout.addWidget(QLabel("Название"))
         saved_layout.addWidget(self.filter_name)
         saved_layout.addWidget(save_filter_btn)
-        self.saved_filters_toggle = QPushButton("Показать сохраненные фильтры ▸")
+        self.saved_filters_toggle = QPushButton("Фильтры ▸")
         compact_button(self.saved_filters_toggle)
         self.saved_filters_toggle.setCheckable(True)
         self.saved_filters_toggle.toggled.connect(self._toggle_saved_filters)
@@ -567,9 +567,9 @@ class AnalyticsSearchView(QWidget):
     def _toggle_saved_filters(self, checked: bool) -> None:
         self.saved_filters_container.setVisible(checked)
         if checked:
-            self.saved_filters_toggle.setText("Скрыть сохраненные фильтры ▾")
+            self.saved_filters_toggle.setText("Фильтры ▾")
         else:
-            self.saved_filters_toggle.setText("Показать сохраненные фильтры ▸")
+            self.saved_filters_toggle.setText("Фильтры ▸")
 
     def _wire_icd_search(self, combo: QComboBox) -> None:
         completer = QCompleter(combo.model(), combo)
@@ -892,6 +892,7 @@ class AnalyticsSearchView(QWidget):
         department_id = self.department.currentData()
 
         def _run() -> dict:
+            self.analytics_service.clear_cache()
             rows = self.analytics_service.search_samples(req)
             agg = self.analytics_service.get_aggregates(req)
             dashboard = self._fetch_dashboard_data(
@@ -931,8 +932,13 @@ class AnalyticsSearchView(QWidget):
             self.top_table.setItem(idx, 1, QTableWidgetItem(str(count)))
         resize_columns_to_content(self.top_table)
         self.table.clearContents()
-        self.table.setRowCount(len(rows))
-        for i, r in enumerate(rows):
+
+        display_rows = rows[:1000]
+        if len(rows) > 1000:
+            show_warning(self, "Показаны первые 1000 записей. Для получения всех данных используйте экспорт.")
+
+        self.table.setRowCount(len(display_rows))
+        for i, r in enumerate(display_rows):
             self.table.setItem(i, 0, QTableWidgetItem(str(r.lab_sample_id)))
             self.table.setItem(i, 1, QTableWidgetItem(r.lab_no))
             self.table.setItem(i, 2, QTableWidgetItem(r.patient_name))
@@ -1244,6 +1250,7 @@ class AnalyticsSearchView(QWidget):
         self._set_dashboard_busy(True)
 
         def _run() -> dict:
+            self.analytics_service.clear_cache()
             return self._fetch_dashboard_data(
                 date_from=date_from,
                 date_to=date_to,
