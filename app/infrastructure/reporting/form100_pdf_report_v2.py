@@ -6,205 +6,687 @@ from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.pdfgen import canvas
-from reportlab.platypus.flowables import KeepInFrame, Flowable
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
+
+
+def _s(data: dict[str, Any], alt: dict[str, Any], card: dict[str, Any], key: str, default: str = "") -> str:
+    v = data.get(key) or alt.get(key) or card.get(key)
+    return str(v) if v is not None else default
 
 
 def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> None:
     file_path = Path(file_path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    width, height = landscape(A4)
-    doc = SimpleDocTemplate(
-        str(file_path),
-        pagesize=(width, height),
-        leftMargin=10 * mm,
-        rightMargin=10 * mm,
-        topMargin=10 * mm,
-        bottomMargin=10 * mm,
-        title=f"Форма 100 {card.get('id', '')}"
-    )
-
+    data_payload = card.get("data") or {}
+    main = data_payload.get("main") or {}
+    bottom = data_payload.get("bottom") or {}
+    flags = data_payload.get("flags") or {}
+    
     font = get_pdf_unicode_font_name()
-    styles = getSampleStyleSheet()
-    normal_style = styles["Normal"]
-
-    p_small = ParagraphStyle("PdfCellSmall", parent=normal_style, fontName=font, fontSize=7, leading=8)
-    p_normal = ParagraphStyle("PdfCell", parent=normal_style, fontName=font, fontSize=9, leading=10)
-    p_bold = ParagraphStyle("PdfCellBold", parent=normal_style, fontName=font, fontSize=10, leading=11)
-    p_title = ParagraphStyle("PdfTitle", parent=normal_style, fontName=font, fontSize=14, alignment=1, spaceAfter=5)
-
-    data = card.get("data") or {}
-    main = data.get("main") or {}
-    bottom = data.get("bottom") or {}
-    flags = data.get("flags") or {}
-    annotations = data.get("bodymap_annotations") or []
-
-    def _s(key: str, default: str = "") -> str:
-        v = main.get(key) or bottom.get(key) or card.get(key)
-        return str(v) if v is not None else default
-
-    datetime_str = f"{_s('main_date')} {_s('main_time')}".strip()
+    c = canvas.Canvas(str(file_path), pagesize=landscape(A4))
+    width, height = landscape(A4)
     
-    # 1. Colored bands can be created as a header row in the main table or we can just use colored background cells.
-    # Platypus Table is excellent for this.
-
-    elements = []
-
-    # Building a large grid
-    # Stub (Корешок) = Column 1 (0 to 1) 
-    # Gap = Column 2
-    # Main Card = Column 3 to 10
+    # Offsets and grid dimensions
+    margin_x = 10 * mm
+    margin_y = 10 * mm
+    usable_w = width - 2 * margin_x
+    usable_h = height - 2 * margin_y
     
-    col_widths = [
-        35*mm, 35*mm,  # Stub
-        2*mm,          # Gap Cut Line
-        15*mm,         # Colored Isolation
-        30*mm, 30*mm, 30*mm, 30*mm, 30*mm, 20*mm, # Main parts
-        15*mm,         # Yellow Sanitation
-    ]
-
-    t_data = []
-
-    # ROW 0: Titles
-    t1 = Paragraph("<b>КОРЕШОК ПЕРВИЧНОЙ<br/>МЕДИЦИНСКОЙ КАРТОЧКИ</b>", p_bold)
-    t1.alignment = 1
-    t2 = Paragraph("<b>ПЕРВИЧНАЯ МЕДИЦИНСКАЯ КАРТОЧКА (Форма 100)</b>", p_title)
+    # ------------------
+    # 1. COLOR BANDS (TEAR OFFS)
+    # ------------------
+    c.setLineWidth(0.5)
     
-    # Colored Cells logic
-    c_red = colors.Color(0.8, 0.1, 0.1, alpha=0.9 if flags.get("flag_emergency") else 0.15)
-    c_blue = colors.Color(0.1, 0.4, 0.8, alpha=0.9 if flags.get("flag_radiation") else 0.15)
-    c_black = colors.Color(0.1, 0.1, 0.1, alpha=0.9 if flags.get("flag_isolation") else 0.15)
-    c_yellow = colors.Color(0.96, 0.84, 0.2, alpha=0.9 if flags.get("flag_sanitation") else 0.15)
+    band_height = 10 * mm
+    band_width = 10 * mm
     
-    class RotatedText(Flowable):
-        def __init__(self, text, font, size):
-            Flowable.__init__(self)
-            self.text = text
-            self.font = font
-            self.size = size
-        def draw(self):
-            self.canv.saveState()
-            self.canv.rotate(90)
-            self.canv.setFillColorRGB(1,1,1)
-            self.canv.setFont(self.font, self.size)
-            self.canv.drawString(20, -10, self.text)
-            self.canv.restoreState()
-
-    h_black = RotatedText("ИЗОЛЯЦИЯ", font, 11)
-    h_yellow = RotatedText("САНОБРАБОТКА", font, 11)
-
-    t_data.append([
-        t1, "", "", h_black, Paragraph("<b>НЕОТЛОЖНАЯ ПОМОЩЬ</b>", ParagraphStyle("R", parent=p_bold, textColor=colors.white, alignment=1)), "", "", "", "", "", h_yellow
-    ])
-
-    t_data.append([
-        Paragraph("<b>МЕДИЦИНСКАЯ ПОМОЩЬ</b>", p_bold), "", "", "", t2, "", "", "", "", "", ""
-    ])
-
-    # Stub content
-    stub_info = [
-        Paragraph(f"Дата: <b>{datetime_str}</b>", p_normal),
-        Paragraph(f"в/зв <b>{_s('main_rank')}</b>   в/ч <b>{_s('main_unit')}</b>", p_normal),
-        Paragraph(f"ФИО: <b>{_s('main_full_name')}</b>", p_normal),
-        Paragraph(f"Жетон: <b>{_s('main_id_tag')}</b>", p_normal),
-        Paragraph("<b>Диагноз:</b><br/>" + _s('main_diagnosis'), p_normal),
-    ]
+    # Top RED: Неотложная помощь
+    has_red = flags.get("flag_emergency", False)
+    if has_red:
+        c.setFillColorRGB(0.9, 0.1, 0.1)
+    else:
+        c.setFillColorRGB(0.95, 0.95, 0.95)
     
-    # Main Content
-    main_info = [
-        Paragraph(f"Выдана: <b>{_s('issued_by', 'Не указано')}</b>", p_normal),
-        Paragraph(f"Дата: <b>{datetime_str}</b>", p_normal),
-        Paragraph(f"Звание: <b>{_s('main_rank')}</b>", p_normal),
-        Paragraph(f"Подразделение: <b>{_s('main_unit')}</b>", p_normal),
-    ]
+    c.rect(margin_x + 90*mm, height - margin_y - band_height, usable_w - 90*mm, band_height, stroke=1, fill=1)
+    
+    # Bottom BLUE: Радиационное поражение
+    has_blue = flags.get("flag_radiation", False)
+    if has_blue:
+        c.setFillColorRGB(0.1, 0.5, 0.9)
+    else:
+        c.setFillColorRGB(0.95, 0.95, 0.95)
+    c.rect(margin_x + 90*mm, margin_y, usable_w - 90*mm, band_height, stroke=1, fill=1)
+    
+    # Left BLACK: Изоляция
+    has_black = flags.get("flag_isolation", False)
+    if has_black:
+        c.setFillColorRGB(0.1, 0.1, 0.1)
+    else:
+        c.setFillColorRGB(0.95, 0.95, 0.95)
+    c.rect(margin_x + 90*mm, margin_y + band_height, band_width, usable_h - 2*band_height, stroke=1, fill=1)
+    
+    # Right YELLOW: Санитарная обработка
+    has_yellow = flags.get("flag_sanitation", False)
+    if has_yellow:
+        c.setFillColorRGB(0.9, 0.8, 0.1)
+    else:
+        c.setFillColorRGB(0.95, 0.95, 0.95)
+    c.rect(width - margin_x - band_width, margin_y + band_height, band_width, usable_h - 2*band_height, stroke=1, fill=1)
+    
+    # Draw Band Text
+    c.setFillColorRGB(0, 0, 0)
+    if has_black:
+        c.setFillColorRGB(1, 1, 1)
+    
+    c.saveState()
+    c.translate(margin_x + 90*mm + band_width/2, height/2)
+    c.rotate(90)
+    c.setFont(font, 14)
+    c.drawCentredString(0, -4, "ИЗОЛЯЦИЯ")
+    c.restoreState()
+    
+    c.setFillColorRGB(0, 0, 0)
+    c.saveState()
+    c.translate(width - margin_x - band_width/2, height/2)
+    c.rotate(90)
+    c.setFont(font, 14)
+    c.drawCentredString(0, -4, "САНИТАРНАЯ ОБРАБОТКА")
+    c.restoreState()
+    
+    if has_blue:
+        c.setFillColorRGB(1, 1, 1)
+    else:
+        c.setFillColorRGB(0, 0, 0)
+    c.setFont(font, 14)
+    c.drawCentredString(margin_x + 90*mm + (usable_w - 90*mm)/2, margin_y + band_height/2 - 4, "РАДИАЦИОННОЕ ПОРАЖЕНИЕ")
+    
+    if has_red:
+        c.setFillColorRGB(1, 1, 1)
+    else:
+        c.setFillColorRGB(0, 0, 0)
+    c.drawCentredString(margin_x + 90*mm + (usable_w - 90*mm)/2, height - margin_y - band_height/2 - 4, "НЕОТЛОЖНАЯ ПОМОЩЬ")
+    
+    c.setFillColorRGB(0, 0, 0)
+    
+    # ------------------
+    # 2. STUB (КОРЕШОК)
+    # ------------------
+    stub_w = 85 * mm
+    stub_x = margin_x
+    top_y = height - margin_y
+    
+    c.rect(stub_x, margin_y, stub_w, usable_h, stroke=1, fill=0)
+    
+    def dr_line(x1, y1, x2, y2):
+        c.line(x1, y1, x2, y2)
+        
+    def dr_text(x, y, txt, size=9, align="left", bold=False):
+        c.setFont(font, size) # Assuming font is unicode standard. Using basic for now, can't bold natively easily without registering -B font.
+        if align == "center":
+            c.drawCentredString(x, y, txt)
+        elif align == "right":
+            c.drawRightString(x, y, txt)
+        else:
+            c.drawString(x, y, txt)
+            
+    # Stub Header
+    c.setFont(font, 10)
+    c.drawCentredString(stub_x + stub_w/2, top_y - 8*mm, "КОРЕШОК ПЕРВИЧНОЙ")
+    c.drawCentredString(stub_x + stub_w/2, top_y - 12*mm, "МЕДИЦИНСКОЙ КАРТОЧКИ")
+    dr_line(stub_x, top_y - 15*mm, stub_x + stub_w, top_y - 15*mm)
+    
+    cur_y = top_y - 20*mm
+    rank = _s(main, bottom, card, "main_rank")
+    c_unit = _s(main, bottom, card, "main_unit")
+    time_h = _s(main, bottom, card, "main_time", "  :  ").split(":")[0]
+    time_m = _s(main, bottom, card, "main_time", "  :  ")[-2:]
+    dr_text(stub_x + 2*mm, cur_y, f"« {time_h} » час ____ {time_m} ____ мин. ________ 20__ г.")
+    
+    cur_y -= 8*mm
+    dr_text(stub_x + 2*mm, cur_y, f"в/звание {rank}")
+    dr_text(stub_x + 40*mm, cur_y, f"в/часть {c_unit}")
+    dr_line(stub_x + 15*mm, cur_y - 1*mm, stub_x + 38*mm, cur_y - 1*mm) # rank line
+    dr_line(stub_x + 52*mm, cur_y - 1*mm, stub_x + stub_w - 2*mm, cur_y - 1*mm) # unit line
+    
+    cur_y -= 10*mm
+    names = _s(main, bottom, card, "main_full_name").split(" ")
+    lname = names[0] if len(names) > 0 else ""
+    fname = names[1] if len(names) > 1 else ""
+    mname = names[2] if len(names) > 2 else ""
+    dr_text(stub_x + stub_w/2, cur_y, f"{lname}           {fname}           {mname}", align="center")
+    dr_line(stub_x + 2*mm, cur_y - 1*mm, stub_x + stub_w - 2*mm, cur_y - 1*mm)
+    dr_text(stub_x + stub_w/2, cur_y - 3*mm, "фамилия                 имя                 отчество", size=6, align="center")
+    
+    cur_y -= 8*mm
+    tag = _s(main, bottom, card, "main_id_tag")
+    dr_text(stub_x + 2*mm, cur_y, f"Удостоверение личности, жетон № {tag}")
+    dr_line(stub_x + 55*mm, cur_y - 1*mm, stub_x + stub_w - 2*mm, cur_y - 1*mm)
+    
+    cur_y -= 8*mm
+    dr_text(stub_x + 2*mm, cur_y, "Ранен, заболел «   » час «   » __________ 20___ г.")
+    
+    # Stub Evac Block
+    cur_y -= 2*mm
+    dr_line(stub_x, cur_y, stub_x + stub_w, cur_y)
+    dr_text(stub_x + 2*mm, cur_y - 5*mm, "Эвакуирован са-", size=8)
+    dr_text(stub_x + 2*mm, cur_y - 9*mm, "молетом, сан-", size=8)
+    dr_text(stub_x + 2*mm, cur_y - 13*mm, "грузавто", size=8)
+    dr_text(stub_x + 2*mm, cur_y - 17*mm, "(подчеркнуть)", size=7)
+    
+    dr_line(stub_x + 30*mm, cur_y, stub_x + 30*mm, cur_y - 20*mm)
+    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 4*mm, "куда эвакуирован", size=7, align="center")
+    dr_line(stub_x + 30*mm, cur_y - 5*mm, stub_x + stub_w, cur_y - 5*mm)
+    
+    # Draw simple Plus targets
+    evac_dest = _s(main, bottom, card, "evac_destination")
+    evac_method_str = _s(main, bottom, card, "evacuation_method", "").lower()
+    
+    # "Эвакуирован самолетом, сангрузавто" underlines
+    if "авиа" in evac_method_str or "верт" in evac_method_str or "само" in evac_method_str:
+        dr_line(stub_x + 2*mm, cur_y - 6*mm, stub_x + 28*mm, cur_y - 6*mm) # Underline "самолетом"
+    elif "авто" in evac_method_str or "маши" in evac_method_str:
+        dr_line(stub_x + 2*mm, cur_y - 14*mm, stub_x + 28*mm, cur_y - 14*mm) # Underline "сан-грузавто"
 
-    t_data.append([
-        stub_info[0], stub_info[1], "", "", main_info[0], "", main_info[1], "", "", "", ""
-    ])
-    t_data.append([
-        stub_info[2], stub_info[3], "", "", main_info[2], "", main_info[3], "", "", "", ""
-    ])
-    t_data.append([
-        stub_info[4], "", "", "", Paragraph(f"ФИО: <b>{_s('main_full_name')}</b>", p_normal), "", "", Paragraph(f"Жетон: <b>{_s('main_id_tag')}</b>", p_normal), "", "", ""
-    ])
+    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 12*mm, evac_dest, align="center", size=10)
+    dr_line(stub_x + 30*mm, cur_y - 16*mm, stub_x + stub_w, cur_y - 16*mm)
+    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 19*mm, "нужное обвести", size=7, align="center")
+    
+    # Add fake icon crosses and circle the chosen one loosely based on evac_method
+    ico1_x = stub_x + 30*mm + 10*mm
+    ico2_x = stub_x + 30*mm + 25*mm
+    ico3_x = stub_x + 30*mm + 40*mm
+    c.circle(ico1_x, cur_y - 6*mm, 3*mm)
+    dr_text(ico1_x, cur_y - 6*mm - 2*mm, "+", align="center")
+    c.circle(ico2_x, cur_y - 6*mm, 3*mm)
+    dr_text(ico2_x, cur_y - 6*mm - 2*mm, "+", align="center")
+    c.rect(ico3_x - 3*mm, cur_y - 9*mm, 6*mm, 6*mm)
+    c.line(ico3_x - 4*mm, cur_y - 3*mm, ico3_x, cur_y + 1*mm)
+    c.line(ico3_x, cur_y + 1*mm, ico3_x + 4*mm, cur_y - 3*mm)
+    dr_text(ico3_x, cur_y - 6*mm - 2*mm, "+", size=6, align="center")
+    
+    # "Circle" if hospital is chosen
+    if "госп" in evac_dest.lower() or "вмед" in evac_dest.lower() or "омедб" in evac_dest.lower():
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.setLineWidth(1)
+        c.ellipse(ico3_x - 5*mm, cur_y - 10*mm, ico3_x + 5*mm, cur_y + 3*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+        c.setLineWidth(0.5)
 
-    # Big Block: Diagnosis and Help
-    med_help_str = "<b>ОКАЗАННАЯ ПОМОЩЬ:</b><br/>"
-    for item in ["Антибиотик", "Сыворотка ПСС", "Анатоксин", "Антидот", "Обезболивающее", "Переливание крови", "Жгут"]:
-        med_help_str += f"- {item}: ______________<br/>"
+    cur_y -= 20*mm
+    dr_line(stub_x, cur_y, stub_x + stub_w, cur_y)
+    
+    # Stub Table "МЕДИЦИНСКАЯ ПОМОЩЬ"
+    dr_text(stub_x + stub_w/2, cur_y - 5*mm, "МЕДИЦИНСКАЯ ПОМОЩЬ", size=10, align="center")
+    cur_y -= 7*mm
+    dr_line(stub_x, cur_y, stub_x + stub_w, cur_y)
+    
+    med_cols = [stub_x, stub_x + 60*mm, stub_x + stub_w]
+    med_rows = [cur_y, cur_y - 8*mm, cur_y - 16*mm, cur_y - 24*mm, cur_y - 32*mm, cur_y - 40*mm, cur_y - 48*mm, cur_y - 60*mm, cur_y - 70*mm]
+    
+    for r in med_rows:
+        dr_line(med_cols[0], r, med_cols[-1], r)
+    for c_i in med_cols:
+        dr_line(c_i, med_rows[0], c_i, med_rows[-1])
+        
+    dr_text(med_cols[0] + 30*mm, med_rows[0] - 5*mm, "Подчеркнуть", align="center")
+    dr_text(med_cols[1] + 12*mm, med_rows[0] - 4*mm, "Доза", align="center")
+    dr_text(med_cols[1] + 12*mm, med_rows[0] - 7*mm, "(вписать)", align="center", size=7)
+    
+    dr_text(med_cols[0] + 2*mm, med_rows[1] - 5*mm, "Введено: антибиотик")
+    dr_text(med_cols[0] + 2*mm, med_rows[2] - 4*mm, "сыворотка ПСС,")
+    dr_text(med_cols[0] + 2*mm, med_rows[2] - 7.5*mm, "ПГС")
+    dr_text(med_cols[0] + 2*mm, med_rows[3] - 5*mm, "анатоксин (какой)")
+    dr_text(med_cols[0] + 2*mm, med_rows[4] - 5*mm, "антидот (какой)")
+    dr_text(med_cols[0] + 2*mm, med_rows[5] - 4*mm, "обезболивающее")
+    dr_text(med_cols[0] + 2*mm, med_rows[5] - 7.5*mm, "средство")
+    dr_text(med_cols[0] + 2*mm, med_rows[6] - 5*mm, "Произведено: переливание")
+    dr_text(med_cols[0] + 2*mm, med_rows[7] - 4*mm, "крови, кровезаменителей,")
+    dr_text(med_cols[0] + 2*mm, med_rows[7] - 7.5*mm, "иммобилизация, перевязка,")
+    dr_text(med_cols[0] + 2*mm, med_rows[8] - 5*mm, "наложен жгут, санобработка")
+    
+    # Stub Footer
+    cur_y = margin_y + 15*mm
+    dr_line(stub_x, cur_y, stub_x + stub_w, cur_y)
+    
+    diag = _s(main, bottom, card, "main_diagnosis")
+    dr_text(stub_x + 2*mm, cur_y - 4*mm, "Диагноз", size=9)
+    
+    # Simple word wrap for diag
+    words = diag.split(" ")
+    lines = []
+    line = ""
+    for w in words:
+        if stringWidth(line + " " + w, font, 9) < stub_w - 4*mm:
+            line += " " + w
+        else:
+            lines.append(line.strip())
+            line = w
+    if line:
+        lines.append(line.strip())
+        
+    y_d = cur_y - 8*mm
+    for ln in lines[:4]:
+        dr_text(stub_x + 2*mm, y_d, ln, size=8)
+        dr_line(stub_x + 2*mm, y_d - 1*mm, stub_x + stub_w - 2*mm, y_d - 1*mm)
+        y_d -= 4*mm
+    
+    # Cut line Gap
+    dr_line(stub_x + stub_w + 3*mm, top_y, stub_x + stub_w + 3*mm, margin_y)
+    for i in range(40):
+        dr_text(stub_x + stub_w + 1*mm, margin_y + i*5*mm, "|", size=8)
+        
+    
+    # ------------------
+    # 3. MAIN CARD
+    # ------------------
+    m_x = stub_x + stub_w + 5*mm + 10*mm # plus black band
+    m_y_top = top_y - band_height
+    m_w = width - margin_x - band_width - m_x
+    
+    # Header Main
+    dr_text(m_x + m_w/2, m_y_top - 6*mm, "Первичная медицинская карточка", size=14, align="center")
+    dr_text(m_x + m_w - 2*mm, m_y_top - 6*mm, "Форма 100", align="right", size=9)
+    dr_line(m_x, m_y_top - 9*mm, m_x + m_w, m_y_top - 9*mm)
+    
+    cur_y = m_y_top - 14*mm
+    org_name = _s(main, bottom, card, "issued_by")
+    dr_text(m_x, cur_y, "Выдана:")
+    dr_text(m_x + 15*mm, cur_y, org_name)
+    dr_line(m_x + 15*mm, cur_y - 1*mm, m_x + 100*mm, cur_y - 1*mm)
+    dr_text(m_x + 15*mm, cur_y - 3*mm, "наименование мед. пункта (учреждения), или их штамп.", size=6)
+    
+    dr_text(m_x + 130*mm, cur_y, "МЕДИЦИНСКАЯ ПОМОЩЬ", size=10)
+    
+    cur_y -= 8*mm
+    dr_text(m_x, cur_y, f"« {time_h} » час ____ {time_m} ____ мин. ________ 20__ г.")
+    
+    # ------------------
+    # MEDICAL HELP TABLE MAIN Right
+    # ------------------
+    # Right side table width
+    r_tab_w = 75*mm
+    r_tab_x = m_x + m_w - r_tab_w
+    
+    mt_cols = [r_tab_x, r_tab_x + 55*mm, r_tab_x + r_tab_w]
+    mt_rows = [cur_y + 3*mm, cur_y - 4*mm, cur_y - 11*mm, cur_y - 18*mm, cur_y - 25*mm, cur_y - 32*mm, cur_y - 39*mm, cur_y - 46*mm, cur_y - 53*mm]
+    for r in mt_rows:
+        dr_line(mt_cols[0], r, mt_cols[-1], r)
+    for c_i in mt_cols:
+        dr_line(c_i, mt_rows[0], c_i, mt_rows[-1])
+        
+    dr_text(mt_cols[0] + 5*mm, mt_rows[0] - 4*mm, "Подчеркнуть")
+    dr_text(mt_cols[1] + 10*mm, mt_rows[0] - 4*mm, "Доза", align="center")
+    dr_text(mt_cols[1] + 10*mm, mt_rows[0] - 6.5*mm, "(вписать)", size=6, align="center")
+    
+    dr_text(mt_cols[0] + 2*mm, mt_rows[1] - 5*mm, "Введено: антибиотик")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[2] - 5*mm, "Сыворотка ПСС, ПГС")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[3] - 5*mm, "анатоксин (какой)")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[4] - 5*mm, "антидот (какой)")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[5] - 5*mm, "обезболивающее средство")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[6] - 5*mm, "Произведено: переливание")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[7] - 5*mm, "крови, кровезаменителей")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[8] - 5*mm, "иммобилизация, перевязка")
+    
+    # ------------------
+    # INDENTITY FIELDS MAIN Left
+    # ------------------
+    cur_y -= 7*mm
+    dr_text(m_x, cur_y, f"в/звание {rank}")
+    dr_text(m_x + 50*mm, cur_y, f"в/часть {c_unit}")
+    dr_line(m_x + 15*mm, cur_y - 1*mm, m_x + 48*mm, cur_y - 1*mm)
+    dr_line(m_x + 62*mm, cur_y - 1*mm, r_tab_x - 5*mm, cur_y - 1*mm)
+    
+    cur_y -= 8*mm
+    dr_text(m_x + 55*mm, cur_y, f"{lname}           {fname}           {mname}", align="center")
+    dr_line(m_x, cur_y - 1*mm, r_tab_x - 5*mm, cur_y - 1*mm)
+    dr_text(m_x + 55*mm, cur_y - 4*mm, "фамилия                 имя                 отчество", size=6, align="center")
+    
+    cur_y -= 8*mm
+    dr_text(m_x, cur_y, f"Удостоверение личности, жетон № {tag}")
+    dr_line(m_x + 55*mm, cur_y - 1*mm, r_tab_x - 5*mm, cur_y - 1*mm)
+    
+    cur_y -= 8*mm
+    dr_text(m_x, cur_y, "Ранен, заболел «   » час «   » __________ 20___ г.")
+    
+    # ------------------
+    # SANITARY LOSS SIDEBAR
+    # ------------------
+    sb_w = 35 * mm
+    sb_x = m_x
+    sb_y_top = cur_y - 5*mm
+    sb_y_bot = margin_y + band_height + 15*mm
+    dr_line(sb_x, sb_y_top, sb_x + sb_w, sb_y_top)
+    dr_line(sb_x, sb_y_bot, sb_x + sb_w, sb_y_bot)
+    dr_line(sb_x, sb_y_top, sb_x, sb_y_bot)
+    dr_line(sb_x + sb_w, sb_y_top, sb_x + sb_w, sb_y_bot)
+    
+    c.saveState()
+    c.translate(sb_x + 9*mm, sb_y_bot + (sb_y_top - sb_y_bot)/2)
+    c.rotate(90)
+    c.setFont(font, 9)
+    c.drawCentredString(0, 0, "Вид санитарных потерь (обвести)")
+    c.restoreState()
+    
+    sb_ch = (sb_y_top - sb_y_bot) / 8
+    
+    def dr_gun(cx, cy):
+        c.rect(cx-10*mm, cy+2*mm, 15*mm, 3*mm, fill=1) # barrel
+        c.rect(cx-10*mm, cy-3*mm, 5*mm, 5*mm, fill=1) # grip
+        c.line(cx-5*mm, cy-2*mm, cx-5*mm, cy+2*mm) # trigger guard
+        c.circle(cx-6*mm, cy+0*mm, 1*mm) # trigger
+        c.drawString(cx-15*mm, cy-2*mm, "О")
+        
+    def dr_bomb(cx, cy):
+        c.circle(cx, cy, 3*mm, fill=1)
+        c.line(cx, cy+3*mm, cx+2*mm, cy+5*mm) # fuse
+        c.circle(cx+2*mm, cy+5*mm, 0.5*mm, fill=1)
+        c.line(cx+3*mm, cy+6*mm, cx+4*mm, cy+7*mm) # spark
+        c.line(cx+3*mm, cy+4*mm, cx+5*mm, cy+4*mm) # spark
+        c.drawString(cx-15*mm, cy-2*mm, "Я")
+        
+    def dr_mask(cx, cy):
+        c.ellipse(cx-4*mm, cy-4*mm, cx+4*mm, cy+4*mm) # face
+        c.circle(cx-2*mm, cy+1*mm, 1.5*mm) # eye l
+        c.circle(cx+2*mm, cy+1*mm, 1.5*mm) # eye r
+        c.circle(cx, cy-2*mm, 1.5*mm, fill=1) # filter
+        c.drawString(cx-15*mm, cy-2*mm, "X")
+        
+    def dr_bug(cx, cy):
+        c.ellipse(cx-4*mm, cy-2*mm, cx+4*mm, cy+2*mm, fill=1) # body
+        c.circle(cx+4*mm, cy, 1.5*mm, fill=1) # head
+        c.line(cx-2*mm, cy+2*mm, cx-3*mm, cy+4*mm) # leg
+        c.line(cx+2*mm, cy+2*mm, cx+3*mm, cy+4*mm) # leg
+        c.line(cx-2*mm, cy-2*mm, cx-3*mm, cy-4*mm) # leg
+        c.line(cx+2*mm, cy-2*mm, cx+3*mm, cy-4*mm) # leg
+        c.drawString(cx-15*mm, cy-2*mm, "Бак.")
+        
+    def dr_knife(cx, cy):
+        c.line(cx-6*mm, cy-4*mm, cx+2*mm, cy+2*mm) # blade back
+        c.line(cx-4*mm, cy-6*mm, cx+2*mm, cy+2*mm) # blade edge
+        c.line(cx-6*mm, cy-4*mm, cx-4*mm, cy-6*mm) # blade base
+        c.rect(cx-9*mm, cy-9*mm, 4*mm, 4*mm, fill=1) # handle
+        c.line(cx-7*mm, cy-5*mm, cx-3*mm, cy-7*mm) # guard
+        c.setFont(font, 6)
+        c.drawString(cx-15*mm, cy, "Другие")
+        c.drawString(cx-15*mm, cy-3*mm, "пораж.")
+        c.setFont(font, 9)
+        
+    def dr_flame(cx, cy):
+        c.line(cx, cy-4*mm, cx, cy+4*mm)
+        c.line(cx-2*mm, cy, cx+2*mm, cy)
+        c.line(cx-2*mm, cy-2*mm, cx+2*mm, cy+2*mm)
+        c.line(cx-2*mm, cy+2*mm, cx+2*mm, cy-2*mm)
+        c.circle(cx, cy, 3*mm, fill=0, stroke=1)
+        c.drawString(cx-15*mm, cy-2*mm, "Отм.")
+        
+    def dr_bed(cx, cy):
+        c.rect(cx-6*mm, cy-2*mm, 12*mm, 2*mm) # matress
+        c.line(cx-5*mm, cy-2*mm, cx-5*mm, cy-4*mm) # leg
+        c.line(cx+5*mm, cy-2*mm, cx+5*mm, cy-4*mm) # leg
+        c.line(cx-6*mm, cy, cx-6*mm, cy+3*mm) # headboard
+        c.circle(cx+2*mm, cy+1*mm, 1.5*mm) # head
+        c.line(cx-4*mm, cy+0.5*mm, cx+1*mm, cy+0.5*mm) # body
+        c.drawString(cx-15*mm, cy-2*mm, "Б")
+        
+    def dr_rad(cx, cy):
+        # goggles/face
+        c.ellipse(cx-4*mm, cy-3*mm, cx+4*mm, cy+3*mm)
+        c.circle(cx-2*mm, cy+1*mm, 1.5*mm) # eye
+        c.circle(cx+2*mm, cy+1*mm, 1.5*mm) # eye
+        c.line(cx-4*mm, cy+1*mm, cx-5*mm, cy+3*mm) # antenna
+        c.line(cx+4*mm, cy+1*mm, cx+5*mm, cy+3*mm) # antenna
+        c.drawString(cx-15*mm, cy-2*mm, "И")
 
-    t_data.append([
-        "", "", "", "", Paragraph("<b>Диагноз:</b><br/>" + _s('main_diagnosis'), p_normal), "", "", Paragraph(med_help_str, p_normal), "", "", ""
-    ])
+    icon_funcs = [dr_gun, dr_bomb, dr_mask, dr_bug, dr_knife, dr_flame, dr_bed, dr_rad]
+    
+    for i, func in enumerate(icon_funcs):
+        y_box = sb_y_top - (i+1)*sb_ch
+        c.line(sb_x, y_box, sb_x + sb_w, y_box)
+        func(sb_x + 18*mm, y_box + sb_ch/2)
+        c.circle(sb_x + sb_w - 7*mm, y_box + sb_ch/2, 5*mm, fill=0, stroke=1)
+        
+    # ------------------
+    # BODYMAP CENTER
+    # ------------------
+    bm_y = sb_y_top - 65*mm
+    bm_x = sb_x + sb_w + 35*mm
+    c.drawCentredString(bm_x, bm_y + 60*mm, "[ Силуэты Человека: спереди / сзади ]")
+    c.drawCentredString(bm_x, bm_y + 55*mm, "локализацию обвести")
+    
+    # Draw simple stickmen
+    c.circle(bm_x - 15*mm, bm_y + 45*mm, 4*mm) # head
+    c.line(bm_x - 15*mm, bm_y + 41*mm, bm_x - 15*mm, bm_y + 20*mm) # body
+    c.line(bm_x - 15*mm, bm_y + 38*mm, bm_x - 25*mm, bm_y + 25*mm) # left arm
+    c.line(bm_x - 15*mm, bm_y + 38*mm, bm_x - 5*mm, bm_y + 25*mm) # right arm
+    c.line(bm_x - 15*mm, bm_y + 20*mm, bm_x - 20*mm, bm_y) # left leg
+    c.line(bm_x - 15*mm, bm_y + 20*mm, bm_x - 10*mm, bm_y) # right leg
 
-    # Bodymap Text
-    bodymap_str = "<b>СХЕМА ТРАВМ:</b><br/>"
-    for ann in annotations[:10]:
-        bodymap_str += f"- {_s('annotation_type', ann)} ({_s('silhouette', ann)})<br/>"
+    c.circle(bm_x + 15*mm, bm_y + 45*mm, 4*mm) # head
+    c.line(bm_x + 15*mm, bm_y + 41*mm, bm_x + 15*mm, bm_y + 20*mm) # body
+    c.line(bm_x + 15*mm, bm_y + 38*mm, bm_x + 5*mm, bm_y + 25*mm) # left arm
+    c.line(bm_x + 15*mm, bm_y + 38*mm, bm_x + 25*mm, bm_y + 25*mm) # right arm
+    c.line(bm_x + 15*mm, bm_y + 20*mm, bm_x + 10*mm, bm_y) # left leg
+    c.line(bm_x + 15*mm, bm_y + 20*mm, bm_x + 20*mm, bm_y) # right leg
+    
+    # Map bodymap annotations from DB standard layout to the mini PDF stickmen
+    annotations = data_payload.get("bodymap_annotations") or []
+    c.setLineWidth(1)
+    
+    for ann in annotations:
+        sil = ann.get("silhouette")
+        atype = ann.get("annotation_type", "")
+        # The UI maps are approx 200x500 pixels. We map that generic ratio to our 50mm tall stickmen.
+        x_norm = float(ann.get("x", 0.5))
+        y_norm = float(ann.get("y", 0.5))
+        
+        base_y = bm_y + (1.0 - y_norm) * 50*mm
+        if sil == "male_front":
+            base_x = (bm_x - 15*mm) + (x_norm - 0.5) * 20*mm
+        else:
+            base_x = (bm_x + 15*mm) + (x_norm - 0.5) * 20*mm
+            
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.circle(base_x, base_y, 2*mm)
+        c.setFillColorRGB(0.8, 0.1, 0.1)
+        
+        ico_char = "!"
+        if atype.startswith("WOUND"): ico_char = "О"
+        elif atype.startswith("BURN"): ico_char = "Отм"
+        elif atype.startswith("FRACTURE"): ico_char = "К"
+        elif atype.startswith("AMPUTATION"): ico_char = "А"
+        
+        c.setFont(font, 7)
+        c.drawString(base_x + 2*mm, base_y + 2*mm, ico_char)
+        
+    c.setStrokeColorRGB(0, 0, 0)
+    c.setFillColorRGB(0, 0, 0)
+    c.setLineWidth(0.5)
+    
+    dr_text(bm_x + 2*mm, bm_y + 10*mm, "подчеркнуть", size=6, align="center")
+    dr_text(bm_x + 2*mm, bm_y + 7*mm, "мягкие ткани, кости,", size=6, align="center")
+    dr_text(bm_x + 2*mm, bm_y + 4*mm, "сосуды, полостные", size=6, align="center")
+    dr_text(bm_x + 2*mm, bm_y + 1*mm, "раны, ожоги", size=6, align="center")
 
-    t_data.append([
-        "", "", "", "", Paragraph(bodymap_str, p_small), "", "", "", "", "", ""
-    ])
+    # ------------------
+    # EVACUATION BLOCK
+    # ------------------
+    ev_x = mt_cols[0] - 2*mm
+    ev_y = mt_rows[-1] - 30*mm
+    
+    dr_text(ev_x, cur_y - 65*mm, "Жгут наложен: ____ час. ____ мин.")
+    dr_text(ev_x, cur_y - 70*mm, "Санитарная обработка (подчеркнуть)")
+    dr_text(ev_x, cur_y - 74*mm, "полная, частичная, не проводилась")
+    dr_text(ev_x, cur_y - 78*mm, "Эвакуировать (нужное обвести)")
+    
+    dr_line(ev_x, ev_y, m_x + m_w, ev_y)
+    dr_line(ev_x, ev_y - 15*mm, m_x + m_w, ev_y - 15*mm)
+    dr_line(ev_x, ev_y, ev_x, ev_y - 15*mm)
+    dr_line(m_x + m_w, ev_y, m_x + m_w, ev_y - 15*mm)
+    
+    # Internal div (Lying/Sitting Icons)
+    dr_line(ev_x + 20*mm, ev_y, ev_x + 20*mm, ev_y - 15*mm)
+    
+    # Lying Man on Stretcher
+    def dr_lying(cx, cy):
+        # Stretcher
+        c.line(cx-7*mm, cy-1*mm, cx+7*mm, cy-1*mm)
+        c.line(cx-5*mm, cy-1*mm, cx-5*mm, cy-3*mm)
+        c.line(cx+5*mm, cy-1*mm, cx+5*mm, cy-3*mm)
+        # Person
+        c.circle(cx-4*mm, cy+1*mm, 1.5*mm) # head
+        c.line(cx-2*mm, cy+0.5*mm, cx+3*mm, cy+0.5*mm) # body
+        c.line(cx-1*mm, cy-0.5*mm, cx+2*mm, cy-0.5*mm) # arm
+        c.line(cx+3*mm, cy+0.5*mm, cx+6*mm, cy+0.5*mm) # legs
+        c.circle(cx+2*mm, cy+5*mm, 4*mm, fill=0, stroke=1) # plus sign circle target
+        c.line(cx+1*mm, cy+5*mm, cx+3*mm, cy+5*mm)
+        c.line(cx+2*mm, cy+4*mm, cx+2*mm, cy+6*mm)
+        
+    dr_lying(ev_x + 10*mm, ev_y - 6*mm)
+    dr_text(ev_x + 10*mm, ev_y - 14*mm, "лежа", size=6, align="center")
+    
+    dr_line(ev_x + 35*mm, ev_y, ev_x + 35*mm, ev_y - 15*mm)
+    
+    # Sitting Man on Chair
+    def dr_sitting(cx, cy):
+        # Chair
+        c.line(cx-2*mm, cy-3*mm, cx-2*mm, cy+2*mm) # back
+        c.line(cx-2*mm, cy-1*mm, cx+2*mm, cy-1*mm) # seat
+        c.line(cx+2*mm, cy-1*mm, cx+2*mm, cy-3*mm) # front leg
+        # Person
+        c.circle(cx, cy+4*mm, 1.5*mm) # head
+        c.line(cx, cy+2.5*mm, cx, cy) # body
+        c.line(cx, cy+1*mm, cx+1.5*mm, cy-0.5*mm) # arm
+        c.line(cx, cy, cx+3*mm, cy) # thigh
+        c.line(cx+3*mm, cy, cx+3*mm, cy-2.5*mm) # calf
+        c.circle(cx+4*mm, cy+5*mm, 4*mm, fill=0, stroke=1) # plus sign circle target
+        c.line(cx+3*mm, cy+5*mm, cx+5*mm, cy+5*mm)
+        c.line(cx+4*mm, cy+4*mm, cx+4*mm, cy+6*mm)
+        
+    # "Circle" Lying or Sitting based on evac_method
+    is_lying = "леж" in evac_method_str
+    is_sitting = "сид" in evac_method_str
+    if is_lying:
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.ellipse(ev_x + 5*mm, ev_y - 15*mm, ev_x + 15*mm, ev_y - 1*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+    elif is_sitting:
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.ellipse(ev_x + 22*mm, ev_y - 15*mm, ev_x + 32*mm, ev_y - 1*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+    
+    dr_text(ev_x + 35*mm + (m_w - (ev_x - m_x) - 35*mm)/2, ev_y - 3*mm, "куда эвакуирован", size=7, align="center")
+    dr_line(ev_x + 35*mm, ev_y - 4*mm, m_x + m_w, ev_y - 4*mm)
+    
+    # Destination crosses
+    dt_w = (m_w - (ev_x - m_x) - 35*mm) / 3
+    dt_x = ev_x + 35*mm
+    for i in range(3):
+        c.circle(dt_x + dt_w/2 + dt_w*i, ev_y - 7*mm, 3*mm)
+        dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 9*mm, "+", align="center")
+        
+    if "госп" in evac_dest.lower() or "вмед" in evac_dest.lower() or "омедб" in evac_dest.lower():
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.ellipse(dt_x + dt_w*2.5 - 5*mm, ev_y - 12*mm, dt_x + dt_w*2.5 + 5*mm, ev_y - 2*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+    
+    c.setFont(font, 9)
+    # Order of evac
+    ev_y -= 25*mm
+    
+    priority = str(main.get("evacuation_priority") or "").strip()
+    p1 = "I"
+    p2 = "II"
+    p3 = "III"
+    dr_text(ev_x, ev_y, f"Очередность эвакуации:  {p1}    {p2}    {p3}")
+    if priority == "1" or priority == "I" or priority == "Первая":
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.circle(ev_x + 38*mm, ev_y + 1*mm, 2.5*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+    elif priority == "2" or priority == "II" or priority == "Вторая":
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.circle(ev_x + 44*mm, ev_y + 1*mm, 2.5*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+    elif priority == "3" or priority == "III" or priority == "Третья":
+        c.setStrokeColorRGB(0.8, 0.1, 0.1)
+        c.circle(ev_x + 51*mm, ev_y + 1*mm, 2.5*mm)
+        c.setStrokeColorRGB(0, 0, 0)
+    
+    # Icons row
+    ev_y -= 15*mm
+    dr_line(ev_x, ev_y, m_x + m_w, ev_y)
+    dr_line(ev_x, ev_y - 15*mm, m_x + m_w, ev_y - 15*mm)
+    dr_line(ev_x, ev_y, ev_x, ev_y - 15*mm)
+    dr_line(m_x + m_w, ev_y, m_x + m_w, ev_y - 15*mm)
+    
+    seg_w = (m_x + m_w - ev_x) / 4
+    for i in range(1, 4):
+        dr_line(ev_x + i*seg_w, ev_y, ev_x + i*seg_w, ev_y - 15*mm)
+        
+    def dr_car(cx, cy):
+        c.roundRect(cx-7*mm, cy-3*mm, 14*mm, 6*mm, 1*mm)
+        c.rect(cx-3*mm, cy+3*mm, 6*mm, 3*mm)
+        c.circle(cx-4*mm, cy-3*mm, 1.5*mm)
+        c.circle(cx+4*mm, cy-3*mm, 1.5*mm)
+        
+    def dr_heli(cx, cy):
+        c.ellipse(cx-4*mm, cy-2*mm, cx+6*mm, cy+3*mm)
+        c.line(cx+6*mm, cy+0.5*mm, cx+10*mm, cy+1.5*mm) # tail
+        c.line(cx+10*mm, cy, cx+10*mm, cy+3*mm) # rotor tail
+        c.line(cx+1*mm, cy+3*mm, cx+1*mm, cy+5*mm) # mast
+        c.line(cx-5*mm, cy+5*mm, cx+7*mm, cy+5*mm) # main rotor
+        c.line(cx-2*mm, cy-2*mm, cx-2*mm, cy-4*mm) # skid l
+        c.line(cx+4*mm, cy-2*mm, cx+4*mm, cy-4*mm) # skid r
+        c.line(cx-4*mm, cy-4*mm, cx+6*mm, cy-4*mm) # skid base
+        c.circle(cx, cy, 1*mm, fill=1) # cross center
+        c.line(cx-1*mm, cy, cx+1*mm, cy)
+        c.line(cx, cy-1*mm, cx, cy+1*mm)
 
+    def dr_train(cx, cy):
+        c.rect(cx-8*mm, cy-3*mm, 6*mm, 6*mm)
+        c.rect(cx-1*mm, cy-3*mm, 6*mm, 6*mm)
+        c.rect(cx+6*mm, cy-3*mm, 6*mm, 6*mm)
+        c.line(cx-2*mm, cy, cx-1*mm, cy)
+        c.line(cx+5*mm, cy, cx+6*mm, cy)
+        
+    def dr_ship(cx, cy):
+        c.line(cx-6*mm, cy-2*mm, cx+6*mm, cy-2*mm)
+        c.line(cx-6*mm, cy-2*mm, cx-8*mm, cy+2*mm)
+        c.line(cx+6*mm, cy-2*mm, cx+8*mm, cy+2*mm)
+        c.line(cx-8*mm, cy+2*mm, cx+8*mm, cy+2*mm)
+        c.rect(cx-3*mm, cy+2*mm, 6*mm, 3*mm)
+        c.rect(cx-1*mm, cy+5*mm, 2*mm, 3*mm) # Smoke stack
+        
+    dr_car(ev_x + seg_w/2, ev_y - 7.5*mm)
+    dr_heli(ev_x + seg_w + seg_w/2, ev_y - 7.5*mm)
+    dr_train(ev_x + 2*seg_w + seg_w/2, ev_y - 7.5*mm)
+    dr_ship(ev_x + 3*seg_w + seg_w/2, ev_y - 7.5*mm)
+    
+    # "Circle" vehicle
+    c.setStrokeColorRGB(0.8, 0.1, 0.1)
+    if "авто" in evac_method_str or "маши" in evac_method_str:
+        c.ellipse(ev_x + 2*mm, ev_y - 12*mm, ev_x + seg_w - 2*mm, ev_y - 2*mm)
+    elif "авиа" in evac_method_str or "верт" in evac_method_str or "само" in evac_method_str:
+        c.ellipse(ev_x + seg_w + 2*mm, ev_y - 12*mm, ev_x + 2*seg_w - 2*mm, ev_y - 2*mm)
+    elif "поезд" in evac_method_str or "жд" in evac_method_str:
+        c.ellipse(ev_x + 2*seg_w + 2*mm, ev_y - 12*mm, ev_x + 3*seg_w - 2*mm, ev_y - 2*mm)
+    elif "суд" in evac_method_str or "вод" in evac_method_str or "морс" in evac_method_str:
+        c.ellipse(ev_x + 3*seg_w + 2*mm, ev_y - 12*mm, ev_x + 4*seg_w - 2*mm, ev_y - 2*mm)
+        
+    c.setStrokeColorRGB(0, 0, 0)
+    
     # Bottom fields
-    t_data.append([
-        Paragraph("<b>РАДИАЦИЯ</b>", p_bold), "", "", "", Paragraph(f"<b>Эвакуировать в:</b> {_s('evac_destination')}", p_normal), "", Paragraph("<b>Транспорт:</b> [АВТО] [ВЕРТ]", p_normal), "", Paragraph(f"<b>Врач:</b> {_s('doctor_signature', _s('signed_by'))}", p_normal), "", ""
-    ])
-
-    # Normalize Rows to have same len
-    max_len = len(col_widths)
-    for i, r in enumerate(t_data):
-        while len(r) < max_len:
-            r.append("")
-
-    table = Table(t_data, colWidths=col_widths)
-    table.setStyle(TableStyle([
-        # Stub Spans
-        ('SPAN', (0,0), (1,0)),
-        ('SPAN', (0,1), (1,1)),
-        ('SPAN', (0,4), (1,6)),
-        ('SPAN', (0,7), (1,7)),
-        
-        # Main Title Spans
-        ('SPAN', (4,0), (9,0)),
-        ('SPAN', (4,1), (9,1)),
-        ('SPAN', (4,2), (5,2)), ('SPAN', (6,2), (9,2)),
-        ('SPAN', (4,3), (5,3)), ('SPAN', (6,3), (9,3)),
-        ('SPAN', (4,4), (6,4)), ('SPAN', (7,4), (9,4)),
-        
-        # Diagnosis and Help Spans
-        ('SPAN', (4,5), (6,6)), ('SPAN', (7,5), (9,6)),
-        
-        # Bodymap Span
-        ('SPAN', (4,7), (9,7)),
-        
-        # Bottom Span
-        ('SPAN', (4,7), (5,7)), ('SPAN', (6,7), (7,7)), ('SPAN', (8,7), (9,7)),
-
-        # Tall Colored Column Spans
-        ('SPAN', (3,0), (3,7)), # Black band
-        ('SPAN', (10,0), (10,7)), # Yellow band
-
-        # Coloring Top Bands
-        ('BACKGROUND', (4,0), (9,0), c_red),
-        ('BACKGROUND', (4,7), (9,7), c_blue),
-        
-        # Coloring Edge Bands
-        ('BACKGROUND', (3,0), (3,7), c_black),
-        ('BACKGROUND', (10,0), (10,7), c_yellow),
-        
-        # Grid lines
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('LEFTPADDING', (0,0), (-1,-1), 2*mm),
-        ('RIGHTPADDING', (0,0), (-1,-1), 2*mm),
-    ]))
-
-    elements.append(table)
-    doc.build(elements)
+    dr_text(m_x, margin_y + band_height + 1*mm, "Диагноз", size=9)
+    dr_line(m_x + 13*mm, margin_y + band_height + 1*mm, ev_x - 5*mm, margin_y + band_height + 1*mm)
+    
+    dr_text(ev_x, margin_y + band_height + 1*mm, "врач:", size=9)
+    doctor = _s(main, bottom, card, "doctor_signature", _s(main, bottom, card, "signed_by"))
+    dr_text(ev_x + 10*mm, margin_y + band_height + 2*mm, doctor)
+    dr_line(ev_x + 9*mm, margin_y + band_height + 1*mm, m_x + m_w, margin_y + band_height + 1*mm)
+    dr_text(ev_x + 9*mm + (m_w - (ev_x - m_x) - 9*mm)/2, margin_y + band_height - 3*mm, "(подпись разборчиво)", size=6, align="center")
+    
+    c.save()
