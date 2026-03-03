@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from PySide6.QtCore import QDate, QDateTime, QSignalBlocker, Qt, QTime, Signal
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
     QCompleter,
     QDateTimeEdit,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.sanitary_dto import (
     SanitarySampleCreateRequest,
@@ -41,13 +43,15 @@ from app.ui.sanitary.history_view_helpers import (
     summarize_history,
 )
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.notifications import clear_status, set_status
+from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
-    connect_combo_resize_on_first_row,
-    resize_columns_by_first_row,
+    connect_combo_resize_on_content,
+    resize_columns_to_content,
 )
+
+_HANDLED_SANITARY_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
 
 
 class SanitaryHistoryDialog(QDialog):
@@ -73,8 +77,9 @@ class SanitaryHistoryDialog(QDialog):
         self.page_index = 1
         self.page_size = 50
         self.setWindowTitle(f"Санитарные пробы - {department_name}")
-        if parent is not None and hasattr(parent, "references_updated"):
-            parent.references_updated.connect(self._on_references_updated)
+        parent_signal = getattr(parent, "references_updated", None)
+        if parent_signal is not None and hasattr(parent_signal, "connect"):
+            parent_signal.connect(self._on_references_updated)
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -337,6 +342,8 @@ class SanitaryHistoryDialog(QDialog):
 
 
 class SanitarySampleDetailDialog(QDialog):
+    _micro_search_updating: bool = False
+
     def __init__(
         self,
         sanitary_service: SanitaryService,
@@ -352,6 +359,7 @@ class SanitarySampleDetailDialog(QDialog):
         self.sample_id = sample_id
         self._abx_list: list[Any] = []
         self._phage_list: list[Any] = []
+        self._micro_search_updating = False
         self.setWindowTitle("Санитарная проба")
         self.setWindowFlags(
             self.windowFlags()
@@ -361,9 +369,8 @@ class SanitarySampleDetailDialog(QDialog):
         )
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.setSizeGripEnabled(True)
-        self.resize(1100, 980)
-        self.setMinimumSize(900, 700)
         self._build_ui()
+        self._apply_initial_size()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -497,6 +504,30 @@ class SanitarySampleDetailDialog(QDialog):
         if self.sample_id:
             self._load_existing()
 
+    def _apply_initial_size(self) -> None:
+        app = QApplication.instance()
+        if app is None:
+            self.resize(1100, 900)
+            self.setMinimumSize(800, 620)
+            return
+        assert isinstance(app, QApplication)
+        screen = self.screen() or app.primaryScreen()
+        if screen is None:
+            self.resize(1100, 900)
+            self.setMinimumSize(800, 620)
+            return
+
+        geometry = screen.availableGeometry()
+        min_width = min(900, max(760, geometry.width() - 80))
+        min_height = min(700, max(580, geometry.height() - 80))
+        max_width = max(min_width, geometry.width() - 24)
+        max_height = max(min_height, geometry.height() - 24)
+        target_width = max(min_width, min(1280, int(geometry.width() * 0.86), max_width))
+        target_height = max(min_height, min(980, int(geometry.height() * 0.9), max_height))
+
+        self.setMinimumSize(min_width, min_height)
+        self.resize(target_width, target_height)
+
     def _make_table(self, headers, rows) -> QTableWidget:
         table = QTableWidget(rows, len(headers))
         table.setHorizontalHeaderLabels(headers)
@@ -519,8 +550,8 @@ class SanitarySampleDetailDialog(QDialog):
             self._refresh_micro_combo("")
             self._configure_micro_search()
             connect_combo_autowidth(self.micro_combo)
-        except Exception as exc:  # noqa: BLE001
-            set_status(self.error_label, str(exc), "error")
+        except _HANDLED_SANITARY_ERRORS as exc:
+            set_status(self.error_label, error_text(exc, "Не удалось загрузить справочник микроорганизмов"), "error")
 
     def _configure_micro_search(self) -> None:
         completer = QCompleter(self.micro_combo.model(), self.micro_combo)
@@ -534,7 +565,7 @@ class SanitarySampleDetailDialog(QDialog):
             return
 
         def _on_text(text: str) -> None:
-            if bool(self._micro_search_updating):  # type: ignore[has-type]
+            if self._micro_search_updating:
                 return
             self._micro_search_updating = True
             try:
@@ -568,16 +599,16 @@ class SanitarySampleDetailDialog(QDialog):
         for row in range(self.susc_table.rowCount()):
             combo = self._create_abx_combo()
             self.susc_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.susc_table, combo, row)
-        resize_columns_by_first_row(self.susc_table)
+            connect_combo_resize_on_content(self.susc_table, combo, row)
+        resize_columns_to_content(self.susc_table)
 
     def _setup_phage_rows(self) -> None:
         self._phage_list = self.reference_service.list_phages()
         for row in range(self.phage_table.rowCount()):
             combo = self._create_phage_combo()
             self.phage_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.phage_table, combo, row)
-        resize_columns_by_first_row(self.phage_table)
+            connect_combo_resize_on_content(self.phage_table, combo, row)
+        resize_columns_to_content(self.phage_table)
 
     def _refresh_abx_combos(self, selected_ids: list[int | None]) -> None:
         self._abx_list = self.reference_service.list_antibiotics()
@@ -588,8 +619,8 @@ class SanitarySampleDetailDialog(QDialog):
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
             self.susc_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.susc_table, combo, row)
-        resize_columns_by_first_row(self.susc_table)
+            connect_combo_resize_on_content(self.susc_table, combo, row)
+        resize_columns_to_content(self.susc_table)
 
     def _refresh_phage_combos(self, selected_ids: list[int | None]) -> None:
         self._phage_list = self.reference_service.list_phages()
@@ -600,8 +631,8 @@ class SanitarySampleDetailDialog(QDialog):
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
             self.phage_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.phage_table, combo, row)
-        resize_columns_by_first_row(self.phage_table)
+            connect_combo_resize_on_content(self.phage_table, combo, row)
+        resize_columns_to_content(self.phage_table)
 
     def refresh_references(self) -> None:
         selected_micro = self.micro_combo.currentData()
@@ -646,14 +677,14 @@ class SanitarySampleDetailDialog(QDialog):
         self.susc_table.insertRow(row)
         combo = self._create_abx_combo()
         self.susc_table.setCellWidget(row, 0, combo)
-        connect_combo_resize_on_first_row(self.susc_table, combo, row)
+        connect_combo_resize_on_content(self.susc_table, combo, row)
 
     def _add_phage_row(self) -> None:
         row = self.phage_table.rowCount()
         self.phage_table.insertRow(row)
         combo = self._create_phage_combo()
         self.phage_table.setCellWidget(row, 0, combo)
-        connect_combo_resize_on_first_row(self.phage_table, combo, row)
+        connect_combo_resize_on_content(self.phage_table, combo, row)
 
     def _delete_table_row(self, table: QTableWidget) -> None:
         if table.rowCount() <= 1:
@@ -698,8 +729,8 @@ class SanitarySampleDetailDialog(QDialog):
             self._fill_phages(detail["phages"])
 
             # Keep editable when editing existing sample.
-        except Exception as exc:  # noqa: BLE001
-            set_status(self.error_label, str(exc), "error")
+        except _HANDLED_SANITARY_ERRORS as exc:
+            set_status(self.error_label, error_text(exc, "Не удалось загрузить пробу"), "error")
 
     def _collect_susceptibility(self) -> list[dict]:
         items = []
@@ -828,8 +859,8 @@ class SanitarySampleDetailDialog(QDialog):
                     )
                     self.sanitary_service.update_result(self.sample_id, upd, actor_id=None)
                 self.accept()
-            except Exception as exc:  # noqa: BLE001
-                set_status(self.error_label, str(exc), "error")
+            except _HANDLED_SANITARY_ERRORS as exc:
+                set_status(self.error_label, error_text(exc, "Не удалось сохранить пробу"), "error")
         else:
             try:
                 if not self.sampling_point.text().strip():
@@ -861,8 +892,8 @@ class SanitarySampleDetailDialog(QDialog):
                 )
                 self.sanitary_service.update_result(self.sample_id, upd, actor_id=None)
                 self.accept()
-            except Exception as exc:  # noqa: BLE001
-                set_status(self.error_label, str(exc), "error")
+            except _HANDLED_SANITARY_ERRORS as exc:
+                set_status(self.error_label, error_text(exc, "Не удалось обновить пробу"), "error")
 
     def _fill_susceptibility(self, rows) -> None:
         self.susc_table.clearContents()
@@ -876,7 +907,7 @@ class SanitarySampleDetailDialog(QDialog):
             self.susc_table.setItem(idx, 1, QTableWidgetItem(r.ris or ""))
             self.susc_table.setItem(idx, 2, QTableWidgetItem(str(r.mic_mg_l) if r.mic_mg_l is not None else ""))
             self.susc_table.setItem(idx, 3, QTableWidgetItem(r.method or ""))
-        resize_columns_by_first_row(self.susc_table)
+        resize_columns_to_content(self.susc_table)
 
     def _fill_phages(self, rows) -> None:
         self.phage_table.clearContents()
@@ -889,4 +920,4 @@ class SanitarySampleDetailDialog(QDialog):
                 combo.setCurrentIndex(combo.findData(r.phage_id))
             self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
             self.phage_table.setItem(idx, 2, QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""))
-        resize_columns_by_first_row(self.phage_table)
+        resize_columns_to_content(self.phage_table)

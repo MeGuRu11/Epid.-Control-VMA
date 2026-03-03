@@ -28,7 +28,7 @@ class TopMicrobesChart(QWidget):
         layout.addWidget(self._plot)
 
     def update_data(self, items: Iterable[tuple[str, int]]) -> None:
-        if self._plot is None:
+        if self._plot is None or pg is None:
             return
         labels = [name for name, _count in items]
         values = [count for _name, count in items]
@@ -69,7 +69,7 @@ class TrendChart(QWidget):
         layout.addWidget(self._plot)
 
     def update_data(self, items: Iterable[tuple[str, int, int]]) -> None:
-        if self._plot is None:
+        if self._plot is None or pg is None:
             return
         labels = [label for label, _total, _pos in items]
         totals = [total for _label, total, _pos in items]

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import Form100V2Filters
@@ -25,9 +26,11 @@ from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
 from app.ui.form100_v2.form100_editor import Form100EditorV2
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.notifications import show_error, show_info
+from app.ui.widgets.notifications import error_text, show_error, show_info
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth
+
+_HANDLED_FORM100_V2_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError, OSError)
 
 
 class Form100ViewV2(QWidget):
@@ -72,7 +75,7 @@ class Form100ViewV2(QWidget):
         root.setContentsMargins(16, 16, 16, 16)
         root.setSpacing(10)
 
-        title = QLabel("Форма 100 V2")
+        title = QLabel("Форма 100")
         title.setObjectName("pageTitle")
         root.addWidget(title)
 
@@ -243,8 +246,8 @@ class Form100ViewV2(QWidget):
                 status=self.status_filter.currentData(),
             )
             rows = self.form100_service.list_cards(filters=filters, limit=500, offset=0)
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось загрузить карточки"))
             return
 
         self._rows_by_index = [item.id for item in rows]
@@ -274,8 +277,8 @@ class Form100ViewV2(QWidget):
         card_id = self._rows_by_index[row]
         try:
             card = self.form100_service.get_card(card_id)
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось загрузить карточку"))
             return
         self.editor.load_card(card)
         self.editor.set_read_only(card.status == "SIGNED" or card.is_archived)
@@ -286,7 +289,7 @@ class Form100ViewV2(QWidget):
             if self.editor.current_card is None:
                 create_request = self.editor.build_create_request()
                 card = self.form100_service.create_card(create_request, actor_id=self.session.user_id)
-                show_info(self, f"Карточка V2 создана: {card.id}")
+                show_info(self, f"Карточка создана: {card.id}")
             else:
                 update_request = self.editor.build_update_request()
                 card = self.form100_service.update_card(
@@ -295,14 +298,14 @@ class Form100ViewV2(QWidget):
                     actor_id=self.session.user_id,
                     expected_version=self.editor.current_card.version,
                 )
-                show_info(self, "Карточка V2 обновлена")
+                show_info(self, "Карточка обновлена")
             self.editor.load_card(card)
             self.editor.set_read_only(card.status == "SIGNED" or card.is_archived)
             self.refresh_cards()
             if self.on_data_changed:
                 self.on_data_changed()
-        except Exception as exc:  # noqa: BLE001
-            self.editor.validation_banner.show_error(str(exc))
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            self.editor.validation_banner.show_error(error_text(exc, "Не удалось сохранить карточку"))
 
     def _sign_card(self) -> None:
         if self.editor.current_card is None:
@@ -319,11 +322,11 @@ class Form100ViewV2(QWidget):
             self.editor.load_card(card)
             self.editor.set_read_only(True)
             self.refresh_cards()
-            show_info(self, "Карточка V2 подписана")
+            show_info(self, "Карточка подписана")
             if self.on_data_changed:
                 self.on_data_changed()
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось подписать карточку"))
 
     def _archive_card(self) -> None:
         if self.editor.current_card is None:
@@ -338,14 +341,14 @@ class Form100ViewV2(QWidget):
             self.editor.load_card(card)
             self.editor.set_read_only(True)
             self.refresh_cards()
-            show_info(self, "Карточка V2 архивирована")
+            show_info(self, "Карточка архивирована")
             if self.on_data_changed:
                 self.on_data_changed()
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось архивировать карточку"))
 
     def _export_zip(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Экспорт Form100 V2 ZIP", "form100_v2_export.zip", "ZIP (*.zip)")
+        path, _ = QFileDialog.getSaveFileName(self, "Экспорт Form100 ZIP", "form100_export.zip", "ZIP (*.zip)")
         if not path:
             return
         try:
@@ -356,12 +359,12 @@ class Form100ViewV2(QWidget):
                 card_id=card_id,
                 exported_by=self.session.login,
             )
-            show_info(self, f"Экспорт V2 завершён: {result.get('path')}")
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+            show_info(self, f"Экспорт завершён: {result.get('path')}")
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось экспортировать ZIP"))
 
     def _import_zip(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Импорт Form100 V2 ZIP", "", "ZIP (*.zip)")
+        path, _ = QFileDialog.getOpenFileName(self, "Импорт Form100 ZIP", "", "ZIP (*.zip)")
         if not path:
             return
         try:
@@ -374,7 +377,7 @@ class Form100ViewV2(QWidget):
             show_info(
                 self,
                 (
-                    f"Импорт V2 завершён: rows={summary.get('rows_total', 0)}, "
+                    f"Импорт завершён: rows={summary.get('rows_total', 0)}, "
                     f"+{summary.get('added', 0)} ~{summary.get('updated', 0)} "
                     f"-{summary.get('skipped', 0)}"
                 ),
@@ -382,8 +385,8 @@ class Form100ViewV2(QWidget):
             self.refresh_cards()
             if self.on_data_changed:
                 self.on_data_changed()
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось импортировать ZIP"))
 
     def _export_pdf(self) -> None:
         if self.editor.current_card is None:
@@ -391,15 +394,15 @@ class Form100ViewV2(QWidget):
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Экспорт Form100 V2 PDF",
-            f"form100_v2_{self.editor.current_card.id}.pdf",
+            "Экспорт Form100 PDF",
+            f"form100_{self.editor.current_card.id}.pdf",
             "PDF (*.pdf)",
         )
         if not path:
             return
         try:
             if self.reporting_service is not None:
-                result = self.reporting_service.export_form100_v2_pdf(
+                result = self.reporting_service.export_form100_pdf(
                     card_id=self.editor.current_card.id,
                     file_path=Path(path),
                     actor_id=self.session.user_id,
@@ -410,9 +413,9 @@ class Form100ViewV2(QWidget):
                     file_path=Path(path),
                     actor_id=self.session.user_id,
                 )
-            show_info(self, f"PDF V2 сформирован: {result.get('path')}")
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+            show_info(self, f"PDF сформирован: {result.get('path')}")
+        except _HANDLED_FORM100_V2_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось экспортировать PDF"))
 
 
 def _status_label(status: str, is_archived: bool) -> str:

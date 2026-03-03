@@ -1,10 +1,9 @@
-"""BodyMapWidget — интерактивная схема тела (4 силуэта).
+"""BodyMapWidget — интерактивная схема тела (2 силуэта).
 
-Мужчина спереди/сзади + Женщина спереди/сзади.
-Клик внутри активного силуэта размещает аннотацию.
+Единый набор силуэтов: вид спереди и вид сзади.
+Клик внутри силуэта размещает аннотацию.
 ПКМ — удаляет ближайшую аннотацию в радиусе 15 px.
-Неактивные силуэты (другой пол) приглушены полупрозрачным оверлеем.
-Фоновое изображение загружается из app/image/main/form_100_body.png.
+Фоновое изображение загружается из app/image/main/form_100_bd.png (fallback: form_100_body.png).
 NOTE_PIN: при наведении показывается всплывающая карточка заметки.
 """
 from __future__ import annotations
@@ -13,17 +12,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import (
-    QBrush,
-    QColor,
-    QPainter,
-    QPen,
-    QPixmap,
-    QPolygonF,
-)
+from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QComboBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -34,16 +25,14 @@ from PySide6.QtWidgets import (
 
 # ── Константы ────────────────────────────────────────────────────────────────
 
-SILHOUETTE_ORDER = ("male_front", "male_back", "female_front", "female_back")
+SILHOUETTE_ORDER = ("male_front", "male_back")
 SILHOUETTE_LABELS = {
-    "male_front":   "М (перед)",
-    "male_back":    "М (зад)",
-    "female_front": "Ж (перед)",
-    "female_back":  "Ж (зад)",
+    "male_front": "Вид спереди",
+    "male_back": "Вид сзади",
 }
 GENDER_ACTIVE: dict[str, set[str]] = {
     "M": {"male_front", "male_back"},
-    "F": {"female_front", "female_back"},
+    "F": {"male_front", "male_back"},
 }
 
 ANNOTATION_TYPES = ("WOUND_X", "BURN_HATCH", "AMPUTATION", "TOURNIQUET", "NOTE_PIN")
@@ -62,11 +51,73 @@ ANNOTATION_COLORS: dict[str, QColor] = {
     "NOTE_PIN":    QColor("#3498DB"),
 }
 
-# Путь к изображению схемы тела (app/image/main/form_100_body.png)
-_IMG_PATH = (
-    Path(__file__).parent.parent.parent.parent
-    / "image" / "main" / "form_100_body.png"
-)
+import sys
+
+_IMG_FILES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
+
+def _get_image_root() -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / "app" / "image" / "main"
+    return Path(__file__).parent.parent.parent.parent / "image" / "main"
+
+
+def _load_bodymap_template() -> QPixmap | None:
+    img_root = _get_image_root()
+    for file_name in _IMG_FILES:
+        img_path = img_root / file_name
+        if not img_path.exists():
+            continue
+        pixmap = QPixmap(str(img_path))
+        if not pixmap.isNull():
+            return pixmap
+    return None
+
+
+def _normalize_silhouette_pixmap(pixmap: QPixmap) -> QPixmap:
+    image = pixmap.toImage().convertToFormat(QImage.Format.Format_ARGB32)
+    for y in range(image.height()):
+        for x in range(image.width()):
+            color = image.pixelColor(x, y)
+            if color.alpha() == 0:
+                continue
+            luminance = (color.red() + color.green() + color.blue()) // 3
+            if luminance > 220:
+                image.setPixelColor(x, y, QColor(0, 0, 0, 0))
+            else:
+                # Map luminance to alpha: darker pixels → more opaque
+                alpha = max(20, min(255, 255 - luminance))
+                image.setPixelColor(x, y, QColor(60, 60, 60, alpha))
+    return QPixmap.fromImage(image)
+
+
+def _split_bodymap_template(template: QPixmap) -> dict[str, QPixmap]:
+    width = template.width()
+    height = template.height()
+    if width <= 0 or height <= 0:
+        return {}
+
+    if width >= int(height * 2.2):
+        segment = max(1, width // 4)
+        front = template.copy(0, 0, segment, height)
+        back = template.copy(segment, 0, segment, height)
+        if not front.isNull() and not back.isNull():
+            return {
+                "male_front": _normalize_silhouette_pixmap(front),
+                "male_back": _normalize_silhouette_pixmap(back),
+            }
+
+    if width >= int(height * 0.6):
+        split = max(1, width // 2)
+        front = template.copy(0, 0, split, height)
+        back = template.copy(split, 0, max(1, width - split), height)
+        if not front.isNull() and not back.isNull():
+            return {
+                "male_front": _normalize_silhouette_pixmap(front),
+                "male_back": _normalize_silhouette_pixmap(back),
+            }
+
+    normalized = _normalize_silhouette_pixmap(template.copy(0, 0, width, height))
+    return dict.fromkeys(SILHOUETTE_ORDER, normalized)
 
 
 # ── Domain dataclass ──────────────────────────────────────────────────────────
@@ -85,7 +136,7 @@ class AnnotationData:
 class _BodyCanvas(QWidget):
     markersChanged = Signal()  # noqa: N815
 
-    _shared_pixmap: QPixmap | None = None
+    _shared_pixmaps: dict[str, QPixmap] | None = None
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -96,12 +147,12 @@ class _BodyCanvas(QWidget):
         self._hover_sil: str | None = None
         self._hover_pt: QPointF | None = None
         self._hover_ann_idx: int | None = None
-        self.setMinimumSize(500, 320)
+        self.setMinimumSize(440, 280)
         self.setMouseTracking(True)
 
-        if _BodyCanvas._shared_pixmap is None:
-            px = QPixmap(str(_IMG_PATH))
-            _BodyCanvas._shared_pixmap = px if not px.isNull() else None
+        if _BodyCanvas._shared_pixmaps is None:
+            template = _load_bodymap_template()
+            _BodyCanvas._shared_pixmaps = _split_bodymap_template(template) if template is not None else {}
 
     # ── Геометрия ─────────────────────────────────────────────────────────
 
@@ -110,20 +161,36 @@ class _BodyCanvas(QWidget):
 
     def _sil_rect(self, silhouette: str) -> QRectF:
         idx = SILHOUETTE_ORDER.index(silhouette)
-        slot_w = self.width() / 4.0
+        slot_w = self.width() / float(len(SILHOUETTE_ORDER))
         return QRectF(idx * slot_w, 0.0, slot_w, self._canvas_h())
 
     def _body_hit_rect(self, sil: str) -> QRectF:
         r = self._sil_rect(sil)
         return QRectF(
-            r.x() + r.width() * 0.18,
+            r.x() + r.width() * 0.06,
             r.y() + r.height() * 0.03,
-            r.width() * 0.64,
+            r.width() * 0.88,
             r.height() * 0.94,
         )
 
+    def _template_rect(self, sil: str) -> QRectF:
+        rect = self._body_hit_rect(sil)
+        pixmaps = _BodyCanvas._shared_pixmaps or {}
+        pixmap = pixmaps.get(sil)
+        if pixmap is None or pixmap.isNull():
+            return rect
+        target = pixmap.size().scaled(
+            rect.size().toSize(),
+            Qt.AspectRatioMode.KeepAspectRatio,
+        )
+        w = float(max(1, target.width()))
+        h = float(max(1, target.height()))
+        x = rect.x() + (rect.width() - w) / 2.0
+        y = rect.y() + (rect.height() - h) / 2.0
+        return QRectF(x, y, w, h)
+
     def _ann_canvas_pos(self, ann: AnnotationData) -> QPointF:
-        r = self._sil_rect(ann.silhouette)
+        r = self._template_rect(ann.silhouette)
         return QPointF(r.left() + ann.x * r.width(), r.top() + ann.y * r.height())
 
     def _hit_annotation(self, pos: QPointF) -> int | None:
@@ -134,12 +201,12 @@ class _BodyCanvas(QWidget):
         return None
 
     def _hit_body(self, pos: QPointF) -> tuple[str, float, float] | None:
-        active = GENDER_ACTIVE[self._gender]
+        active = GENDER_ACTIVE["M"]
         for sil in SILHOUETTE_ORDER:
             if sil not in active:
                 continue
-            if self._body_hit_rect(sil).contains(pos):
-                r = self._sil_rect(sil)
+            r = self._template_rect(sil)
+            if r.contains(pos):
                 nx = max(0.0, min(1.0, (pos.x() - r.left()) / max(1.0, r.width())))
                 ny = max(0.0, min(1.0, (pos.y() - r.top()) / max(1.0, r.height())))
                 return sil, nx, ny
@@ -152,29 +219,31 @@ class _BodyCanvas(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
 
-        ch = int(self._canvas_h())
+        p.fillRect(self.rect(), QColor("#FFFFFF"))
 
-        p.fillRect(self.rect(), QColor("#1A1E24"))
+        p.setPen(QPen(QColor("#D7D7D7"), 1))
+        p.setBrush(QColor("#FFFFFF"))
+        for sil in SILHOUETTE_ORDER:
+            slot = self._sil_rect(sil)
+            p.drawRoundedRect(slot, 6, 6)
 
-        px = _BodyCanvas._shared_pixmap
-        if px is not None:
+        pixmaps = _BodyCanvas._shared_pixmaps or {}
+        for sil in SILHOUETTE_ORDER:
+            px = pixmaps.get(sil)
+            if px is None or px.isNull():
+                continue
+            target_rect = self._template_rect(sil)
             scaled = px.scaled(
-                self.width(), ch,
-                Qt.AspectRatioMode.IgnoreAspectRatio,
+                target_rect.size().toSize(),
+                Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
-            p.drawPixmap(0, 0, scaled)
-
-        active = GENDER_ACTIVE[self._gender]
-        for sil in SILHOUETTE_ORDER:
-            if sil not in active:
-                r = self._sil_rect(sil)
-                p.fillRect(r, QColor(0, 0, 0, 150))
+            x = target_rect.x() + (target_rect.width() - scaled.width()) / 2
+            y = target_rect.y() + (target_rect.height() - scaled.height()) / 2
+            p.drawPixmap(int(x), int(y), scaled)
 
         for ann in self._annotations:
             ap = self._ann_canvas_pos(ann)
-            is_active_sil = ann.silhouette in active
-            p.setOpacity(0.35 if not is_active_sil else 1.0)
             self._draw_symbol(
                 p, ann.annotation_type, ap,
                 ANNOTATION_COLORS.get(ann.annotation_type, QColor("#3498DB")),
@@ -190,7 +259,7 @@ class _BodyCanvas(QWidget):
         font = p.font()
         font.setPointSize(9)
         p.setFont(font)
-        p.setPen(QPen(QColor("#AAAAAA"), 1))
+        p.setPen(QPen(QColor("#2E2E2E"), 1))
         for sil in SILHOUETTE_ORDER:
             r = self._sil_rect(sil)
             lr = QRectF(r.x(), float(self.height()) - 20, r.width(), 18)
@@ -321,7 +390,7 @@ class _BodyCanvas(QWidget):
             spot = self._hit_body(pos)
             if spot is not None:
                 sil, nx, ny = spot
-                r = self._sil_rect(sil)
+                r = self._template_rect(sil)
                 self._hover_sil = sil
                 self._hover_pt = QPointF(
                     r.left() + nx * r.width(),
@@ -373,7 +442,7 @@ class _BodyCanvas(QWidget):
 # ── Публичный виджет ─────────────────────────────────────────────────────────
 
 class BodyMapWidget(QWidget):
-    """4-силуэтная интерактивная схема тела Формы 100."""
+    """2-силуэтная интерактивная схема тела Формы 100."""
 
     markersChanged = Signal()  # noqa: N815
     annotations_changed = Signal(list)
@@ -389,14 +458,6 @@ class BodyMapWidget(QWidget):
         toolbar.setContentsMargins(0, 0, 0, 0)
         toolbar.setSpacing(6)
 
-        toolbar.addWidget(QLabel("Пол:"))
-        self._gender_combo = QComboBox()
-        self._gender_combo.addItem("Мужчина", "M")
-        self._gender_combo.addItem("Женщина", "F")
-        self._gender_combo.setFixedWidth(100)
-        self._gender_combo.currentIndexChanged.connect(self._on_gender_changed)
-        toolbar.addWidget(self._gender_combo)
-
         toolbar.addWidget(QLabel("Метка:"))
         self._kind_group = QButtonGroup(self)
         self._kind_group.setExclusive(True)
@@ -404,11 +465,13 @@ class BodyMapWidget(QWidget):
             btn = QPushButton(ANNOTATION_LABELS[ann_type])
             btn.setCheckable(True)
             btn.setObjectName("lesionToggle")
+            btn.toggled.connect(lambda checked, b=btn: self._sync_toggle_button_state(b, checked))  # noqa: ARG005
             self._kind_group.addButton(btn, idx)
             toolbar.addWidget(btn)
         first_btn = self._kind_group.buttons()[0]
-        if first_btn is not None:
+        if isinstance(first_btn, QPushButton):
             first_btn.setChecked(True)
+            self._sync_toggle_button_state(first_btn, True)
         self._kind_group.idClicked.connect(self._on_kind_changed)
 
         btn_pop = QPushButton("Удалить посл.")
@@ -428,28 +491,28 @@ class BodyMapWidget(QWidget):
         self._canvas.markersChanged.connect(self._on_canvas_changed)
         root.addWidget(self._canvas, 1)
 
-    def _on_gender_changed(self) -> None:
-        gender = self._gender_combo.currentData() or "M"
-        self._canvas._gender = gender
-        self._canvas.update()
-        self.gender_changed.emit(gender)
-
     def _on_kind_changed(self, idx: int) -> None:
         if 0 <= idx < len(ANNOTATION_TYPES):
             self._canvas._kind = ANNOTATION_TYPES[idx]
+
+    @staticmethod
+    def _sync_toggle_button_state(btn: QPushButton, checked: bool) -> None:
+        btn.setProperty("active", bool(checked))
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
+        btn.update()
 
     def _on_canvas_changed(self) -> None:
         self.markersChanged.emit()
         self.annotations_changed.emit(self.annotations())
 
     def set_gender(self, gender: str) -> None:
-        idx = 0 if gender != "F" else 1
-        self._gender_combo.setCurrentIndex(idx)
-        self._canvas._gender = gender
+        self._canvas._gender = "M"
         self._canvas.update()
+        self.gender_changed.emit("M")
 
     def gender(self) -> str:
-        return self._gender_combo.currentData() or "M"
+        return "M"
 
     def set_kind(self, kind: str) -> None:
         if kind in ANNOTATION_TYPES:
@@ -474,6 +537,10 @@ class BodyMapWidget(QWidget):
             if ann_type not in ANNOTATION_TYPES:
                 ann_type = "WOUND_X"
             silhouette = str(m.get("silhouette") or "")
+            if silhouette in {"female_front", "front"}:
+                silhouette = "male_front"
+            elif silhouette in {"female_back", "back"}:
+                silhouette = "male_back"
             if silhouette not in SILHOUETTE_ORDER:
                 view = str(m.get("view") or m.get("zone") or "front")
                 silhouette = f"male_{view}" if view in ("front", "back") else "male_front"
@@ -525,15 +592,14 @@ class BodyMapWidget(QWidget):
         pass
 
     def set_payload(self, payload: dict) -> None:  # type: ignore[type-arg]
-        gender = str(payload.get("bodymap_gender") or "M")
-        if gender in ("M", "F"):
-            self.set_gender(gender)
+        self.set_gender("M")
 
     def payload(self) -> dict:  # type: ignore[type-arg]
         return {"bodymap_gender": self.gender()}
 
     def has_template(self) -> bool:
-        return _BodyCanvas._shared_pixmap is not None
+        pixmaps = _BodyCanvas._shared_pixmaps or {}
+        return any(not px.isNull() for px in pixmaps.values())
 
     def set_payload_read_only(self, read_only: bool) -> None:  # noqa: ARG002
         pass

@@ -4,6 +4,7 @@ import json
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
+from typing import cast
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -71,8 +72,8 @@ def test_seed_defaults_imports_groups_abx_micro_and_replaces_ismp(
     assert len(antibiotics) == 1
     assert len(microbes) == 1
     assert len(ismp_rows) == 1
-    assert antibiotics[0].group_id == groups[0].id
-    assert ismp_rows[0].code == "ismp-a"
+    assert cast(int | None, antibiotics[0].group_id) == cast(int, groups[0].id)
+    assert str(ismp_rows[0].code) == "ismp-a"
 
     seed_file.write_text(json.dumps(seed_payload_v2, ensure_ascii=False), encoding="utf-8")
     service.seed_defaults(seed_file)
@@ -80,7 +81,7 @@ def test_seed_defaults_imports_groups_abx_micro_and_replaces_ismp(
         ismp_rows = session.query(models.RefIsmpAbbreviation).order_by(models.RefIsmpAbbreviation.id).all()
 
     assert len(ismp_rows) == 1
-    assert ismp_rows[0].code == "ismp-b"
+    assert str(ismp_rows[0].code) == "ismp-b"
 
 
 def test_seed_defaults_if_empty_calls_seed_only_for_empty_target_tables(

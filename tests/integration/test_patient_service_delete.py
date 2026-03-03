@@ -137,8 +137,8 @@ def test_delete_patient_removes_related_rows_and_keeps_unrelated_audit(tmp_path:
 
         audit_rows = session.query(models.AuditLog).all()
         assert len(audit_rows) == 1
-        assert audit_rows[0].entity_type == "other"
-        assert audit_rows[0].entity_id == "keep"
+        assert str(audit_rows[0].entity_type) == "other"
+        assert str(audit_rows[0].entity_id) == "keep"
 
 
 def test_delete_patient_raises_for_missing_patient(tmp_path: Path) -> None:

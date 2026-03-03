@@ -25,7 +25,7 @@ class AuthService:
     def login(self, request: LoginRequest) -> SessionContext:
         with self.session_factory() as session:
             user = self.user_repo.get_by_login(session, request.login)
-            if not user or not user.is_active:
+            if user is None or not bool(cast(bool, user.is_active)):
                 raise ValueError("Неверный логин или пользователь деактивирован")
 
             password_hash = cast(str, user.password_hash)

@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer
 from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPalette, QPen, QPixmap
@@ -11,12 +12,14 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QGraphicsDropShadowEffect,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QVBoxLayout,
     QWidget,
 )
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
 from app.infrastructure.db.models_sqlalchemy import User
@@ -69,16 +72,40 @@ class FirstRunDialog(QDialog):
         self._card = QFrame()
         self._card.setObjectName("firstRunCard")
         card_layout = QVBoxLayout(self._card)
-        card_layout.setContentsMargins(18, 18, 18, 18)
-        card_layout.setSpacing(12)
+        card_layout.setContentsMargins(22, 20, 22, 20)
+        card_layout.setSpacing(10)
+
+        card_accent = QLabel()
+        card_accent.setObjectName("firstRunCardAccent")
+        card_accent.setFixedHeight(4)
+        card_layout.addWidget(card_accent)
+
+        card_title = QLabel("Создание администратора")
+        card_title.setObjectName("firstRunCardTitle")
+        card_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(card_title)
+
+        card_hint = QLabel("Укажите данные первой учетной записи с правами администратора.")
+        card_hint.setObjectName("firstRunCardHint")
+        card_hint.setWordWrap(True)
+        card_layout.addWidget(card_hint)
 
         form = QFormLayout()
+        form.setContentsMargins(0, 2, 0, 0)
+        form.setHorizontalSpacing(14)
+        form.setVerticalSpacing(10)
         self.login_edit = QLineEdit()
+        self.login_edit.setObjectName("firstRunInput")
+        self.login_edit.setMinimumHeight(45)
         self.login_edit.setPlaceholderText("Логин администратора")
         self.password_edit = QLineEdit()
+        self.password_edit.setObjectName("firstRunInput")
+        self.password_edit.setMinimumHeight(45)
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setPlaceholderText("Пароль")
         self.password_confirm = QLineEdit()
+        self.password_confirm.setObjectName("firstRunInput")
+        self.password_confirm.setMinimumHeight(45)
         self.password_confirm.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_confirm.setPlaceholderText("Повторите пароль")
 
@@ -98,6 +125,7 @@ class FirstRunDialog(QDialog):
         card_layout.addLayout(form)
 
         self.error_label = QLabel("")
+        self.error_label.setObjectName("statusLabel")
         set_status(self.error_label, "", "info")
         self.error_label.setWordWrap(True)
         self.error_label.setVisible(False)
@@ -108,13 +136,29 @@ class FirstRunDialog(QDialog):
         cancel_btn = buttons.button(QDialogButtonBox.StandardButton.Cancel)
         if ok_btn:
             ok_btn.setText("Создать")
+            ok_btn.setObjectName("firstRunPrimaryButton")
+            ok_btn.setMinimumWidth(150)
+            ok_btn.setMinimumHeight(42)
             ok_btn.clicked.connect(self._on_create)
             ok_btn.setDefault(True)
         if cancel_btn:
             cancel_btn.setText("Отмена")
+            cancel_btn.setObjectName("firstRunGhostButton")
+            cancel_btn.setMinimumWidth(120)
+            cancel_btn.setMinimumHeight(40)
             cancel_btn.clicked.connect(self.reject)
-            cancel_btn.setObjectName("secondaryButton")
+        buttons_layout = cast(QHBoxLayout | None, buttons.layout())
+        if buttons_layout is not None:
+            buttons_layout.setContentsMargins(0, 2, 0, 0)
+            buttons_layout.setSpacing(10)
+
+        card_meta = QLabel("После создания учетной записи вы получите полный доступ к настройке системы.")
+        card_meta.setObjectName("firstRunCardMeta")
+        card_meta.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_meta.setWordWrap(True)
+        card_layout.addWidget(card_meta)
         card_layout.addWidget(buttons)
+        self._card.setMinimumWidth(500)
         self._card.setMaximumWidth(620)
 
         self._card_container = QWidget()
@@ -288,7 +332,7 @@ class FirstRunDialog(QDialog):
                         is_active=True,
                     )
                 )
-        except Exception:  # noqa: BLE001
+        except (SQLAlchemyError, OSError, RuntimeError, ValueError, TypeError):
             set_status(
                 self.error_label,
                 "Не удалось создать администратора. Попробуйте позже.",

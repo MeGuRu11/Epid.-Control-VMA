@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 import sqlite3
 from contextlib import suppress
@@ -38,7 +39,7 @@ class BackupService:
             return
         with session_scope() as session:
             actor = self.user_repo.get_by_id(session, actor_id)
-            if actor and actor.role == "admin":
+            if actor is not None and str(actor.role) == "admin":
                 return
             payload = json.dumps(
                 {
@@ -72,7 +73,8 @@ class BackupService:
             if not path.exists():
                 return None
             return BackupInfo(path=path, created_at=created_at, reason=reason)
-        except Exception:
+        except (json.JSONDecodeError, KeyError, OSError, TypeError, ValueError) as exc:
+            logging.getLogger(__name__).warning("Failed to parse backup metadata: %s", exc)
             return None
 
     def create_backup(self, *, actor_id: int | None, reason: str = "manual") -> Path:
@@ -83,8 +85,9 @@ class BackupService:
         backup_path = self.backup_dir / f"app_{timestamp}.db"
         try:
             self._create_sqlite_backup(DB_FILE, backup_path)
-        except Exception:
+        except (OSError, sqlite3.Error) as exc:
             # Fallback for environments where sqlite backup API is unavailable.
+            logging.getLogger(__name__).warning("SQLite backup API failed, fallback to file copy: %s", exc)
             shutil.copy2(DB_FILE, backup_path)
         self._write_meta(backup_path, reason)
         self._audit_event(actor_id, "backup_create", backup_path, reason)
@@ -99,8 +102,8 @@ class BackupService:
             from app.infrastructure.db.session import engine as sa_engine
 
             sa_engine.dispose()
-        except Exception:
-            pass
+        except (AttributeError, ImportError, RuntimeError) as exc:
+            logging.getLogger(__name__).warning("Failed to dispose SQLAlchemy engine before restore: %s", exc)
         # Safety copy of current DB before overwrite.
         if DB_FILE.exists():
             timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")

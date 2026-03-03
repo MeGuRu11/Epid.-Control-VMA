@@ -53,19 +53,19 @@ def test_antibiotic_group_and_antibiotic_crud_with_search(
     assert len(antibiotics) == 1
     abx = antibiotics[0]
     abx_id = cast(int, abx.id)
-    assert abx.group_id == group_id
+    assert cast(int | None, abx.group_id) == group_id
 
     service.update_antibiotic(abx_id, "abx-2", "Antibiotic 2", None)
     updated_abx = service.search_antibiotics("abx-2")
     assert len(updated_abx) == 1
-    assert updated_abx[0].name == "Antibiotic 2"
+    assert str(updated_abx[0].name) == "Antibiotic 2"
     assert updated_abx[0].group_id is None
 
     service.update_antibiotic_group(group_id, "grp-2", "Group 2")
     groups = service.list_antibiotic_groups()
     assert len(groups) == 1
-    assert groups[0].code == "grp-2"
-    assert groups[0].name == "Group 2"
+    assert str(groups[0].code) == "grp-2"
+    assert str(groups[0].name) == "Group 2"
 
     service.delete_antibiotic(abx_id)
     assert service.list_antibiotics() == []
@@ -87,7 +87,7 @@ def test_microorganism_phage_ismp_and_icd10_crud(
     service.update_microorganism(micro_id, "micro-2", "Microbe 2", "tg2")
     search_micro = service.search_microorganisms("micro-2")
     assert len(search_micro) == 1
-    assert search_micro[0].name == "Microbe 2"
+    assert str(search_micro[0].name) == "Microbe 2"
     service.delete_microorganism(micro_id)
     assert service.list_microorganisms() == []
 
@@ -96,9 +96,9 @@ def test_microorganism_phage_ismp_and_icd10_crud(
     phage_id = cast(int, phage.id)
     service.update_phage(phage_id, "phage-2", "Phage 2", False)
     updated_phage = service.list_phages()[0]
-    assert updated_phage.code == "phage-2"
-    assert updated_phage.name == "Phage 2"
-    assert updated_phage.is_active is False
+    assert str(updated_phage.code) == "phage-2"
+    assert str(updated_phage.name) == "Phage 2"
+    assert cast(bool, updated_phage.is_active) is False
     service.delete_phage(phage_id)
     assert service.list_phages() == []
 
@@ -107,15 +107,15 @@ def test_microorganism_phage_ismp_and_icd10_crud(
     ismp_id = cast(int, ismp.id)
     service.update_ismp_abbreviation(ismp_id, "ismp-2", "ISMP 2", "desc-2")
     updated_ismp = service.list_ismp_abbreviations()[0]
-    assert updated_ismp.code == "ismp-2"
-    assert updated_ismp.name == "ISMP 2"
+    assert str(updated_ismp.code) == "ismp-2"
+    assert str(updated_ismp.name) == "ISMP 2"
     service.delete_ismp_abbreviation(ismp_id)
     assert service.list_ismp_abbreviations() == []
 
     service.add_icd10("A00", "Cholera")
     icd_rows = service.search_icd10("A00")
     assert len(icd_rows) == 1
-    assert icd_rows[0].title == "Cholera"
+    assert str(icd_rows[0].title) == "Cholera"
     service.delete_icd10("A00")
     assert service.list_icd10() == []
 

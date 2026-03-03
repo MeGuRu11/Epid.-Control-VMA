@@ -5,10 +5,13 @@ from collections.abc import Callable
 from typing import cast
 
 from app.application.dto.auth_dto import CreateUserRequest, ResetPasswordRequest
+from app.application.security.role_matrix import Role, can_manage_users
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 from app.infrastructure.security.password_hash import hash_password
+
+MIN_PASSWORD_LENGTH = 8
 
 
 class UserAdminService:
@@ -23,6 +26,8 @@ class UserAdminService:
         self.session_factory = session_factory
 
     def create_user(self, request: CreateUserRequest, actor_id: int) -> int:
+        if len(request.password) < MIN_PASSWORD_LENGTH:
+            raise ValueError(f"Пароль должен содержать не менее {MIN_PASSWORD_LENGTH} символов")
         with self.session_factory() as session:
             self._require_admin(session, actor_id)
             existing = self.user_repo.get_by_login(session, request.login)
@@ -43,6 +48,8 @@ class UserAdminService:
             return cast(int, user.id)
 
     def reset_password(self, request: ResetPasswordRequest, actor_id: int) -> None:
+        if len(request.new_password) < MIN_PASSWORD_LENGTH:
+            raise ValueError(f"Пароль должен содержать не менее {MIN_PASSWORD_LENGTH} символов")
         with self.session_factory() as session:
             self._require_admin(session, actor_id)
             user = self.user_repo.get_by_id(session, request.user_id)
@@ -85,7 +92,7 @@ class UserAdminService:
 
     def _require_admin(self, session, actor_id: int) -> None:
         actor = self.user_repo.get_by_id(session, actor_id)
-        if not actor or actor.role != "admin":
+        if actor is None or not can_manage_users(cast(Role, actor.role)):
             self.audit_repo.add_event(
                 session,
                 user_id=actor_id,

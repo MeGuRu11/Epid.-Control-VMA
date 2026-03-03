@@ -42,8 +42,8 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, set_status
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
-    connect_combo_resize_on_first_row,
-    resize_columns_by_first_row,
+    connect_combo_resize_on_content,
+    resize_columns_to_content,
 )
 
 
@@ -352,16 +352,16 @@ class LabSampleDetailDialog(QDialog):
         for row in range(self.susc_table.rowCount()):
             combo = self._create_abx_combo()
             self.susc_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.susc_table, combo, row)
-        resize_columns_by_first_row(self.susc_table)
+            connect_combo_resize_on_content(self.susc_table, combo, row)
+        resize_columns_to_content(self.susc_table)
 
     def _setup_phage_rows(self) -> None:
         self._phage_list = self.reference_service.list_phages()
         for row in range(self.phage_table.rowCount()):
             combo = self._create_phage_combo()
             self.phage_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.phage_table, combo, row)
-        resize_columns_by_first_row(self.phage_table)
+            connect_combo_resize_on_content(self.phage_table, combo, row)
+        resize_columns_to_content(self.phage_table)
 
     def _refresh_abx_combos(self, selected_ids: list[int | None]) -> None:
         self._abx_list = self.reference_service.list_antibiotics()
@@ -372,8 +372,8 @@ class LabSampleDetailDialog(QDialog):
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
             self.susc_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.susc_table, combo, row)
-        resize_columns_by_first_row(self.susc_table)
+            connect_combo_resize_on_content(self.susc_table, combo, row)
+        resize_columns_to_content(self.susc_table)
 
     def _refresh_phage_combos(self, selected_ids: list[int | None]) -> None:
         self._phage_list = self.reference_service.list_phages()
@@ -384,8 +384,8 @@ class LabSampleDetailDialog(QDialog):
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
             self.phage_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_first_row(self.phage_table, combo, row)
-        resize_columns_by_first_row(self.phage_table)
+            connect_combo_resize_on_content(self.phage_table, combo, row)
+        resize_columns_to_content(self.phage_table)
 
     def refresh_references(self) -> None:
         selected_material = self.material_type.currentData()
@@ -437,14 +437,14 @@ class LabSampleDetailDialog(QDialog):
         self.susc_table.insertRow(row)
         combo = self._create_abx_combo()
         self.susc_table.setCellWidget(row, 0, combo)
-        connect_combo_resize_on_first_row(self.susc_table, combo, row)
+        connect_combo_resize_on_content(self.susc_table, combo, row)
 
     def _add_phage_row(self) -> None:
         row = self.phage_table.rowCount()
         self.phage_table.insertRow(row)
         combo = self._create_phage_combo()
         self.phage_table.setCellWidget(row, 0, combo)
-        connect_combo_resize_on_first_row(self.phage_table, combo, row)
+        connect_combo_resize_on_content(self.phage_table, combo, row)
 
     def _delete_table_row(self, table: QTableWidget) -> None:
         if table.rowCount() <= 1:
@@ -496,8 +496,8 @@ class LabSampleDetailDialog(QDialog):
             if not dia_item or not dia_item.text().strip():
                 self.phage_table.setItem(row, 2, QTableWidgetItem("0"))
 
-        resize_columns_by_first_row(self.susc_table)
-        resize_columns_by_first_row(self.phage_table)
+        resize_columns_to_content(self.susc_table)
+        resize_columns_to_content(self.phage_table)
 
     def _load_existing(self) -> None:
         try:
@@ -722,7 +722,7 @@ class LabSampleDetailDialog(QDialog):
             self.susc_table.setItem(idx, 1, QTableWidgetItem(r.ris or ""))
             self.susc_table.setItem(idx, 2, QTableWidgetItem(str(r.mic_mg_l) if r.mic_mg_l is not None else ""))
             self.susc_table.setItem(idx, 3, QTableWidgetItem(r.method or ""))
-        resize_columns_by_first_row(self.susc_table)
+        resize_columns_to_content(self.susc_table)
 
     def _fill_phages(self, rows) -> None:
         self.phage_table.clearContents()
@@ -735,4 +735,4 @@ class LabSampleDetailDialog(QDialog):
                 combo.setCurrentIndex(combo.findData(r.phage_id))
             self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
             self.phage_table.setItem(idx, 2, QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""))
-        resize_columns_by_first_row(self.phage_table)
+        resize_columns_to_content(self.phage_table)

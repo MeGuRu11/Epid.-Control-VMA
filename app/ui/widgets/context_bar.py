@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QStringListModel, Qt
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.services.emz_service import EmzService
 from app.application.services.patient_service import PatientService
@@ -303,7 +305,7 @@ class ContextBar(QWidget):
                 patient_name=detail.patient_full_name,
                 emit=True,
             )
-        except Exception as exc:  # noqa: BLE001
+        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
             show_error(self, str(exc))
 
     def _find_patient(self) -> None:
@@ -311,7 +313,7 @@ class ContextBar(QWidget):
         if query.isdigit():
             try:
                 patient = self.patient_service.get_by_id(int(query))
-            except Exception as exc:  # noqa: BLE001
+            except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
                 show_error(self, f"Пациент не найден: {exc}")
                 return
             self._set_context(
@@ -375,7 +377,8 @@ class ContextBar(QWidget):
         if query.isdigit():
             try:
                 patient = self.patient_service.get_by_id(int(query))
-            except Exception:
+            except (LookupError, RuntimeError, ValueError) as exc:
+                logging.getLogger(__name__).debug("Autocomplete lookup by patient id failed: %s", exc)
                 self._completer_model.setStringList([])
                 return
             self._completer_model.setStringList([f"{patient.id}: {patient.full_name}"])
@@ -385,7 +388,8 @@ class ContextBar(QWidget):
             return
         try:
             patients = self.patient_service.search_by_name(query, limit=10)
-        except Exception:
+        except (LookupError, RuntimeError, ValueError) as exc:
+            logging.getLogger(__name__).debug("Autocomplete lookup by patient name failed: %s", exc)
             self._completer_model.setStringList([])
             return
         suggestions = [f"{p.id}: {p.full_name}" for p in patients]
@@ -395,7 +399,7 @@ class ContextBar(QWidget):
         try:
             pid_str, name = text.split(":", 1)
             pid = int(pid_str.strip())
-        except Exception:
+        except ValueError:
             return
         self._set_context(patient_id=pid, case_id=None, patient_name=name.strip(), emit=True)
 
@@ -405,7 +409,8 @@ class ContextBar(QWidget):
             return
         try:
             cases = self.emz_service.search_cases_meta(text.strip(), limit=10)
-        except Exception:
+        except (LookupError, RuntimeError, ValueError) as exc:
+            logging.getLogger(__name__).debug("Autocomplete lookup by case number failed: %s", exc)
             self._case_model.setStringList([])
             return
         suggestions = [f"{c['id']}: {c['case_no']}" for c in cases]
@@ -414,7 +419,7 @@ class ContextBar(QWidget):
     def _on_case_autocomplete(self, text: str) -> None:
         try:
             case_id = int(text.split(":", 1)[0].strip())
-        except Exception:
+        except ValueError:
             return
         try:
             detail = self.emz_service.get_current(case_id)
@@ -424,7 +429,7 @@ class ContextBar(QWidget):
                 patient_name=detail.patient_full_name,
                 emit=True,
             )
-        except Exception as exc:  # noqa: BLE001
+        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
             show_error(self, str(exc))
 
     def _reset(self) -> None:

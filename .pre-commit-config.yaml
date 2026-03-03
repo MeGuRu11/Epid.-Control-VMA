@@ -33,6 +33,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: pyright
+        name: pyright (app/scripts/tests)
+        entry: pyright
+        language: python
+        additional_dependencies:
+          - pyright>=1.1.390
+        pass_filenames: false
       - id: compileall
         name: compileall (app/tests/scripts)
         entry: python -m compileall -q app tests scripts

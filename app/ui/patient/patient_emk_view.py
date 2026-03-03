@@ -21,11 +21,13 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.emz_dto import EmzCaseDetail, EmzCaseResponse
@@ -43,8 +45,10 @@ from app.ui.patient.emk_utils import (
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.notifications import clear_status, set_status
-from app.ui.widgets.table_utils import resize_columns_by_first_row
+from app.ui.widgets.notifications import clear_status, error_text, set_status
+from app.ui.widgets.table_utils import resize_columns_to_content
+
+_HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
 
 
 class PatientEmkView(QWidget):
@@ -82,7 +86,16 @@ class PatientEmkView(QWidget):
         self._load_departments()
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+
+        container = QWidget()
+        layout = QVBoxLayout(container)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
@@ -104,8 +117,10 @@ class PatientEmkView(QWidget):
         right_col = QVBoxLayout(self._right_panel)
         right_col.setContentsMargins(0, 0, 0, 0)
         right_col.setSpacing(12)
-        right_col.addWidget(self._build_patient_box())
-        right_col.addWidget(self._build_cases_box(), 3)
+        self._patient_box = self._build_patient_box()
+        self._cases_box = self._build_cases_box()
+        right_col.addWidget(self._patient_box, 0)
+        right_col.addWidget(self._cases_box, 1)
 
         self._content_layout.addWidget(self._right_panel, 2)
         layout.addWidget(self._content_bar)
@@ -120,6 +135,9 @@ class PatientEmkView(QWidget):
         status_row.addWidget(self.status_label, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         status_row.addStretch()
         layout.addLayout(status_row)
+
+        scroll.setWidget(container)
+        outer.addWidget(scroll)
         self._update_page_layouts()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
@@ -398,6 +416,7 @@ class PatientEmkView(QWidget):
             "min_column_widths",
             {0: 160, 1: 160, 2: 160, 3: 140, 4: 120, 5: 150},
         )
+        self.cases_table.setMinimumHeight(120)
         cases_layout.addWidget(self.cases_table)
         return cases_box
 
@@ -444,8 +463,11 @@ class PatientEmkView(QWidget):
                 return
             try:
                 patient = self.patient_service.get_by_id(patient_id)
-            except Exception as exc:  # noqa: BLE001
-                self._set_status(f"Не удалось найти пациента: {exc}", "warning")
+            except _HANDLED_UI_ERRORS as exc:
+                self._set_status(
+                    f"Не удалось найти пациента: {error_text(exc, 'Пациент не найден')}",
+                    "warning",
+                )
                 self._set_search_busy(False)
                 return
             self._add_patient_result(patient)
@@ -511,9 +533,15 @@ class PatientEmkView(QWidget):
         patient_id = items[0].data(Qt.ItemDataRole.UserRole)
         if patient_id is None:
             return
-        patient = self.patient_service.get_by_id(int(patient_id))
-        self._set_patient(patient)
-        self._load_cases(patient.id)
+        try:
+            patient = self.patient_service.get_by_id(int(patient_id))
+            self._set_patient(patient)
+            self._load_cases(patient.id)
+        except _HANDLED_UI_ERRORS as exc:
+            self._set_status(
+                f"Не удалось загрузить пациента: {error_text(exc, 'Пациент не найден')}",
+                "warning",
+            )
 
     def _set_patient(self, patient: PatientResponse) -> None:
         self._current_patient = patient
@@ -567,8 +595,11 @@ class PatientEmkView(QWidget):
             return
         try:
             patient = self.patient_service.get_by_id(patient_id)
-        except Exception as exc:  # noqa: BLE001
-            self._set_status(f"Не удалось загрузить пациента: {exc}", "warning")
+        except _HANDLED_UI_ERRORS as exc:
+            self._set_status(
+                f"Не удалось загрузить пациента: {error_text(exc, 'Пациент не найден')}",
+                "warning",
+            )
             return
         self._set_patient(patient)
         self._load_cases(patient_id)
@@ -587,8 +618,11 @@ class PatientEmkView(QWidget):
                 dep_name = str(dep.name)
                 self._dept_map[dep_id] = dep_name
                 self.department_filter.addItem(dep_name, dep_id)
-        except Exception as exc:  # noqa: BLE001
-            logging.getLogger(__name__).warning("Failed to load departments: %s", exc)
+        except _HANDLED_UI_ERRORS as exc:
+            logging.getLogger(__name__).warning(
+                "Failed to load departments: %s",
+                error_text(exc, "department lookup failed"),
+            )
 
     def _load_cases(self, patient_id: int) -> None:
         self._cases_cache = []
@@ -605,8 +639,11 @@ class PatientEmkView(QWidget):
             self._cases_cache = [(self.emz_service.get_current(case.id), case) for case in cases]
             self._apply_case_filters()
             self._set_status("")
-        except Exception as exc:  # noqa: BLE001
-            self._set_status(f"Не удалось загрузить госпитализации: {exc}", "error")
+        except _HANDLED_UI_ERRORS as exc:
+            self._set_status(
+                f"Не удалось загрузить госпитализации: {error_text(exc, 'Ошибка загрузки')}",
+                "error",
+            )
 
     def _reset_filters(self) -> None:
         self.department_filter.setCurrentIndex(0)
@@ -635,7 +672,7 @@ class PatientEmkView(QWidget):
             self.cases_table.insertRow(row)
             self._set_case_row(row, detail, resp)
 
-        resize_columns_by_first_row(self.cases_table)
+        resize_columns_to_content(self.cases_table)
         if not self._current_patient:
             self.cases_empty_label.setVisible(False)
         elif not self._cases_cache:
@@ -759,8 +796,11 @@ class PatientEmkView(QWidget):
             self._set_status("ЭМЗ удалена", "success")
             if self.on_data_changed:
                 self.on_data_changed()
-        except Exception as exc:  # noqa: BLE001
-            self._set_status(f"Ошибка: {exc}", "error")
+        except _HANDLED_UI_ERRORS as exc:
+            self._set_status(
+                f"Ошибка: {error_text(exc, 'Не удалось удалить ЭМЗ')}",
+                "error",
+            )
 
     def _delete_patient(self) -> None:
         if not self._current_patient:
@@ -783,5 +823,8 @@ class PatientEmkView(QWidget):
             self._set_status("Пациент удалён", "success")
             if self.on_data_changed:
                 self.on_data_changed()
-        except Exception as exc:  # noqa: BLE001
-            self._set_status(f"Ошибка: {exc}", "error")
+        except _HANDLED_UI_ERRORS as exc:
+            self._set_status(
+                f"Ошибка: {error_text(exc, 'Не удалось удалить пациента')}",
+                "error",
+            )

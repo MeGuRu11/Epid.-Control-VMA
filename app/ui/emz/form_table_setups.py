@@ -5,7 +5,7 @@ from typing import cast
 
 from PySide6.QtWidgets import QComboBox, QDateEdit, QDateTimeEdit, QTableWidget
 
-from app.ui.widgets.table_utils import connect_combo_resize_on_first_row
+from app.ui.widgets.table_utils import connect_combo_resize_on_content
 
 CreateComboFn = Callable[[], QComboBox]
 CreateDateEditFn = Callable[[], QDateEdit]
@@ -23,10 +23,10 @@ def setup_diagnosis_rows(
     for row in range(table.rowCount()):
         type_combo = create_type_combo()
         table.setCellWidget(row, 0, type_combo)
-        connect_combo_resize_on_first_row(table, type_combo, row)
+        connect_combo_resize_on_content(table, type_combo, row)
         icd_combo = create_icd_combo()
         table.setCellWidget(row, 1, icd_combo)
-        connect_combo_resize_on_first_row(table, icd_combo, row)
+        connect_combo_resize_on_content(table, icd_combo, row)
     resize_table(table)
 
 
@@ -44,7 +44,7 @@ def setup_abx_rows(
             table.setCellWidget(row, 1, create_dt_cell())
         abx_combo = create_abx_combo()
         table.setCellWidget(row, 2, abx_combo)
-        connect_combo_resize_on_first_row(table, abx_combo, row)
+        connect_combo_resize_on_content(table, abx_combo, row)
     resize_table(table)
 
 
@@ -59,7 +59,7 @@ def setup_intervention_rows(
         if not isinstance(table.cellWidget(row, 0), QComboBox):
             type_combo = create_type_combo()
             table.setCellWidget(row, 0, type_combo)
-            connect_combo_resize_on_first_row(table, type_combo, row)
+            connect_combo_resize_on_content(table, type_combo, row)
         if not isinstance(table.cellWidget(row, 1), QDateTimeEdit):
             table.setCellWidget(row, 1, create_dt_cell())
         if not isinstance(table.cellWidget(row, 2), QDateTimeEdit):
@@ -78,7 +78,7 @@ def setup_ismp_rows(
         if not isinstance(table.cellWidget(row, 0), QComboBox):
             type_combo = create_type_combo()
             table.setCellWidget(row, 0, type_combo)
-            connect_combo_resize_on_first_row(table, type_combo, row)
+            connect_combo_resize_on_content(table, type_combo, row)
         if not isinstance(table.cellWidget(row, 1), QDateEdit):
             table.setCellWidget(row, 1, create_date_cell())
     resize_table(table)
@@ -97,7 +97,7 @@ def refresh_diagnosis_reference_rows(
         new_type_combo = create_type_combo()
         new_type_combo.setCurrentText(selected_type)
         table.setCellWidget(row, 0, new_type_combo)
-        connect_combo_resize_on_first_row(table, new_type_combo, row)
+        connect_combo_resize_on_content(table, new_type_combo, row)
 
         icd_widget = table.cellWidget(row, 1)
         icd_combo = cast(QComboBox, icd_widget) if isinstance(icd_widget, QComboBox) else None
@@ -108,7 +108,7 @@ def refresh_diagnosis_reference_rows(
             if idx >= 0:
                 new_icd_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 1, new_icd_combo)
-        connect_combo_resize_on_first_row(table, new_icd_combo, row)
+        connect_combo_resize_on_content(table, new_icd_combo, row)
 
 
 def refresh_abx_reference_rows(
@@ -126,7 +126,7 @@ def refresh_abx_reference_rows(
             if idx >= 0:
                 new_abx_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 2, new_abx_combo)
-        connect_combo_resize_on_first_row(table, new_abx_combo, row)
+        connect_combo_resize_on_content(table, new_abx_combo, row)
 
 
 def refresh_ismp_reference_rows(
@@ -144,4 +144,4 @@ def refresh_ismp_reference_rows(
             if idx >= 0:
                 new_type_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 0, new_type_combo)
-        connect_combo_resize_on_first_row(table, new_type_combo, row)
+        connect_combo_resize_on_content(table, new_type_combo, row)

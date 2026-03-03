@@ -5,6 +5,7 @@ from typing import Any
 
 from reportlab.lib.pagesizes import A5, landscape
 from reportlab.lib.units import mm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
@@ -17,7 +18,7 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     width, height = landscape(A5)
     pdf = canvas.Canvas(str(file_path), pagesize=(width, height))
     font = get_pdf_unicode_font_name()
-    pdf.setTitle(f"Форма 100 V2 {card.get('id', '')}")
+    pdf.setTitle(f"Форма 100 {card.get('id', '')}")
 
     _draw_frame(pdf, width=width, height=height)
     _draw_content(pdf, width=width, height=height, card=card, font=font)
@@ -71,19 +72,76 @@ def _draw_content(
     annotations = data.get("bodymap_annotations") or []
 
     pdf.setFont(font, 11)
-    pdf.drawString(body_left, height - margin - 7 * mm, "ФОРМА 100 (V2)")
+    pdf.drawString(body_left, height - margin - 7 * mm, "ФОРМА 100")
 
     pdf.setFont(font, 8)
     pdf.drawString(margin + 2 * mm, height - margin - 7 * mm, "Корешок")
-    pdf.drawString(body_left, height - margin - 14 * mm, f"ФИО: {_safe(main.get('main_full_name') or card.get('main_full_name'))}")
-    pdf.drawString(body_left, height - margin - 18 * mm, f"Подразделение: {_safe(main.get('main_unit') or card.get('main_unit'))}")
-    pdf.drawString(body_left, height - margin - 22 * mm, f"Жетон/ID: {_safe(main.get('main_id_tag') or card.get('main_id_tag'))}")
-    pdf.drawString(body_left, height - margin - 26 * mm, f"Диагноз: {_safe(bottom.get('main_diagnosis') or card.get('main_diagnosis'))}")
+    content_width = max(10.0, body_right - body_left)
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=height - margin - 14 * mm,
+        text=f"ФИО: {_safe(main.get('main_full_name') or card.get('main_full_name'))}",
+        max_width=content_width,
+    )
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=height - margin - 18 * mm,
+        text=f"Подразделение: {_safe(main.get('main_unit') or card.get('main_unit'))}",
+        max_width=content_width,
+    )
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=height - margin - 22 * mm,
+        text=f"Жетон/ID: {_safe(main.get('main_id_tag') or card.get('main_id_tag'))}",
+        max_width=content_width,
+    )
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=height - margin - 26 * mm,
+        text=f"Диагноз: {_safe(bottom.get('main_diagnosis') or card.get('main_diagnosis'))}",
+        max_width=content_width,
+    )
 
     # Bodymap summary
-    pdf.drawString(body_left, margin + 32 * mm, f"Пол схемы тела: {_safe(data.get('bodymap_gender', 'M'))}")
-    pdf.drawString(body_left, margin + 28 * mm, f"Метки: {len(annotations)}")
-    pdf.drawString(body_left, margin + 24 * mm, f"Подпись врача: {_safe(bottom.get('doctor_signature') or card.get('signed_by'))}")
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=margin + 32 * mm,
+        text=f"Пол схемы тела: {_safe(data.get('bodymap_gender', 'M'))}",
+        max_width=content_width,
+    )
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=margin + 28 * mm,
+        text=f"Метки: {len(annotations)}",
+        max_width=content_width,
+    )
+    _draw_clipped_text(
+        pdf,
+        font=font,
+        size=8,
+        x=body_left,
+        y=margin + 24 * mm,
+        text=f"Подпись врача: {_safe(bottom.get('doctor_signature') or card.get('signed_by'))}",
+        max_width=content_width,
+    )
 
     # Flags
     fx = width - margin - flag_width * 3
@@ -127,3 +185,37 @@ def _safe(value: Any) -> str:
     if value is None:
         return ""
     return str(value)
+
+
+def _draw_clipped_text(
+    pdf: canvas.Canvas,
+    *,
+    font: str,
+    size: int,
+    x: float,
+    y: float,
+    text: str,
+    max_width: float,
+) -> None:
+    clipped = _fit_text(text, font=font, size=size, max_width=max_width)
+    pdf.drawString(x, y, clipped)
+
+
+def _fit_text(text: str, *, font: str, size: int, max_width: float) -> str:
+    if not text:
+        return ""
+    if stringWidth(text, font, size) <= max_width:
+        return text
+    ellipsis = "..."
+    if stringWidth(ellipsis, font, size) > max_width:
+        return ""
+    left = 0
+    right = len(text)
+    while left < right:
+        mid = (left + right + 1) // 2
+        candidate = text[:mid].rstrip() + ellipsis
+        if stringWidth(candidate, font, size) <= max_width:
+            left = mid
+        else:
+            right = mid - 1
+    return text[:left].rstrip() + ellipsis

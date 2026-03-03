@@ -29,7 +29,7 @@ class ReferenceService:
         if actor_id is None:
             return
         actor = self.user_repo.get_by_id(session, actor_id)
-        if actor and actor.role == "admin":
+        if actor is not None and str(actor.role) == "admin":
             return
         with session_scope() as audit_session:
             self.audit_repo.add_event(

@@ -60,9 +60,9 @@ def test_department_and_material_type_crud_flow(tmp_path: Path, monkeypatch: pyt
 
     departments = service.list_departments()
     material_types = service.list_material_types()
-    assert departments[0].name == "ICU-2"
-    assert material_types[0].code == "BLOOD-2"
-    assert material_types[0].name == "Blood 2"
+    assert str(departments[0].name) == "ICU-2"
+    assert str(material_types[0].code) == "BLOOD-2"
+    assert str(material_types[0].name) == "Blood 2"
 
     service.delete_department(dep_id)
     service.delete_material_type(mt_id)
@@ -98,4 +98,4 @@ def test_reference_service_validation_and_not_found_errors(
     service.update_icd10("A00", "Updated")
     icd10 = service.list_icd10()
     assert len(icd10) == 1
-    assert icd10[0].title == "Updated"
+    assert str(icd10[0].title) == "Updated"

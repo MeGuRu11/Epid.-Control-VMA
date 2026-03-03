@@ -167,7 +167,8 @@ class Form100StubWidget(QWidget):
         diag_layout = QVBoxLayout(diag)
         diag_layout.setContentsMargins(10, 8, 10, 8)
         self.stub_diagnosis = QTextEdit()
-        self.stub_diagnosis.setFixedHeight(58)
+        self.stub_diagnosis.setMinimumHeight(58)
+        self.stub_diagnosis.setMaximumHeight(132)
         diag_layout.addWidget(self.stub_diagnosis)
         root.addWidget(diag)
         root.addStretch(1)
@@ -212,7 +213,7 @@ class Form100StubWidget(QWidget):
             raw = json.loads(str(payload.get("stub_med_help_json") or "[]"))
             if isinstance(raw, list):
                 selected = {str(x) for x in raw}
-        except Exception:  # noqa: BLE001
+        except (TypeError, ValueError, json.JSONDecodeError):
             selected = set()
         for key, cb in self.stub_med_help_checks.items():
             cb.setChecked(key in selected or _is_truthy(payload.get(key)))

@@ -56,7 +56,7 @@ def _resolve_data_dir() -> Path:
                         target = new_logs / file.name
                         if not target.exists():
                             target.write_bytes(file.read_bytes())
-        except Exception:
+        except OSError:
             return legacy_dir
     return new_dir
 
@@ -82,7 +82,6 @@ class Settings:
     ui_premium_enabled: bool = _env_bool("EPIDCONTROL_UI_PREMIUM", True)
     ui_animation_policy: AnimationPolicy = _env_animation_policy("EPIDCONTROL_UI_ANIMATION", "adaptive")
     ui_density: UiDensity = _env_ui_density("EPIDCONTROL_UI_DENSITY", "normal")
-    form100_v2_enabled: bool = _env_bool("EPIDCONTROL_FORM100_V2_ENABLED", True)
 
 
 settings = Settings()

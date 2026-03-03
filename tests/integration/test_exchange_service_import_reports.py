@@ -71,7 +71,7 @@ def test_import_csv_returns_error_report_and_log(tmp_path: Path) -> None:
     with session_factory() as session:
         patients = session.query(models.Patient).all()
     assert len(patients) == 1
-    assert patients[0].full_name == "Иванов Иван"
+    assert str(patients[0].full_name) == "Иванов Иван"
 
 
 def test_import_excel_returns_error_report_and_log(tmp_path: Path) -> None:
@@ -81,6 +81,7 @@ def test_import_excel_returns_error_report_and_log(tmp_path: Path) -> None:
 
     wb = Workbook()
     ws = wb.active
+    assert ws is not None
     ws.title = "patients"
     ws.append(["id", "full_name", "dob", "sex", "category", "military_unit", "military_district"])
     ws.append([1, "Сидоров Сидор", "2024-01-01", "M", "cat", "", ""])
@@ -103,7 +104,7 @@ def test_import_excel_returns_error_report_and_log(tmp_path: Path) -> None:
     with session_factory() as session:
         patients = session.query(models.Patient).all()
     assert len(patients) == 1
-    assert patients[0].full_name == "Сидоров Сидор"
+    assert str(patients[0].full_name) == "Сидоров Сидор"
 
 
 def test_import_zip_returns_nested_import_error_report(tmp_path: Path) -> None:
@@ -114,6 +115,7 @@ def test_import_zip_returns_nested_import_error_report(tmp_path: Path) -> None:
 
     wb = Workbook()
     ws = wb.active
+    assert ws is not None
     ws.title = "patients"
     ws.append(["id", "full_name", "dob", "sex", "category", "military_unit", "military_district"])
     ws.append([1, "Кузнецов Кирилл", "2024-01-01", "M", "cat", "", ""])

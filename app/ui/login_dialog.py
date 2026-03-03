@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import LoginRequest, SessionContext
 from app.application.services.auth_service import AuthService
@@ -99,29 +100,53 @@ class LoginDialog(QDialog):
         self._card = QFrame()
         self._card.setObjectName("loginCard")
         card_layout = QVBoxLayout(self._card)
-        card_layout.setContentsMargins(18, 18, 18, 18)
-        card_layout.setSpacing(12)
+        card_layout.setContentsMargins(22, 20, 22, 20)
+        card_layout.setSpacing(10)
+
+        card_accent = QLabel()
+        card_accent.setObjectName("loginCardAccent")
+        card_accent.setFixedHeight(4)
+        card_layout.addWidget(card_accent)
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 2, 0, 0)
+        title_row.setSpacing(0)
 
         card_title = QLabel("Вход в систему")
         card_title.setObjectName("loginCardTitle")
         card_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        demo_hint = QLabel("Для теста: admin / admin1234")
-        demo_hint.setObjectName("muted")
-        demo_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_row.addWidget(card_title)
+        card_layout.addLayout(title_row)
+
+        card_hint = QLabel("Введите учетные данные для доступа к рабочему месту.")
+        card_hint.setObjectName("loginCardHint")
+        card_hint.setWordWrap(True)
+        card_layout.addWidget(card_hint)
 
         form = QFormLayout()
+        form.setContentsMargins(0, 2, 0, 0)
         form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        form.setHorizontalSpacing(14)
+        form.setVerticalSpacing(10)
         self.login_edit = QLineEdit()
+        self.login_edit.setObjectName("loginInput")
+        self.login_edit.setMinimumHeight(42)
         self.login_edit.setPlaceholderText("Введите логин")
         self.login_edit.setClearButtonEnabled(True)
         self.login_edit.textChanged.connect(self._on_login_text_changed)
         self.password_edit = QLineEdit()
+        self.password_edit.setObjectName("loginInput")
+        self.password_edit.setMinimumHeight(42)
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setPlaceholderText("Введите пароль")
         self.password_edit.returnPressed.connect(self._on_login)
-        form.addRow("Логин", self.login_edit)
-        form.addRow("Пароль", self.password_edit)
+        login_label = QLabel("Логин")
+        login_label.setObjectName("loginFieldLabel")
+        password_label = QLabel("Пароль")
+        password_label.setObjectName("loginFieldLabel")
+        form.addRow(login_label, self.login_edit)
+        form.addRow(password_label, self.password_edit)
 
         self.error_label = QLabel("")
         self.error_label.setObjectName("statusLabel")
@@ -135,32 +160,36 @@ class LoginDialog(QDialog):
         self._lock_label.setVisible(False)
 
         self._login_btn = QPushButton("Войти")
+        self._login_btn.setObjectName("loginPrimaryButton")
+        self._login_btn.setMinimumWidth(146)
+        self._login_btn.setMinimumHeight(40)
         self._login_btn.setDefault(True)
         self._login_btn.clicked.connect(self._on_login)
-
-        demo_btn = QPushButton("Подставить demo")
-        demo_btn.setObjectName("secondaryButton")
-        demo_btn.clicked.connect(self._fill_demo)
-
         cancel_btn = QPushButton("Отмена")
-        cancel_btn.setObjectName("secondaryButton")
+        cancel_btn.setObjectName("loginGhostButton")
+        cancel_btn.setMinimumWidth(122)
+        cancel_btn.setMinimumHeight(40)
         cancel_btn.clicked.connect(self.reject)
 
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(8)
-        btn_row.addWidget(self._login_btn)
-        btn_row.addWidget(demo_btn)
+        btn_row.setSpacing(10)
         btn_row.addStretch()
         btn_row.addWidget(cancel_btn)
+        btn_row.addWidget(self._login_btn)
 
-        card_layout.addWidget(card_title)
-        card_layout.addWidget(demo_hint)
+        card_meta = QLabel("Доступ разрешен только авторизованным пользователям.")
+        card_meta.setObjectName("loginCardMeta")
+        card_meta.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_meta.setWordWrap(True)
+
         card_layout.addLayout(form)
         card_layout.addWidget(self.error_label)
         card_layout.addWidget(self._lock_label)
+        card_layout.addWidget(card_meta)
         card_layout.addLayout(btn_row)
 
-        self._card.setMaximumWidth(520)
+        self._card.setMinimumWidth(460)
+        self._card.setMaximumWidth(560)
         self._card_container = QWidget()
         container_layout = QVBoxLayout(self._card_container)
         container_layout.setContentsMargins(0, 0, 0, 0)
@@ -175,11 +204,6 @@ class LoginDialog(QDialog):
 
         self.login_edit.setFocus()
         self._apply_glass_effect(self._card)
-
-    def _fill_demo(self) -> None:
-        self.login_edit.setText("admin")
-        self.password_edit.setText("admin1234")
-
     def _on_login_text_changed(self) -> None:
         # Attempts are tracked per dialog session; editing login must not reset lockout counters.
         return
@@ -347,7 +371,7 @@ class LoginDialog(QDialog):
             return
         try:
             session_ctx = self.auth_service.login(request)
-        except Exception as exc:  # noqa: BLE001
+        except (ValueError, SQLAlchemyError, RuntimeError, TypeError) as exc:
             set_status(self.error_label, str(exc), "error")
             self.error_label.setVisible(True)
             self._failed_attempts += 1
@@ -368,3 +392,5 @@ if __name__ == "__main__":
     dlg = LoginDialog(auth_service=AuthService())
     dlg.show()
     sys.exit(app.exec())
+
+

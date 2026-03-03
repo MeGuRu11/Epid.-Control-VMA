@@ -1,5 +1,7 @@
 ﻿from __future__ import annotations
 
+from datetime import datetime
+
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
@@ -15,14 +17,17 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.services.exchange_service import ExchangeService
 from app.ui.import_export.import_export_wizard import ImportExportWizard
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.notifications import show_error
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
+from app.ui.widgets.notifications import error_text, show_error
+from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
+
+_HANDLED_IMPORT_EXPORT_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError, OSError)
 
 
 class ImportExportView(QWidget):
@@ -187,8 +192,8 @@ class ImportExportView(QWidget):
                 direction=self.direction_filter.currentData(),
                 query=self.query_filter.text().strip() or None,
             )
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_IMPORT_EXPORT_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось загрузить историю пакетов"))
             return
         self.history_table.clearContents()
         self.history_table.setRowCount(len(rows))
@@ -197,13 +202,16 @@ class ImportExportView(QWidget):
             direction = {"export": "Экспорт", "import": "Импорт"}.get(direction_key, "")
             self.history_table.setItem(i, 0, QTableWidgetItem(direction))
             self.history_table.setItem(i, 1, QTableWidgetItem(str(r.package_format or "")))
-            created_text = r.created_at.strftime("%d.%m.%Y %H:%M") if r.created_at else ""
+            created_raw = r.created_at
+            created_text = (
+                created_raw.strftime("%d.%m.%Y %H:%M") if isinstance(created_raw, datetime) else ""
+            )
             self.history_table.setItem(i, 2, QTableWidgetItem(created_text))
             self.history_table.setItem(i, 3, QTableWidgetItem(str(r.created_by or "")))
             self.history_table.setItem(i, 4, QTableWidgetItem(str(r.sha256 or "")))
             self.history_table.setItem(i, 5, QTableWidgetItem(str(r.file_path or "")))
-        resize_columns_by_first_row(self.history_table)
-        resize_columns_by_first_row(self.history_table)
+        resize_columns_to_content(self.history_table)
+        resize_columns_to_content(self.history_table)
         self.history_table.setColumnWidth(0, 170)
 
     def _clear_filters(self) -> None:

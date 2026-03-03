@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import CreateUserRequest, ResetPasswordRequest, SessionContext
 from app.application.security import can_manage_backups, can_manage_users
@@ -29,7 +30,10 @@ from app.application.services.user_admin_service import UserAdminService
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
+from app.ui.widgets.notifications import error_text
+from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
+
+_HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
 
 
 class UserAdminView(QWidget):
@@ -103,6 +107,7 @@ class UserAdminView(QWidget):
         right_col_layout.setSpacing(12)
 
         self._users_frame = QGroupBox("Список пользователей")
+        self._users_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         users_frame_layout = QVBoxLayout(self._users_frame)
         filter_row = QHBoxLayout()
         self.search_input = QLineEdit()
@@ -119,11 +124,13 @@ class UserAdminView(QWidget):
         self.user_table.setAlternatingRowColors(True)
         self.user_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.user_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.user_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.user_table.setMinimumHeight(200)
         users_frame_layout.addWidget(self.user_table)
         left_col_layout.addWidget(self._users_frame)
 
         self._audit_box = QGroupBox("События аудита")
+        self._audit_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         audit_layout = QVBoxLayout(self._audit_box)
         self.audit_table = QTableWidget(0, 5)
         self.audit_table.setHorizontalHeaderLabels(
@@ -132,14 +139,17 @@ class UserAdminView(QWidget):
         self.audit_table.horizontalHeader().setStretchLastSection(True)
         self.audit_table.verticalHeader().setVisible(False)
         self.audit_table.setAlternatingRowColors(True)
+        self.audit_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.audit_table.setMinimumHeight(240)
         audit_layout.addWidget(self.audit_table)
         left_col_layout.addWidget(self._audit_box)
         left_col_layout.addStretch()
 
         self._backup_box = QGroupBox("Резервные копии")
+        self._backup_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         backup_layout = QVBoxLayout(self._backup_box)
         self.backup_status = QLabel("Последняя резервная копия: -")
+        self.backup_status.setWordWrap(True)
         backup_layout.addWidget(self.backup_status)
         self.backup_create_btn = QPushButton("Создать резервную копию")
         self.backup_create_btn.setObjectName("primaryButton")
@@ -172,6 +182,7 @@ class UserAdminView(QWidget):
         right_col_layout.addWidget(self._backup_box)
 
         self._create_box = QGroupBox("Создать пользователя")
+        self._create_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         create_layout = QVBoxLayout(self._create_box)
         create_form = QFormLayout()
         self.create_login = QLineEdit()
@@ -204,6 +215,7 @@ class UserAdminView(QWidget):
         right_col_layout.addWidget(self._create_box)
 
         self._manage_box = QGroupBox("Сброс пароля / статус")
+        self._manage_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         manage_layout = QVBoxLayout(self._manage_box)
         reset_form = QFormLayout()
         self.reset_password = QLineEdit()
@@ -282,21 +294,22 @@ class UserAdminView(QWidget):
     def _update_content_layout(self) -> None:
         if not hasattr(self, "_content_layout"):
             return
+        width = max(1, self._content_container.width())
         left_required = max(
             620,
             self._users_frame.sizeHint().width(),
             self._audit_box.sizeHint().width(),
         )
         right_required = max(
-            520,
+            560,
             self._backup_box.sizeHint().width(),
             self._create_box.sizeHint().width(),
             self._manage_box.sizeHint().width(),
         )
-        needed = left_required + right_required + self._content_layout.spacing() + 40
+        needed = left_required + right_required + self._content_layout.spacing() + 56
         target = (
             QBoxLayout.Direction.LeftToRight
-            if self._content_container.width() >= needed
+            if width >= max(1520, needed)
             else QBoxLayout.Direction.TopToBottom
         )
         if self._content_layout.direction() != target:
@@ -305,8 +318,8 @@ class UserAdminView(QWidget):
         if target == QBoxLayout.Direction.LeftToRight:
             self._left_col.setMinimumWidth(560)
             self._right_col.setMinimumWidth(500)
-            self._content_layout.setStretch(0, 3)
-            self._content_layout.setStretch(1, 2)
+            self._content_layout.setStretch(0, 6)
+            self._content_layout.setStretch(1, 5)
         else:
             self._left_col.setMinimumWidth(0)
             self._right_col.setMinimumWidth(0)
@@ -346,8 +359,8 @@ class UserAdminView(QWidget):
         try:
             query = self.search_input.text().strip() or None
             users = self.user_admin_service.list_users(query=query)
-        except Exception as exc:  # noqa: BLE001
-            self.status.setText(str(exc))
+        except _HANDLED_UI_ERRORS as exc:
+            self.status.setText(error_text(exc, "Не удалось загрузить список пользователей"))
             return
 
         self.user_table.clearContents()
@@ -357,10 +370,14 @@ class UserAdminView(QWidget):
             self.user_table.setItem(row, 1, QTableWidgetItem(user.login))
             self.user_table.setItem(row, 2, QTableWidgetItem(user.role))
             self.user_table.setItem(row, 3, QTableWidgetItem("Активен" if user.is_active else "Неактивен"))
-        resize_columns_by_first_row(self.user_table)
+        resize_columns_to_content(self.user_table)
 
     def _load_audit(self) -> None:
-        rows = self.dashboard_service.list_recent_audit(limit=20)
+        try:
+            rows = self.dashboard_service.list_recent_audit(limit=20)
+        except _HANDLED_UI_ERRORS as exc:
+            self.status.setText(error_text(exc, "Не удалось загрузить журнал аудита"))
+            return
         self.audit_table.clearContents()
         self.audit_table.setRowCount(len(rows))
         for row, item in enumerate(rows):
@@ -370,7 +387,7 @@ class UserAdminView(QWidget):
             self.audit_table.setItem(row, 2, QTableWidgetItem(item["action"]))
             self.audit_table.setItem(row, 3, QTableWidgetItem(item["entity_type"]))
             self.audit_table.setItem(row, 4, QTableWidgetItem(item["entity_id"]))
-        resize_columns_by_first_row(self.audit_table)
+        resize_columns_to_content(self.audit_table)
 
     def _refresh_all(self) -> None:
         self._load_users()
@@ -402,7 +419,9 @@ class UserAdminView(QWidget):
             self.backup_status.setText(f"Создана резервная копия: {path.name}")
 
         def _on_error(exc: Exception) -> None:
-            self.backup_status.setText(f"Ошибка резервного копирования: {exc}")
+            self.backup_status.setText(
+                f"Ошибка резервного копирования: {error_text(exc, 'операция не выполнена')}"
+            )
 
         run_async(self, _run, on_success=_on_success, on_error=_on_error, on_finished=lambda: self._set_backup_busy(False))
 
@@ -425,7 +444,9 @@ class UserAdminView(QWidget):
             self.backup_status.setText("Восстановление завершено. Перезапустите приложение.")
 
         def _on_error(exc: Exception) -> None:
-            self.backup_status.setText(f"Ошибка восстановления: {exc}")
+            self.backup_status.setText(
+                f"Ошибка восстановления: {error_text(exc, 'операция не выполнена')}"
+            )
 
         run_async(self, _run, on_success=_on_success, on_error=_on_error, on_finished=lambda: self._set_backup_busy(False))
 
@@ -449,8 +470,8 @@ class UserAdminView(QWidget):
             self.create_login.clear()
             self.create_password.clear()
             self._load_users()
-        except Exception as exc:  # noqa: BLE001
-            self.status.setText(str(exc))
+        except _HANDLED_UI_ERRORS as exc:
+            self.status.setText(error_text(exc, "Не удалось создать пользователя"))
 
     def _reset_password(self) -> None:
         user_id = self._selected_user_id()
@@ -471,8 +492,8 @@ class UserAdminView(QWidget):
             self.status.setText("Пароль обновлен")
             self.reset_password.clear()
             self._load_users()
-        except Exception as exc:  # noqa: BLE001
-            self.status.setText(str(exc))
+        except _HANDLED_UI_ERRORS as exc:
+            self.status.setText(error_text(exc, "Не удалось обновить пароль"))
 
     def _set_active(self, is_active: bool) -> None:
         user_id = self._selected_user_id()
@@ -484,5 +505,5 @@ class UserAdminView(QWidget):
             state = "активирован" if is_active else "деактивирован"
             self.status.setText(f"Пользователь {state}")
             self._load_users()
-        except Exception as exc:  # noqa: BLE001
-            self.status.setText(str(exc))
+        except _HANDLED_UI_ERRORS as exc:
+            self.status.setText(error_text(exc, "Не удалось изменить статус пользователя"))

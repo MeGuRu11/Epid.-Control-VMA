@@ -128,7 +128,7 @@ def test_apply_intervention_rows_sets_widgets_and_values(monkeypatch) -> None:
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(appliers, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(appliers, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable())
 
@@ -205,7 +205,7 @@ def test_apply_ismp_rows_sets_combo_and_date(monkeypatch) -> None:
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(appliers, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(appliers, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable())
 

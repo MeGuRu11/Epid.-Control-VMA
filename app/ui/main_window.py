@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.security import can_access_admin_view
@@ -63,9 +64,8 @@ class NavMenuBar(QMenuBar):
             return
         margin = 8
         height = max(20, self.height() - 6)
-        self._logout_btn.setFixedHeight(height)
         width = max(80, self._logout_btn.sizeHint().width())
-        self._logout_btn.setFixedWidth(width)
+        self._logout_btn.resize(width, height)
         x = max(margin, self.width() - width - margin)
         y = max(2, (self.height() - height) // 2)
         self._logout_btn.move(x, y)
@@ -582,7 +582,7 @@ class MainWindow(QMainWindow):
             try:
                 patient = self.container.patient_service.get_by_id(patient_id)
                 patient_name = patient.full_name
-            except Exception:  # noqa: BLE001
+            except (ValueError, SQLAlchemyError, RuntimeError, TypeError):
                 patient_name = ""
             self._context_bar.update_context(self._current_patient_id, self._current_case_id, patient_name)
         self._notify_data_changed()

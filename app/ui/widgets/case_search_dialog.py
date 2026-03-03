@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.services.emz_service import EmzService
 from app.ui.widgets.button_utils import compact_button
@@ -55,12 +56,12 @@ class CaseSearchDialog(QDialog):
         clear_status(self.status)
         try:
             pid = int(self.patient_id_input.text())
-        except Exception:
+        except ValueError:
             set_status(self.status, "Введите корректный ID пациента", "warning")
             return
         try:
             cases = self.emz_service.list_cases_by_patient(pid)
-        except Exception as exc:  # noqa: BLE001
+        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
             set_status(self.status, str(exc), "error")
             return
         if not cases:

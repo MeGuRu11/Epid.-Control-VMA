@@ -135,5 +135,5 @@ def _as_float(value: Any) -> float | None:
         return float(value)
     try:
         return float(str(value))
-    except Exception:  # noqa: BLE001
+    except (TypeError, ValueError):
         return None

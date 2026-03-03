@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -19,6 +20,24 @@ from app.infrastructure.db.fts_manager import FtsManager
 from app.infrastructure.db.models_sqlalchemy import User
 
 _SessionFactory = Callable[[], AbstractContextManager[Session]]
+_HANDLED_STARTUP_ERRORS = (
+    CommandError,
+    SQLAlchemyError,
+    OSError,
+    RuntimeError,
+    ValueError,
+    TypeError,
+    AttributeError,
+    ImportError,
+)
+_HANDLED_SEED_ERRORS = (
+    SQLAlchemyError,
+    OSError,
+    RuntimeError,
+    ValueError,
+    TypeError,
+    AttributeError,
+)
 
 
 def _is_multiple_heads_error(exc: BaseException) -> bool:
@@ -76,7 +95,7 @@ def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Pa
                     logging.getLogger(__name__).exception("Failed to upgrade multiple heads")
                     raise
             raise
-    except Exception:  # noqa: BLE001
+    except _HANDLED_STARTUP_ERRORS:
         logger = logging.getLogger(__name__)
         logger.exception("Failed to run migrations")
         try:
@@ -133,7 +152,7 @@ def ensure_schema_compatibility(
             )
             return False
         return True
-    except Exception as exc:  # noqa: BLE001
+    except _HANDLED_STARTUP_ERRORS as exc:
         logging.getLogger(__name__).exception("Failed to verify database schema")
         QMessageBox.critical(
             None,
@@ -164,6 +183,25 @@ def has_users(session_factory: _SessionFactory) -> bool:
         return False
 
 
+def cleanup_stale_temp_dirs() -> None:
+    """Remove orphaned temp directories left by crashed import/export operations."""
+    logger = logging.getLogger(__name__)
+    tmp_run = Path.cwd() / "tmp_run"
+    if not tmp_run.is_dir():
+        return
+    prefixes = ("epid-temp-", "form100-v2-")
+    removed = 0
+    for child in tmp_run.iterdir():
+        if child.is_dir() and child.name.startswith(prefixes):
+            try:
+                shutil.rmtree(child, ignore_errors=True)
+                removed += 1
+            except OSError:
+                logger.debug("Failed to remove stale temp dir: %s", child)
+    if removed:
+        logger.info("Cleaned up %d stale temp directories in tmp_run", removed)
+
+
 def initialize_database(
     *,
     root_dir: Path,
@@ -172,6 +210,7 @@ def initialize_database(
     log_dir: Path,
     session_factory: _SessionFactory,
 ) -> bool:
+    cleanup_stale_temp_dirs()
     if not check_startup_prerequisites(root_dir, db_file):
         return False
     if not run_migrations(root_dir, database_url, log_dir, db_file):
@@ -184,11 +223,11 @@ def initialize_database(
 def seed_core_data(container: Any) -> None:
     try:
         container.reference_service.seed_defaults()
-    except Exception:  # noqa: BLE001
+    except _HANDLED_SEED_ERRORS:
         logging.getLogger(__name__).exception("Failed to seed reference defaults")
     try:
         container.backup_service.ensure_daily_backup()
-    except Exception:  # noqa: BLE001
+    except _HANDLED_SEED_ERRORS:
         logging.getLogger(__name__).exception("Failed to run automatic backup")
 
 

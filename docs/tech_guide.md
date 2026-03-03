@@ -25,7 +25,6 @@
 - `EPIDCONTROL_UI_PREMIUM` — premium UI слой (`1/0`).
 - `EPIDCONTROL_UI_ANIMATION` — `adaptive|full|minimal`.
 - `EPIDCONTROL_UI_DENSITY` — `normal|compact`.
-- `EPIDCONTROL_FORM100_V2_ENABLED` — переключение Form100 V2.
 
 ## 4. База данных и миграции
 - Миграции хранятся в `app/infrastructure/db/migrations`.

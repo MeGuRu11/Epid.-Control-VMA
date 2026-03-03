@@ -1,10 +1,11 @@
-"""Form100ListPanel — диалог со списком карточек Формы 100."""
+﻿"""Form100ListPanel — диалог со списком карточек Формы 100."""
 from __future__ import annotations
 
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QApplication,
     QDialog,
     QFrame,
     QHBoxLayout,
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import (
@@ -26,16 +28,13 @@ from app.application.dto.form100_v2_dto import (
 )
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.ui.form100_v2.form100_wizard import Form100Wizard
+from app.ui.widgets.notifications import error_text
 
-_STATUS_STYLES: dict[str, tuple[str, str]] = {
-    "DRAFT":  ("#F4D58D", "#7D5A00"),
-    "SIGNED": ("#9AD8A6", "#1D5030"),
-}
 _STATUS_LABELS: dict[str, str] = {
     "DRAFT":  "Черновик",
     "SIGNED": "Подписан",
 }
-_ARCHIVE_STYLE = ("#E3D9CF", "#5A5A58")
+_HANDLED_FORM100_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
 
 
 class _PreviewPanel(QFrame):
@@ -43,49 +42,44 @@ class _PreviewPanel(QFrame):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setStyleSheet(
-            "QFrame { background: #F7F4F0; border-left: 1px solid #E0DAD3;"
-            " border-radius: 0; }"
-        )
+        self.setObjectName("form100ListPreview")
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 20, 16, 16)
         root.setSpacing(10)
 
         self._badge = QLabel()
+        self._badge.setObjectName("form100ListBadge")
+        self._badge.setProperty("tone", "empty")
         self._badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._badge.setMinimumHeight(28)
         self._badge.setMaximumHeight(36)
-        self._badge.setStyleSheet("border-radius: 6px; font-size: 12px; font-weight: bold;")
         root.addWidget(self._badge)
 
         self._name_lbl = QLabel()
+        self._name_lbl.setObjectName("form100ListName")
         self._name_lbl.setWordWrap(True)
-        self._name_lbl.setStyleSheet(
-            "font-size: 15px; font-weight: bold; color: #1A252F;"
-            " background: transparent;"
-        )
         self._name_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(self._name_lbl)
 
         self._unit_lbl = QLabel()
+        self._unit_lbl.setObjectName("form100ListUnit")
         self._unit_lbl.setWordWrap(True)
-        self._unit_lbl.setStyleSheet("font-size: 12px; color: #4A7A9B; background: transparent;")
         self._unit_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(self._unit_lbl)
 
         sep = QFrame()
+        sep.setObjectName("form100ListSeparator")
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("background: #D4CEC8; border: none;")
         sep.setMaximumHeight(1)
         root.addWidget(sep)
 
         self._diag_lbl = QLabel()
+        self._diag_lbl.setObjectName("form100ListDiagnosis")
         self._diag_lbl.setWordWrap(True)
-        self._diag_lbl.setStyleSheet("font-size: 12px; color: #3A3A38; background: transparent;")
         root.addWidget(self._diag_lbl)
 
         self._date_lbl = QLabel()
-        self._date_lbl.setStyleSheet("font-size: 11px; color: #8899AA; background: transparent;")
+        self._date_lbl.setObjectName("form100ListDate")
         self._date_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         root.addWidget(self._date_lbl)
 
@@ -103,9 +97,16 @@ class _PreviewPanel(QFrame):
 
         self.clear()
 
+    def _refresh_badge_style(self) -> None:
+        style = self._badge.style()
+        style.unpolish(self._badge)
+        style.polish(self._badge)
+        self._badge.update()
+
     def clear(self) -> None:
         self._badge.setText("")
-        self._badge.setStyleSheet("background: transparent;")
+        self._badge.setProperty("tone", "empty")
+        self._refresh_badge_style()
         self._name_lbl.setText("Выберите карточку из списка")
         self._unit_lbl.setText("")
         self._diag_lbl.setText("")
@@ -114,18 +115,15 @@ class _PreviewPanel(QFrame):
 
     def show_card(self, card: Form100CardV2ListItemDto) -> None:
         if card.is_archived:
-            bg, fg = _ARCHIVE_STYLE
             label = "Архив"
+            tone = "archived"
         else:
-            bg, fg = _STATUS_STYLES.get(card.status, _ARCHIVE_STYLE)
             label = _STATUS_LABELS.get(card.status, card.status)
+            tone = "signed" if card.status == "SIGNED" else "draft"
 
         self._badge.setText(label)
-        self._badge.setStyleSheet(
-            f"background: {bg}; color: {fg};"
-            " border-radius: 6px; font-size: 12px; font-weight: bold;"
-            " padding: 4px 12px;"
-        )
+        self._badge.setProperty("tone", tone)
+        self._refresh_badge_style()
         self._name_lbl.setText(card.main_full_name or "—")
         self._unit_lbl.setText(card.main_unit or "")
         diag = card.main_diagnosis or ""
@@ -155,7 +153,7 @@ class Form100ListPanel(QDialog):
         self._cards: list[Form100CardV2ListItemDto] = []
 
         self.setWindowTitle("Форма 100")
-        self.setMinimumSize(900, 650)
+        self.setMinimumSize(780, 560)
         self.setWindowFlag(Qt.WindowType.WindowMaximizeButtonHint, True)
 
         root = QVBoxLayout(self)
@@ -218,6 +216,7 @@ class Form100ListPanel(QDialog):
         self._preview.open_btn.clicked.connect(self._open_selected)
         self._preview.close_btn.clicked.connect(self.reject)
 
+        self._apply_initial_size()
         self._apply_responsive_layout()
         self._load_cards()
 
@@ -241,6 +240,28 @@ class Form100ListPanel(QDialog):
             ]
         )
 
+    def _apply_initial_size(self) -> None:
+        app = QApplication.instance()
+        if app is None:
+            self.resize(1120, 760)
+            return
+        assert isinstance(app, QApplication)
+        screen = self.screen() or app.primaryScreen()
+        if screen is None:
+            self.resize(1120, 760)
+            return
+
+        geometry = screen.availableGeometry()
+        min_width = min(900, max(780, geometry.width() - 80))
+        min_height = min(620, max(540, geometry.height() - 80))
+        max_width = max(min_width, geometry.width() - 24)
+        max_height = max(min_height, geometry.height() - 24)
+        target_width = max(min_width, min(1320, int(geometry.width() * 0.84), max_width))
+        target_height = max(min_height, min(860, int(geometry.height() * 0.86), max_height))
+
+        self.setMinimumSize(min_width, min_height)
+        self.resize(target_width, target_height)
+
     # ── Данные ───────────────────────────────────────────────────────────────
 
     def _load_cards(self) -> None:
@@ -250,8 +271,13 @@ class Form100ListPanel(QDialog):
             filters = Form100V2Filters(emr_case_id=self._emr_case_id)
         try:
             self._cards = self._service.list_cards(filters, limit=200)
-        except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Ошибка", f"Не удалось загрузить карточки:\n{exc}")
+        except _HANDLED_FORM100_ERRORS as exc:
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                "Не удалось загрузить карточки:\n"
+                f"{error_text(exc, 'Операция не выполнена')}",
+            )
             self._cards = []
         self._rebuild_table()
 
@@ -322,8 +348,13 @@ class Form100ListPanel(QDialog):
         if card_id is not None:
             try:
                 card = self._service.get_card(card_id)
-            except Exception as exc:  # noqa: BLE001
-                QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить карточку:\n{exc}")
+            except _HANDLED_FORM100_ERRORS as exc:
+                QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось загрузить карточку:\n"
+                    f"{error_text(exc, 'Операция не выполнена')}",
+                )
                 return
 
         wizard = Form100Wizard(
@@ -337,3 +368,5 @@ class Form100ListPanel(QDialog):
             self._load_cards()
             if self._on_data_changed:
                 self._on_data_changed()
+
+

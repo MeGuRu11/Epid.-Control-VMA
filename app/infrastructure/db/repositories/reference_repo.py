@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from sqlalchemy import or_, select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Session
 
@@ -74,7 +75,7 @@ class ReferenceRepository:
                     )
                     by_id = {m.id: m for m in microbes}
                     return [by_id[i] for i in ids if i in by_id]
-            except Exception:  # noqa: BLE001
+            except (SQLAlchemyError, RuntimeError, ValueError, TypeError):
                 logging.getLogger(__name__).debug("FTS search_microorganisms failed", exc_info=True)
 
         stmt = (
@@ -120,7 +121,7 @@ class ReferenceRepository:
                     )
                     by_code = {i.code: i for i in items}
                     return [by_code[c] for c in codes if c in by_code]
-            except Exception:  # noqa: BLE001
+            except (SQLAlchemyError, RuntimeError, ValueError, TypeError):
                 logging.getLogger(__name__).debug("FTS search_icd10 failed", exc_info=True)
 
         stmt = (

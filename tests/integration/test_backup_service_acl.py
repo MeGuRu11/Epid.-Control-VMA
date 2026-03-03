@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 import pytest
 from sqlalchemy import create_engine
@@ -58,7 +59,7 @@ def _seed_user(
         )
         session.add(user)
         session.flush()
-        return int(user.id)
+        return cast(int, user.id)
 
 
 def test_backup_operations_require_admin_and_audit_denial(

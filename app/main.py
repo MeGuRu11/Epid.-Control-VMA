@@ -4,6 +4,7 @@ import atexit
 import logging
 import sys
 import time
+from io import TextIOBase, UnsupportedOperation
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from types import TracebackType
@@ -34,7 +35,7 @@ from app.ui.main_window import MainWindow  # noqa: E402
 from app.ui.theme import apply_theme  # noqa: E402
 from app.ui.widgets.date_input_flow import DateInputAutoFlow  # noqa: E402
 
-_stderr_tee: object = None
+_stderr_tee: TextIO | None = None
 
 
 def _setup_logging() -> Path:
@@ -58,48 +59,42 @@ def _install_stderr_tee(log_path: Path) -> None:
     atexit.register(log_file.close)
 
     class _TeeStream:
-        def __init__(self, *streams: TextIO | None) -> None:
+        def __init__(self, *streams: object | None) -> None:
             # Keep only non-null stream-like objects to avoid failures in windowed/bundled runs.
-            self._streams: list[object] = [s for s in streams if s is not None]
+            self._streams: list[TextIOBase] = [s for s in streams if isinstance(s, TextIOBase)]
 
         def write(self, data: str) -> int:
             written = 0
             for stream in self._streams:
                 try:
-                    if not hasattr(stream, "write"):
-                        continue
-                    result = stream.write(data)  # type: ignore[call-arg]
-                    if isinstance(result, int):
-                        written = result
-                except Exception:  # noqa: BLE001
-                    continue
-                try:
-                    if hasattr(stream, "flush"):
-                        stream.flush()  # type: ignore[call-arg]
-                except Exception:  # noqa: BLE001
+                    result = stream.write(data)
+                    written = result
+                    stream.flush()
+                except (AttributeError, OSError, ValueError, UnsupportedOperation):
                     continue
             return written
 
         def flush(self) -> None:
             for stream in self._streams:
                 try:
-                    if hasattr(stream, "flush"):
-                        stream.flush()  # type: ignore[call-arg]
-                except Exception:  # noqa: BLE001
+                    stream.flush()
+                except (AttributeError, OSError, ValueError, UnsupportedOperation):
                     continue
 
         def isatty(self) -> bool:
-            return any(getattr(stream, "isatty", lambda: False)() for stream in self._streams)
+            for stream in self._streams:
+                try:
+                    if stream.isatty():
+                        return True
+                except (AttributeError, OSError, ValueError, UnsupportedOperation):
+                    continue
+            return False
 
         def fileno(self) -> int:
             for stream in self._streams:
                 try:
-                    fileno_fn = getattr(stream, "fileno", None)
-                    if callable(fileno_fn):
-                        fd_obj: object = fileno_fn()
-                        if isinstance(fd_obj, int):
-                            return fd_obj
-                except Exception:  # noqa: BLE001
+                    return stream.fileno()
+                except (AttributeError, OSError, ValueError, UnsupportedOperation):
                     continue
             return -1
 

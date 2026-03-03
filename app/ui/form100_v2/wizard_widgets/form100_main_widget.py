@@ -118,7 +118,8 @@ class Form100MainWidget(QWidget):
 
         self.isolation_bar = QFrame()
         self.isolation_bar.setObjectName("form100Isolation")
-        self.isolation_bar.setFixedWidth(22)
+        self.isolation_bar.setMinimumWidth(18)
+        self.isolation_bar.setMaximumWidth(24)
         self.isolation_bar.setToolTip("ИЗОЛЯЦИЯ")
         isolation_col.addWidget(self.isolation_bar, 1, Qt.AlignmentFlag.AlignHCenter)
 
@@ -233,8 +234,8 @@ class Form100MainWidget(QWidget):
                 parsed = json.loads(str(raw or "[]"))
                 if isinstance(parsed, list):
                     return {str(x) for x in parsed}
-            except Exception:  # noqa: BLE001
-                pass
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return set()
             return set()
 
         lesion_vals = _parse_json_list(payload.get("lesion_json"))

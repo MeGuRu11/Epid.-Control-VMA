@@ -10,7 +10,7 @@ Create Date: 2026-02-18
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -180,13 +180,20 @@ def upgrade() -> None:
                 }
             )
 
+        injury_dt = row.get("injury_dt")
+        injury_dt_value = injury_dt if isinstance(injury_dt, datetime) else None
+        birth_date = row.get("birth_date")
+        birth_date_value = birth_date if isinstance(birth_date, date) else None
+        arrival_dt = row.get("arrival_dt")
+        arrival_dt_value = arrival_dt if isinstance(arrival_dt, datetime) else None
+
         stub_json = {
             "stub_rank": _safe_text(row.get("rank")),
             "stub_unit": _safe_text(row.get("unit")),
             "stub_full_name": full_name,
             "stub_id_tag": _safe_text(row.get("dog_tag_number") or row.get("id_doc_number")),
-            "stub_injury_date": (row.get("injury_dt").date().isoformat() if row.get("injury_dt") else None),
-            "stub_injury_time": (row.get("injury_dt").strftime("%H:%M") if row.get("injury_dt") else None),
+            "stub_injury_date": (injury_dt_value.date().isoformat() if injury_dt_value else None),
+            "stub_injury_time": (injury_dt_value.strftime("%H:%M") if injury_dt_value else None),
             "stub_evacuation_dest": _safe_text(row.get("evac_position")),
             "stub_med_help": [],
             "stub_antibiotic_dose": _safe_text(row.get("care_antibiotic_details")),
@@ -202,9 +209,9 @@ def upgrade() -> None:
             "main_unit": _safe_text(row.get("unit")),
             "main_full_name": full_name,
             "main_id_tag": _safe_text(row.get("dog_tag_number") or row.get("id_doc_number")),
-            "main_injury_date": (row.get("injury_dt").date().isoformat() if row.get("injury_dt") else None),
-            "main_injury_time": (row.get("injury_dt").strftime("%H:%M") if row.get("injury_dt") else None),
-            "birth_date": (row.get("birth_date").isoformat() if row.get("birth_date") else None),
+            "main_injury_date": (injury_dt_value.date().isoformat() if injury_dt_value else None),
+            "main_injury_time": (injury_dt_value.strftime("%H:%M") if injury_dt_value else None),
+            "birth_date": (birth_date_value.isoformat() if birth_date_value else None),
         }
         lesion_json = {
             "cause_category": _safe_text(row.get("cause_category")),
@@ -241,7 +248,7 @@ def upgrade() -> None:
             "sanitation_details": _safe_text(row.get("sanitation_details")),
         }
         bottom_json = {
-            "arrival_dt": (row.get("arrival_dt").isoformat() if row.get("arrival_dt") else None),
+            "arrival_dt": (arrival_dt_value.isoformat() if arrival_dt_value else None),
             "evacuation_dest": _safe_text(row.get("evac_position")),
             "transport_type": _safe_text(row.get("evac_transport")),
             "doctor_signature": _safe_text(row.get("signed_by")),

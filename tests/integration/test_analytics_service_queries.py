@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -127,10 +128,10 @@ def _seed_analytics_dataset(
         session.flush()
 
         return {
-            "department_id": int(dep.id),
-            "material_type_id": int(material.id),
-            "microorganism_id": int(micro1.id),
-            "antibiotic_id": int(abx2.id),
+            "department_id": cast(int, dep.id),
+            "material_type_id": cast(int, material.id),
+            "microorganism_id": cast(int, micro1.id),
+            "antibiotic_id": cast(int, abx2.id),
             "icd10_code": str(icd.code),
         }
 

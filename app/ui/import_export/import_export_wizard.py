@@ -25,7 +25,7 @@ from app.application.services.exchange_service import ExchangeService
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error, show_info, show_warning
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
+from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
 
 class ImportExportWizard(QWizard):
@@ -146,16 +146,6 @@ class ImportExportWizard(QWizard):
                 counts = result.get("counts", {})
                 total = sum(int(value) for value in counts.values())
                 return f"{total} записей", False
-            if fmt == "form100_v2_zip":
-                result = self.exchange_service.export_form100_v2_package_zip(
-                    file_path=file_path,
-                    exported_by=self.session.login,
-                    actor_id=self.session.user_id,
-                    card_id=None,
-                )
-                counts = result.get("counts", {})
-                total = sum(int(value) for value in counts.values())
-                return f"{total} записей", False
         else:
             if fmt == "excel":
                 result = self.exchange_service.import_excel(file_path=file_path, mode=import_mode)
@@ -178,13 +168,6 @@ class ImportExportWizard(QWizard):
                 return self._format_import_result(result)
             if fmt == "form100_zip":
                 result = self.exchange_service.import_form100_package_zip(
-                    file_path=file_path,
-                    actor_id=self.session.user_id,
-                    mode=import_mode,
-                )
-                return self._format_import_result(result)
-            if fmt == "form100_v2_zip":
-                result = self.exchange_service.import_form100_v2_package_zip(
                     file_path=file_path,
                     actor_id=self.session.user_id,
                     mode=import_mode,
@@ -246,7 +229,6 @@ class DirectionPage(QWizardPage):
         self.format.addItem("PDF", "pdf")
         self.format.addItem("ZIP", "zip")
         self.format.addItem("Form100 ZIP", "form100_zip")
-        self.format.addItem("Form100 V2 ZIP", "form100_v2_zip")
         connect_combo_autowidth(self.format)
         self.format.currentIndexChanged.connect(self._sync_state)
 
@@ -312,13 +294,6 @@ class PathPage(QWizardPage):
                     "form100_export.zip",
                     "ZIP (*.zip)",
                 )
-            elif fmt == "form100_v2_zip":
-                path, _ = QFileDialog.getSaveFileName(
-                    self,
-                    "Экспорт Form100 V2 ZIP",
-                    "form100_v2_export.zip",
-                    "ZIP (*.zip)",
-                )
             else:
                 path, _ = QFileDialog.getSaveFileName(self, "Экспорт ZIP", f"{filename}.zip", "ZIP (*.zip)")
         else:
@@ -328,8 +303,6 @@ class PathPage(QWizardPage):
                 path, _ = QFileDialog.getOpenFileName(self, "Импорт CSV", "", "CSV (*.csv)")
             elif fmt == "form100_zip":
                 path, _ = QFileDialog.getOpenFileName(self, "Импорт Form100 ZIP", "", "ZIP (*.zip)")
-            elif fmt == "form100_v2_zip":
-                path, _ = QFileDialog.getOpenFileName(self, "Импорт Form100 V2 ZIP", "", "ZIP (*.zip)")
             else:
                 path, _ = QFileDialog.getOpenFileName(self, "Импорт ZIP", "", "ZIP (*.zip)")
         if path:
@@ -403,11 +376,13 @@ class PreviewPage(QWizardPage):
             self.preview_table.insertRow(row_idx)
             for col_idx, value in enumerate(row):
                 self.preview_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
-        resize_columns_by_first_row(self.preview_table)
+        resize_columns_to_content(self.preview_table)
 
     def _preview_excel(self, path: Path) -> None:
         wb = load_workbook(path, read_only=True)
         ws = wb.active
+        if ws is None:
+            return
         rows = list(ws.iter_rows(values_only=True))[:20]
         if not rows:
             return
@@ -418,4 +393,4 @@ class PreviewPage(QWizardPage):
             self.preview_table.insertRow(row_idx)
             for col_idx, value in enumerate(row):
                 self.preview_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
-        resize_columns_by_first_row(self.preview_table)
+        resize_columns_to_content(self.preview_table)

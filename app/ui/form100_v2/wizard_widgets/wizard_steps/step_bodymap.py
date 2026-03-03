@@ -5,11 +5,13 @@ import json
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QCheckBox,
     QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -57,11 +59,20 @@ class StepBodymap(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(8)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(10, 10, 10, 10)
+        root.setSpacing(8)
 
-        left_col = QVBoxLayout()
+        # ── Top row: controls ───────────────────────────────────────────────
+        self._controls = QWidget()
+        self._controls_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._controls)
+        self._controls_layout.setContentsMargins(0, 0, 0, 0)
+        self._controls_layout.setSpacing(8)
+        root.addWidget(self._controls, 0)
+
+        # Left: lesion grids + isolation
+        self._left_controls = QWidget()
+        left_col = QVBoxLayout(self._left_controls)
         left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(6)
 
@@ -82,9 +93,11 @@ class StepBodymap(QWidget):
         left_col.addWidget(san_box)
 
         left_col.addStretch(1)
-        layout.addLayout(left_col)
+        self._controls_layout.addWidget(self._left_controls, 3)
 
-        isolation_col = QVBoxLayout()
+        # Middle: isolation
+        self._isolation_controls = QWidget()
+        isolation_col = QVBoxLayout(self._isolation_controls)
         isolation_col.setContentsMargins(0, 0, 0, 0)
         isolation_col.setSpacing(4)
 
@@ -95,23 +108,28 @@ class StepBodymap(QWidget):
 
         self.isolation_bar = QFrame()
         self.isolation_bar.setObjectName("form100Isolation")
-        self.isolation_bar.setFixedWidth(22)
+        self.isolation_bar.setMinimumWidth(18)
+        self.isolation_bar.setMaximumWidth(24)
+        self.isolation_bar.setSizePolicy(
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
+        )
         self.isolation_bar.setToolTip("ИЗОЛЯЦИЯ")
         isolation_col.addWidget(self.isolation_bar, 1, Qt.AlignmentFlag.AlignHCenter)
 
-        layout.addLayout(isolation_col)
+        self._controls_layout.addWidget(self._isolation_controls, 0)
 
-        self.editor = BodyMapWidget()
-        self.editor.markersChanged.connect(self._refresh_notes)
-        layout.addWidget(self.editor, 1)
-
-        right_col = QVBoxLayout()
+        # Right: tissue types + notes
+        self._right_controls = QWidget()
+        right_col = QVBoxLayout(self._right_controls)
         right_col.setContentsMargins(0, 0, 0, 0)
         right_col.setSpacing(8)
 
         tissue_box = QGroupBox("Типы тканей")
         tissue_box.setObjectName("form100Tissue")
         tissue_box.setMinimumWidth(140)
+        tissue_box.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum
+        )
         tissue_lay = QVBoxLayout(tissue_box)
         tissue_lay.setContentsMargins(10, 6, 10, 8)
         tissue_lay.setSpacing(2)
@@ -119,10 +137,7 @@ class StepBodymap(QWidget):
         self.chk_tissues: list[QCheckBox] = []
         for title in TISSUE_TYPES:
             cb = QCheckBox(title)
-            cb.setStyleSheet(
-                "QCheckBox { font-size: 12px; padding: 2px 0; spacing: 6px; }"
-                "QCheckBox::indicator { width: 14px; height: 14px; }"
-            )
+            cb.setObjectName("form100TissueCheck")
             self.chk_tissues.append(cb)
             tissue_lay.addWidget(cb)
 
@@ -131,6 +146,9 @@ class StepBodymap(QWidget):
         notes_box = QGroupBox("Заметки на схеме")
         notes_box.setObjectName("form100Notes")
         notes_box.setMinimumWidth(140)
+        notes_box.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
+        )
         notes_lay = QVBoxLayout(notes_box)
         notes_lay.setContentsMargins(10, 6, 10, 8)
         notes_lay.setSpacing(0)
@@ -139,15 +157,12 @@ class StepBodymap(QWidget):
             "Нет заметок.\nДобавьте метку\n«Заметка ◎» на схему."
         )
         self._notes_hint.setWordWrap(True)
-        self._notes_hint.setStyleSheet(
-            "color: #95A5A6; font-size: 11px; font-style: italic;"
-            " background: transparent; padding: 2px 0;"
-        )
+        self._notes_hint.setObjectName("form100NotesHint")
         self._notes_hint.setAlignment(Qt.AlignmentFlag.AlignTop)
         notes_lay.addWidget(self._notes_hint)
 
         self._notes_container = QWidget()
-        self._notes_container.setStyleSheet("background: transparent;")
+        self._notes_container.setObjectName("form100NotesContainer")
         self._notes_vlay = QVBoxLayout(self._notes_container)
         self._notes_vlay.setContentsMargins(0, 0, 0, 0)
         self._notes_vlay.setSpacing(3)
@@ -156,7 +171,42 @@ class StepBodymap(QWidget):
         right_col.addWidget(notes_box)
         right_col.addStretch(1)
 
-        layout.addLayout(right_col)
+        self._controls_layout.addWidget(self._right_controls, 2)
+
+        # ── Bottom: body map editor (full width) ────────────────────────────
+        self.editor = BodyMapWidget()
+        self.editor.markersChanged.connect(self._refresh_notes)
+        self.editor.setMinimumHeight(300)
+        root.addWidget(self.editor, 1)
+
+        self._apply_responsive_layout()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_responsive_layout()
+
+    def _apply_responsive_layout(self) -> None:
+        width = max(1, self.width())
+        if width < 1260:
+            self._controls_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+            self._controls_layout.setSpacing(6)
+            self.editor.setMinimumHeight(270)
+            self._left_controls.setSizePolicy(
+                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum
+            )
+            self._right_controls.setSizePolicy(
+                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum
+            )
+        else:
+            self._controls_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            self._controls_layout.setSpacing(8)
+            self.editor.setMinimumHeight(320)
+            self._left_controls.setSizePolicy(
+                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
+            )
+            self._right_controls.setSizePolicy(
+                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
+            )
 
     def _sync_isolation_bar(self, checked: bool) -> None:
         self.isolation_bar.setProperty("active", bool(checked))
@@ -184,31 +234,20 @@ class StepBodymap(QWidget):
             self._notes_container.setVisible(True)
             for i, m in enumerate(notes, start=1):
                 row = QFrame()
-                row.setStyleSheet(
-                    "QFrame {"
-                    "  background-color: #EBF5FB;"
-                    "  border: 1px solid #AED6F1;"
-                    "  border-radius: 4px;"
-                    "}"
-                )
+                row.setObjectName("form100NoteRow")
                 row_lay = QHBoxLayout(row)
                 row_lay.setContentsMargins(6, 4, 6, 4)
                 row_lay.setSpacing(6)
 
                 idx_lbl = QLabel(f"{i}.")
-                idx_lbl.setStyleSheet(
-                    "background: transparent; color: #2E86C1;"
-                    " font-size: 10px; font-weight: bold; border: none;"
-                )
-                idx_lbl.setFixedWidth(16)
+                idx_lbl.setObjectName("form100NoteIndex")
+                idx_lbl.setMinimumWidth(16)
+                idx_lbl.setAlignment(Qt.AlignmentFlag.AlignTop)
                 row_lay.addWidget(idx_lbl)
 
                 text_lbl = QLabel(str(m.get("note", "")))
                 text_lbl.setWordWrap(True)
-                text_lbl.setStyleSheet(
-                    "background: transparent; color: #1A252F;"
-                    " font-size: 11px; border: none;"
-                )
+                text_lbl.setObjectName("form100NoteText")
                 row_lay.addWidget(text_lbl, 1)
 
                 self._notes_vlay.addWidget(row)
@@ -219,8 +258,8 @@ class StepBodymap(QWidget):
                 parsed = json.loads(str(raw or "[]"))
                 if isinstance(parsed, list):
                     return {str(x) for x in parsed}
-            except Exception:  # noqa: BLE001
-                pass
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return set()
             return set()
 
         lesion_vals = _parse_json_list(payload.get("lesion_json"))

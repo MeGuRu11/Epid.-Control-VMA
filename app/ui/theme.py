@@ -86,6 +86,56 @@ def _build_qss(settings: Settings) -> str:
         border: none;
         background: transparent;
     }}
+    QCheckBox {{
+        spacing: 8px;
+        background: transparent;
+    }}
+    QCheckBox::indicator {{
+        width: 18px;
+        height: 18px;
+        border: 2px solid {COL["muted"]};
+        border-radius: 4px;
+        background: {COL["surface"]};
+    }}
+    QCheckBox::indicator:hover {{
+        border-color: {COL["link"]};
+        background: {COL["surface2"]};
+    }}
+    QCheckBox::indicator:checked {{
+        border-color: {COL["link"]};
+        background: {COL["surface"]};
+        image: url("data:image/svg+xml;utf8,<svg width='14' height='14' viewBox='0 0 14 14' xmlns='http://www.w3.org/2000/svg'><path d='M5 10.5L2 7.5L3.4 6.1L5 7.7L10.6 2.1L12 3.5L5 10.5Z' fill='{COL["link"].replace("#", "%23")}'/></svg>");
+    }}
+    QCheckBox::indicator:disabled {{
+        border-color: {COL["border"]};
+        background: {COL["bg"]};
+        image: none;
+    }}
+    QRadioButton {{
+        spacing: 8px;
+        background: transparent;
+    }}
+    QRadioButton::indicator {{
+        width: 18px;
+        height: 18px;
+        border: 2px solid {COL["muted"]};
+        border-radius: 10px;
+        background: {COL["surface"]};
+    }}
+    QRadioButton::indicator:hover {{
+        border-color: {COL["link"]};
+        background: {COL["surface2"]};
+    }}
+    QRadioButton::indicator:checked {{
+        border-color: {COL["link"]};
+        background: {COL["surface"]};
+        image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHZpZXdCb3g9IjAgMCAxMCAxMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSI1IiBjeT0iNSIgcj0iNCIgZmlsbD0iIzYxQzlCNiIvPgo8L3N2Zz4=");
+    }}
+    QRadioButton::indicator:disabled {{
+        border-color: {COL["border"]};
+        background: {COL["bg"]};
+        image: none;
+    }}
     QLabel#pageTitle {{
         font-size: 22px;
         font-weight: 800;
@@ -236,6 +286,380 @@ def _build_qss(settings: Settings) -> str:
     }}
     QLabel#cardMeta[tone="danger"] {{
         color: {COL["error"]};
+    }}
+    QFrame#form100ListPreview {{
+        background: #F7F4F0;
+        border-left: 1px solid #E0DAD3;
+        border-radius: 0;
+    }}
+    QLabel#form100ListBadge {{
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 12px;
+        background: transparent;
+        color: {COL["text_muted"]};
+    }}
+    QLabel#form100ListBadge[tone="draft"] {{
+        background: #F4D58D;
+        color: #7D5A00;
+    }}
+    QLabel#form100ListBadge[tone="signed"] {{
+        background: #9AD8A6;
+        color: #1D5030;
+    }}
+    QLabel#form100ListBadge[tone="archived"] {{
+        background: #E3D9CF;
+        color: #5A5A58;
+    }}
+    QLabel#form100ListName {{
+        background: transparent;
+        color: #1A252F;
+        font-size: 15px;
+        font-weight: 700;
+    }}
+    QLabel#form100ListUnit {{
+        background: transparent;
+        color: #4A7A9B;
+        font-size: 12px;
+    }}
+    QFrame#form100ListSeparator {{
+        background: #D4CEC8;
+        border: none;
+    }}
+    QLabel#form100ListDiagnosis {{
+        background: transparent;
+        color: {COL["text"]};
+        font-size: 12px;
+    }}
+    QLabel#form100ListDate {{
+        background: transparent;
+        color: #8899AA;
+        font-size: 11px;
+    }}
+    QGroupBox#form100Tissue QCheckBox#form100TissueCheck {{
+        font-size: 12px;
+        padding: 2px 0;
+        spacing: 6px;
+    }}
+    QGroupBox#form100Tissue QCheckBox#form100TissueCheck::indicator {{
+        width: 14px;
+        height: 14px;
+        border: 1px solid #1E1E1E;
+        border-radius: 3px;
+        background: #FFFFFF;
+    }}
+    QGroupBox#form100Tissue QCheckBox#form100TissueCheck::indicator:checked {{
+        border: 1px solid #111111;
+        border-radius: 3px;
+        background: #1E1E1E;
+    }}
+    QPushButton#lesionToggle {{
+        background: #8FDCCF;
+        border: 1px solid #6FB9AD;
+        border-radius: 10px;
+        color: {COL["text_primary"]};
+        font-weight: 700;
+        padding: 6px 10px;
+    }}
+    QPushButton#lesionToggle:hover {{
+        background: #A7E8DD;
+    }}
+    QPushButton#lesionToggle:checked,
+    QPushButton#lesionToggle[active="true"] {{
+        background: #4EAF9F;
+        border: 1px solid #2F7F73;
+        color: #FFFFFF;
+        font-weight: 800;
+    }}
+    QPushButton#lesionToggle:checked:hover,
+    QPushButton#lesionToggle[active="true"]:hover {{
+        background: #429A8C;
+    }}
+    QLabel#form100NotesHint {{
+        color: #95A5A6;
+        font-size: 11px;
+        font-style: italic;
+        padding: 2px 0;
+    }}
+    QWidget#form100NotesContainer {{
+        background: transparent;
+        border: none;
+    }}
+    QFrame#form100NoteRow {{
+        background-color: #EBF5FB;
+        border: 1px solid #AED6F1;
+        border-radius: 4px;
+    }}
+    QLabel#form100NoteIndex {{
+        color: #2E86C1;
+        font-size: 10px;
+        font-weight: 700;
+    }}
+    QLabel#form100NoteText {{
+        color: #1A252F;
+        font-size: 11px;
+    }}
+    QLabel#form100BottomRowLabel {{
+        color: {COL["text_muted"]};
+        font-size: 12px;
+    }}
+    QLabel#form100BottomSectionLabel {{
+        color: {COL["accent_border"]};
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+    }}
+    QWidget#form100BottomInlineContainer {{
+        background: transparent;
+        border: none;
+    }}
+    QFrame#form100BottomSeparator {{
+        background: #E0E6EA;
+        border: none;
+    }}
+    QScrollArea#form100ReviewPanel {{
+        background: {COL["surface2"]};
+        border: none;
+    }}
+    QWidget#form100ReviewPanelInner {{
+        background: transparent;
+        border: none;
+    }}
+    QFrame#form100ReviewNameCard {{
+        background: {COL["text_primary"]};
+        border: none;
+        border-radius: 8px;
+    }}
+    QLabel#form100ReviewName {{
+        color: {COL["surface2"]};
+        font-size: 16px;
+        font-weight: 800;
+    }}
+    QLabel#form100ReviewSub {{
+        color: {COL["accent"]};
+        font-size: 12px;
+    }}
+    QFrame#form100ReviewCard {{
+        background: {COL["surface"]};
+        border-radius: 4px;
+        border-left: 4px solid {COL["accent_border"]};
+    }}
+    QFrame#form100ReviewCard[tone="id"] {{
+        border-left: 4px solid {COL["accent_border"]};
+    }}
+    QFrame#form100ReviewCard[tone="injury"] {{
+        border-left: 4px solid {COL["error"]};
+    }}
+    QFrame#form100ReviewCard[tone="lesion"] {{
+        border-left: 4px solid {COL["warn"]};
+    }}
+    QFrame#form100ReviewCard[tone="med"] {{
+        border-left: 4px solid {COL["success"]};
+    }}
+    QFrame#form100ReviewCard[tone="map"] {{
+        border-left: 4px solid #8E6BAF;
+    }}
+    QFrame#form100ReviewCard[tone="evac"] {{
+        border-left: 4px solid {COL["accent2"]};
+    }}
+    QFrame#form100ReviewCard[tone="flags"] {{
+        border-left: 4px solid {COL["error"]};
+    }}
+    QFrame#form100ReviewCard[tone="diag"] {{
+        border-left: 4px solid {COL["text_muted"]};
+    }}
+    QLabel#form100ReviewHeader {{
+        background: transparent;
+        color: {COL["accent_border"]};
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+    }}
+    QLabel#form100ReviewHeader[tone="injury"] {{
+        color: {COL["error"]};
+    }}
+    QLabel#form100ReviewHeader[tone="lesion"] {{
+        color: {COL["warn"]};
+    }}
+    QLabel#form100ReviewHeader[tone="med"] {{
+        color: {COL["success"]};
+    }}
+    QLabel#form100ReviewHeader[tone="map"] {{
+        color: #8E6BAF;
+    }}
+    QLabel#form100ReviewHeader[tone="evac"] {{
+        color: {COL["accent_border"]};
+    }}
+    QLabel#form100ReviewHeader[tone="flags"] {{
+        color: {COL["error"]};
+    }}
+    QLabel#form100ReviewHeader[tone="diag"] {{
+        color: {COL["text_muted"]};
+    }}
+    QFrame#form100ReviewSeparator {{
+        border: none;
+        background: rgba(111, 185, 173, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="injury"] {{
+        background: rgba(225, 138, 133, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="lesion"] {{
+        background: rgba(244, 213, 141, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="med"] {{
+        background: rgba(154, 216, 166, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="map"] {{
+        background: rgba(142, 107, 175, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="evac"] {{
+        background: rgba(111, 185, 173, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="flags"] {{
+        background: rgba(225, 138, 133, 0.18);
+    }}
+    QFrame#form100ReviewSeparator[tone="diag"] {{
+        background: rgba(122, 122, 120, 0.13);
+    }}
+    QWidget#form100ReviewRow {{
+        background: transparent;
+        border: none;
+    }}
+    QLabel#form100ReviewRow {{
+        background: transparent;
+        font-size: 12px;
+    }}
+    QLabel#form100ReviewRowLabel {{
+        background: transparent;
+        color: {COL["text_muted"]};
+        font-size: 11px;
+        font-weight: 600;
+    }}
+    QLabel#form100ReviewRowValue {{
+        background: transparent;
+        color: {COL["text_primary"]};
+        font-size: 12px;
+    }}
+    QLabel#form100ReviewBadge {{
+        border-radius: 3px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(111, 185, 173, 0.15);
+        color: {COL["accent_border"]};
+        border: none;
+    }}
+    QLabel#form100ReviewBadge[tone="injury"] {{
+        background: rgba(225, 138, 133, 0.15);
+        color: {COL["error"]};
+    }}
+    QLabel#form100ReviewBadge[tone="lesion"] {{
+        background: rgba(244, 213, 141, 0.15);
+        color: #8B6914;
+    }}
+    QLabel#form100ReviewBadge[tone="med"] {{
+        background: rgba(154, 216, 166, 0.15);
+        color: #2D5A40;
+    }}
+    QLabel#form100ReviewBadge[tone="map"] {{
+        background: rgba(142, 107, 175, 0.15);
+        color: #6E4D8E;
+    }}
+    QLabel#form100ReviewBadge[tone="evac"] {{
+        background: rgba(111, 185, 173, 0.15);
+        color: {COL["accent_border"]};
+    }}
+    QLabel#form100ReviewBadge[tone="flags"] {{
+        background: rgba(225, 138, 133, 0.15);
+        color: {COL["error"]};
+    }}
+    QLabel#form100ReviewBadge[tone="diag"] {{
+        background: rgba(122, 122, 120, 0.10);
+        color: {COL["text_muted"]};
+    }}
+    QLabel#form100ReviewPlaceholder {{
+        color: {COL["text_muted"]};
+        font-size: 13px;
+        font-style: italic;
+    }}
+    QFrame#wizardStepPanel {{
+        background-color: #EDE8E1;
+        border-right: 1px solid #D4CEC8;
+    }}
+    QLabel#wizardStepTitle {{
+        background: transparent;
+        color: #3A3A38;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }}
+    QFrame#wizardStepSeparator {{
+        background-color: #C8C2BC;
+        border: none;
+    }}
+    QWidget#wizardStepRow {{
+        background: transparent;
+        border: none;
+    }}
+    QWidget#wizardStepConnectorWrap {{
+        background: transparent;
+        border: none;
+    }}
+    QFrame#wizardStepConnectorLine {{
+        background-color: #C8C2BC;
+        border: none;
+    }}
+    QLabel#wizardStepBadge {{
+        border-radius: 15px;
+        font-weight: 700;
+        font-size: 11px;
+        background-color: #D4CEC8;
+        color: #7A7A78;
+    }}
+    QLabel#wizardStepBadge[stepState="done"] {{
+        font-size: 12px;
+        background-color: #27AE60;
+        color: #FFFFFF;
+    }}
+    QLabel#wizardStepBadge[stepState="active"] {{
+        font-size: 12px;
+        background-color: #8FDCCF;
+        color: #3A3A38;
+    }}
+    QLabel#wizardStepBadge[stepState="pending"] {{
+        font-size: 11px;
+        background-color: #D4CEC8;
+        color: #7A7A78;
+    }}
+    QLabel#wizardStepName {{
+        background: transparent;
+        color: #7A7A78;
+        font-size: 12px;
+    }}
+    QLabel#wizardStepName[stepState="done"] {{
+        color: #27AE60;
+        font-size: 12px;
+    }}
+    QLabel#wizardStepName[stepState="active"] {{
+        color: #3A3A38;
+        font-size: 13px;
+        font-weight: 700;
+    }}
+    QLabel#wizardStepName[stepState="pending"] {{
+        color: #7A7A78;
+        font-size: 12px;
+        font-weight: 400;
+    }}
+    QLabel#wizardStepLock {{
+        background: transparent;
+        color: #C0392B;
+        font-size: 11px;
+        padding: 6px 0 0 0;
+    }}
+    QFrame#wizardNavBar {{
+        background-color: #FFF9F2;
+        border-top: 1px solid #E0DAD3;
     }}
     QLabel#statBadge {{
         border-radius: 6px;
@@ -468,26 +892,27 @@ def _build_qss(settings: Settings) -> str:
     }}
     QDialog#loginDialog QLabel#loginAppTitle {{
         color: {COL["text"]};
-        font-size: 34px;
+        font-size: 38px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+    }}
+    QDialog#loginDialog QFrame#loginTimePanel {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 rgba(255, 252, 248, 0.78), stop:1 rgba(245, 237, 228, 0.65));
+        border: 1px solid rgba(198, 184, 168, 0.5);
+        border-radius: 16px;
+        min-width: 440px;
+    }}
+    QDialog#loginDialog QLabel#loginTimeCaption {{
+        color: #6B6B66;
+        font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.4px;
     }}
-    QDialog#loginDialog QFrame#loginTimePanel {{
-        background: rgba(255, 249, 242, 0.42);
-        border: 1px solid rgba(225, 217, 207, 0.6);
-        border-radius: 14px;
-        min-width: 420px;
-    }}
-    QDialog#loginDialog QLabel#loginTimeCaption {{
-        color: {COL["muted"]};
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-    }}
     QDialog#loginDialog QLabel#loginTimeValue {{
-        color: {COL["text"]};
-        font-size: 24px;
-        font-weight: 700;
+        color: {COL["text_primary"]};
+        font-size: 36px;
+        font-weight: 800;
     }}
     QDialog#loginDialog QLabel#loginMedicalLine {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -497,57 +922,188 @@ def _build_qss(settings: Settings) -> str:
     }}
     QDialog#loginDialog QFrame#loginCard {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-            stop:0 rgba(255, 249, 242, 0.7), stop:1 rgba(239, 230, 218, 0.6));
-        border: 1px solid rgba(255, 255, 255, 0.65);
-        border-radius: 14px;
+            stop:0 rgba(255, 250, 244, 0.92), stop:1 rgba(243, 235, 225, 0.78));
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 16px;
+    }}
+    QDialog#loginDialog QLabel#loginCardAccent {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+            stop:0 rgba(111, 185, 173, 0.35), stop:0.5 rgba(111, 185, 173, 0.95),
+            stop:1 rgba(111, 185, 173, 0.35));
+        border: none;
+        border-radius: 2px;
     }}
     QDialog#loginDialog QLabel#loginCardTitle {{
-        color: {COL["text"]};
-        font-size: 14px;
-        font-weight: 700;
+        color: {COL["text_primary"]};
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
     }}
     QDialog#loginDialog QLabel#loginCardHint {{
         color: {COL["muted"]};
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 0 6px 0;
+    }}
+    QDialog#loginDialog QLabel#loginFieldLabel {{
+        color: #5A5955;
+        font-size: 12px;
+        font-weight: 700;
+    }}
+    QDialog#loginDialog QLineEdit#loginInput {{
+        background: rgba(255, 253, 250, 0.95);
+        border: 1px solid rgba(198, 184, 168, 0.65);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 13px;
+    }}
+    QDialog#loginDialog QLineEdit#loginInput:focus {{
+        border: 1px solid rgba(111, 185, 173, 0.95);
+        background: rgba(255, 255, 255, 0.98);
+    }}
+    QDialog#loginDialog QLabel#loginCardMeta {{
+        color: #76726A;
         font-size: 11px;
+        font-weight: 600;
+        padding: 4px 0 2px 0;
     }}
-    QDialog#loginDialog QLineEdit {{
-        padding: 8px 10px;
-        border-radius: 6px;
+    QDialog#loginDialog QPushButton#loginPrimaryButton {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 {COL["accent"]}, stop:1 {COL["accent2"]});
+        color: #183A35;
+        border: 1px solid rgba(111, 185, 173, 0.8);
+        border-radius: 11px;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 800;
     }}
-    QDialog#loginDialog QPushButton {{
-        padding: 8px 16px;
-        border-radius: 6px;
+    QDialog#loginDialog QPushButton#loginPrimaryButton:hover {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 #B3ECE2, stop:1 #97DFD2);
+    }}
+    QDialog#loginDialog QPushButton#loginPrimaryButton:pressed {{
+        background: #83D7C8;
+    }}
+    QDialog#loginDialog QPushButton#loginGhostButton {{
+        background: rgba(255, 250, 244, 0.92);
+        color: {COL["muted"]};
+        border: 1px solid rgba(206, 196, 182, 0.8);
+        border-radius: 11px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 700;
+    }}
+    QDialog#loginDialog QPushButton#loginGhostButton:hover {{
+        background: rgba(250, 241, 232, 0.95);
+        color: {COL["text"]};
+    }}
+    QDialog#loginDialog QPushButton#loginGhostButton:pressed {{
+        background: rgba(241, 231, 220, 0.95);
     }}
     QDialog#firstRunDialog QLabel#firstRunTitle {{
-        font-size: 30px;
-        font-weight: 800;
-        letter-spacing: 0.3px;
         color: {COL["text"]};
+        font-size: 36px;
+        font-weight: 900;
+        letter-spacing: 0.45px;
     }}
     QDialog#firstRunDialog QLabel#firstRunSubtitle {{
         color: {COL["muted"]};
-        font-size: 13px;
+        font-size: 14px;
+        font-weight: 600;
     }}
     QDialog#firstRunDialog QLabel#firstRunMedicalLine {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-            stop:0 rgba(161, 227, 216, 0.15), stop:0.5 rgba(161, 227, 216, 0.55),
-            stop:1 rgba(161, 227, 216, 0.15));
+            stop:0 rgba(161, 227, 216, 0.2), stop:0.5 rgba(161, 227, 216, 0.7),
+            stop:1 rgba(161, 227, 216, 0.2));
         border-radius: 2px;
     }}
     QDialog#firstRunDialog QFrame#firstRunCard {{
-        background: rgba(255, 249, 242, 0.95);
-        border: 1px solid rgba(225, 217, 207, 0.7);
-        border-radius: 14px;
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 rgba(255, 250, 244, 0.92), stop:1 rgba(243, 235, 225, 0.78));
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 16px;
+    }}
+    QDialog#firstRunDialog QLabel#firstRunCardAccent {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+            stop:0 rgba(111, 185, 173, 0.35), stop:0.5 rgba(111, 185, 173, 0.95),
+            stop:1 rgba(111, 185, 173, 0.35));
+        border: none;
+        border-radius: 2px;
+    }}
+    QDialog#firstRunDialog QLabel#firstRunCardTitle {{
+        color: {COL["text_primary"]};
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+    }}
+    QDialog#firstRunDialog QLabel#firstRunCardHint {{
+        color: {COL["muted"]};
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 0 6px 0;
+    }}
+    QDialog#firstRunDialog QLabel#firstRunFormLabel {{
+        color: #5A5955;
+        font-size: 12px;
+        font-weight: 700;
+    }}
+    QDialog#firstRunDialog QLineEdit#firstRunInput {{
+        background: rgba(255, 253, 250, 0.95);
+        border: 1px solid rgba(198, 184, 168, 0.65);
+        border-radius: 10px;
+        padding: 9px 12px;
+        font-size: 13px;
+    }}
+    QDialog#firstRunDialog QLineEdit#firstRunInput:focus {{
+        border: 1px solid rgba(111, 185, 173, 0.95);
+        background: rgba(255, 255, 255, 0.98);
+    }}
+    QDialog#firstRunDialog QLabel#firstRunCardMeta {{
+        color: #76726A;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 0 2px 0;
+    }}
+    QDialog#firstRunDialog QPushButton#firstRunPrimaryButton {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 #8CDCCF, stop:1 #62C9B8);
+        color: #11342F;
+        border: 1px solid rgba(73, 163, 146, 0.95);
+        border-radius: 11px;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 800;
+    }}
+    QDialog#firstRunDialog QPushButton#firstRunPrimaryButton:hover {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 #9FE7DB, stop:1 #72D5C4);
+    }}
+    QDialog#firstRunDialog QPushButton#firstRunPrimaryButton:pressed {{
+        background: #58BDAE;
+    }}
+    QDialog#firstRunDialog QPushButton#firstRunGhostButton {{
+        background: rgba(255, 250, 244, 0.92);
+        color: {COL["muted"]};
+        border: 1px solid rgba(206, 196, 182, 0.8);
+        border-radius: 11px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 700;
+    }}
+    QDialog#firstRunDialog QPushButton#firstRunGhostButton:hover {{
+        background: rgba(250, 241, 232, 0.95);
+        color: {COL["text"]};
+    }}
+    QDialog#firstRunDialog QPushButton#firstRunGhostButton:pressed {{
+        background: rgba(241, 231, 220, 0.95);
     }}
     QDialog#firstRunDialog QLabel#firstRunInfoBadge {{
         color: {COL["text"]};
-        background: rgba(255, 249, 242, 0.6);
-        border: none;
-        border-radius: 10px;
-        padding: 8px 12px;
-        font-weight: 600;
-    }}
-    QDialog#firstRunDialog QLabel#firstRunFormLabel {{
-        color: {COL["text"]};
+        background: rgba(255, 249, 242, 0.66);
+        border: 1px solid rgba(198, 184, 168, 0.4);
+        border-radius: 12px;
+        padding: 9px 14px;
+        font-size: 12px;
+        font-weight: 700;
     }}
     """

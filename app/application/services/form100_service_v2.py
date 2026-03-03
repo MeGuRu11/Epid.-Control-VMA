@@ -43,6 +43,10 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def _as_int(value: object) -> int:
+    return int(cast(Any, value))
+
+
 @contextmanager
 def _working_temp_dir() -> Iterator[Path]:
     roots = [Path(tempfile.gettempdir()), Path.cwd() / "tmp_run"]
@@ -61,7 +65,7 @@ def _working_temp_dir() -> Iterator[Path]:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
         return
-    raise OSError("Не удалось создать временный каталог Form100 V2") from last_error
+    raise OSError("Failed to create temporary Form100 directory") from last_error
 
 
 def _safe_extract_zip(zip_file: zipfile.ZipFile, destination: Path) -> list[Path]:
@@ -73,16 +77,16 @@ def _safe_extract_zip(zip_file: zipfile.ZipFile, destination: Path) -> list[Path
         raw_name = member.filename.replace("\\", "/")
         pure_path = PurePosixPath(raw_name)
         if not raw_name:
-            raise ValueError(f"Недопустимый путь в архиве: {member.filename}")
+            raise ValueError(f"Invalid archive path: {member.filename}")
         if pure_path.is_absolute() or ".." in pure_path.parts:
-            raise ValueError(f"Недопустимый путь в архиве: {member.filename}")
+            raise ValueError(f"Invalid archive path: {member.filename}")
         if pure_path.parts and ":" in pure_path.parts[0]:
-            raise ValueError(f"Недопустимый путь в архиве: {member.filename}")
+            raise ValueError(f"Invalid archive path: {member.filename}")
         target_path = (destination / Path(*pure_path.parts)).resolve()
         try:
             target_path.relative_to(destination)
         except ValueError as exc:
-            raise ValueError(f"Недопустимый путь в архиве: {member.filename}") from exc
+            raise ValueError(f"Invalid archive path: {member.filename}") from exc
         target_path.parent.mkdir(parents=True, exist_ok=True)
         with zip_file.open(member, "r") as src, target_path.open("wb") as dst:
             while True:
@@ -121,7 +125,7 @@ class Form100ServiceV2:
                 Form100CardV2ListItemDto(
                     id=str(item.id),
                     status=str(item.status),
-                    version=int(item.version),
+                    version=_as_int(item.version),
                     main_full_name=str(item.main_full_name),
                     birth_date=cast(date | None, item.birth_date),
                     main_unit=cast(str | None, item.main_unit),
@@ -137,7 +141,7 @@ class Form100ServiceV2:
         with self.session_factory() as session:
             row = self.repo.get_card(session, card_id)
             if row is None:
-                raise ValueError("Карточка Form100 V2 не найдена")
+                raise ValueError("Form100 card not found")
             data_row = self.repo.get_data(session, card_id)
             payload = self.repo.to_card_dict(row, data_row)
             return Form100CardV2Dto.model_validate(payload)
@@ -184,7 +188,7 @@ class Form100ServiceV2:
                 status_from=None,
                 status_to=FORM100_V2_STATUS_DRAFT,
                 expected_version=None,
-                new_version=int(row.version),
+                new_version=_as_int(row.version),
                 changes={"before": {}, "after": self.repo.to_card_dict(row, data_row)},
             )
             return Form100CardV2Dto.model_validate(self.repo.to_card_dict(row, data_row))
@@ -200,11 +204,11 @@ class Form100ServiceV2:
         with self.session_factory() as session:
             row = self.repo.get_card(session, card_id)
             if row is None:
-                raise ValueError("Карточка Form100 V2 не найдена")
-            if bool(row.is_archived):
-                raise ValueError("Архивированная карточка Form100 V2 недоступна для редактирования")
+                raise ValueError("Form100 card not found")
+            if bool(cast(bool, row.is_archived)):
+                raise ValueError("Archived Form100 card is read-only")
             if str(row.status) != FORM100_V2_STATUS_DRAFT:
-                raise ValueError("Редактирование подписанной карточки Form100 V2 запрещено")
+                raise ValueError("Signed Form100 card cannot be edited")
 
             before_data_row = self.repo.get_data(session, card_id)
             before_payload = self.repo.to_card_dict(row, before_data_row)
@@ -249,7 +253,7 @@ class Form100ServiceV2:
                 status_from=str(before_payload.get("status") or FORM100_V2_STATUS_DRAFT),
                 status_to=str(after_payload.get("status") or FORM100_V2_STATUS_DRAFT),
                 expected_version=expected_version,
-                new_version=int(row.version),
+                new_version=_as_int(row.version),
                 changes=build_changed_paths_v2(
                     cast(dict[str, Any], before_payload),
                     cast(dict[str, Any], after_payload),
@@ -268,9 +272,9 @@ class Form100ServiceV2:
         with self.session_factory() as session:
             row = self.repo.get_card(session, card_id)
             if row is None:
-                raise ValueError("Карточка Form100 V2 не найдена")
-            if bool(row.is_archived):
-                raise ValueError("Архивированная карточка Form100 V2 недоступна для подписания")
+                raise ValueError("Form100 card not found")
+            if bool(cast(bool, row.is_archived)):
+                raise ValueError("Archived Form100 card cannot be signed")
             validate_status_transition_v2(str(row.status), FORM100_V2_STATUS_SIGNED)
 
             before_data_row = self.repo.get_data(session, card_id)
@@ -297,7 +301,7 @@ class Form100ServiceV2:
                 status_from=FORM100_V2_STATUS_DRAFT,
                 status_to=FORM100_V2_STATUS_SIGNED,
                 expected_version=expected_version,
-                new_version=int(row.version),
+                new_version=_as_int(row.version),
                 changes=build_changed_paths_v2(
                     cast(dict[str, Any], before_payload),
                     cast(dict[str, Any], after_payload),
@@ -310,7 +314,7 @@ class Form100ServiceV2:
         with self.session_factory() as session:
             row = self.repo.get_card(session, card_id)
             if row is None:
-                raise ValueError("Карточка Form100 V2 не найдена")
+                raise ValueError("Form100 card not found")
             before_data_row = self.repo.get_data(session, card_id)
             before_payload = self.repo.to_card_dict(row, before_data_row)
             row = self.repo.archive_card(
@@ -329,7 +333,7 @@ class Form100ServiceV2:
                 status_from=str(before_payload.get("status")),
                 status_to=str(after_payload.get("status")),
                 expected_version=expected_version,
-                new_version=int(row.version),
+                new_version=_as_int(row.version),
                 changes=build_changed_paths_v2(
                     cast(dict[str, Any], before_payload),
                     cast(dict[str, Any], after_payload),
@@ -342,7 +346,7 @@ class Form100ServiceV2:
             self._require_admin(session, actor_id)
             deleted = self.repo.delete_card(session, card_id)
             if not deleted:
-                raise ValueError("Карточка Form100 V2 не найдена")
+                raise ValueError("Form100 card not found")
             self.audit_repo.add_event(
                 session,
                 user_id=actor_id,
@@ -358,7 +362,7 @@ class Form100ServiceV2:
         with self.session_factory() as session:
             row = self.repo.get_card(session, card_id)
             if row is None:
-                raise ValueError("Карточка Form100 V2 не найдена")
+                raise ValueError("Form100 card not found")
             data_row = self.repo.get_data(session, card_id)
             payload = self.repo.to_card_dict(row, data_row)
 
@@ -380,8 +384,8 @@ class Form100ServiceV2:
                 action="pdf_generate",
                 status_from=str(row.status),
                 status_to=str(row.status),
-                expected_version=int(row.version) - 1,
-                new_version=int(row.version),
+                expected_version=_as_int(row.version) - 1,
+                new_version=_as_int(row.version),
                 changes={
                     "before": {},
                     "after": {"artifact_path": str(file_path), "artifact_sha256": artifact_hash},
@@ -434,7 +438,7 @@ class Form100ServiceV2:
             session.add(
                 models.DataExchangePackage(
                     direction="export",
-                    package_format="form100_v2+zip",
+                    package_format="form100+zip",
                     file_path=str(file_path),
                     sha256=package_hash,
                     created_by=actor_id,
@@ -469,19 +473,19 @@ class Form100ServiceV2:
 
             manifest_path = tmp_dir / "manifest.json"
             if not manifest_path.exists():
-                raise ValueError("В архиве отсутствует manifest.json")
+                raise ValueError("manifest.json is missing in archive")
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             files = cast(list[dict[str, Any]], manifest.get("files") or [])
             for entry in files:
                 payload_path = (tmp_dir / str(entry.get("name"))).resolve()
                 if not payload_path.exists():
-                    raise ValueError(f"Файл отсутствует: {entry.get('name')}")
+                    raise ValueError(f"Missing file in archive: {entry.get('name')}")
                 if sha256_file(payload_path) != str(entry.get("sha256")):
-                    raise ValueError(f"Хэш не совпадает: {entry.get('name')}")
+                    raise ValueError(f"Hash mismatch for file: {entry.get('name')}")
 
             json_path = tmp_dir / "form100.json"
             if not json_path.exists():
-                raise ValueError("В архиве отсутствует form100.json")
+                raise ValueError("form100.json is missing in archive")
             import_module = importlib.import_module("app.infrastructure.import.form100_import_v2")
             load_form100_json = cast(Callable[[Path], list[dict[str, Any]]], import_module.load_form100_json)
             cards = load_form100_json(json_path)
@@ -509,7 +513,7 @@ class Form100ServiceV2:
                     }
                     try:
                         validate_card_payload_v2({**card_payload, **incoming_data})
-                    except Exception:  # noqa: BLE001
+                    except (TypeError, ValueError, KeyError):
                         if mode == "append":
                             skipped += 1
                             continue
@@ -532,7 +536,7 @@ class Form100ServiceV2:
                             card_id=incoming_id,
                             payload=card_payload,
                             data_payload=incoming_data,
-                            expected_version=int(existing.version),
+                            expected_version=_as_int(existing.version),
                             actor_login=actor_login,
                         )
 
@@ -552,7 +556,7 @@ class Form100ServiceV2:
                 session.add(
                     models.DataExchangePackage(
                         direction="import",
-                        package_format="form100_v2+zip",
+                        package_format="form100+zip",
                         file_path=str(file_path),
                         sha256=package_hash,
                         created_by=actor_id,
@@ -652,9 +656,9 @@ class Form100ServiceV2:
         if actor_id is None:
             return
         actor = self.user_repo.get_by_id(session, actor_id)
-        if actor and actor.role == "admin":
+        if actor is not None and str(actor.role) == "admin":
             return
-        raise ValueError("Операция доступна только администратору")
+        raise ValueError("Operation is available to administrators only")
 
 
 def _inject_denormalized_fields(
@@ -679,3 +683,4 @@ def _inject_denormalized_fields(
         bottom = {}
         data_payload["bottom"] = bottom
     bottom.setdefault("main_diagnosis", main_diagnosis)
+

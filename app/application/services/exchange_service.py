@@ -18,6 +18,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import Date, DateTime
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.session import session_scope
@@ -46,9 +47,6 @@ TABLE_MODELS: dict[str, type[Any]] = {
     "san_microbe_isolation": models.SanMicrobeIsolation,
     "san_abx_susceptibility": models.SanAbxSusceptibility,
     "san_phage_panel_result": models.SanPhagePanelResult,
-    "form100_card": models.Form100Card,
-    "form100_mark": models.Form100Mark,
-    "form100_stage": models.Form100Stage,
 }
 
 CSV_TABLES: dict[str, type[Any]] = {
@@ -118,6 +116,15 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "created_by": "Создал",
     },
 }
+
+_HANDLED_IMPORT_ERRORS = (
+    ValueError,
+    TypeError,
+    KeyError,
+    AttributeError,
+    IndexError,
+    SQLAlchemyError,
+)
 
 
 def _format_date_value(value: Any) -> Any:
@@ -317,11 +324,9 @@ class ExchangeService:
     def __init__(
         self,
         session_factory: Callable = session_scope,
-        form100_service: Any | None = None,
         form100_v2_service: Any | None = None,
     ) -> None:
         self.session_factory = session_factory
-        self.form100_service = form100_service
         self.form100_v2_service = form100_v2_service
 
     def _log_package(
@@ -342,6 +347,8 @@ class ExchangeService:
         file_path = Path(file_path)
         wb = Workbook()
         meta = wb.active
+        if meta is None:
+            raise RuntimeError("Не удалось создать лист meta для экспорта")
         meta.title = "meta"
         meta.append(["schema_version", "1.0"])
         meta.append(["exported_at", datetime.now(UTC).isoformat()])
@@ -444,7 +451,7 @@ class ExchangeService:
                         else:
                             added += 1
                         session.merge(obj)
-                    except Exception as exc:  # noqa: BLE001
+                    except _HANDLED_IMPORT_ERRORS as exc:
                         sheet_errors += 1
                         errors.append(
                             {
@@ -522,9 +529,9 @@ class ExchangeService:
         exported_by: str | None = None,
         card_id: str | None = None,
     ) -> dict:
-        if self.form100_service is None:
+        if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
-        return self.form100_service.export_package_zip(
+        return self.form100_v2_service.export_package_zip(
             file_path=file_path,
             actor_id=actor_id,
             card_id=card_id,
@@ -538,40 +545,8 @@ class ExchangeService:
         actor_id: int | None = None,
         mode: str = "merge",
     ) -> dict:
-        if self.form100_service is None:
+        if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
-        return self.form100_service.import_package_zip(
-            file_path=file_path,
-            actor_id=actor_id,
-            mode=mode,
-        )
-
-    def export_form100_v2_package_zip(
-        self,
-        file_path: str | Path,
-        *,
-        actor_id: int | None = None,
-        exported_by: str | None = None,
-        card_id: str | None = None,
-    ) -> dict:
-        if self.form100_v2_service is None:
-            raise ValueError("Сервис Form100 V2 не подключён")
-        return self.form100_v2_service.export_package_zip(
-            file_path=file_path,
-            actor_id=actor_id,
-            card_id=card_id,
-            exported_by=exported_by,
-        )
-
-    def import_form100_v2_package_zip(
-        self,
-        file_path: str | Path,
-        *,
-        actor_id: int | None = None,
-        mode: str = "merge",
-    ) -> dict:
-        if self.form100_v2_service is None:
-            raise ValueError("Сервис Form100 V2 не подключён")
         return self.form100_v2_service.import_package_zip(
             file_path=file_path,
             actor_id=actor_id,
@@ -636,7 +611,7 @@ class ExchangeService:
                         added += 1
                     session.merge(obj)
                     count += 1
-                except Exception as exc:  # noqa: BLE001
+                except _HANDLED_IMPORT_ERRORS as exc:
                     errors.append(
                         {
                             "scope": table_name,
@@ -745,7 +720,7 @@ class ExchangeService:
                         else:
                             added += 1
                         session.merge(obj)
-                    except Exception as exc:  # noqa: BLE001
+                    except _HANDLED_IMPORT_ERRORS as exc:
                         table_errors += 1
                         errors.append(
                             {

@@ -33,7 +33,7 @@ def build_manifest_v2(*, files: list[Path], exported_by: str | None, base_dir: P
         if base_dir is not None:
             try:
                 name = file.resolve().relative_to(base_dir.resolve()).as_posix()
-            except Exception:  # noqa: BLE001
+            except (ValueError, OSError, RuntimeError):
                 name = file.name
         else:
             name = file.name

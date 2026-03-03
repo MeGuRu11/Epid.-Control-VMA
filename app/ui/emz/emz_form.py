@@ -131,8 +131,8 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, set_status, show_error
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
-    connect_combo_resize_on_first_row,
-    resize_columns_by_first_row,
+    connect_combo_resize_on_content,
+    resize_columns_to_content,
 )
 
 
@@ -544,13 +544,13 @@ class EmzForm(QWidget):
             | QTableWidget.EditTrigger.EditKeyPressed
         )
         table.itemChanged.connect(self._on_first_row_changed)
-        resize_columns_by_first_row(table)
+        resize_columns_to_content(table)
         return table
 
     def _resize_table_columns(self, table: QTableWidget) -> None:
         # Keep a double-pass resize for stable widths with mixed editors/widgets.
-        resize_columns_by_first_row(table)
-        resize_columns_by_first_row(table)
+        resize_columns_to_content(table)
+        resize_columns_to_content(table)
 
     def _prepare_table_for_fill(self, table: QTableWidget, item_count: int) -> None:
         table.clearContents()
@@ -664,7 +664,7 @@ class EmzForm(QWidget):
             table=self.diagnosis_table,
             create_type_combo=create_diag_type_combo,
             create_icd_combo=self._create_icd_combo,
-            connect_combo_resize=connect_combo_resize_on_first_row,
+            connect_combo_resize=connect_combo_resize_on_content,
         )
 
     def _add_intervention_row(self) -> None:
@@ -672,7 +672,7 @@ class EmzForm(QWidget):
             table=self.intervention_table,
             create_type_combo=create_intervention_type_combo,
             create_dt_cell=self._create_dt_cell,
-            connect_combo_resize=connect_combo_resize_on_first_row,
+            connect_combo_resize=connect_combo_resize_on_content,
         )
 
     def _add_abx_row(self) -> None:
@@ -680,7 +680,7 @@ class EmzForm(QWidget):
             table=self.abx_table,
             create_dt_cell=self._create_dt_cell,
             create_abx_combo=self._create_abx_combo,
-            connect_combo_resize=connect_combo_resize_on_first_row,
+            connect_combo_resize=connect_combo_resize_on_content,
         )
 
     def _add_ismp_row(self) -> None:
@@ -688,7 +688,7 @@ class EmzForm(QWidget):
             table=self.ismp_table,
             create_type_combo=self._create_ismp_type_combo,
             create_date_cell=self._create_date_cell,
-            connect_combo_resize=connect_combo_resize_on_first_row,
+            connect_combo_resize=connect_combo_resize_on_content,
         )
 
     def _delete_table_row(self, table: QTableWidget) -> None:

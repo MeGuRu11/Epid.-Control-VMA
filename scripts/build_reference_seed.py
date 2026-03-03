@@ -56,6 +56,9 @@ JOIN_ABX_WORDS = {
 }
 
 
+SeedRow = dict[str, str]
+
+
 def _normalize_line(value: str) -> str:
     value = value.replace("\u00a0", " ")
     value = value.replace("\t", " ")
@@ -74,9 +77,9 @@ def _normalize_group_name(value: str) -> str:
     return value.replace("р-лактамные", "бета-лактамные")
 
 
-def _parse_antibiotics(text: str) -> tuple[list[dict], list[dict]]:
-    groups_by_name: dict[str, dict] = {}
-    antibiotics: list[dict] = []
+def _parse_antibiotics(text: str) -> tuple[list[SeedRow], list[SeedRow]]:
+    groups_by_name: dict[str, SeedRow] = {}
+    antibiotics: list[SeedRow] = []
     group_lookup = {g.lower(): g for g in GROUP_HEADINGS}
     current_group: str | None = None
 
@@ -146,7 +149,7 @@ def _parse_antibiotics(text: str) -> tuple[list[dict], list[dict]]:
                 continue
             antibiotics.append({"name": name, "group_name": current_group})
 
-    groups = list(groups_by_name.values())
+    groups: list[SeedRow] = list(groups_by_name.values())
     return groups, antibiotics
 
 
@@ -166,8 +169,8 @@ def _expand_abbreviation(line: str, last_genus: dict[str, str]) -> str:
     return f"{genus} {rest}"
 
 
-def _parse_microorganisms(text: str) -> list[dict]:
-    results: list[dict] = []
+def _parse_microorganisms(text: str) -> list[SeedRow]:
+    results: list[SeedRow] = []
     seen: set[tuple[str, str]] = set()
     current_group: str | None = None
     last_genus: dict[str, str] = {}
@@ -283,7 +286,7 @@ def _parse_microorganisms(text: str) -> list[dict]:
     return results
 
 
-def _assign_codes(prefix: str, items: list[dict], field: str) -> None:
+def _assign_codes(prefix: str, items: list[SeedRow], field: str) -> None:
     for idx, item in enumerate(items, start=1):
         item[field] = f"{prefix}-{idx:04d}"
 
@@ -304,7 +307,9 @@ def main() -> int:
 
     group_code_by_name = {g["name"]: g["code"] for g in abx_groups}
     for item in antibiotics:
-        item["group_code"] = group_code_by_name.get(item["group_name"])
+        group_code = group_code_by_name.get(item["group_name"])
+        if group_code is not None:
+            item["group_code"] = group_code
         item.pop("group_name", None)
 
     payload = {

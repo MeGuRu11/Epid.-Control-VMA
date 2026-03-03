@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.services.patient_service import PatientService
 from app.domain.constants import MilitaryCategory
@@ -147,7 +148,7 @@ class PatientEditDialog(QDialog):
                 military_unit=self.military_unit.text().strip() or None,
                 military_district=self.military_district.text().strip() or None,
             )
-        except Exception as exc:  # noqa: BLE001
+        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
             QMessageBox.critical(self, "Ошибка", str(exc))
             return
         QMessageBox.information(self, "Готово", "Данные пациента обновлены.")

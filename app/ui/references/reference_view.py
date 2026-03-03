@@ -15,16 +15,20 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.security import can_manage_references
 from app.application.services.reference_service import ReferenceService
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.notifications import show_error
+from app.ui.widgets.notifications import error_text, show_error
+
+_HANDLED_REFERENCE_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
 
 
 class ReferenceView(QWidget):
@@ -67,7 +71,15 @@ class ReferenceView(QWidget):
         self.role_hint.setObjectName("muted")
         main_layout.addWidget(self.role_hint)
 
-        controls = QHBoxLayout()
+        self._controls_bar = QWidget()
+        self._controls_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._controls_bar)
+        self._controls_layout.setContentsMargins(0, 0, 0, 0)
+        self._controls_layout.setSpacing(8)
+
+        self._controls_main_group = QWidget()
+        controls_main = QHBoxLayout(self._controls_main_group)
+        controls_main.setContentsMargins(0, 0, 0, 0)
+        controls_main.setSpacing(8)
         self.type_selector = QComboBox()
         self.type_selector.addItem("Отделения", "departments")
         self.type_selector.addItem("Типы материалов", "material_types")
@@ -82,25 +94,38 @@ class ReferenceView(QWidget):
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Поиск")
         self.search_input.textChanged.connect(self.refresh)
-        clear_btn = QPushButton("Сбросить")
-        compact_button(clear_btn)
-        clear_btn.clicked.connect(self._clear_search)
+        self._clear_search_btn = QPushButton("Сбросить")
+        compact_button(self._clear_search_btn)
+        self._clear_search_btn.clicked.connect(self._clear_search)
 
-        controls.addWidget(QLabel("Тип справочника"))
-        controls.addWidget(self.type_selector)
-        controls.addWidget(self.search_input)
-        controls.addWidget(clear_btn)
-        controls.addStretch()
-        main_layout.addLayout(controls)
+        controls_main.addWidget(QLabel("Тип справочника"))
+        controls_main.addWidget(self.type_selector)
+        controls_main.addWidget(self.search_input)
 
-        content = QHBoxLayout()
+        self._controls_action_group = QWidget()
+        controls_action = QHBoxLayout(self._controls_action_group)
+        controls_action.setContentsMargins(0, 0, 0, 0)
+        controls_action.setSpacing(8)
+        controls_action.addWidget(self._clear_search_btn)
+
+        self._controls_layout.addWidget(self._controls_main_group)
+        self._controls_layout.addStretch()
+        self._controls_layout.addWidget(self._controls_action_group)
+        main_layout.addWidget(self._controls_bar)
+
+        self._content_container = QWidget()
+        self._content_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._content_container)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
+        self._content_layout.setSpacing(12)
         self.list_box = QListWidget()
         self.list_box.setAlternatingRowColors(True)
         self.list_box.setSpacing(2)
         self.list_box.itemClicked.connect(self._on_item_selected)
-        content.addWidget(self.list_box, 1)
+        self.list_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._content_layout.addWidget(self.list_box, 2)
 
         self.form_box = QGroupBox("Данные")
+        self.form_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         form_layout = QVBoxLayout(self.form_box)
         self.form_fields = QFormLayout()
         form_layout.addLayout(self.form_fields)
@@ -122,47 +147,91 @@ class ReferenceView(QWidget):
         self.clear_btn.clicked.connect(self._clear_form)
         self._form_actions_bar = QWidget()
         self._form_actions_bar.setObjectName("sectionActionBar")
+        self._form_actions_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._form_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._form_actions_bar)
         self._form_actions_layout.setContentsMargins(12, 8, 12, 8)
         self._form_actions_layout.setSpacing(10)
 
-        self._form_main_group = QWidget()
-        self._form_main_group.setObjectName("sectionActionGroup")
-        form_main_layout = QHBoxLayout(self._form_main_group)
-        form_main_layout.setContentsMargins(0, 0, 0, 0)
-        form_main_layout.setSpacing(8)
-        form_main_layout.addWidget(self.add_btn)
-        form_main_layout.addWidget(self.save_btn)
-        form_main_layout.addWidget(self.delete_btn)
+        self._form_edit_group = QWidget()
+        self._form_edit_group.setObjectName("sectionActionGroup")
+        self._form_edit_group.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        form_edit_layout = QHBoxLayout(self._form_edit_group)
+        form_edit_layout.setContentsMargins(0, 0, 0, 0)
+        form_edit_layout.setSpacing(8)
+        form_edit_layout.addWidget(self.add_btn)
+        form_edit_layout.addWidget(self.save_btn)
 
-        self._form_clear_group = QWidget()
-        self._form_clear_group.setObjectName("sectionActionGroup")
-        form_clear_layout = QHBoxLayout(self._form_clear_group)
-        form_clear_layout.setContentsMargins(0, 0, 0, 0)
-        form_clear_layout.addWidget(self.clear_btn)
+        self._form_cleanup_group = QWidget()
+        self._form_cleanup_group.setObjectName("sectionActionGroup")
+        self._form_cleanup_group.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        form_cleanup_layout = QHBoxLayout(self._form_cleanup_group)
+        form_cleanup_layout.setContentsMargins(0, 0, 0, 0)
+        form_cleanup_layout.setSpacing(8)
+        form_cleanup_layout.addWidget(self.delete_btn)
+        form_cleanup_layout.addWidget(self.clear_btn)
 
-        self._form_actions_layout.addWidget(self._form_main_group)
+        self._form_actions_layout.addWidget(self._form_edit_group)
         self._form_actions_layout.addStretch()
-        self._form_actions_layout.addWidget(self._form_clear_group)
+        self._form_actions_layout.addWidget(self._form_cleanup_group)
+        form_layout.addStretch(1)
         form_layout.addWidget(self._form_actions_bar)
 
-        content.addWidget(self.form_box, 2)
-        main_layout.addLayout(content)
+        self._content_layout.addWidget(self.form_box, 5)
+        main_layout.addWidget(self._content_container, 1)
 
         self._admin_widgets = [self.add_btn, self.save_btn, self.delete_btn]
         self._build_form_fields()
+        self._update_controls_layout()
+        self._update_content_layout()
         self._update_form_actions_layout()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
+        if hasattr(self, "_controls_layout"):
+            self._update_controls_layout()
+        if hasattr(self, "_content_layout"):
+            self._update_content_layout()
         if hasattr(self, "_form_actions_layout"):
             self._update_form_actions_layout()
+
+    def _update_controls_layout(self) -> None:
+        update_action_bar_direction(
+            self._controls_layout,
+            self._controls_bar,
+            [self._controls_main_group, self._controls_action_group],
+        )
+
+    def _update_content_layout(self) -> None:
+        width = max(1, self._content_container.width())
+        list_required = max(360, self.list_box.sizeHint().width())
+        form_required = max(560, self.form_box.sizeHint().width())
+        needed = list_required + form_required + self._content_layout.spacing() + 40
+        target = (
+            QBoxLayout.Direction.LeftToRight
+            if width >= max(1260, needed)
+            else QBoxLayout.Direction.TopToBottom
+        )
+        if self._content_layout.direction() != target:
+            self._content_layout.setDirection(target)
+
+        if target == QBoxLayout.Direction.LeftToRight:
+            self.list_box.setMinimumWidth(320)
+            self.list_box.setMinimumHeight(0)
+            self.form_box.setMinimumWidth(560)
+            self._content_layout.setStretch(0, 2)
+            self._content_layout.setStretch(1, 5)
+        else:
+            self.list_box.setMinimumWidth(0)
+            self.list_box.setMinimumHeight(220)
+            self.form_box.setMinimumWidth(0)
+            self._content_layout.setStretch(0, 0)
+            self._content_layout.setStretch(1, 0)
 
     def _update_form_actions_layout(self) -> None:
         update_action_bar_direction(
             self._form_actions_layout,
             self._form_actions_bar,
-            [self._form_main_group, self._form_clear_group],
+            [self._form_edit_group, self._form_cleanup_group],
         )
 
     def _apply_role_policy(self) -> None:
@@ -356,10 +425,10 @@ class ReferenceView(QWidget):
                 self.list_box.addItem(item)
         self.references_updated.emit()
 
-
     def showEvent(self, event) -> None:  # noqa: D401, N802
         super().showEvent(event)
         self.refresh()
+
     def _on_item_selected(self, item: QListWidgetItem) -> None:
         payload = item.data(Qt.ItemDataRole.UserRole) or {}
         self._current_id = payload.get("id")
@@ -439,8 +508,8 @@ class ReferenceView(QWidget):
                 )
             self._clear_form()
             self.refresh()
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_REFERENCE_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось добавить запись"))
 
     def _update_item(self) -> None:
         if self._current_id is None:
@@ -507,8 +576,8 @@ class ReferenceView(QWidget):
                     actor_id=self.session.user_id,
                 )
             self.refresh()
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_REFERENCE_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось обновить запись"))
 
     def _delete_item(self) -> None:
         if self._current_id is None:
@@ -533,5 +602,5 @@ class ReferenceView(QWidget):
                 self.reference_service.delete_phage(self._current_id, actor_id=self.session.user_id)
             self._clear_form()
             self.refresh()
-        except Exception as exc:  # noqa: BLE001
-            show_error(self, str(exc))
+        except _HANDLED_REFERENCE_ERRORS as exc:
+            show_error(self, error_text(exc, "Не удалось удалить запись"))

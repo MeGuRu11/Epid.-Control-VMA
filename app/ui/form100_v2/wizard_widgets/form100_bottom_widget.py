@@ -38,9 +38,9 @@ def _row(label_text: str, field: QWidget, label_w: int = 120) -> QHBoxLayout:
     lay.setContentsMargins(0, 0, 0, 0)
     lay.setSpacing(10)
     lbl = QLabel(label_text)
-    lbl.setFixedWidth(label_w)
+    lbl.setObjectName("form100BottomRowLabel")
+    lbl.setMinimumWidth(label_w)
     lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-    lbl.setStyleSheet("color: #5D6D7E; font-size: 12px;")
     lay.addWidget(lbl)
     lay.addWidget(field, 1)
     return lay
@@ -49,9 +49,9 @@ def _row(label_text: str, field: QWidget, label_w: int = 120) -> QHBoxLayout:
 def _sep() -> QFrame:
     """Тонкий горизонтальный разделитель."""
     f = QFrame()
+    f.setObjectName("form100BottomSeparator")
     f.setFrameShape(QFrame.Shape.HLine)
     f.setFixedHeight(1)
-    f.setStyleSheet("background: #E0E6EA; border: none;")
     return f
 
 
@@ -71,14 +71,15 @@ class Form100BottomWidget(QWidget):
         # ── Жгут (время) ──────────────────────────────────────────────────
         self.tourniquet_time = QTimeEdit()
         self.tourniquet_time.setDisplayFormat("HH:mm")
-        self.tourniquet_time.setFixedWidth(110)
+        self.tourniquet_time.setMinimumWidth(96)
+        self.tourniquet_time.setMaximumWidth(132)
         tq_lay = QHBoxLayout()
         tq_lay.setContentsMargins(0, 0, 0, 0)
         tq_lay.setSpacing(10)
         lbl_tq = QLabel("Жгут (время)")
-        lbl_tq.setFixedWidth(120)
+        lbl_tq.setObjectName("form100BottomRowLabel")
+        lbl_tq.setMinimumWidth(120)
         lbl_tq.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        lbl_tq.setStyleSheet("color: #5D6D7E; font-size: 12px;")
         tq_lay.addWidget(lbl_tq)
         tq_lay.addWidget(self.tourniquet_time)
         tq_lay.addStretch(1)
@@ -86,7 +87,7 @@ class Form100BottomWidget(QWidget):
 
         # ── Санобработка ──────────────────────────────────────────────────
         san_widget = QWidget()
-        san_widget.setStyleSheet("background: transparent;")
+        san_widget.setObjectName("form100BottomInlineContainer")
         san_inner = QHBoxLayout(san_widget)
         san_inner.setContentsMargins(0, 0, 0, 0)
         san_inner.setSpacing(16)
@@ -104,9 +105,7 @@ class Form100BottomWidget(QWidget):
 
         # ── Позиция при эвакуации ─────────────────────────────────────────
         sec_lbl = QLabel("ЭВАКУАЦИЯ")
-        sec_lbl.setStyleSheet(
-            "color: #2E86C1; font-size: 10px; font-weight: bold; letter-spacing: 0.8px;"
-        )
+        sec_lbl.setObjectName("form100BottomSectionLabel")
         vlay.addWidget(sec_lbl)
 
         self.evacuation_dest = IconSelectWidget(
@@ -120,7 +119,7 @@ class Form100BottomWidget(QWidget):
 
         # ── Очерёдность ───────────────────────────────────────────────────
         prio_widget = QWidget()
-        prio_widget.setStyleSheet("background: transparent;")
+        prio_widget.setObjectName("form100BottomInlineContainer")
         prio_inner = QHBoxLayout(prio_widget)
         prio_inner.setContentsMargins(0, 0, 0, 0)
         prio_inner.setSpacing(16)
@@ -150,21 +149,20 @@ class Form100BottomWidget(QWidget):
 
         # ── Подпись врача + Диагноз ───────────────────────────────────────
         sec_lbl2 = QLabel("ЗАКЛЮЧЕНИЕ")
-        sec_lbl2.setStyleSheet(
-            "color: #2E86C1; font-size: 10px; font-weight: bold; letter-spacing: 0.8px;"
-        )
+        sec_lbl2.setObjectName("form100BottomSectionLabel")
         vlay.addWidget(sec_lbl2)
 
         self.doctor_signature = QLineEdit()
         vlay.addLayout(_row("Подпись врача", self.doctor_signature))
 
         diag_lbl = QLabel("Диагноз")
-        diag_lbl.setStyleSheet("color: #5D6D7E; font-size: 12px;")
+        diag_lbl.setObjectName("form100BottomRowLabel")
         vlay.addWidget(diag_lbl)
         self.main_diagnosis = QTextEdit()
-        self.main_diagnosis.setFixedHeight(70)
+        self.main_diagnosis.setMinimumHeight(70)
+        self.main_diagnosis.setMaximumHeight(130)
         self.main_diagnosis.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
         )
         vlay.addWidget(self.main_diagnosis)
 

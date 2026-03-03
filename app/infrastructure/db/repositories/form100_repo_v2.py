@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from sqlalchemy import select
@@ -41,7 +41,7 @@ def _from_json(value: object, *, default: object) -> object:
         return value
     try:
         return json.loads(str(value))
-    except Exception:  # noqa: BLE001
+    except (TypeError, ValueError):
         return default
 
 
@@ -186,13 +186,14 @@ class Form100RepositoryV2:
     ) -> tuple[models.Form100V2, models.Form100DataV2]:
         row = self.get_card(session, card_id)
         if row is None:
-            raise ValueError("Карточка Form100 V2 не найдена")
-        if int(row.version) != expected_version:
-            raise ValueError("Конфликт версий Form100 V2: запись была изменена другим пользователем")
+            raise ValueError("Карточка Form100 не найдена")
+        current_version = cast(int, row.version)
+        if current_version != expected_version:
+            raise ValueError("Конфликт версий Form100: запись была изменена другим пользователем")
         self._apply_card_payload(row, payload)
         row.updated_at = _utc_now()  # type: ignore[assignment]
         row.updated_by = actor_login  # type: ignore[assignment]
-        row.version = int(row.version) + 1  # type: ignore[assignment]
+        row.version = current_version + 1  # type: ignore[assignment]
 
         data_row = self.get_data(session, card_id)
         if data_row is None:
@@ -213,13 +214,14 @@ class Form100RepositoryV2:
     ) -> models.Form100V2:
         row = self.get_card(session, card_id)
         if row is None:
-            raise ValueError("Карточка Form100 V2 не найдена")
-        if int(row.version) != expected_version:
-            raise ValueError("Конфликт версий Form100 V2: запись была изменена другим пользователем")
+            raise ValueError("Карточка Form100 не найдена")
+        current_version = cast(int, row.version)
+        if current_version != expected_version:
+            raise ValueError("Конфликт версий Form100: запись была изменена другим пользователем")
         row.is_archived = True  # type: ignore[assignment]
         row.updated_at = _utc_now()  # type: ignore[assignment]
         row.updated_by = actor_login  # type: ignore[assignment]
-        row.version = int(row.version) + 1  # type: ignore[assignment]
+        row.version = current_version + 1  # type: ignore[assignment]
         session.flush()
         return row
 
@@ -241,12 +243,12 @@ class Form100RepositoryV2:
     ) -> models.Form100V2:
         row = self.get_card(session, card_id)
         if row is None:
-            raise ValueError("Карточка Form100 V2 не найдена")
+            raise ValueError("Карточка Form100 не найдена")
         row.artifact_path = artifact_path  # type: ignore[assignment]
         row.artifact_sha256 = artifact_sha256  # type: ignore[assignment]
         row.updated_at = _utc_now()  # type: ignore[assignment]
         row.updated_by = actor_login  # type: ignore[assignment]
-        row.version = int(row.version) + 1  # type: ignore[assignment]
+        row.version = cast(int, row.version) + 1  # type: ignore[assignment]
         session.flush()
         return row
 

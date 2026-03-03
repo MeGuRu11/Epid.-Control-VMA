@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 import pytest
 from sqlalchemy import create_engine
@@ -57,7 +58,7 @@ def _seed_user(
         )
         session.add(user)
         session.flush()
-        return int(user.id)
+        return cast(int, user.id)
 
 
 def test_reference_writes_require_admin_and_log_denial(
@@ -82,9 +83,9 @@ def test_reference_writes_require_admin_and_log_denial(
             .all()
         )
     assert len(denied_rows) == 1
-    assert denied_rows[0].user_id == operator_id
+    assert cast(int, denied_rows[0].user_id) == operator_id
 
     service.add_department("ICU", actor_id=admin_id)
     departments = service.list_departments()
     assert len(departments) == 1
-    assert departments[0].name == "ICU"
+    assert str(departments[0].name) == "ICU"

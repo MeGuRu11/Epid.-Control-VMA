@@ -21,7 +21,7 @@ class LesionTypeWidget(QWidget):
             btn.setCheckable(True)
             btn.setObjectName("lesionToggle")
             btn.toggled.connect(lambda checked, b=btn: self._sync_button_state(b, checked))  # noqa: ARG005
-            btn.toggled.connect(lambda _checked: self.valuesChanged.emit())
+            btn.toggled.connect(self._emit_values_changed)
             self._checks[key] = btn
             layout.addWidget(btn, idx // 2, idx % 2)
 
@@ -43,6 +43,9 @@ class LesionTypeWidget(QWidget):
         btn.style().unpolish(btn)
         btn.style().polish(btn)
         btn.update()
+
+    def _emit_values_changed(self, _checked: bool) -> None:
+        self.valuesChanged.emit()
 
     @property
     def checks(self) -> dict[str, QPushButton]:

@@ -14,7 +14,7 @@ from app.application.dto.emz_dto import (
     EmzIsmpDto,
 )
 from app.ui.emz.form_utils import diagnosis_kind_to_ui
-from app.ui.widgets.table_utils import connect_combo_resize_on_first_row
+from app.ui.widgets.table_utils import connect_combo_resize_on_content
 
 PrepareTableFn = Callable[[QTableWidget, int], None]
 ResizeTableFn = Callable[[QTableWidget], None]
@@ -64,7 +64,7 @@ def apply_intervention_rows(
         type_combo = create_type_combo()
         type_combo.setCurrentText(intervention.type)
         table.setCellWidget(row, 0, type_combo)
-        connect_combo_resize_on_first_row(table, type_combo, row)
+        connect_combo_resize_on_content(table, type_combo, row)
 
         start_widget = create_dt_cell()
         if intervention.start_dt:
@@ -135,7 +135,7 @@ def apply_ismp_rows(
         type_widget = create_type_combo()
         type_widget.setCurrentIndex(type_widget.findData(item.ismp_type))
         table.setCellWidget(row, 0, type_widget)
-        connect_combo_resize_on_first_row(table, type_widget, row)
+        connect_combo_resize_on_content(table, type_widget, row)
 
         date_widget = create_date_cell()
         date_widget.setDate(to_qdate(item.start_date))

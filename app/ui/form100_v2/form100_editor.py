@@ -27,8 +27,8 @@ from app.application.dto.form100_v2_dto import (
     Form100SignV2Request,
     Form100UpdateV2Request,
 )
-from app.ui.form100.widgets.validation_banner import ValidationBanner
 from app.ui.form100_v2.widgets.bodymap_editor_v2 import BodymapEditorV2
+from app.ui.widgets.validation_banner import ValidationBanner
 
 _LESION_KEYS = (
     ("lesion_gunshot", "Огнестрельное"),
@@ -141,7 +141,8 @@ class Form100EditorV2(QWidget):
         self.stub_immobilization = QCheckBox("Иммобилизация, перевязка")
         self.stub_tourniquet = QCheckBox("Жгут / санобработка")
         self.stub_diagnosis = QTextEdit()
-        self.stub_diagnosis.setFixedHeight(56)
+        self.stub_diagnosis.setMinimumHeight(56)
+        self.stub_diagnosis.setMaximumHeight(128)
 
         form.addRow("Выдана — дата", self.stub_issued_date)
         form.addRow("Выдана — время", self.stub_issued_time)
@@ -304,7 +305,8 @@ class Form100EditorV2(QWidget):
         self.transport_type.addItem("Самолёт", "plane")
         self.doctor_signature = QLineEdit()
         self.main_diagnosis = QTextEdit()
-        self.main_diagnosis.setFixedHeight(56)
+        self.main_diagnosis.setMinimumHeight(56)
+        self.main_diagnosis.setMaximumHeight(128)
 
         form.addRow("Жгут (время)", self.tourniquet_time)
         form.addRow("Санобработка", self.sanitation_type)

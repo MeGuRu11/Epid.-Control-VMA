@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
@@ -48,7 +49,9 @@ from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error, show_info, show_warning
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_by_first_row
+from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
+
+_HANDLED_ANALYTICS_UI_ERRORS = (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError)
 
 
 class AnalyticsSearchView(QWidget):
@@ -400,7 +403,13 @@ class AnalyticsSearchView(QWidget):
         history_target_layout = QHBoxLayout(self._history_target_group)
         history_target_layout.setContentsMargins(0, 0, 0, 0)
         history_target_layout.setSpacing(8)
+
+        save_as_artifact_btn = QPushButton("Сохранить как...")
+        compact_button(save_as_artifact_btn)
+        save_as_artifact_btn.clicked.connect(self._save_as_report_artifact)
+
         history_target_layout.addWidget(verify_selected_btn)
+        history_target_layout.addWidget(save_as_artifact_btn)
         history_target_layout.addWidget(open_artifact_btn)
 
         self._history_actions_layout.addWidget(self._history_common_group)
@@ -456,7 +465,7 @@ class AnalyticsSearchView(QWidget):
         self.department_table.setAlternatingRowColors(True)
         self.department_table.setMinimumHeight(240)
         self.department_table.itemChanged.connect(self._on_first_row_changed)
-        resize_columns_by_first_row(self.department_table)
+        resize_columns_to_content(self.department_table)
         dashboard_layout.addWidget(self.department_table)
 
         dashboard_layout.addWidget(QLabel("Тренд по периодам"))
@@ -508,7 +517,7 @@ class AnalyticsSearchView(QWidget):
         self.ismp_table.setAlternatingRowColors(True)
         self.ismp_table.setMinimumHeight(160)
         self.ismp_table.itemChanged.connect(self._on_first_row_changed)
-        resize_columns_by_first_row(self.ismp_table)
+        resize_columns_to_content(self.ismp_table)
         ismp_layout.addWidget(self.ismp_table)
         return ismp_box
 
@@ -525,7 +534,7 @@ class AnalyticsSearchView(QWidget):
         self.top_table.setAlternatingRowColors(True)
         self.top_table.setMinimumHeight(220)
         self.top_table.itemChanged.connect(self._on_first_row_changed)
-        resize_columns_by_first_row(self.top_table)
+        resize_columns_to_content(self.top_table)
         top_layout.addWidget(self.top_table)
         return top_box
 
@@ -551,7 +560,7 @@ class AnalyticsSearchView(QWidget):
         self.table.setAlternatingRowColors(True)
         self.table.setMinimumHeight(320)
         self.table.itemChanged.connect(self._on_first_row_changed)
-        resize_columns_by_first_row(self.table)
+        resize_columns_to_content(self.table)
         results_layout.addWidget(self.table)
         return results_box
 
@@ -920,7 +929,7 @@ class AnalyticsSearchView(QWidget):
         for idx, (name, count) in enumerate(agg["top_microbes"]):
             self.top_table.setItem(idx, 0, QTableWidgetItem(name))
             self.top_table.setItem(idx, 1, QTableWidgetItem(str(count)))
-        resize_columns_by_first_row(self.top_table)
+        resize_columns_to_content(self.top_table)
         self.table.clearContents()
         self.table.setRowCount(len(rows))
         for i, r in enumerate(rows):
@@ -933,7 +942,7 @@ class AnalyticsSearchView(QWidget):
             self.table.setItem(i, 6, QTableWidgetItem(r.material_type or ""))
             self.table.setItem(i, 7, QTableWidgetItem(r.microorganism or ""))
             self.table.setItem(i, 8, QTableWidgetItem(r.antibiotic or ""))
-        resize_columns_by_first_row(self.table)
+        resize_columns_to_content(self.table)
 
     def _export_xlsx(self) -> None:
         from PySide6.QtWidgets import QFileDialog
@@ -995,7 +1004,7 @@ class AnalyticsSearchView(QWidget):
         if item and item.row() == 0:
             table = item.tableWidget()
             if table is not None:
-                resize_columns_by_first_row(table)
+                resize_columns_to_content(table)
 
     def _load_report_history(self, verify_hash: bool = False) -> None:
         try:
@@ -1005,7 +1014,7 @@ class AnalyticsSearchView(QWidget):
                 query=self.report_query_filter.text().strip() or None,
                 verify_hash=verify_hash,
             )
-        except Exception as exc:  # noqa: BLE001
+        except _HANDLED_ANALYTICS_UI_ERRORS as exc:
             show_error(self, str(exc))
             return
 
@@ -1025,7 +1034,7 @@ class AnalyticsSearchView(QWidget):
             path_item = QTableWidgetItem(row_data.artifact_path)
             path_item.setToolTip(row_data.artifact_path)
             self.report_history_table.setItem(i, 7, path_item)
-        resize_columns_by_first_row(self.report_history_table)
+        resize_columns_to_content(self.report_history_table)
         self._apply_report_history_column_widths()
 
     def _apply_report_history_column_widths(self) -> None:
@@ -1048,6 +1057,52 @@ class AnalyticsSearchView(QWidget):
             return
         QDesktopServices.openUrl(QUrl.fromLocalFile(path_item.text().strip()))
 
+    def _save_as_report_artifact(self) -> None:
+        import shutil
+        from pathlib import Path
+
+        from PySide6.QtWidgets import QFileDialog
+
+        row = self.report_history_table.currentRow()
+        if row < 0:
+            show_warning(self, "Выберите строку в истории отчетов.")
+            return
+        path_item = self.report_history_table.item(row, 7)
+        if not path_item or not path_item.text().strip():
+            show_warning(self, "Путь к артефакту не указан.")
+            return
+
+        source_path = Path(path_item.text().strip())
+        if not source_path.exists():
+            show_error(self, "Исходный файл отчета не найден на диске.")
+            return
+
+        # Prepare default filename based on original artifact name
+        default_filename = source_path.name
+
+        # Determine file filter based on extension
+        ext = source_path.suffix.lower()
+        if ext == ".xlsx":
+            filter_str = "Excel (*.xlsx)"
+        elif ext == ".csv":
+            filter_str = "CSV (*.csv)"
+        elif ext == ".pdf":
+            filter_str = "PDF (*.pdf)"
+        elif ext == ".zip":
+            filter_str = "ZIP (*.zip)"
+        else:
+            filter_str = "All Files (*)"
+
+        dest_path, _ = QFileDialog.getSaveFileName(self, "Сохранить отчет как", default_filename, filter_str)
+        if not dest_path:
+            return
+
+        try:
+            shutil.copy2(source_path, dest_path)
+            show_info(self, f"Отчет успешно сохранен по пути:\\n{dest_path}")
+        except Exception as exc:
+            show_error(self, f"Ошибка при сохранении файла:\\n{exc}")
+
     def _verify_selected_report(self) -> None:
         row = self.report_history_table.currentRow()
         if row < 0:
@@ -1060,7 +1115,7 @@ class AnalyticsSearchView(QWidget):
             return
         try:
             result = self.reporting_service.verify_report_run(int(report_run_id))
-        except Exception as exc:  # noqa: BLE001
+        except _HANDLED_ANALYTICS_UI_ERRORS as exc:
             show_error(self, str(exc))
             return
         self.report_history_table.setItem(row, 5, QTableWidgetItem(format_report_verification(result)))
@@ -1142,7 +1197,7 @@ class AnalyticsSearchView(QWidget):
         self.saved_filter_select.addItem("Выбрать", None)
         try:
             filters = self.saved_filter_service.list_filters("analytics")
-        except Exception as exc:  # noqa: BLE001
+        except _HANDLED_ANALYTICS_UI_ERRORS as exc:
             show_error(self, str(exc))
             return
         for item in filters:
@@ -1162,7 +1217,7 @@ class AnalyticsSearchView(QWidget):
         except ValueError as exc:
             show_warning(self, str(exc))
             return
-        except Exception as exc:  # noqa: BLE001
+        except _HANDLED_ANALYTICS_UI_ERRORS as exc:
             show_error(self, str(exc))
             return
         self._load_saved_filters()
@@ -1176,7 +1231,7 @@ class AnalyticsSearchView(QWidget):
             return
         try:
             payload = json.loads(payload_json)
-        except Exception as exc:  # noqa: BLE001
+        except (TypeError, ValueError) as exc:
             show_error(self, f"Невозможно прочитать фильтр: {exc}")
             return
         self._apply_filter_payload(payload)
@@ -1323,7 +1378,7 @@ class AnalyticsSearchView(QWidget):
             last_dt = item["last_date"]
             last_date = last_dt.strftime("%d.%m.%Y") if last_dt else ""
             self.department_table.setItem(idx, 4, QTableWidgetItem(last_date))
-        resize_columns_by_first_row(self.department_table)
+        resize_columns_to_content(self.department_table)
 
     def _apply_trend(self, rows: list[dict]) -> None:
         items = []
@@ -1366,7 +1421,7 @@ class AnalyticsSearchView(QWidget):
         for idx, item in enumerate(rows):
             self.ismp_table.setItem(idx, 0, QTableWidgetItem(item["type"]))
             self.ismp_table.setItem(idx, 1, QTableWidgetItem(str(item["count"])))
-        resize_columns_by_first_row(self.ismp_table)
+        resize_columns_to_content(self.ismp_table)
 
     def _reset_dashboard_filters(self) -> None:
         today = QDate.currentDate()

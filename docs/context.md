@@ -789,7 +789,7 @@ resources/
 | --- | --- | --- | --- | --- |
 | Главная | Оперативная сводка системы | Счётчики по пациентам/ЭМЗ/пробам, топ-отделение, последний вход, часы | `admin`, `operator` | `app/ui/home/home_view.py` |
 | ЭМЗ | Ведение госпитализации пациента | Создание/редактирование ЭМЗ, данные пациента, диагнозы, интервенции, антибиотики, ИСМП, валидации | `admin`, `operator` | `app/ui/emz/emz_form.py` |
-| Форма 100 | Карточка медицинской эвакуации | Поиск карточек, create/update/sign (`DRAFT -> SIGNED`), этапы, bodymap, ZIP/PDF | `admin`, `operator` | `app/ui/form100/form100_view.py` |
+| Форма 100 | Карточка медицинской эвакуации | Поиск карточек, create/update/sign/archive (`DRAFT -> SIGNED -> ARCHIVED`), bodymap, ZIP/PDF | `admin`, `operator` | `app/ui/form100_v2/form100_view.py` |
 | Поиск и ЭМК | Поиск пациента и история госпитализаций | Поиск по ФИО/ID, карточка пациента, фильтры госпитализаций, переход в ЭМЗ/Лаб, удаление | `admin`, `operator` | `app/ui/patient/patient_emk_view.py` |
 | Лаборатория | Работа с лабораторными пробами | Фильтры, пагинация, карточка пробы, создание/редактирование, переход к пациенту | `admin`, `operator` | `app/ui/lab/lab_samples_view.py` |
 | Санитария | Санитарная микробиология отделений | Сводка по отделениям, фильтры, история проб отделения | `admin`, `operator` | `app/ui/sanitary/sanitary_dashboard.py` |
@@ -1002,12 +1002,12 @@ resources/
   - [x] сворачиваемые секции;
   - [x] быстрые действия;
   - [ ] дефолты полей (не реализованы).
-- Этап VI `Форма 100 МО РФ (v2.2)` — реализован (V2 под feature-flag):
+- Этап VI `Форма 100 МО РФ (v2.2)` — реализован:
   - [x] новая схема БД `form100` + `form100_data`, миграция `0019_form100_v2_schema.py`;
   - [x] перенос данных legacy `form100_card/form100_mark/form100_stage` в V2-схему;
   - [x] V2 domain/DTO/rules/repository/service с optimistic lock и статусом `DRAFT -> SIGNED`;
   - [x] аудит `form100.audit.v2` (create/update/sign/export/import с diff key-path);
-  - [x] отдельный UI-пакет `app/ui/form100_v2/**`, интеграция в `MainWindow` через флаг;
+  - [x] отдельный UI-пакет `app/ui/form100_v2/**`, интеграция в `MainWindow`;
   - [x] bodymap V2 без ручного JSON-ввода (4 силуэта, ограничение рисования по контуру);
   - [x] PDF/ZIP V2 (`form100.json + form100.pdf + manifest.json`) и интеграция в `ExchangeService`/`ReportingService`.
 
@@ -1077,8 +1077,8 @@ resources/
   - внедрить дефолты в UI/DTO/валидации;
   - добавить unit/integration тесты на применение дефолтов.
 - [x] Этап VI: `Форма 100 МО РФ (v2.2)`:
-  - внедрен V2-контур под feature-flag;
-  - legacy-модуль сохранен как fallback;
+  - внедрен единый V2-контур;
+  - legacy UI-модуль удален;
   - добавлены unit/integration тесты V2.
 - [x] Подтверждённая UX-задача `PatientEditDialog`:
   - реализован отдельный диалог редактирования пациента (`PatientEditDialog`);
@@ -1246,7 +1246,7 @@ resources/
 | Экран | Что адаптировано |
 | --- | --- |
 | `app/ui/widgets/context_bar.py` | Responsive reflow + адаптивные быстрые действия |
-| `app/ui/form100/form100_view.py` | Адаптивный action toolbar через `ResponsiveActionsPanel` |
+| `app/ui/form100_v2/form100_view.py` | Адаптивный action toolbar через `ResponsiveActionsPanel` |
 | `app/ui/analytics/analytics_view.py` | Адаптивные action-панели поиска и истории отчётов |
 | `app/ui/patient/patient_emk_view.py` | Адаптивный quick actions toolbar |
 | `app/ui/import_export/import_export_view.py` | Адаптивный quick actions toolbar |
@@ -1292,9 +1292,7 @@ resources/
 
 ### 18.1 Режим включения
 
-| Параметр | ENV | Значение по умолчанию | Назначение |
-| --- | --- | --- | --- |
-| `settings.form100_v2_enabled` | `EPIDCONTROL_FORM100_V2_ENABLED` | `1` | Переключение между legacy Form100 и Form100 V2 в `MainWindow` |
+Form100 V2 используется как единственный активный контур. Legacy UI-контур `app/ui/form100/**` удалён.
 
 ### 18.2 Схема данных V2
 

@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.services.patient_service import PatientService
 from app.infrastructure.db.repositories.patient_repo import PatientRepository
@@ -71,7 +72,7 @@ class PatientSelector(QWidget):
 
         try:
             self.on_select(pid)
-        except Exception as exc:  # noqa: BLE001
+        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
             set_status(self.status, f"Не удалось выбрать пациента: {exc}", "error")
             return
 

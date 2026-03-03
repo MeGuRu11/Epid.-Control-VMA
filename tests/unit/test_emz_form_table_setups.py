@@ -60,7 +60,7 @@ def test_setup_diagnosis_rows_creates_combos_and_resizes(monkeypatch) -> None:
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(setups, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable(row_count=2))
 
@@ -87,7 +87,7 @@ def test_setup_abx_rows_preserves_existing_datetime_widget(monkeypatch) -> None:
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(setups, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable(row_count=1))
     existing_start = _FakeDateTimeEdit()
@@ -114,7 +114,7 @@ def test_refresh_diagnosis_reference_rows_preserves_selected_values(monkeypatch)
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(setups, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable(row_count=1))
     old_type_combo = _FakeCombo()
@@ -145,7 +145,7 @@ def test_refresh_abx_reference_rows_preserves_selected_value(monkeypatch) -> Non
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(setups, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable(row_count=1))
     old_combo = _FakeCombo({10: 2})
@@ -170,7 +170,7 @@ def test_refresh_ismp_reference_rows_preserves_selected_value(monkeypatch) -> No
     def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connect_rows.append(row)
 
-    monkeypatch.setattr(setups, "connect_combo_resize_on_first_row", fake_connect)
+    monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
     table = cast(QTableWidget, _FakeTable(row_count=1))
     old_combo = _FakeCombo({"VAP": 3})

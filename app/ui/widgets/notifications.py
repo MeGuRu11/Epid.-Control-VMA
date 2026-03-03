@@ -14,6 +14,13 @@ STATUS_COLORS = {
 }
 
 
+def error_text(exc: BaseException, fallback: str = "Не удалось выполнить операцию") -> str:
+    raw = str(exc).strip()
+    if not raw or raw == "None":
+        return fallback
+    return raw
+
+
 def _pill_max_width(label: QLabel) -> int:
     raw = label.property("status_pill_max_width")
     if raw is None:

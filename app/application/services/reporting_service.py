@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 from collections.abc import Callable
 from datetime import UTC, date, datetime
@@ -14,10 +15,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.services.analytics_service import AnalyticsService
-from app.application.services.form100_service import Form100Service
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reference_service import ReferenceService
 from app.config import DATA_DIR
@@ -44,6 +45,8 @@ FILTER_LABELS: dict[str, str] = {
     "search_text": "Поиск",
 }
 
+logger = logging.getLogger(__name__)
+
 def _format_value(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.strftime("%d.%m.%Y %H:%M")
@@ -56,17 +59,19 @@ def _format_filter_label(key: str) -> str:
     return FILTER_LABELS.get(key, key)
 
 
+def _as_int(value: object) -> int:
+    return int(cast(Any, value))
+
+
 class ReportingService:
     def __init__(
         self,
         analytics_service: AnalyticsService,
-        form100_service: Form100Service | None = None,
         form100_v2_service: Form100ServiceV2 | None = None,
         reference_service: ReferenceService | None = None,
         session_factory: Callable = session_scope,
     ) -> None:
         self.analytics_service = analytics_service
-        self.form100_service = form100_service
         self.form100_v2_service = form100_v2_service
         self.reference_service = reference_service
         self.session_factory = session_factory
@@ -83,6 +88,8 @@ class ReportingService:
 
         wb = Workbook()
         summary_ws = wb.active
+        if summary_ws is None:
+            raise RuntimeError("Не удалось создать лист сводки")
         summary_ws.title = "Сводка"
         summary_ws.append(["Параметр", "Значение"])
         summary_ws.append(["Дата отчета", datetime.now(UTC).strftime("%d.%m.%Y %H:%M")])
@@ -268,50 +275,16 @@ class ReportingService:
         file_path: str | Path,
         actor_id: int | None,
     ) -> dict[str, Any]:
-        if self.form100_service is None and self.form100_v2_service is None:
-            raise ValueError("Сервис Form100 не подключён")
+        if self.form100_v2_service is None:
+            raise ValueError("Form100 service is not configured")
         file_path = Path(file_path)
-        if self.form100_v2_service is not None:
-            render_result = self.form100_v2_service.export_pdf(card_id=card_id, file_path=file_path, actor_id=actor_id)
-            report_type = "form100_v2"
-        else:
-            render_result = self.form100_service.export_pdf(card_id=card_id, file_path=file_path, actor_id=actor_id)  # type: ignore[union-attr]
-            report_type = "form100"
+        render_result = self.form100_v2_service.export_pdf(card_id=card_id, file_path=file_path, actor_id=actor_id)
+        report_type = "form100"
 
         artifact_path = self._save_artifact_copy(report_type=report_type, source_path=file_path)
         report_hash = sha256_file(artifact_path)
         report_run_id = self._log_report_run(
             report_type=report_type,
-            filters={"card_id": card_id},
-            summary={"path": str(render_result.get("path", file_path)), "card_id": card_id},
-            file_path=artifact_path,
-            sha256=report_hash,
-            created_by=actor_id,
-        )
-        return {
-            "path": str(file_path),
-            "artifact_path": str(artifact_path),
-            "sha256": report_hash,
-            "report_run_id": report_run_id,
-            "card_id": card_id,
-        }
-
-    def export_form100_v2_pdf(
-        self,
-        *,
-        card_id: str,
-        file_path: str | Path,
-        actor_id: int | None,
-    ) -> dict[str, Any]:
-        if self.form100_v2_service is None:
-            raise ValueError("Сервис Form100 V2 не подключён")
-        file_path = Path(file_path)
-        render_result = self.form100_v2_service.export_pdf(card_id=card_id, file_path=file_path, actor_id=actor_id)
-
-        artifact_path = self._save_artifact_copy(report_type="form100_v2", source_path=file_path)
-        report_hash = sha256_file(artifact_path)
-        report_run_id = self._log_report_run(
-            report_type="form100_v2",
             filters={"card_id": card_id},
             summary={"path": str(render_result.get("path", file_path)), "card_id": card_id},
             file_path=artifact_path,
@@ -384,7 +357,7 @@ class ReportingService:
             )
             session.add(row)
             session.flush()
-            return int(row.id)
+            return _as_int(row.id)
 
     def _build_report_history_row(
         self,
@@ -397,13 +370,13 @@ class ReportingService:
         artifact_path = cast(str | None, item.artifact_path)
         artifact_sha256 = cast(str | None, item.artifact_sha256)
         verification = self._verify_artifact(
-            report_run_id=int(item.id),
+            report_run_id=_as_int(item.id),
             artifact_path=artifact_path,
             expected_sha256=artifact_sha256,
             compute_hash=verify_hash,
         )
         return {
-            "id": int(item.id),
+            "id": _as_int(item.id),
             "created_at": item.created_at,
             "created_by": item.created_by,
             "report_type": item.report_type,
@@ -493,7 +466,7 @@ class ReportingService:
     def _safe_json_loads(self, payload: str) -> dict[str, Any]:
         try:
             value = json.loads(payload)
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             return {}
         if isinstance(value, dict):
             return value
@@ -520,7 +493,8 @@ class ReportingService:
                     i.code: f"{i.code} - {i.title}" for i in self.reference_service.list_icd10()
                 },
             }
-        except Exception:
+        except (AttributeError, SQLAlchemyError, TypeError, ValueError) as exc:
+            logger.warning("Failed to build filter maps for report export: %s", exc)
             return {}
 
     def _format_filter_value(self, key: str, value: Any, filter_maps: dict[str, dict]) -> str:
@@ -542,3 +516,5 @@ class ReportingService:
             if mapped is not None:
                 return str(mapped)
         return str(_format_value(value))
+
+

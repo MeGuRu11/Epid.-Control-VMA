@@ -6,6 +6,7 @@ from datetime import date
 from typing import Any, cast
 
 from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.infrastructure.db.models_sqlalchemy import Patient
@@ -72,7 +73,7 @@ class PatientRepository:
                     patients = list(session.execute(select(Patient).where(Patient.id.in_(ids))).scalars())
                     by_id = {cast(int, p.id): p for p in patients}
                     return [by_id[i] for i in ids if i in by_id]
-            except Exception:  # noqa: BLE001
+            except (SQLAlchemyError, RuntimeError, ValueError, TypeError):
                 logging.getLogger(__name__).debug("FTS search_by_name failed", exc_info=True)
 
         stmt = (

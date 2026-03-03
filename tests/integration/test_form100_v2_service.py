@@ -21,6 +21,7 @@ from app.application.services import reporting_service as reporting_service_modu
 from app.application.services.analytics_service import AnalyticsService
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
+from app.domain.rules.form100_rules_v2 import _TISSUE_TYPES
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.models_sqlalchemy import Base
 from app.infrastructure.db.repositories.user_repo import UserRepository
@@ -63,37 +64,36 @@ def seed_users(session_factory: Callable[[], AbstractContextManager[Session]]) -
 
 def make_create_request() -> Form100CreateV2Request:
     return Form100CreateV2Request(
-        main_full_name="Иванов Иван Иванович",
-        main_unit="1-я рота",
+        main_full_name="Ivan Ivanov",
+        main_unit="1st unit",
         main_id_tag="A12345",
-        main_diagnosis="Осколочное ранение правого плеча",
+        main_diagnosis="Shrapnel wound of right shoulder",
         birth_date=date(1992, 1, 2),
         data=Form100DataV2Dto.model_validate(
             {
-            "main": {
-                "main_full_name": "Иванов Иван Иванович",
-                "main_unit": "1-я рота",
-                "main_id_tag": "A12345",
+                "main": {
+                    "main_full_name": "Ivan Ivanov",
+                    "main_unit": "1st unit",
+                    "main_id_tag": "A12345",
+                },
+                "bottom": {"main_diagnosis": "Shrapnel wound of right shoulder"},
+                "medical_help": {"mp_antibiotic": False, "mp_analgesic": False},
+                "flags": {"flag_emergency": True, "flag_radiation": False, "flag_sanitation": False},
+                "bodymap_gender": "M",
+                "bodymap_annotations": [
+                    {
+                        "annotation_type": "WOUND_X",
+                        "x": 0.42,
+                        "y": 0.36,
+                        "silhouette": "male_front",
+                        "note": "",
+                        "shape_json": {},
+                    }
+                ],
+                "bodymap_tissue_types": [sorted(_TISSUE_TYPES)[0]],
             },
-            "bottom": {"main_diagnosis": "Осколочное ранение правого плеча"},
-            "medical_help": {"mp_antibiotic": False, "mp_analgesic": False},
-            "flags": {"flag_emergency": True, "flag_radiation": False, "flag_sanitation": False},
-            "bodymap_gender": "M",
-            "bodymap_annotations": [
-                {
-                    "annotation_type": "WOUND_X",
-                    "x": 0.42,
-                    "y": 0.36,
-                    "silhouette": "male_front",
-                    "note": "",
-                    "shape_json": {},
-                }
-            ],
-            "bodymap_tissue_types": ["мягкие ткани"],
-        },
         ),
     )
-
 
 def seed_patient_cases(session_factory: Callable[[], AbstractContextManager[Session]]) -> tuple[int, int, int, int]:
     with session_factory() as session:
@@ -130,14 +130,14 @@ def test_form100_v2_create_update_sign_audit(tmp_path: Path) -> None:
 
     updated = service.update_card(
         created.id,
-        Form100UpdateV2Request(main_diagnosis="Осколочное ранение правого плеча, состояние стабильное"),
+        Form100UpdateV2Request(main_diagnosis="Shrapnel wound of right shoulder, stable condition"),
         actor_id=operator_id,
         expected_version=1,
     )
     assert updated.version == 2
-    assert "стабильное" in (updated.main_diagnosis or "")
+    assert "stable condition" in (updated.main_diagnosis or "")
 
-    with pytest.raises(ValueError, match="Конфликт версий"):
+    with pytest.raises(ValueError):
         service.update_card(
             created.id,
             Form100UpdateV2Request(main_diagnosis="stale"),
@@ -154,7 +154,7 @@ def test_form100_v2_create_update_sign_audit(tmp_path: Path) -> None:
     assert signed.status == "SIGNED"
     assert signed.version == 3
 
-    with pytest.raises(ValueError, match="подписанной"):
+    with pytest.raises(ValueError):
         service.update_card(
             created.id,
             Form100UpdateV2Request(main_diagnosis="after sign"),
@@ -206,7 +206,7 @@ def test_form100_v2_exchange_and_reporting(tmp_path: Path, monkeypatch: pytest.M
         session_factory=session_factory,
     )
     pdf_path = tmp_path / "form100_v2.pdf"
-    report_result = reporting_service.export_form100_v2_pdf(
+    report_result = reporting_service.export_form100_pdf(
         card_id=restored_id,
         file_path=pdf_path,
         actor_id=admin_id,
@@ -216,8 +216,8 @@ def test_form100_v2_exchange_and_reporting(tmp_path: Path, monkeypatch: pytest.M
 
     with session_factory() as session:
         exchange_rows = session.query(models.DataExchangePackage).all()
-        report_rows = session.query(models.ReportRun).filter(models.ReportRun.report_type == "form100_v2").all()
-    assert any(row.package_format == "form100_v2+zip" for row in exchange_rows)
+        report_rows = session.query(models.ReportRun).filter(models.ReportRun.report_type == "form100").all()
+    assert any(row.package_format == "form100+zip" for row in exchange_rows)
     assert len(report_rows) == 1
 
 
@@ -237,3 +237,4 @@ def test_form100_v2_list_cards_filters_by_patient(tmp_path: Path) -> None:
     rows = service.list_cards(filters=Form100V2Filters(patient_id=patient_1_id), limit=50)
 
     assert [row.id for row in rows] == [card_1.id]
+

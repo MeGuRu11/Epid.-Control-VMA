@@ -81,10 +81,10 @@ def test_create_emz_case(tmp_path: Path) -> None:
     )
 
     req = EmzCreateRequest(
-        patient_full_name="РРІР°РЅРѕРІ РРІР°РЅ",
+        patient_full_name="Иванов Иван",
         patient_dob=date(1990, 1, 1),
         patient_sex="M",
-        patient_category="РЎРѕР»РґР°С‚",
+        patient_category=MilitaryCategory.PRIVATE.value,
         patient_military_unit=None,
         patient_military_district=None,
         hospital_case_no="CASE-001",
@@ -176,5 +176,5 @@ def test_delete_emz_requires_admin_and_writes_audit(tmp_path: Path) -> None:
             .one_or_none()
         )
         assert event is not None
-        assert event.user_id == admin_id
+        assert cast(int, event.user_id) == admin_id
 

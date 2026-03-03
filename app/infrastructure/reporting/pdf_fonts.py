@@ -42,7 +42,7 @@ def get_pdf_unicode_font_name() -> str:
         try:
             pdfmetrics.registerFont(TTFont(_UNICODE_FONT_NAME, str(font_path)))
             return _UNICODE_FONT_NAME
-        except Exception:  # noqa: BLE001
+        except (OSError, ValueError, RuntimeError):
             continue
 
     raise RuntimeError(

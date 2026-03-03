@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -20,26 +21,17 @@ from app.ui.form100_v2.wizard_widgets.form100_flags_widget import Form100FlagsWi
 class _ReviewPanel(QScrollArea):
     """Прокручиваемая панель с карточками-секциями сводки Формы 100."""
 
-    _ACCENT_COLORS = {
-        "id":     "#2E86C1",
-        "injury": "#E74C3C",
-        "lesion": "#E67E22",
-        "med":    "#27AE60",
-        "map":    "#8E44AD",
-        "evac":   "#16A085",
-        "flags":  "#C0392B",
-        "diag":   "#2C3E50",
-    }
+    _ACCENT_KEYS = {"id", "injury", "lesion", "med", "map", "evac", "flags", "diag"}
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("form100ReviewPanel")
         self.setWidgetResizable(True)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setStyleSheet("background: #F0F4F8;")
 
         self._inner = QWidget()
-        self._inner.setStyleSheet("background: transparent;")
+        self._inner.setObjectName("form100ReviewPanelInner")
         self._vlay = QVBoxLayout(self._inner)
         self._vlay.setContentsMargins(14, 14, 14, 14)
         self._vlay.setSpacing(10)
@@ -54,24 +46,19 @@ class _ReviewPanel(QScrollArea):
 
     def _make_name_header(self, name: str, sub: str) -> QFrame:
         card = QFrame()
-        card.setStyleSheet("QFrame { background: #1A2C42; border-radius: 8px; }")
+        card.setObjectName("form100ReviewNameCard")
         lay = QVBoxLayout(card)
         lay.setContentsMargins(16, 12, 16, 12)
         lay.setSpacing(3)
 
         name_lbl = QLabel(name or "—")
-        name_lbl.setStyleSheet(
-            "background: transparent; color: #ECF0F1;"
-            " font-size: 16px; font-weight: bold;"
-        )
+        name_lbl.setObjectName("form100ReviewName")
         name_lbl.setWordWrap(True)
         lay.addWidget(name_lbl)
 
         if sub:
             sub_lbl = QLabel(sub)
-            sub_lbl.setStyleSheet(
-                "background: transparent; color: #85C1E9; font-size: 12px;"
-            )
+            sub_lbl.setObjectName("form100ReviewSub")
             sub_lbl.setWordWrap(True)
             lay.addWidget(sub_lbl)
 
@@ -88,41 +75,45 @@ class _ReviewPanel(QScrollArea):
         if not filled:
             return None
 
-        color = self._ACCENT_COLORS.get(color_key, "#2E86C1")
+        tone = color_key if color_key in self._ACCENT_KEYS else "id"
         card = QFrame()
-        card.setStyleSheet(
-            "QFrame {"
-            "  background: white;"
-            f"  border-left: 4px solid {color};"
-            "  border-radius: 4px;"
-            "}"
-        )
+        card.setObjectName("form100ReviewCard")
+        card.setProperty("tone", tone)
         lay = QVBoxLayout(card)
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setSpacing(4)
 
         hdr = QLabel(f"{icon}  {title.upper()}")
-        hdr.setStyleSheet(
-            f"background: transparent; color: {color};"
-            " font-size: 10px; font-weight: bold; letter-spacing: 0.6px;"
-        )
+        hdr.setObjectName("form100ReviewHeader")
+        hdr.setProperty("tone", tone)
         lay.addWidget(hdr)
 
         sep = QFrame()
+        sep.setObjectName("form100ReviewSeparator")
+        sep.setProperty("tone", tone)
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {color}22; border: none;")
         lay.addWidget(sep)
 
         for label, value in filled:
-            row_lbl = QLabel(
-                f'<span style="color:#8899AA;">{label}:</span>'
-                f'<span style="color:#1A252F;"> {value}</span>'
-            )
-            row_lbl.setTextFormat(Qt.TextFormat.RichText)
-            row_lbl.setWordWrap(True)
-            row_lbl.setStyleSheet("background: transparent; font-size: 12px;")
-            lay.addWidget(row_lbl)
+            row = QWidget()
+            row.setObjectName("form100ReviewRow")
+            row_lay = QHBoxLayout(row)
+            row_lay.setContentsMargins(0, 0, 0, 0)
+            row_lay.setSpacing(6)
+
+            if label:
+                label_lbl = QLabel(f"{label}:")
+                label_lbl.setObjectName("form100ReviewRowLabel")
+                label_lbl.setAlignment(Qt.AlignmentFlag.AlignTop)
+                row_lay.addWidget(label_lbl, 0)
+
+            value_lbl = QLabel(value)
+            value_lbl.setObjectName("form100ReviewRowValue")
+            value_lbl.setWordWrap(True)
+            value_lbl.setTextFormat(Qt.TextFormat.PlainText)
+            row_lay.addWidget(value_lbl, 1)
+            lay.addWidget(row)
 
         return card
 
@@ -136,30 +127,24 @@ class _ReviewPanel(QScrollArea):
         if not badges:
             return None
 
-        color = self._ACCENT_COLORS.get(color_key, "#E67E22")
+        tone = color_key if color_key in self._ACCENT_KEYS else "lesion"
         card = QFrame()
-        card.setStyleSheet(
-            "QFrame {"
-            "  background: white;"
-            f"  border-left: 4px solid {color};"
-            "  border-radius: 4px;"
-            "}"
-        )
+        card.setObjectName("form100ReviewCard")
+        card.setProperty("tone", tone)
         lay = QVBoxLayout(card)
         lay.setContentsMargins(12, 8, 12, 10)
         lay.setSpacing(6)
 
         hdr = QLabel(f"{icon}  {title.upper()}")
-        hdr.setStyleSheet(
-            f"background: transparent; color: {color};"
-            " font-size: 10px; font-weight: bold; letter-spacing: 0.6px;"
-        )
+        hdr.setObjectName("form100ReviewHeader")
+        hdr.setProperty("tone", tone)
         lay.addWidget(hdr)
 
         sep = QFrame()
+        sep.setObjectName("form100ReviewSeparator")
+        sep.setProperty("tone", tone)
         sep.setFrameShape(QFrame.Shape.HLine)
         sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background: {color}22; border: none;")
         lay.addWidget(sep)
 
         flow = QHBoxLayout()
@@ -167,11 +152,8 @@ class _ReviewPanel(QScrollArea):
         flow.setSpacing(6)
         for badge_text in badges:
             b = QLabel(badge_text)
-            b.setStyleSheet(
-                f"background: {color}1A; color: {color};"
-                " border: 1px solid " + color + "66;"
-                " border-radius: 3px; padding: 2px 8px; font-size: 11px;"
-            )
+            b.setObjectName("form100ReviewBadge")
+            b.setProperty("tone", tone)
             flow.addWidget(b)
         flow.addStretch(1)
         lay.addLayout(flow)
@@ -314,9 +296,7 @@ class _ReviewPanel(QScrollArea):
 
         if self._vlay.count() == 1:
             placeholder = QLabel("Данные не введены")
-            placeholder.setStyleSheet(
-                "color: #95A5A6; font-size: 13px; font-style: italic;"
-            )
+            placeholder.setObjectName("form100ReviewPlaceholder")
             placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._vlay.addWidget(placeholder)
 
@@ -335,30 +315,54 @@ class StepEvacuation(QWidget):
         self.flags_widget = Form100FlagsWidget()
         root.addWidget(self.flags_widget)
 
-        mid = QHBoxLayout()
-        mid.setContentsMargins(0, 0, 0, 0)
-        mid.setSpacing(12)
+        self._mid_wrap = QWidget()
+        self._mid_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._mid_wrap)
+        self._mid_layout.setContentsMargins(0, 0, 0, 0)
+        self._mid_layout.setSpacing(12)
 
         self.bottom_widget = Form100BottomWidget()
-        bot_scroll = QScrollArea()
-        bot_scroll.setWidgetResizable(True)
-        bot_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        bot_scroll.setWidget(self.bottom_widget)
-        bot_scroll.setSizePolicy(
+        self._bot_scroll = QScrollArea()
+        self._bot_scroll.setWidgetResizable(True)
+        self._bot_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._bot_scroll.setWidget(self.bottom_widget)
+        self._bot_scroll.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
         )
-        mid.addWidget(bot_scroll, 5)
+        self._mid_layout.addWidget(self._bot_scroll, 5)
 
         self._review_panel = _ReviewPanel()
-        self._review_panel.setMinimumWidth(280)
-        mid.addWidget(self._review_panel, 4)
+        self._review_panel.setMinimumWidth(220)
+        self._review_panel.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding
+        )
+        self._mid_layout.addWidget(self._review_panel, 4)
 
-        root.addLayout(mid, 1)
+        root.addWidget(self._mid_wrap, 1)
 
         self.btn_sign = QPushButton("Подписать карточку")
         self.btn_sign.setObjectName("secondary")
         self.btn_sign.setVisible(False)
         root.addWidget(self.btn_sign)
+        self._apply_responsive_layout()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_responsive_layout()
+
+    def _apply_responsive_layout(self) -> None:
+        width = max(1, self.width())
+        if width < 1260:
+            self._mid_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+            self._mid_layout.setSpacing(8)
+            self._review_panel.setMinimumWidth(0)
+            self._review_panel.setMinimumHeight(220)
+            self._bot_scroll.setMinimumHeight(240)
+        else:
+            self._mid_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            self._mid_layout.setSpacing(12)
+            self._review_panel.setMinimumHeight(0)
+            self._review_panel.setMinimumWidth(220)
+            self._bot_scroll.setMinimumHeight(0)
 
     def set_values(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]
         self.flags_widget.set_values(payload)
