@@ -7,8 +7,8 @@ from platformdirs import user_data_dir
 
 APP_NAME = "epid-control"
 APP_AUTHOR = "epid-control"
-LEGACY_APP_NAME = "codex-emr-lab"
-LEGACY_APP_AUTHOR = "codex"
+LEGACY_APP_NAME = "emr-lab"
+LEGACY_APP_AUTHOR = "MeGuRu_11"
 
 AnimationPolicy = Literal["adaptive", "full", "minimal"]
 UiDensity = Literal["compact", "normal"]
