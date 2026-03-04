@@ -1,7 +1,7 @@
 param(
     [string]$Version = "",
     [string]$Publisher = "MeGuRu11",
-    [string]$AppName = "Epid Control VMA"
+    [string]$AppName = ""
 )
 
 Set-StrictMode -Version Latest
@@ -64,11 +64,16 @@ Write-Step "Using makensis: $($makensis.FullName)"
 Write-Step "Version: $Version"
 
 $arguments = @(
+    "/INPUTCHARSET",
+    "UTF8",
     "/DAPP_VERSION=$Version",
     "/DAPP_PUBLISHER=$Publisher",
-    "/DAPP_NAME=$AppName",
     $nsiPath
 )
+
+if (-not [string]::IsNullOrWhiteSpace($AppName)) {
+    $arguments = @("/DAPP_NAME=$AppName") + $arguments
+}
 
 & $makensis.FullName @arguments
 

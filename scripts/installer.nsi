@@ -1,4 +1,4 @@
-; NSIS installer for Epid Control VMA
+; NSIS-установщик для Эпид. Контроль ВМА
 
 Unicode true
 ManifestDPIAware true
@@ -8,7 +8,7 @@ SetCompress auto
 !include "MUI2.nsh"
 
 !ifndef APP_NAME
-!define APP_NAME "Epid Control VMA"
+!define APP_NAME "Эпид. Контроль ВМА"
 !endif
 !ifndef APP_EXE
 !define APP_EXE "EpidControl.exe"
@@ -25,7 +25,7 @@ SetCompress auto
 
 !if /FileExists "${__FILEDIR__}\..\dist\${APP_EXE}"
 !else
-  !error "Missing dist\\${APP_EXE}. Run scripts\\build_exe.bat first."
+  !error "Не найден dist\\${APP_EXE}. Сначала выполните scripts\\build_exe.bat."
 !endif
 
 !if /FileExists "${__FILEDIR__}\..\dist\RELEASE_INFO.txt"
@@ -45,11 +45,11 @@ BrandingText "${APP_NAME} ${APP_VERSION}"
 !define MUI_ABORTWARNING
 !define MUI_ICON "${__FILEDIR__}\..\resources\icons\app.ico"
 !define MUI_UNICON "${__FILEDIR__}\..\resources\icons\app.ico"
-!define MUI_WELCOMEPAGE_TITLE "Install ${APP_NAME}"
-!define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of ${APP_NAME}."
+!define MUI_WELCOMEPAGE_TITLE "Установка ${APP_NAME}"
+!define MUI_WELCOMEPAGE_TEXT "Мастер установки поможет установить ${APP_NAME}."
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
-!define MUI_FINISHPAGE_RUN_TEXT "Launch ${APP_NAME}"
-!define MUI_FINISHPAGE_LINK "Project page"
+!define MUI_FINISHPAGE_RUN_TEXT "Запустить ${APP_NAME}"
+!define MUI_FINISHPAGE_LINK "Страница проекта"
 !define MUI_FINISHPAGE_LINK_LOCATION "${APP_URL}"
 
 !insertmacro MUI_PAGE_WELCOME
@@ -63,7 +63,7 @@ BrandingText "${APP_NAME} ${APP_VERSION}"
 
 !insertmacro MUI_LANGUAGE "Russian"
 
-Section "Application files (required)" SEC_APP
+Section "Файлы приложения (обязательно)" SEC_APP
   SectionIn RO
   SetShellVarContext all
   SetOutPath "$INSTDIR"
@@ -85,12 +85,12 @@ Section "Application files (required)" SEC_APP
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoRepair" 1
 SectionEnd
 
-Section "Desktop shortcut" SEC_DESKTOP
+Section "Ярлык на рабочем столе" SEC_DESKTOP
   SetShellVarContext all
   CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
 SectionEnd
 
-Section "Start Menu shortcuts" SEC_STARTMENU
+Section "Ярлыки в меню Пуск" SEC_STARTMENU
   SetShellVarContext all
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
@@ -98,12 +98,12 @@ Section "Start Menu shortcuts" SEC_STARTMENU
 SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Core application binaries and uninstaller."
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Create a desktop shortcut for all users."
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_STARTMENU} "Create Start Menu shortcuts."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Основные файлы приложения и деинсталлятор."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Создать ярлык на рабочем столе для всех пользователей."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_STARTMENU} "Создать ярлыки в меню Пуск."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
-Section "Uninstall"
+Section "Удаление"
   SetShellVarContext all
 
   Delete "$DESKTOP\${APP_NAME}.lnk"
