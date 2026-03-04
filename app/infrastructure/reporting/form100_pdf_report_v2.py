@@ -192,7 +192,7 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     elif "авто" in evac_method_str or "маши" in evac_method_str:
         dr_line(stub_x + 2*mm, cur_y - 14*mm, stub_x + 28*mm, cur_y - 14*mm) # Underline "сан-грузавто"
 
-    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 14*mm, evac_dest, align="center", size=10)
+    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 15*mm, evac_dest, align="center", size=8)
     dr_line(stub_x + 30*mm, cur_y - 17*mm, stub_x + stub_w, cur_y - 17*mm)
     dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 19.5*mm, "нужное обвести", size=7, align="center")
     
@@ -200,21 +200,21 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     ico1_x = stub_x + 30*mm + 10*mm
     ico2_x = stub_x + 30*mm + 25*mm
     ico3_x = stub_x + 30*mm + 40*mm
-    c.circle(ico1_x, cur_y - 9*mm, 3*mm)
-    dr_text(ico1_x, cur_y - 9*mm - 2*mm, "+", align="center")
-    c.circle(ico2_x, cur_y - 9*mm, 3*mm)
-    dr_text(ico2_x, cur_y - 9*mm - 2*mm, "+", align="center")
-    c.rect(ico3_x - 3*mm, cur_y - 12*mm, 6*mm, 6*mm)
-    c.line(ico3_x - 4*mm, cur_y - 6*mm, ico3_x, cur_y - 2*mm)
-    c.line(ico3_x, cur_y - 2*mm, ico3_x + 4*mm, cur_y - 6*mm)
-    dr_text(ico3_x, cur_y - 9*mm - 2*mm, "+", size=6, align="center")
+    c.circle(ico1_x, cur_y - 7*mm, 3*mm)
+    dr_text(ico1_x, cur_y - 7*mm - 2*mm, "+", align="center")
+    c.circle(ico2_x, cur_y - 7*mm, 3*mm)
+    dr_text(ico2_x, cur_y - 7*mm - 2*mm, "+", align="center")
+    c.rect(ico3_x - 3*mm, cur_y - 10*mm, 6*mm, 6*mm)
+    c.line(ico3_x - 4*mm, cur_y - 4*mm, ico3_x, cur_y)
+    c.line(ico3_x, cur_y, ico3_x + 4*mm, cur_y - 4*mm)
+    dr_text(ico3_x, cur_y - 7*mm - 2*mm, "+", size=6, align="center")
     
     # "Circle" if hospital is chosen
     if "госп" in evac_dest.lower() or "вмед" in evac_dest.lower() or "омедб" in evac_dest.lower():
         c.setStrokeColorRGB(0.8, 0.1, 0.1)
         c.setLineWidth(1)
         # Tight ellipse around the house icon
-        c.ellipse(ico3_x - 5*mm, cur_y - 14*mm, ico3_x + 5*mm, cur_y - 1*mm)
+        c.ellipse(ico3_x - 4*mm, cur_y - 11*mm, ico3_x + 4*mm, cur_y + 1*mm)
         c.setStrokeColorRGB(0, 0, 0)
         c.setLineWidth(0.5)
 
@@ -466,18 +466,18 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     
     # Draw simple stickmen
     c.circle(bm_x - 15*mm, bm_y + 45*mm, 4*mm) # head
-    c.line(bm_x - 15*mm, bm_y + 41*mm, bm_x - 15*mm, bm_y + 20*mm) # body
-    c.line(bm_x - 15*mm, bm_y + 38*mm, bm_x - 25*mm, bm_y + 25*mm) # left arm
-    c.line(bm_x - 15*mm, bm_y + 38*mm, bm_x - 5*mm, bm_y + 25*mm) # right arm
-    c.line(bm_x - 15*mm, bm_y + 20*mm, bm_x - 20*mm, bm_y) # left leg
-    c.line(bm_x - 15*mm, bm_y + 20*mm, bm_x - 10*mm, bm_y) # right leg
+    c.ellipse(bm_x - 20*mm, bm_y + 20*mm, bm_x - 10*mm, bm_y + 41*mm) # torso
+    c.line(bm_x - 21*mm, bm_y + 38*mm, bm_x - 26*mm, bm_y + 15*mm) # left arm
+    c.line(bm_x - 9*mm, bm_y + 38*mm, bm_x - 4*mm, bm_y + 15*mm) # right arm
+    c.line(bm_x - 17*mm, bm_y + 20*mm, bm_x - 20*mm, bm_y) # left leg
+    c.line(bm_x - 13*mm, bm_y + 20*mm, bm_x - 10*mm, bm_y) # right leg
 
     c.circle(bm_x + 15*mm, bm_y + 45*mm, 4*mm) # head
-    c.line(bm_x + 15*mm, bm_y + 41*mm, bm_x + 15*mm, bm_y + 20*mm) # body
-    c.line(bm_x + 15*mm, bm_y + 38*mm, bm_x + 5*mm, bm_y + 25*mm) # left arm
-    c.line(bm_x + 15*mm, bm_y + 38*mm, bm_x + 25*mm, bm_y + 25*mm) # right arm
-    c.line(bm_x + 15*mm, bm_y + 20*mm, bm_x + 10*mm, bm_y) # left leg
-    c.line(bm_x + 15*mm, bm_y + 20*mm, bm_x + 20*mm, bm_y) # right leg
+    c.ellipse(bm_x + 10*mm, bm_y + 20*mm, bm_x + 20*mm, bm_y + 41*mm) # torso
+    c.line(bm_x + 9*mm, bm_y + 38*mm, bm_x + 4*mm, bm_y + 15*mm) # left arm
+    c.line(bm_x + 21*mm, bm_y + 38*mm, bm_x + 26*mm, bm_y + 15*mm) # right arm
+    c.line(bm_x + 13*mm, bm_y + 20*mm, bm_x + 10*mm, bm_y) # left leg
+    c.line(bm_x + 17*mm, bm_y + 20*mm, bm_x + 20*mm, bm_y) # right leg
     
     # Map bodymap annotations from DB standard layout to the mini PDF stickmen
     annotations = data_payload.get("bodymap_annotations") or []
@@ -594,18 +594,18 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     for i in range(3):
         # House shape for 3rd option
         if i == 2:
-            c.rect(dt_x + dt_w/2 + dt_w*i - 3*mm, ev_y - 12*mm, 6*mm, 6*mm)
-            c.line(dt_x + dt_w/2 + dt_w*i - 4*mm, ev_y - 6*mm, dt_x + dt_w/2 + dt_w*i, ev_y - 2*mm)
-            c.line(dt_x + dt_w/2 + dt_w*i, ev_y - 2*mm, dt_x + dt_w/2 + dt_w*i + 4*mm, ev_y - 6*mm)
-            dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 11.5*mm, "+", align="center", size=7)
+            c.rect(dt_x + dt_w/2 + dt_w*i - 3*mm, ev_y - 10*mm, 6*mm, 6*mm)
+            c.line(dt_x + dt_w/2 + dt_w*i - 4*mm, ev_y - 4*mm, dt_x + dt_w/2 + dt_w*i, ev_y - 1*mm)
+            c.line(dt_x + dt_w/2 + dt_w*i, ev_y - 1*mm, dt_x + dt_w/2 + dt_w*i + 4*mm, ev_y - 4*mm)
+            dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 9.5*mm, "+", align="center", size=7)
         else:
-            c.circle(dt_x + dt_w/2 + dt_w*i, ev_y - 9*mm, 3*mm)
-            dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 11*mm, "+", align="center")
+            c.circle(dt_x + dt_w/2 + dt_w*i, ev_y - 7*mm, 3*mm)
+            dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 9*mm, "+", align="center")
         
     if "госп" in evac_dest.lower() or "вмед" in evac_dest.lower() or "омедб" in evac_dest.lower():
         c.setStrokeColorRGB(0.8, 0.1, 0.1)
         target_x = dt_x + dt_w/2 + dt_w*2
-        c.ellipse(target_x - 5*mm, ev_y - 14*mm, target_x + 5*mm, ev_y - 1*mm)
+        c.ellipse(target_x - 4*mm, ev_y - 11*mm, target_x + 4*mm, ev_y + 1*mm)
         c.setStrokeColorRGB(0, 0, 0)
     
     c.setFont(font, 9)
