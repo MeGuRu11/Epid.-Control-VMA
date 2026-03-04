@@ -192,28 +192,29 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     elif "авто" in evac_method_str or "маши" in evac_method_str:
         dr_line(stub_x + 2*mm, cur_y - 14*mm, stub_x + 28*mm, cur_y - 14*mm) # Underline "сан-грузавто"
 
-    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 12*mm, evac_dest, align="center", size=10)
-    dr_line(stub_x + 30*mm, cur_y - 16*mm, stub_x + stub_w, cur_y - 16*mm)
-    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 19*mm, "нужное обвести", size=7, align="center")
+    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 14*mm, evac_dest, align="center", size=10)
+    dr_line(stub_x + 30*mm, cur_y - 17*mm, stub_x + stub_w, cur_y - 17*mm)
+    dr_text(stub_x + 32*mm + (stub_w - 30*mm)/2, cur_y - 19.5*mm, "нужное обвести", size=7, align="center")
     
     # Add fake icon crosses and circle the chosen one loosely based on evac_method
     ico1_x = stub_x + 30*mm + 10*mm
     ico2_x = stub_x + 30*mm + 25*mm
     ico3_x = stub_x + 30*mm + 40*mm
-    c.circle(ico1_x, cur_y - 6*mm, 3*mm)
-    dr_text(ico1_x, cur_y - 6*mm - 2*mm, "+", align="center")
-    c.circle(ico2_x, cur_y - 6*mm, 3*mm)
-    dr_text(ico2_x, cur_y - 6*mm - 2*mm, "+", align="center")
-    c.rect(ico3_x - 3*mm, cur_y - 9*mm, 6*mm, 6*mm)
-    c.line(ico3_x - 4*mm, cur_y - 3*mm, ico3_x, cur_y + 1*mm)
-    c.line(ico3_x, cur_y + 1*mm, ico3_x + 4*mm, cur_y - 3*mm)
-    dr_text(ico3_x, cur_y - 6*mm - 2*mm, "+", size=6, align="center")
+    c.circle(ico1_x, cur_y - 9*mm, 3*mm)
+    dr_text(ico1_x, cur_y - 9*mm - 2*mm, "+", align="center")
+    c.circle(ico2_x, cur_y - 9*mm, 3*mm)
+    dr_text(ico2_x, cur_y - 9*mm - 2*mm, "+", align="center")
+    c.rect(ico3_x - 3*mm, cur_y - 12*mm, 6*mm, 6*mm)
+    c.line(ico3_x - 4*mm, cur_y - 6*mm, ico3_x, cur_y - 2*mm)
+    c.line(ico3_x, cur_y - 2*mm, ico3_x + 4*mm, cur_y - 6*mm)
+    dr_text(ico3_x, cur_y - 9*mm - 2*mm, "+", size=6, align="center")
     
     # "Circle" if hospital is chosen
     if "госп" in evac_dest.lower() or "вмед" in evac_dest.lower() or "омедб" in evac_dest.lower():
         c.setStrokeColorRGB(0.8, 0.1, 0.1)
         c.setLineWidth(1)
-        c.ellipse(ico3_x - 5*mm, cur_y - 10*mm, ico3_x + 5*mm, cur_y + 3*mm)
+        # Tight ellipse around the house icon
+        c.ellipse(ico3_x - 5*mm, cur_y - 14*mm, ico3_x + 5*mm, cur_y - 1*mm)
         c.setStrokeColorRGB(0, 0, 0)
         c.setLineWidth(0.5)
 
@@ -233,21 +234,21 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     for c_i in med_cols:
         dr_line(c_i, med_rows[0], c_i, med_rows[-1])
         
-    dr_text(med_cols[0] + 30*mm, med_rows[0] - 5*mm, "Подчеркнуть", align="center")
-    dr_text(med_cols[1] + 12*mm, med_rows[0] - 4*mm, "Доза", align="center")
-    dr_text(med_cols[1] + 12*mm, med_rows[0] - 7*mm, "(вписать)", align="center", size=7)
+    dr_text(med_cols[0] + 30*mm, med_rows[0] - 5*mm, "Подчеркнуть", align="center", size=8)
+    dr_text(med_cols[1] + 12*mm, med_rows[0] - 4*mm, "Доза", align="center", size=8)
+    dr_text(med_cols[1] + 12*mm, med_rows[0] - 7*mm, "(вписать)", align="center", size=6)
     
-    dr_text(med_cols[0] + 2*mm, med_rows[1] - 5*mm, "Введено: антибиотик")
-    dr_text(med_cols[0] + 2*mm, med_rows[2] - 4*mm, "сыворотка ПСС,")
-    dr_text(med_cols[0] + 2*mm, med_rows[2] - 7.5*mm, "ПГС")
-    dr_text(med_cols[0] + 2*mm, med_rows[3] - 5*mm, "анатоксин (какой)")
-    dr_text(med_cols[0] + 2*mm, med_rows[4] - 5*mm, "антидот (какой)")
-    dr_text(med_cols[0] + 2*mm, med_rows[5] - 4*mm, "обезболивающее")
-    dr_text(med_cols[0] + 2*mm, med_rows[5] - 7.5*mm, "средство")
-    dr_text(med_cols[0] + 2*mm, med_rows[6] - 5*mm, "Произведено: переливание")
-    dr_text(med_cols[0] + 2*mm, med_rows[7] - 4*mm, "крови, кровезаменителей,")
-    dr_text(med_cols[0] + 2*mm, med_rows[7] - 7.5*mm, "иммобилизация, перевязка,")
-    dr_text(med_cols[0] + 2*mm, med_rows[8] - 5*mm, "наложен жгут, санобработка")
+    dr_text(med_cols[0] + 2*mm, med_rows[1] - 5*mm, "Введено: антибиотик", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[2] - 3.5*mm, "сыворотка ПСС,", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[2] - 7*mm, "ПГС", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[3] - 5*mm, "анатоксин (какой)", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[4] - 5*mm, "антидот (какой)", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[5] - 3.5*mm, "обезболивающее", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[5] - 7*mm, "средство", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[6] - 5*mm, "Произведено: переливание", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[7] - 3.5*mm, "крови, кровезаменителей,", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[7] - 7*mm, "иммобилизация, перевязка,", size=8)
+    dr_text(med_cols[0] + 2*mm, med_rows[8] - 5*mm, "наложен жгут, санобработка", size=8)
     
     # Stub Footer
     cur_y = margin_y + 15*mm
@@ -319,18 +320,18 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     for c_i in mt_cols:
         dr_line(c_i, mt_rows[0], c_i, mt_rows[-1])
         
-    dr_text(mt_cols[0] + 5*mm, mt_rows[0] - 4*mm, "Подчеркнуть")
-    dr_text(mt_cols[1] + 10*mm, mt_rows[0] - 4*mm, "Доза", align="center")
+    dr_text(mt_cols[0] + 5*mm, mt_rows[0] - 4*mm, "Подчеркнуть", size=8)
+    dr_text(mt_cols[1] + 10*mm, mt_rows[0] - 4*mm, "Доза", align="center", size=8)
     dr_text(mt_cols[1] + 10*mm, mt_rows[0] - 6.5*mm, "(вписать)", size=6, align="center")
     
-    dr_text(mt_cols[0] + 2*mm, mt_rows[1] - 5*mm, "Введено: антибиотик")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[2] - 5*mm, "Сыворотка ПСС, ПГС")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[3] - 5*mm, "анатоксин (какой)")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[4] - 5*mm, "антидот (какой)")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[5] - 5*mm, "обезболивающее средство")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[6] - 5*mm, "Произведено: переливание")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[7] - 5*mm, "крови, кровезаменителей")
-    dr_text(mt_cols[0] + 2*mm, mt_rows[8] - 5*mm, "иммобилизация, перевязка")
+    dr_text(mt_cols[0] + 2*mm, mt_rows[1] - 5*mm, "Введено: антибиотик", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[2] - 5*mm, "Сыворотка ПСС, ПГС", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[3] - 5*mm, "анатоксин (какой)", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[4] - 5*mm, "антидот (какой)", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[5] - 5*mm, "обезболивающее средство", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[6] - 5*mm, "Произведено: переливание", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[7] - 5*mm, "крови, кровезаменителей", size=8)
+    dr_text(mt_cols[0] + 2*mm, mt_rows[8] - 5*mm, "иммобилизация, перевязка", size=8)
     
     # ------------------
     # INDENTITY FIELDS MAIN Left
@@ -360,60 +361,66 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     sb_x = m_x
     sb_y_top = cur_y - 5*mm
     sb_y_bot = margin_y + band_height + 15*mm
+    # Sanitary Loss Sidebar Outline
     dr_line(sb_x, sb_y_top, sb_x + sb_w, sb_y_top)
     dr_line(sb_x, sb_y_bot, sb_x + sb_w, sb_y_bot)
     dr_line(sb_x, sb_y_top, sb_x, sb_y_bot)
     dr_line(sb_x + sb_w, sb_y_top, sb_x + sb_w, sb_y_bot)
+    dr_line(sb_x + 6*mm, sb_y_top, sb_x + 6*mm, sb_y_bot)
     
     c.saveState()
-    c.translate(sb_x + 9*mm, sb_y_bot + (sb_y_top - sb_y_bot)/2)
+    c.translate(sb_x + 3*mm, sb_y_bot + (sb_y_top - sb_y_bot)/2)
     c.rotate(90)
-    c.setFont(font, 9)
+    c.setFont(font, 8)
     c.drawCentredString(0, 0, "Вид санитарных потерь (обвести)")
     c.restoreState()
     
     sb_ch = (sb_y_top - sb_y_bot) / 8
     
     def dr_gun(cx, cy):
-        c.rect(cx-10*mm, cy+2*mm, 15*mm, 3*mm, fill=1) # barrel
-        c.rect(cx-10*mm, cy-3*mm, 5*mm, 5*mm, fill=1) # grip
-        c.line(cx-5*mm, cy-2*mm, cx-5*mm, cy+2*mm) # trigger guard
+        # Draw gun with lines to avoid huge fill blobs
+        c.line(cx-10*mm, cy+2*mm, cx+5*mm, cy+2*mm) # barrel top
+        c.line(cx-10*mm, cy+4*mm, cx+5*mm, cy+4*mm) # barrel thin
+        c.line(cx-4*mm, cy+2*mm, cx-4*mm, cy-3*mm) # grip front
+        c.line(cx-8*mm, cy+2*mm, cx-8*mm, cy-3*mm) # grip back
+        c.line(cx-4*mm, cy-3*mm, cx-8*mm, cy-3*mm) # grip bot
         c.circle(cx-6*mm, cy+0*mm, 1*mm) # trigger
-        c.drawString(cx-15*mm, cy-2*mm, "О")
+        c.line(cx-5*mm, cy+2*mm, cx-5*mm, cy-1*mm) # guard
+        c.drawString(cx-14*mm, cy-2*mm, "О")
         
     def dr_bomb(cx, cy):
-        c.circle(cx, cy, 3*mm, fill=1)
+        c.circle(cx, cy, 3*mm)
         c.line(cx, cy+3*mm, cx+2*mm, cy+5*mm) # fuse
-        c.circle(cx+2*mm, cy+5*mm, 0.5*mm, fill=1)
+        c.circle(cx+2*mm, cy+5*mm, 0.5*mm)
         c.line(cx+3*mm, cy+6*mm, cx+4*mm, cy+7*mm) # spark
         c.line(cx+3*mm, cy+4*mm, cx+5*mm, cy+4*mm) # spark
-        c.drawString(cx-15*mm, cy-2*mm, "Я")
+        c.drawString(cx-14*mm, cy-2*mm, "Я")
         
     def dr_mask(cx, cy):
         c.ellipse(cx-4*mm, cy-4*mm, cx+4*mm, cy+4*mm) # face
         c.circle(cx-2*mm, cy+1*mm, 1.5*mm) # eye l
         c.circle(cx+2*mm, cy+1*mm, 1.5*mm) # eye r
-        c.circle(cx, cy-2*mm, 1.5*mm, fill=1) # filter
-        c.drawString(cx-15*mm, cy-2*mm, "X")
+        c.circle(cx, cy-2*mm, 1.5*mm) # filter
+        c.drawString(cx-14*mm, cy-2*mm, "X")
         
     def dr_bug(cx, cy):
-        c.ellipse(cx-4*mm, cy-2*mm, cx+4*mm, cy+2*mm, fill=1) # body
-        c.circle(cx+4*mm, cy, 1.5*mm, fill=1) # head
+        c.ellipse(cx-4*mm, cy-2*mm, cx+4*mm, cy+2*mm) # body
+        c.circle(cx+4*mm, cy, 1.5*mm) # head
         c.line(cx-2*mm, cy+2*mm, cx-3*mm, cy+4*mm) # leg
         c.line(cx+2*mm, cy+2*mm, cx+3*mm, cy+4*mm) # leg
         c.line(cx-2*mm, cy-2*mm, cx-3*mm, cy-4*mm) # leg
         c.line(cx+2*mm, cy-2*mm, cx+3*mm, cy-4*mm) # leg
-        c.drawString(cx-15*mm, cy-2*mm, "Бак.")
+        c.drawString(cx-14*mm, cy-2*mm, "Бак.")
         
     def dr_knife(cx, cy):
         c.line(cx-6*mm, cy-4*mm, cx+2*mm, cy+2*mm) # blade back
         c.line(cx-4*mm, cy-6*mm, cx+2*mm, cy+2*mm) # blade edge
         c.line(cx-6*mm, cy-4*mm, cx-4*mm, cy-6*mm) # blade base
-        c.rect(cx-9*mm, cy-9*mm, 4*mm, 4*mm, fill=1) # handle
+        c.line(cx-6*mm, cy-6*mm, cx-8*mm, cy-8*mm) # handle
         c.line(cx-7*mm, cy-5*mm, cx-3*mm, cy-7*mm) # guard
         c.setFont(font, 6)
-        c.drawString(cx-15*mm, cy, "Другие")
-        c.drawString(cx-15*mm, cy-3*mm, "пораж.")
+        c.drawString(cx-14*mm, cy, "Другие")
+        c.drawString(cx-14*mm, cy-3*mm, "пораж.")
         c.setFont(font, 9)
         
     def dr_flame(cx, cy):
@@ -422,7 +429,7 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
         c.line(cx-2*mm, cy-2*mm, cx+2*mm, cy+2*mm)
         c.line(cx-2*mm, cy+2*mm, cx+2*mm, cy-2*mm)
         c.circle(cx, cy, 3*mm, fill=0, stroke=1)
-        c.drawString(cx-15*mm, cy-2*mm, "Отм.")
+        c.drawString(cx-14*mm, cy-2*mm, "Отм.")
         
     def dr_bed(cx, cy):
         c.rect(cx-6*mm, cy-2*mm, 12*mm, 2*mm) # matress
@@ -431,23 +438,22 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
         c.line(cx-6*mm, cy, cx-6*mm, cy+3*mm) # headboard
         c.circle(cx+2*mm, cy+1*mm, 1.5*mm) # head
         c.line(cx-4*mm, cy+0.5*mm, cx+1*mm, cy+0.5*mm) # body
-        c.drawString(cx-15*mm, cy-2*mm, "Б")
+        c.drawString(cx-14*mm, cy-2*mm, "Б")
         
     def dr_rad(cx, cy):
-        # goggles/face
         c.ellipse(cx-4*mm, cy-3*mm, cx+4*mm, cy+3*mm)
         c.circle(cx-2*mm, cy+1*mm, 1.5*mm) # eye
         c.circle(cx+2*mm, cy+1*mm, 1.5*mm) # eye
         c.line(cx-4*mm, cy+1*mm, cx-5*mm, cy+3*mm) # antenna
         c.line(cx+4*mm, cy+1*mm, cx+5*mm, cy+3*mm) # antenna
-        c.drawString(cx-15*mm, cy-2*mm, "И")
+        c.drawString(cx-14*mm, cy-2*mm, "И")
 
     icon_funcs = [dr_gun, dr_bomb, dr_mask, dr_bug, dr_knife, dr_flame, dr_bed, dr_rad]
     
     for i, func in enumerate(icon_funcs):
         y_box = sb_y_top - (i+1)*sb_ch
         c.line(sb_x, y_box, sb_x + sb_w, y_box)
-        func(sb_x + 18*mm, y_box + sb_ch/2)
+        func(sb_x + 20*mm, y_box + sb_ch/2)
         c.circle(sb_x + sb_w - 7*mm, y_box + sb_ch/2, 5*mm, fill=0, stroke=1)
         
     # ------------------
@@ -518,10 +524,10 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     ev_x = mt_cols[0] - 2*mm
     ev_y = mt_rows[-1] - 30*mm
     
-    dr_text(ev_x, cur_y - 65*mm, "Жгут наложен: ____ час. ____ мин.")
-    dr_text(ev_x, cur_y - 70*mm, "Санитарная обработка (подчеркнуть)")
-    dr_text(ev_x, cur_y - 74*mm, "полная, частичная, не проводилась")
-    dr_text(ev_x, cur_y - 78*mm, "Эвакуировать (нужное обвести)")
+    dr_text(ev_x, ev_y + 14*mm, "Жгут наложен: ____ час. ____ мин.")
+    dr_text(ev_x, ev_y + 9*mm, "Санитарная обработка (подчеркнуть)")
+    dr_text(ev_x, ev_y + 5*mm, "полная, частичная, не проводилась")
+    dr_text(ev_x, ev_y + 1*mm, "Эвакуировать (нужное обвести)")
     
     dr_line(ev_x, ev_y, m_x + m_w, ev_y)
     dr_line(ev_x, ev_y - 15*mm, m_x + m_w, ev_y - 15*mm)
@@ -582,16 +588,24 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     dr_text(ev_x + 35*mm + (m_w - (ev_x - m_x) - 35*mm)/2, ev_y - 3*mm, "куда эвакуирован", size=7, align="center")
     dr_line(ev_x + 35*mm, ev_y - 4*mm, m_x + m_w, ev_y - 4*mm)
     
-    # Destination crosses
+    # Destination crosses (Main Card)
     dt_w = (m_w - (ev_x - m_x) - 35*mm) / 3
     dt_x = ev_x + 35*mm
     for i in range(3):
-        c.circle(dt_x + dt_w/2 + dt_w*i, ev_y - 7*mm, 3*mm)
-        dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 9*mm, "+", align="center")
+        # House shape for 3rd option
+        if i == 2:
+            c.rect(dt_x + dt_w/2 + dt_w*i - 3*mm, ev_y - 12*mm, 6*mm, 6*mm)
+            c.line(dt_x + dt_w/2 + dt_w*i - 4*mm, ev_y - 6*mm, dt_x + dt_w/2 + dt_w*i, ev_y - 2*mm)
+            c.line(dt_x + dt_w/2 + dt_w*i, ev_y - 2*mm, dt_x + dt_w/2 + dt_w*i + 4*mm, ev_y - 6*mm)
+            dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 11.5*mm, "+", align="center", size=7)
+        else:
+            c.circle(dt_x + dt_w/2 + dt_w*i, ev_y - 9*mm, 3*mm)
+            dr_text(dt_x + dt_w/2 + dt_w*i, ev_y - 11*mm, "+", align="center")
         
     if "госп" in evac_dest.lower() or "вмед" in evac_dest.lower() or "омедб" in evac_dest.lower():
         c.setStrokeColorRGB(0.8, 0.1, 0.1)
-        c.ellipse(dt_x + dt_w*2.5 - 5*mm, ev_y - 12*mm, dt_x + dt_w*2.5 + 5*mm, ev_y - 2*mm)
+        target_x = dt_x + dt_w/2 + dt_w*2
+        c.ellipse(target_x - 5*mm, ev_y - 14*mm, target_x + 5*mm, ev_y - 1*mm)
         c.setStrokeColorRGB(0, 0, 0)
     
     c.setFont(font, 9)
