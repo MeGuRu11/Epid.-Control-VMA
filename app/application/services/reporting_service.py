@@ -200,7 +200,9 @@ class ReportingService:
             wordWrap="CJK",
         )
 
-        filter_data = [["Фильтр", "Значение"]]
+        filter_data: list[list[Paragraph]] = [
+            [Paragraph("Фильтр", cell_style), Paragraph("Значение", cell_style)]
+        ]
         for key, value in filters.items():
             filter_data.append(
                 [
@@ -220,15 +222,15 @@ class ReportingService:
             "Микроорганизм",
             "Антибиотик",
         ]
-        table_data = [[Paragraph(h, cell_style) for h in headers]]
+        table_data: list[list[Paragraph]] = [[Paragraph(h, cell_style) for h in headers]]
         for row in rows:
             table_data.append(
                 [
-                    str(row.lab_sample_id),
+                    Paragraph(str(row.lab_sample_id), cell_style),
                     Paragraph(str(row.lab_no or ""), cell_style),
                     Paragraph(row.patient_name or "", cell_style),
                     Paragraph(row.patient_category or "", cell_style),
-                    _format_value(row.taken_at) or "",
+                    Paragraph(str(_format_value(row.taken_at) or ""), cell_style),
                     Paragraph(row.department_name or "", cell_style),
                     Paragraph(row.material_type or "", cell_style),
                     Paragraph(row.microorganism or "", cell_style),

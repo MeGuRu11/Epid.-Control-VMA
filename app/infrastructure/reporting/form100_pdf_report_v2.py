@@ -7,8 +7,16 @@
 from __future__ import annotations
 
 import json
+import sys
+from io import BytesIO
 from pathlib import Path
 from typing import Any
+
+try:
+    from PIL import Image as PILImage, ImageDraw
+except ImportError:  # pragma: no cover - handled by vector fallback
+    PILImage = None  # type: ignore[assignment]
+    ImageDraw = None  # type: ignore[assignment]
 
 from reportlab.graphics.shapes import (
     Circle,
@@ -25,6 +33,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
+    Image as PlatypusImage,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -73,6 +82,8 @@ _SILHOUETTE_LABELS: dict[str, str] = {
     "female_back": "Вид сзади",
 }
 
+_BODYMAP_TEMPLATE_FILES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
+
 
 # ── Помощники ────────────────────────────────────────────────────────────────
 
@@ -105,6 +116,145 @@ def _parse_annotations(raw: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _to_float(value: object, default: float = 0.5) -> float:
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value))
+    except (TypeError, ValueError):
+        return default
+
+
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def _normalize_silhouette(silhouette: str) -> str:
+    sil = silhouette.strip().lower()
+    if sil in {"female_front", "front", "male_front"}:
+        return "male_front"
+    if sil in {"female_back", "back", "male_back"}:
+        return "male_back"
+    return "male_back" if "back" in sil else "male_front"
+
+
+def _bodymap_image_root() -> Path:
+    meipass = getattr(sys, "_MEIPASS", None)
+    if getattr(sys, "frozen", False) and isinstance(meipass, str):
+        return Path(meipass) / "app" / "image" / "main"
+    return Path(__file__).resolve().parents[2] / "image" / "main"
+
+
+def _load_bodymap_template_image() -> Any | None:
+    if PILImage is None:
+        return None
+    image_root = _bodymap_image_root()
+    for file_name in _BODYMAP_TEMPLATE_FILES:
+        image_path = image_root / file_name
+        if not image_path.exists():
+            continue
+        with PILImage.open(image_path) as source:
+            image = source.convert("RGBA")
+        width, height = image.size
+        if width <= 0 or height <= 0:
+            continue
+        # Legacy sprite: 4 segments (front/back + female front/back), keep only first 2.
+        if width >= int(height * 2.2):
+            image = image.crop((0, 0, width // 2, height))
+        return image
+    return None
+
+
+def _draw_annotation_marker(
+    draw: Any,
+    *,
+    annotation_type: str,
+    x: float,
+    y: float,
+    note: str = "",
+) -> None:
+    if annotation_type == "WOUND_X":
+        size = 9
+        color = (225, 55, 48, 255)
+        draw.line((x - size, y - size, x + size, y + size), fill=color, width=4)
+        draw.line((x - size, y + size, x + size, y - size), fill=color, width=4)
+        return
+
+    if annotation_type == "BURN_HATCH":
+        size = 11
+        color = (241, 148, 38, 255)
+        draw.ellipse((x - size, y - size, x + size, y + size), outline=color, width=4)
+        return
+
+    if annotation_type == "AMPUTATION":
+        color = (201, 62, 53, 255)
+        points = [(x, y - 12), (x - 10, y + 8), (x + 10, y + 8)]
+        draw.polygon(points, outline=color, fill=(201, 62, 53, 80))
+        return
+
+    if annotation_type == "TOURNIQUET":
+        color = (226, 126, 36, 255)
+        draw.line((x - 13, y, x + 13, y), fill=color, width=5)
+        draw.line((x - 13, y - 5, x - 13, y + 5), fill=color, width=4)
+        draw.line((x + 13, y - 5, x + 13, y + 5), fill=color, width=4)
+        return
+
+    # NOTE_PIN / fallback
+    color = (54, 122, 191, 255)
+    draw.ellipse((x - 7, y - 7, x + 7, y + 7), outline=color, width=3)
+    draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill=color)
+    draw.line((x, y + 7, x, y + 14), fill=color, width=3)
+    if note:
+        draw.text((x + 10, y - 10), note[:24], fill=color)
+
+
+def _build_bodymap_image_flowable(
+    *,
+    annotations: list[dict[str, Any]],
+    max_width_pt: float,
+    max_height_pt: float,
+) -> PlatypusImage | None:
+    if PILImage is None or ImageDraw is None:
+        return None
+
+    template = _load_bodymap_template_image()
+    if template is None:
+        return None
+
+    canvas = template.copy()
+    draw = ImageDraw.Draw(canvas)
+    panel_width = canvas.width / 2.0
+    canvas_height = float(canvas.height)
+
+    for ann in annotations:
+        ann_type = str(ann.get("annotation_type") or "WOUND_X")
+        silhouette = _normalize_silhouette(str(ann.get("silhouette") or "male_front"))
+        x_norm = _clamp01(_to_float(ann.get("x"), 0.5))
+        y_norm = _clamp01(_to_float(ann.get("y"), 0.5))
+        panel_offset = panel_width if silhouette.endswith("back") else 0.0
+        x = panel_offset + x_norm * panel_width
+        y = y_norm * canvas_height
+        _draw_annotation_marker(
+            draw,
+            annotation_type=ann_type,
+            x=x,
+            y=y,
+            note=str(ann.get("note") or ""),
+        )
+
+    payload = BytesIO()
+    canvas.save(payload, format="PNG")
+    payload.seek(0)
+    flowable = PlatypusImage(payload)
+    scale = min(max_width_pt / max(1.0, float(canvas.width)), max_height_pt / max(1.0, float(canvas.height)))
+    flowable.drawWidth = max(1.0, float(canvas.width) * scale)
+    flowable.drawHeight = max(1.0, float(canvas.height) * scale)
+    flowable.hAlign = "CENTER"
+    # keep in-memory PNG alive until document build completes
+    flowable._source_buffer = payload  # type: ignore[attr-defined]
+    return flowable
+
+
 # ── Bodymap как Drawing (Platypus flowable) ──────────────────────────────────
 
 def _render_bodymap_drawing(
@@ -118,7 +268,12 @@ def _render_bodymap_drawing(
     d = Drawing(width_pt, height_pt)
 
     # Фон
-    d.add(Rect(0, 0, width_pt, height_pt, fillColor=colors.Color(0.97, 0.97, 0.97), strokeColor=colors.Color(0.85, 0.85, 0.85), strokeWidth=0.5))
+    background_kwargs: dict[str, Any] = {
+        "fillColor": colors.Color(0.97, 0.97, 0.97),
+        "strokeColor": colors.Color(0.85, 0.85, 0.85),
+        "strokeWidth": 0.5,
+    }
+    d.add(Rect(0, 0, width_pt, height_pt, **background_kwargs))
 
     mid = width_pt / 2
     body_h = height_pt - 35
@@ -402,19 +557,33 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     # ── 4. Схема тела ──────────────────────────────────────────────────
     elements.append(Paragraph("4. Схема тела (локализация повреждений)", s_section))
 
-    if annotations:
-        bm_drawing = _render_bodymap_drawing(annotations, tissue_types, width_pt=page_w, height_pt=page_w * 300 / 440)
+    bodymap_flowable = _build_bodymap_image_flowable(
+        annotations=annotations,
+        max_width_pt=page_w,
+        max_height_pt=page_w * 0.62,
+    )
+    if bodymap_flowable is not None:
+        elements.append(bodymap_flowable)
+    else:
+        # Fallback path: if template image is unavailable, keep vector rendering.
+        bm_drawing = _render_bodymap_drawing(
+            annotations,
+            tissue_types,
+            width_pt=page_w,
+            height_pt=page_w * 300 / 440,
+        )
         elements.append(bm_drawing)
-        elements.append(Spacer(1, 2 * mm))
+    elements.append(Spacer(1, 2 * mm))
 
-        # Таблица аннотаций
+    # Таблица аннотаций
+    if annotations:
         ann_header = [P("<b>№</b>"), P("<b>Тип</b>"), P("<b>Сторона</b>"), P("<b>Координаты</b>"), P("<b>Заметка</b>")]
         ann_rows = [ann_header]
         for idx, ann in enumerate(annotations, 1):
             atype = str(ann.get("annotation_type", ""))
             sil = str(ann.get("silhouette", ""))
-            ax = float(ann.get("x", 0))
-            ay = float(ann.get("y", 0))
+            ax = _to_float(ann.get("x"), 0.0)
+            ay = _to_float(ann.get("y"), 0.0)
             note = str(ann.get("note", ""))
             ann_rows.append([
                 P(str(idx)),

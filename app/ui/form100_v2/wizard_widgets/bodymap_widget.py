@@ -11,6 +11,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPen, QPixmap, QPolygonF
@@ -55,8 +56,9 @@ ANNOTATION_COLORS: dict[str, QColor] = {
 _IMG_FILES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
 
 def _get_image_root() -> Path:
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-        return Path(sys._MEIPASS) / "app" / "image" / "main"
+    meipass = cast(object, getattr(sys, "_MEIPASS", None))
+    if getattr(sys, "frozen", False) and isinstance(meipass, str):
+        return Path(meipass) / "app" / "image" / "main"
     return Path(__file__).parent.parent.parent.parent / "image" / "main"
 
 
