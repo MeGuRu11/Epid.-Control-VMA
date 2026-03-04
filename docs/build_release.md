@@ -25,7 +25,7 @@ scripts\build_exe.bat
 What the script does:
 1. Checks that `PyInstaller` is installed.
 2. Cleans `build/` and `dist/` by default.
-3. Builds `EpidControl.exe`.
+3. Builds `EpidControl.exe` from `EpidControl.spec`.
 4. Creates `dist\RELEASE_INFO.txt` (version + timestamp).
 5. Runs `scripts\verify_exe.ps1`.
 
@@ -64,7 +64,8 @@ Expected artifact:
 2. Launch the app.
 3. Verify startup, DB creation, and migrations.
 4. Verify login and key tabs open correctly.
-5. Run a short flow from `docs/manual_regression_scenarios.md`.
+5. Run a short flow from `docs/manual_regression_scenarios.md`:
+   - sections `1` (Smoke), `4` (Form 100 V2), `7` (Analytics/Reports).
 
 ## 7. Common issues
 - `makensis.exe` / `ISCC.exe` not found:

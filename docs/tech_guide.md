@@ -63,3 +63,16 @@ CI-пайплайн:
 - Все критические ошибки должны иметь:
   - понятное сообщение пользователю;
   - запись в лог для диагностики.
+
+## 8. Form100 V2: PDF и Bodymap
+- Генератор PDF: `app/infrastructure/reporting/form100_pdf_report_v2.py`.
+- Формат отчета: структурированный `A4` PDF с таблицами полей.
+- Bodymap в PDF:
+  - основной путь: шаблон `app/image/main/form_100_bd.png` + нанесение аннотаций;
+  - fallback: векторная схема, если шаблон недоступен.
+- Интеграция экспорта:
+  - `app/application/services/form100_service_v2.py::export_pdf`;
+  - `app/application/services/reporting_service.py::export_form100_pdf`.
+- Тесты экспорта PDF:
+  - `tests/unit/test_form100_pdf_report_v2.py`;
+  - `tests/integration/test_form100_v2_service.py::test_form100_v2_exchange_and_reporting`.

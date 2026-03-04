@@ -173,9 +173,6 @@ class ContextBar(QWidget):
         content_layout.addLayout(controls_row)
         content_layout.addSpacing(8)
 
-        actions_title = QLabel("Быстрые действия:")
-        actions_title.setObjectName("muted")
-        content_layout.addWidget(actions_title)
         self._actions_panel = ResponsiveActionsPanel(min_button_width=84, max_columns=5)
         self._actions_panel.setObjectName("contextActions")
         self.open_emz_btn = QPushButton("ЭМЗ")

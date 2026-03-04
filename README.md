@@ -41,6 +41,7 @@ This script runs:
 - Context and roadmap: `docs/context.md`
 - Progress log: `docs/progress_report.md`
 - Manual regression scenarios: `docs/manual_regression_scenarios.md`
+- Last manual regression run: `docs/manual_regression_run_2026-03-02.md`
 - User guide: `docs/user_guide.md`
 - Technical guide: `docs/tech_guide.md`
 - Build and release guide: `docs/build_release.md`
