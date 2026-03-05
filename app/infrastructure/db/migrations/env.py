@@ -21,7 +21,7 @@ config = context.config
 if config.get_main_option("sqlalchemy.url") == "sqlite:///./data/dev.db":
     config.set_main_option("sqlalchemy.url", settings.database_url)
 
-if config.config_file_name:
+if config.config_file_name and not getattr(sys, "frozen", False):
     try:
         from logging.config import fileConfig
 

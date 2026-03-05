@@ -1008,7 +1008,7 @@ resources/
   - [x] V2 domain/DTO/rules/repository/service с optimistic lock и статусом `DRAFT -> SIGNED`;
   - [x] аудит `form100.audit.v2` (create/update/sign/export/import с diff key-path);
   - [x] отдельный UI-пакет `app/ui/form100_v2/**`, интеграция в `MainWindow`;
-  - [x] bodymap V2 без ручного JSON-ввода (4 силуэта, ограничение рисования по контуру);
+  - [x] bodymap V2 без ручного JSON-ввода (2 рабочих силуэта: спереди/сзади, ограничение рисования по контуру);
   - [x] PDF/ZIP V2 (`form100.json + form100.pdf + manifest.json`) и интеграция в `ExchangeService`/`ReportingService`.
 
 ### 14.3 Результаты аудита (этапы 1-9)
@@ -1336,7 +1336,7 @@ Form100 V2 используется как единственный активн
 
 Правила bodymap V2:
 
-1. 4 силуэта (м/ж, спереди/сзади), активные зависят от пола.
+1. Два рабочих силуэта: `male_front` и `male_back` (женские значения нормализуются к этим двум).
 2. Рисование ограничено контуром силуэта (`QPainterPath.contains`).
 3. Метки хранятся как структурированный JSON в `form100_data`.
 
@@ -1344,7 +1344,7 @@ Form100 V2 используется как единственный активн
 
 1. ZIP V2: `form100.json` + `form100.pdf` + `manifest.json`.
 2. Валидация импорта: структура манифеста + SHA256 hash.
-3. PDF V2: `app/infrastructure/reporting/form100_pdf_report_v2.py` (A5 landscape, кириллица).
+3. PDF V2: `app/infrastructure/reporting/form100_pdf_report_v2.py` (структурированный A4-отчет с bodymap).
 4. Интеграция:
    - обмен: `app/application/services/exchange_service.py`;
    - отчётность и артефакты: `app/application/services/reporting_service.py`.
@@ -1353,4 +1353,4 @@ Form100 V2 используется как единственный активн
 
 1. Unit: `tests/unit/test_form100_v2_rules.py`.
 2. Integration: `tests/integration/test_form100_v2_service.py`.
-3. Текущий контрольный прогон: `ruff check app tests`, `pytest -q` (`217 passed`).
+3. Текущий контрольный прогон: `ruff check app tests`, `pytest -q` (точное число `passed` не фиксируется в документе).

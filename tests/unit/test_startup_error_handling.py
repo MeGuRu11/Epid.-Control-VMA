@@ -77,6 +77,7 @@ def test_run_migrations_falls_back_to_heads_on_multiple_heads_error(
 ) -> None:
     root_dir = tmp_path
     (root_dir / "alembic.ini").write_text("[alembic]\n", encoding="utf-8")
+    (root_dir / "app" / "infrastructure" / "db" / "migrations").mkdir(parents=True)
     db_file = root_dir / "app.db"
     log_dir = root_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -100,6 +101,7 @@ def test_run_migrations_writes_error_log_when_upgrade_fails(
 ) -> None:
     root_dir = tmp_path
     (root_dir / "alembic.ini").write_text("[alembic]\n", encoding="utf-8")
+    (root_dir / "app" / "infrastructure" / "db" / "migrations").mkdir(parents=True)
     db_file = root_dir / "app.db"
     log_dir = root_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -120,3 +122,58 @@ def test_run_migrations_writes_error_log_when_upgrade_fails(
     assert error_log.exists()
     log_text = error_log.read_text(encoding="utf-8")
     assert "Migration error" in log_text
+
+
+def test_check_startup_prerequisites_uses_frozen_exe_fallback(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root_dir = tmp_path / "meipass"
+    root_dir.mkdir(parents=True, exist_ok=True)
+
+    install_root = tmp_path / "install"
+    install_root.mkdir(parents=True, exist_ok=True)
+    (install_root / "alembic.ini").write_text("[alembic]\n", encoding="utf-8")
+    (install_root / "app" / "infrastructure" / "db" / "migrations").mkdir(parents=True)
+
+    db_file = tmp_path / "data" / "app.db"
+    db_file.parent.mkdir(parents=True, exist_ok=True)
+
+    critical_calls: list[tuple] = []
+    monkeypatch.setattr(startup.QMessageBox, "critical", lambda *args, **kwargs: critical_calls.append(args))
+    monkeypatch.setattr(startup.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(startup.sys, "executable", str(install_root / "EpidControl.exe"), raising=False)
+
+    assert startup.check_startup_prerequisites(root_dir, db_file) is True
+    assert critical_calls == []
+
+
+def test_run_migrations_uses_frozen_exe_fallback_root(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root_dir = tmp_path / "meipass"
+    root_dir.mkdir(parents=True, exist_ok=True)
+    install_root = tmp_path / "install"
+    install_root.mkdir(parents=True, exist_ok=True)
+    (install_root / "alembic.ini").write_text("[alembic]\n", encoding="utf-8")
+    (install_root / "app" / "infrastructure" / "db" / "migrations").mkdir(parents=True)
+    db_file = tmp_path / "app.db"
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    captured: dict[str, str] = {}
+
+    def _upgrade(cfg, _target: str) -> None:  # noqa: ANN001
+        captured["config_file_name"] = str(cfg.config_file_name)
+        captured["script_location"] = str(cfg.get_main_option("script_location"))
+
+    monkeypatch.setattr(startup.command, "upgrade", _upgrade)
+    monkeypatch.setattr(startup.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(startup.sys, "executable", str(install_root / "EpidControl.exe"), raising=False)
+
+    assert startup.run_migrations(root_dir, "sqlite:///tmp.db", log_dir, db_file) is True
+    assert Path(captured["config_file_name"]) == (install_root / "alembic.ini").resolve()
+    assert Path(captured["script_location"]) == (
+        install_root / "app" / "infrastructure" / "db" / "migrations"
+    ).resolve()

@@ -25,7 +25,7 @@ class TopMicrobesChart(QWidget):
         self._plot.setLabel("left", "Количество")
         self._plot.setLabel("bottom", "Микроорганизмы")
         self._lock_plot_interaction()
-        layout.addWidget(self._plot)
+        layout.addWidget(self._plot)  # type: ignore[arg-type]
 
     def update_data(self, items: Iterable[tuple[str, int]]) -> None:
         if self._plot is None or pg is None:
@@ -66,7 +66,7 @@ class TrendChart(QWidget):
         self._plot.setLabel("left", "Количество")
         self._plot.setLabel("bottom", "Дата")
         self._lock_plot_interaction()
-        layout.addWidget(self._plot)
+        layout.addWidget(self._plot)  # type: ignore[arg-type]
 
     def update_data(self, items: Iterable[tuple[str, int, int]]) -> None:
         if self._plot is None or pg is None:

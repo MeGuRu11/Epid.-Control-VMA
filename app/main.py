@@ -4,7 +4,7 @@ import atexit
 import logging
 import sys
 import time
-from io import TextIOBase, UnsupportedOperation
+from io import UnsupportedOperation
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from types import TracebackType
@@ -60,41 +60,61 @@ def _install_stderr_tee(log_path: Path) -> None:
 
     class _TeeStream:
         def __init__(self, *streams: object | None) -> None:
-            # Keep only non-null stream-like objects to avoid failures in windowed/bundled runs.
-            self._streams: list[TextIOBase] = [s for s in streams if isinstance(s, TextIOBase)]
+            # Keep only stream-like objects with callable write/flush methods.
+            self._streams: list[object] = []
+            for stream in streams:
+                if stream is None:
+                    continue
+                write_fn = getattr(stream, "write", None)
+                flush_fn = getattr(stream, "flush", None)
+                if callable(write_fn) and callable(flush_fn):
+                    self._streams.append(stream)
 
         def write(self, data: str) -> int:
             written = 0
             for stream in self._streams:
                 try:
-                    result = stream.write(data)
-                    written = result
-                    stream.flush()
-                except (AttributeError, OSError, ValueError, UnsupportedOperation):
+                    write_fn = getattr(stream, "write", None)
+                    flush_fn = getattr(stream, "flush", None)
+                    if not callable(write_fn):
+                        continue
+                    result = write_fn(data)
+                    if isinstance(result, int):
+                        written = result
+                    if callable(flush_fn):
+                        flush_fn()
+                except (AttributeError, OSError, ValueError, UnsupportedOperation, TypeError):
                     continue
             return written
 
         def flush(self) -> None:
             for stream in self._streams:
                 try:
-                    stream.flush()
-                except (AttributeError, OSError, ValueError, UnsupportedOperation):
+                    flush_fn = getattr(stream, "flush", None)
+                    if callable(flush_fn):
+                        flush_fn()
+                except (AttributeError, OSError, ValueError, UnsupportedOperation, TypeError):
                     continue
 
         def isatty(self) -> bool:
             for stream in self._streams:
                 try:
-                    if stream.isatty():
+                    isatty_fn = getattr(stream, "isatty", None)
+                    if callable(isatty_fn) and isatty_fn():
                         return True
-                except (AttributeError, OSError, ValueError, UnsupportedOperation):
+                except (AttributeError, OSError, ValueError, UnsupportedOperation, TypeError):
                     continue
             return False
 
         def fileno(self) -> int:
             for stream in self._streams:
                 try:
-                    return stream.fileno()
-                except (AttributeError, OSError, ValueError, UnsupportedOperation):
+                    fileno_fn = getattr(stream, "fileno", None)
+                    if callable(fileno_fn):
+                        fileno_value = fileno_fn()
+                        if isinstance(fileno_value, int):
+                            return fileno_value
+                except (AttributeError, OSError, ValueError, UnsupportedOperation, TypeError):
                     continue
             return -1
 

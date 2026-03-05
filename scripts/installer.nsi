@@ -22,6 +22,9 @@ SetCompress auto
 !ifndef APP_URL
 !define APP_URL "https://github.com/MeGuRu11/Epid.-Control-VMA"
 !endif
+!ifndef APP_DIR_NAME
+!define APP_DIR_NAME "EpidControl"
+!endif
 
 !if /FileExists "${__FILEDIR__}\..\dist\${APP_EXE}"
 !else
@@ -31,12 +34,20 @@ SetCompress auto
 !if /FileExists "${__FILEDIR__}\..\dist\RELEASE_INFO.txt"
   !define HAS_RELEASE_INFO
 !endif
+!if /FileExists "${__FILEDIR__}\..\alembic.ini"
+!else
+  !error "Не найден alembic.ini в корне проекта."
+!endif
+!if /FileExists "${__FILEDIR__}\..\app\infrastructure\db\migrations\env.py"
+!else
+  !error "Не найден каталог миграций app\\infrastructure\\db\\migrations."
+!endif
 
 Name "${APP_NAME} ${APP_VERSION}"
 OutFile "${__FILEDIR__}\..\dist\EpidControlSetup_NSIS.exe"
-InstallDir "$PROGRAMFILES\${APP_NAME}"
-InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallDir"
-RequestExecutionLevel admin
+InstallDir "$LOCALAPPDATA\Programs\${APP_DIR_NAME}"
+InstallDirRegKey HKCU "Software\${APP_NAME}" "InstallDir"
+RequestExecutionLevel user
 ShowInstDetails show
 ShowUnInstDetails show
 XPStyle on
@@ -65,59 +76,67 @@ BrandingText "${APP_NAME} ${APP_VERSION}"
 
 Section "Файлы приложения (обязательно)" SEC_APP
   SectionIn RO
-  SetShellVarContext all
+  SetShellVarContext current
   SetOutPath "$INSTDIR"
   File "${__FILEDIR__}\..\dist\${APP_EXE}"
+  File "${__FILEDIR__}\..\alembic.ini"
+  SetOutPath "$INSTDIR\app\infrastructure\db\migrations"
+  File /r "${__FILEDIR__}\..\app\infrastructure\db\migrations\*.*"
+  SetOutPath "$INSTDIR"
   !ifdef HAS_RELEASE_INFO
     File "${__FILEDIR__}\..\dist\RELEASE_INFO.txt"
   !endif
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  WriteRegStr HKLM "Software\${APP_NAME}" "InstallDir" "$INSTDIR"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayName" "${APP_NAME}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayVersion" "${APP_VERSION}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "Publisher" "${APP_PUBLISHER}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "URLInfoAbout" "${APP_URL}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoModify" 1
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoRepair" 1
+  WriteRegStr HKCU "Software\${APP_NAME}" "InstallDir" "$INSTDIR"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayName" "${APP_NAME}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayVersion" "${APP_VERSION}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "Publisher" "${APP_PUBLISHER}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "URLInfoAbout" "${APP_URL}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoModify" 1
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoRepair" 1
 SectionEnd
 
 Section "Ярлык на рабочем столе" SEC_DESKTOP
-  SetShellVarContext all
-  CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
+  SetShellVarContext current
+  CreateShortcut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}"
 SectionEnd
 
 Section "Ярлыки в меню Пуск" SEC_STARTMENU
-  SetShellVarContext all
+  SetShellVarContext current
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}"
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\Uninstall ${APP_NAME}.lnk" "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Основные файлы приложения и деинсталлятор."
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Создать ярлык на рабочем столе для всех пользователей."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Основные файлы приложения, миграции БД и деинсталлятор."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Создать ярлык на рабочем столе текущего пользователя."
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_STARTMENU} "Создать ярлыки в меню Пуск."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
-Section "Удаление"
-  SetShellVarContext all
-
+Section "un.Uninstall"
+  SetShellVarContext current
   Delete "$DESKTOP\${APP_NAME}.lnk"
   Delete "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk"
   Delete "$SMPROGRAMS\${APP_NAME}\Uninstall ${APP_NAME}.lnk"
   RMDir "$SMPROGRAMS\${APP_NAME}"
 
   Delete "$INSTDIR\${APP_EXE}"
+  Delete "$INSTDIR\alembic.ini"
   !ifdef HAS_RELEASE_INFO
     Delete "$INSTDIR\RELEASE_INFO.txt"
   !endif
   Delete "$INSTDIR\Uninstall.exe"
+  RMDir /r "$INSTDIR\app\infrastructure\db\migrations"
+  RMDir "$INSTDIR\app\infrastructure\db"
+  RMDir "$INSTDIR\app\infrastructure"
+  RMDir "$INSTDIR\app"
   RMDir "$INSTDIR"
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
-  DeleteRegKey HKLM "Software\${APP_NAME}"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+  DeleteRegKey HKCU "Software\${APP_NAME}"
 SectionEnd

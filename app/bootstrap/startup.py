@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import sys
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from pathlib import Path
@@ -40,25 +41,38 @@ _HANDLED_SEED_ERRORS = (
 )
 
 
+def _migration_root_candidates(root_dir: Path) -> list[Path]:
+    candidates: list[Path] = [root_dir]
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        if exe_dir not in candidates:
+            candidates.append(exe_dir)
+    return candidates
+
+
+def _resolve_migration_root(root_dir: Path) -> Path | None:
+    for candidate in _migration_root_candidates(root_dir):
+        alembic_ini = candidate / "alembic.ini"
+        migrations_dir = candidate / "app" / "infrastructure" / "db" / "migrations"
+        if alembic_ini.exists() and migrations_dir.exists():
+            return candidate
+    return None
+
+
 def _is_multiple_heads_error(exc: BaseException) -> bool:
     text = str(exc)
     return "MultipleHeads" in str(type(exc)) or "Multiple head" in text
 
 
 def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
-    if not (root_dir / "alembic.ini").exists():
+    migration_root = _resolve_migration_root(root_dir)
+    if migration_root is None:
+        checked_roots = ", ".join(str(path) for path in _migration_root_candidates(root_dir))
         QMessageBox.critical(
             None,
             "Ошибка",
-            "Отсутствует alembic.ini. Проверьте установку приложения.",
-        )
-        return False
-    migrations_dir = root_dir / "app" / "infrastructure" / "db" / "migrations"
-    if not migrations_dir.exists():
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            "Отсутствует каталог миграций. Проверьте установку приложения.",
+            "Отсутствуют файлы миграций (alembic.ini и каталог migrations).\n"
+            f"Проверены пути: {checked_roots}",
         )
         return False
     try:
@@ -76,11 +90,19 @@ def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
 
 
 def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Path) -> bool:
+    migration_root = _resolve_migration_root(root_dir)
+    if migration_root is None:
+        QMessageBox.critical(
+            None,
+            "Ошибка",
+            "Не удалось найти файлы миграций для обновления базы данных.",
+        )
+        return False
     try:
-        cfg = Config(str(root_dir / "alembic.ini"))
+        cfg = Config(str(migration_root / "alembic.ini"))
         cfg.set_main_option(
             "script_location",
-            str(root_dir / "app" / "infrastructure" / "db" / "migrations"),
+            str(migration_root / "app" / "infrastructure" / "db" / "migrations"),
         )
         cfg.set_main_option("sqlalchemy.url", database_url)
         try:
@@ -106,7 +128,10 @@ def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Pa
             with error_path.open("a", encoding="utf-8") as handle:
                 handle.write("\n--- Migration error ---\n")
                 handle.write(f"DB: {db_file}\n")
-                handle.write(f"Migrations: {root_dir / 'app' / 'infrastructure' / 'db' / 'migrations'}\n")
+                handle.write(f"Migrations root: {migration_root}\n")
+                handle.write(
+                    f"Migrations: {migration_root / 'app' / 'infrastructure' / 'db' / 'migrations'}\n"
+                )
                 handle.write(traceback.format_exc())
         except OSError:
             logger.exception("Failed to write migration error log")
