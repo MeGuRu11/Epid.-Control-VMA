@@ -359,7 +359,7 @@ class EmzForm(QWidget):
         self._build_tables()
         self.diag_box = self._build_collapsible_table_box("Диагнозы", self.diagnosis_table, self._add_diagnosis_row)
         self.interv_box = self._build_collapsible_table_box(
-            "Интервенции",
+            "Инвазивные вмешательства",
             self.intervention_table,
             self._add_intervention_row,
         )
