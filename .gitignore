@@ -50,6 +50,8 @@ data/
 tmp/
 tmp_run/
 _pytest_tmp/
+pytest_tmp/
+pytest_work/
 pytest_artifacts/
 pytest-cache-files-*/
 pip_install.log
