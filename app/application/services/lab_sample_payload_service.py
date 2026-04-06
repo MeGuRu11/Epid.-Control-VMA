@@ -12,6 +12,8 @@ from app.application.dto.lab_dto import (
 
 @dataclass(frozen=True)
 class SusceptibilityInput:
+    """Сырые данные строки чувствительности, собранные из UI."""
+
     row_number: int
     antibiotic_id: int | None
     ris: str | None
@@ -21,6 +23,8 @@ class SusceptibilityInput:
 
 @dataclass(frozen=True)
 class PhageInput:
+    """Сырые данные строки панели фагов, собранные из UI."""
+
     row_number: int
     phage_id: int | None
     phage_free: str
@@ -28,6 +32,7 @@ class PhageInput:
 
 
 def build_susceptibility_payload(rows: list[SusceptibilityInput]) -> list[dict]:
+    """Валидирует строки чувствительности и формирует payload для DTO результата."""
     items: list[dict] = []
     for row in rows:
         ris_text = row.ris.strip() if row.ris else ""
@@ -52,6 +57,7 @@ def build_susceptibility_payload(rows: list[SusceptibilityInput]) -> list[dict]:
 
 
 def build_phage_payload(rows: list[PhageInput]) -> list[dict]:
+    """Валидирует строки фагов и формирует payload для DTO результата."""
     items: list[dict] = []
     for row in rows:
         free_text = row.phage_free.strip()
@@ -84,6 +90,7 @@ def has_lab_result_data(
     susceptibility_rows: list[SusceptibilityInput],
     phage_rows: list[PhageInput],
 ) -> bool:
+    """Возвращает `True`, если в форме заполнено хотя бы одно поле результата."""
     if growth_flag is not None:
         return True
     if any(
@@ -129,6 +136,7 @@ def compose_lab_result_update(
     susceptibility: list[dict],
     phages: list[dict],
 ) -> LabSampleResultUpdate:
+    """Собирает объект обновления результатов лабораторной пробы."""
     return LabSampleResultUpdate(
         growth_flag=growth_flag if has_results else None,
         growth_result_at=growth_result_at if has_results else None,
@@ -156,6 +164,7 @@ def build_lab_sample_create_request(
     delivered_at: datetime | None,
     created_by: int | None = None,
 ) -> LabSampleCreateRequest:
+    """Собирает DTO создания лабораторной пробы из значений UI."""
     if material_type_id is None:
         raise ValueError("Выберите тип материала")
     return LabSampleCreateRequest(
@@ -182,6 +191,7 @@ def build_lab_sample_update_request(
     taken_at: datetime | None,
     delivered_at: datetime | None,
 ) -> LabSampleUpdateRequest:
+    """Собирает DTO обновления лабораторной пробы из значений UI."""
     if material_type_id is None:
         raise ValueError("Выберите тип материала")
     return LabSampleUpdateRequest(

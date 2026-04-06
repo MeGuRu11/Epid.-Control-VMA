@@ -12,6 +12,8 @@ from app.application.dto.sanitary_dto import (
 
 @dataclass(frozen=True)
 class SusceptibilityInput:
+    """Сырые данные строки чувствительности санитарной пробы."""
+
     row_number: int
     antibiotic_id: int | None
     ris: str | None
@@ -21,6 +23,8 @@ class SusceptibilityInput:
 
 @dataclass(frozen=True)
 class PhageInput:
+    """Сырые данные строки панели фагов санитарной пробы."""
+
     row_number: int
     phage_id: int | None
     phage_free: str
@@ -28,6 +32,7 @@ class PhageInput:
 
 
 def build_susceptibility_payload(rows: list[SusceptibilityInput]) -> list[dict]:
+    """Валидирует строки чувствительности и формирует payload для DTO результата."""
     items: list[dict] = []
     for row in rows:
         ris_text = row.ris.strip() if row.ris else ""
@@ -52,6 +57,7 @@ def build_susceptibility_payload(rows: list[SusceptibilityInput]) -> list[dict]:
 
 
 def build_phage_payload(rows: list[PhageInput]) -> list[dict]:
+    """Валидирует строки фагов и формирует payload для DTO результата."""
     items: list[dict] = []
     for row in rows:
         free_text = row.phage_free.strip()
@@ -84,6 +90,7 @@ def has_sanitary_result_data(
     susceptibility_rows: list[SusceptibilityInput],
     phage_rows: list[PhageInput],
 ) -> bool:
+    """Возвращает `True`, если в форме заполнено хотя бы одно поле результата."""
     if growth_flag is not None:
         return True
     if any(
@@ -125,6 +132,7 @@ def build_sanitary_sample_create_request(
     delivered_at: datetime | None,
     created_by: int | None = None,
 ) -> SanitarySampleCreateRequest:
+    """Собирает DTO создания санитарной пробы из значений UI."""
     point = sampling_point.strip()
     if not point:
         raise ValueError("Укажите точку отбора")
@@ -147,6 +155,7 @@ def build_sanitary_sample_update_request(
     taken_at: datetime | None,
     delivered_at: datetime | None,
 ) -> SanitarySampleUpdateRequest:
+    """Собирает DTO обновления санитарной пробы из значений UI."""
     point = sampling_point.strip()
     if not point:
         raise ValueError("Укажите точку отбора")
@@ -172,6 +181,7 @@ def build_sanitary_result_update(
     susceptibility: list[dict],
     phages: list[dict],
 ) -> SanitarySampleResultUpdate:
+    """Собирает DTO обновления результатов санитарной пробы."""
     if has_results and growth_result_at is None:
         growth_result_at = datetime.now(UTC)
     return SanitarySampleResultUpdate(

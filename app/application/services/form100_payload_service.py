@@ -6,6 +6,8 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Form100StubPayloadInput:
+    """Нормализованные значения блока «Корешок» формы 100."""
+
     issued_date: str
     issued_time: str
     rank: str
@@ -30,6 +32,8 @@ class Form100StubPayloadInput:
 
 @dataclass(frozen=True)
 class Form100MainPayloadInput:
+    """Нормализованные значения основного идентификационного блока."""
+
     full_name: str
     unit: str
     id_tag: str
@@ -44,6 +48,8 @@ class Form100MainPayloadInput:
 
 @dataclass(frozen=True)
 class Form100MedicalHelpPayloadInput:
+    """Нормализованные значения блока медицинской помощи."""
+
     antibiotic: bool
     antibiotic_dose: str
     serum_pss: bool
@@ -61,6 +67,8 @@ class Form100MedicalHelpPayloadInput:
 
 @dataclass(frozen=True)
 class Form100BottomPayloadInput:
+    """Нормализованные значения нижнего блока формы."""
+
     tourniquet_time: str
     sanitation_type: str | None
     evacuation_dest: str | None
@@ -72,6 +80,8 @@ class Form100BottomPayloadInput:
 
 @dataclass(frozen=True)
 class Form100FlagsPayloadInput:
+    """Нормализованные булевы флаги формы 100."""
+
     emergency: bool
     radiation: bool
     sanitation: bool
@@ -79,6 +89,8 @@ class Form100FlagsPayloadInput:
 
 @dataclass(frozen=True)
 class Form100DataPayloadInput:
+    """Агрегированный контейнер всех секций payload формы 100."""
+
     stub: Form100StubPayloadInput
     main: Form100MainPayloadInput
     lesion: dict[str, bool]
@@ -92,6 +104,7 @@ class Form100DataPayloadInput:
 
 
 def build_form100_data_payload(payload: Form100DataPayloadInput) -> dict[str, Any]:
+    """Формирует итоговый словарь `Form100DataV2Dto` из секционных входных данных."""
     return {
         "stub": {
             "stub_issued_date": payload.stub.issued_date,

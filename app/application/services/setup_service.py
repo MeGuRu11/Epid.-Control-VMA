@@ -16,6 +16,7 @@ class SetupService:
         self.session_factory = session_factory
 
     def create_initial_user(self, *, login: str, password: str) -> None:
+        """Создаёт первого администратора при первичном запуске приложения."""
         normalized_login = login.strip()
         if not normalized_login:
             raise ValueError("Введите логин администратора.")
