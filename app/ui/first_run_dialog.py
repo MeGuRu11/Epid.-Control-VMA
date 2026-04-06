@@ -18,21 +18,23 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.services.setup_service import SetupService
 from app.config import settings
-from app.infrastructure.db.models_sqlalchemy import User
-from app.infrastructure.db.session import session_scope
-from app.infrastructure.security.password_hash import hash_password
 from app.ui.runtime_ui import resolve_ui_runtime
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.notifications import clear_status, set_status
 
 
 class FirstRunDialog(QDialog):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        setup_service: SetupService | None = None,
+    ) -> None:
         super().__init__(parent)
+        self.setup_service = setup_service or SetupService()
         self.setObjectName("firstRunDialog")
         app = QApplication.instance()
         if app is None:
@@ -318,21 +320,12 @@ class FirstRunDialog(QDialog):
             return
 
         try:
-            with session_scope() as session:
-                exists = session.execute(select(User.id).where(User.login == login)).first()
-                if exists:
-                    set_status(self.error_label, "Логин уже существует. Выберите другой.", "error")
-                    self.error_label.setVisible(True)
-                    return
-                session.add(
-                    User(
-                        login=login,
-                        password_hash=hash_password(password),
-                        role="admin",
-                        is_active=True,
-                    )
-                )
-        except (SQLAlchemyError, OSError, RuntimeError, ValueError, TypeError):
+            self.setup_service.create_initial_user(login=login, password=password)
+        except ValueError as exc:
+            set_status(self.error_label, str(exc), "error")
+            self.error_label.setVisible(True)
+            return
+        except (SQLAlchemyError, OSError, RuntimeError, TypeError):
             set_status(
                 self.error_label,
                 "Не удалось создать администратора. Попробуйте позже.",

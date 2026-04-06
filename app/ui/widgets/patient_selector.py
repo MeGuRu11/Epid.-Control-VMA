@@ -13,8 +13,6 @@ from PySide6.QtWidgets import (
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.services.patient_service import PatientService
-from app.infrastructure.db.repositories.patient_repo import PatientRepository
-from app.infrastructure.db.session import session_scope
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, set_status
 
@@ -27,8 +25,7 @@ class PatientSelector(QWidget):
     def __init__(self, on_select, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.on_select = on_select
-        self.repo = PatientRepository()
-        self.patient_service = PatientService(self.repo, session_scope)
+        self.patient_service = PatientService()
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -105,6 +102,4 @@ class PatientSelector(QWidget):
         clear_status(self.status)
 
     def _get_patient_name(self, patient_id: int) -> str | None:
-        with session_scope() as session:
-            patient = self.repo.get_by_id(session, patient_id)
-            return str(patient.full_name) if patient else None
+        return self.patient_service.get_patient_name(patient_id)

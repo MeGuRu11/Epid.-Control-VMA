@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Any, cast
 
 from PySide6.QtCore import QDate, QDateTime, QSignalBlocker, Qt, QTime, Signal
@@ -27,12 +27,18 @@ from PySide6.QtWidgets import (
 )
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.application.dto.sanitary_dto import (
-    SanitarySampleCreateRequest,
-    SanitarySampleResultUpdate,
-    SanitarySampleUpdateRequest,
-)
+from app.application.dto.sanitary_dto import SanitarySampleResultUpdate
 from app.application.services.reference_service import ReferenceService
+from app.application.services.sanitary_sample_payload_service import (
+    PhageInput,
+    SusceptibilityInput,
+    build_phage_payload,
+    build_sanitary_result_update,
+    build_sanitary_sample_create_request,
+    build_sanitary_sample_update_request,
+    build_susceptibility_payload,
+    has_sanitary_result_data,
+)
 from app.application.services.sanitary_service import SanitaryService
 from app.ui.sanitary.history_view_helpers import (
     build_meta_line,
@@ -112,13 +118,15 @@ class SanitaryHistoryDialog(QDialog):
         self.growth_filter.addItem("Отрицательные", 0)
         connect_combo_autowidth(self.growth_filter)
         self.growth_filter.currentIndexChanged.connect(self._on_filter_changed)
-        self.date_from = QDateTimeEdit(calendarPopup=True)
+        self.date_from = QDateTimeEdit()
+        self.date_from.setCalendarPopup(True)
         self.date_from.setDisplayFormat("dd.MM.yyyy")
         self.date_from.setMinimumDate(self._date_empty)
         self.date_from.setSpecialValueText("")
         self.date_from.setDate(self._date_empty)
         self.date_from.dateChanged.connect(self._on_filter_changed)
-        self.date_to = QDateTimeEdit(calendarPopup=True)
+        self.date_to = QDateTimeEdit()
+        self.date_to.setCalendarPopup(True)
         self.date_to.setDisplayFormat("dd.MM.yyyy")
         self.date_to.setMinimumDate(self._date_empty)
         self.date_to.setSpecialValueText("")
@@ -732,165 +740,117 @@ class SanitarySampleDetailDialog(QDialog):
         except _HANDLED_SANITARY_ERRORS as exc:
             set_status(self.error_label, error_text(exc, "Не удалось загрузить пробу"), "error")
 
-    def _collect_susceptibility(self) -> list[dict]:
-        items = []
+    def _collect_susceptibility_inputs(self) -> list[SusceptibilityInput]:
+        rows: list[SusceptibilityInput] = []
         for row in range(self.susc_table.rowCount()):
             abx_widget = self.susc_table.cellWidget(row, 0)
             abx_combo = cast(QComboBox, abx_widget) if isinstance(abx_widget, QComboBox) else None
             ris_item = self.susc_table.item(row, 1)
             mic_item = self.susc_table.item(row, 2)
             method_item = self.susc_table.item(row, 3)
-            abx_id = abx_combo.currentData() if abx_combo else None
-            has_any = any(
-                [
-                    (ris_item and ris_item.text().strip()),
-                    (mic_item and mic_item.text().strip()),
-                    (method_item and method_item.text().strip()),
-                ]
-            )
-            if has_any and not abx_id:
-                raise ValueError(f"Выберите антибиотик в строке {row + 1}")
-            if abx_id:
-                ris_val = ris_item.text().strip().upper() if ris_item and ris_item.text() else None
-                if ris_val and ris_val not in ("R", "I", "S"):
-                    raise ValueError("RIS должен быть R/I/S")
-                items.append(
-                    {
-                        "antibiotic_id": abx_id,
-                        "ris": ris_val,
-                        "mic_mg_l": float(mic_item.text()) if mic_item and mic_item.text() else None,
-                        "method": method_item.text() if method_item else None,
-                    }
+            rows.append(
+                SusceptibilityInput(
+                    row_number=row + 1,
+                    antibiotic_id=abx_combo.currentData() if abx_combo else None,
+                    ris=ris_item.text() if ris_item else None,
+                    mic_text=mic_item.text() if mic_item else None,
+                    method=method_item.text() if method_item else None,
                 )
-        return items
+            )
+        return rows
 
-    def _collect_phages(self) -> list[dict]:
-        items = []
+    def _collect_phage_inputs(self) -> list[PhageInput]:
+        rows: list[PhageInput] = []
         for row in range(self.phage_table.rowCount()):
             ph_widget = self.phage_table.cellWidget(row, 0)
             ph_combo = cast(QComboBox, ph_widget) if isinstance(ph_widget, QComboBox) else None
             free_item = self.phage_table.item(row, 1)
             dia_item = self.phage_table.item(row, 2)
-            ph_id = ph_combo.currentData() if ph_combo else None
-            free_text = free_item.text().strip() if free_item and free_item.text() else ""
-            has_any = bool(free_text) or (dia_item and dia_item.text().strip())
-            if has_any and not ph_id and not free_text:
-                raise ValueError(f"Укажите фаг или свободное имя в строке {row + 1}")
-            if ph_id or free_text:
-                dia_val = float(dia_item.text()) if dia_item and dia_item.text() else None
-                if dia_val is not None and dia_val < 0:
-                    raise ValueError("Диаметр должен быть >= 0")
-                items.append(
-                    {
-                        "phage_id": ph_id,
-                        "phage_free": free_text or None,
-                        "lysis_diameter_mm": dia_val,
-                    }
+            rows.append(
+                PhageInput(
+                    row_number=row + 1,
+                    phage_id=ph_combo.currentData() if ph_combo else None,
+                    phage_free=free_item.text() if free_item else "",
+                    diameter_text=dia_item.text() if dia_item else None,
                 )
-        return items
+            )
+        return rows
+
+    def _collect_susceptibility(self) -> list[dict]:
+        return build_susceptibility_payload(self._collect_susceptibility_inputs())
+
+    def _collect_phages(self) -> list[dict]:
+        return build_phage_payload(self._collect_phage_inputs())
 
     def _has_result_data(self) -> bool:
-        if self.growth_flag.currentData() is not None:
-            return True
-        if any(
-            [
-                self.colony_desc.text().strip(),
-                self.microscopy.text().strip(),
-                self.cfu.text().strip(),
-                self.micro_combo.currentData() is not None,
-                self.micro_free.text().strip(),
-            ]
-        ):
-            return True
-        for row in range(self.susc_table.rowCount()):
-            abx_widget = self.susc_table.cellWidget(row, 0)
-            abx_combo = cast(QComboBox, abx_widget) if isinstance(abx_widget, QComboBox) else None
-            if abx_combo and abx_combo.currentData() is not None:
-                return True
-            for col in range(1, 4):
-                item = self.susc_table.item(row, col)
-                if item and item.text().strip():
-                    return True
-        for row in range(self.phage_table.rowCount()):
-            ph_widget = self.phage_table.cellWidget(row, 0)
-            ph_combo = cast(QComboBox, ph_widget) if isinstance(ph_widget, QComboBox) else None
-            if ph_combo and ph_combo.currentData() is not None:
-                return True
-            for col in range(1, 3):
-                item = self.phage_table.item(row, col)
-                if item and item.text().strip():
-                    return True
-        return False
+        return has_sanitary_result_data(
+            growth_flag=self.growth_flag.currentData(),
+            colony_desc=self.colony_desc.text(),
+            microscopy=self.microscopy.text(),
+            cfu=self.cfu.text(),
+            microorganism_id=self.micro_combo.currentData(),
+            microorganism_free=self.micro_free.text(),
+            susceptibility_rows=self._collect_susceptibility_inputs(),
+            phage_rows=self._collect_phage_inputs(),
+        )
+
+    def _build_result_update(self) -> tuple[bool, SanitarySampleResultUpdate]:
+        has_results = self._has_result_data()
+        susceptibility = self._collect_susceptibility() if has_results else []
+        phages = self._collect_phages() if has_results else []
+        update = build_sanitary_result_update(
+            has_results=has_results,
+            growth_flag=self.growth_flag.currentData(),
+            growth_result_at=self._to_python_datetime(self.growth_result_at),
+            colony_desc=self.colony_desc.text(),
+            microscopy=self.microscopy.text(),
+            cfu=self.cfu.text(),
+            microorganism_id=self.micro_combo.currentData(),
+            microorganism_free=self.micro_free.text(),
+            susceptibility=susceptibility,
+            phages=phages,
+        )
+        return has_results, update
+
+    @staticmethod
+    def _to_python_datetime(widget: QDateTimeEdit) -> datetime | None:
+        if widget.dateTime().isValid():
+            return cast(datetime | None, widget.dateTime().toPython())
+        return None
 
     def on_save(self) -> None:
         clear_status(self.error_label)
         if self.sample_id is None:
             try:
-                if not self.sampling_point.text().strip():
-                    raise ValueError("Укажите точку отбора")
-                req = SanitarySampleCreateRequest(
+                req = build_sanitary_sample_create_request(
                     department_id=self.department_id,
-                    sampling_point=self.sampling_point.text().strip(),
-                    room=self.room.text().strip() or None,
-                    medium=self.medium.text().strip() or None,
-                    taken_at=cast(datetime | None, self.taken_at.dateTime().toPython())
-                    if self.taken_at.dateTime().isValid()
-                    else None,
-                    delivered_at=cast(datetime | None, self.delivered_at.dateTime().toPython())
-                    if self.delivered_at.dateTime().isValid()
-                    else None,
+                    sampling_point=self.sampling_point.text(),
+                    room=self.room.text(),
+                    medium=self.medium.text(),
+                    taken_at=self._to_python_datetime(self.taken_at),
+                    delivered_at=self._to_python_datetime(self.delivered_at),
                     created_by=None,
                 )
                 resp = self.sanitary_service.create_sample(req)
                 self.sample_id = resp.id
-                if self._has_result_data():
-                    upd = SanitarySampleResultUpdate(
-                        growth_flag=self.growth_flag.currentData(),
-                        growth_result_at=cast(datetime | None, self.growth_result_at.dateTime().toPython())
-                        if self.growth_result_at.dateTime().isValid()
-                        else datetime.now(UTC),
-                        colony_desc=self.colony_desc.text() or None,
-                        microscopy=self.microscopy.text() or None,
-                        cfu=self.cfu.text() or None,
-                        microorganism_id=self.micro_combo.currentData(),
-                        microorganism_free=self.micro_free.text() or None,
-                        susceptibility=self._collect_susceptibility(),
-                        phages=self._collect_phages(),
-                    )
-                    self.sanitary_service.update_result(self.sample_id, upd, actor_id=None)
+                has_results, result_update = self._build_result_update()
+                if has_results:
+                    self.sanitary_service.update_result(self.sample_id, result_update, actor_id=None)
                 self.accept()
             except _HANDLED_SANITARY_ERRORS as exc:
                 set_status(self.error_label, error_text(exc, "Не удалось сохранить пробу"), "error")
         else:
             try:
-                if not self.sampling_point.text().strip():
-                    raise ValueError("Укажите точку отбора")
-                upd_sample = SanitarySampleUpdateRequest(
-                    sampling_point=self.sampling_point.text().strip() or None,
-                    room=self.room.text().strip() or None,
-                    medium=self.medium.text().strip() or None,
-                    taken_at=cast(datetime | None, self.taken_at.dateTime().toPython())
-                    if self.taken_at.dateTime().isValid()
-                    else None,
-                    delivered_at=cast(datetime | None, self.delivered_at.dateTime().toPython())
-                    if self.delivered_at.dateTime().isValid()
-                    else None,
+                upd_sample = build_sanitary_sample_update_request(
+                    sampling_point=self.sampling_point.text(),
+                    room=self.room.text(),
+                    medium=self.medium.text(),
+                    taken_at=self._to_python_datetime(self.taken_at),
+                    delivered_at=self._to_python_datetime(self.delivered_at),
                 )
                 self.sanitary_service.update_sample(self.sample_id, upd_sample, actor_id=None)
-                upd = SanitarySampleResultUpdate(
-                    growth_flag=self.growth_flag.currentData(),
-                    growth_result_at=cast(datetime | None, self.growth_result_at.dateTime().toPython())
-                    if self.growth_result_at.dateTime().isValid()
-                    else datetime.now(UTC),
-                    colony_desc=self.colony_desc.text() or None,
-                    microscopy=self.microscopy.text() or None,
-                    cfu=self.cfu.text() or None,
-                    microorganism_id=self.micro_combo.currentData(),
-                    microorganism_free=self.micro_free.text() or None,
-                    susceptibility=self._collect_susceptibility(),
-                    phages=self._collect_phages(),
-                )
-                self.sanitary_service.update_result(self.sample_id, upd, actor_id=None)
+                _, result_update = self._build_result_update()
+                self.sanitary_service.update_result(self.sample_id, result_update, actor_id=None)
                 self.accept()
             except _HANDLED_SANITARY_ERRORS as exc:
                 set_status(self.error_label, error_text(exc, "Не удалось обновить пробу"), "error")

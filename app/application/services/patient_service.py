@@ -171,6 +171,13 @@ class PatientService:
                 )
             return results
 
+    def get_patient_name(self, patient_id: int) -> str | None:
+        with self.session_factory() as session:
+            patient = self.patient_repo.get_by_id(session, patient_id)
+            if not patient:
+                return None
+            return cast(str, patient.full_name)
+
     def list_recent(self, limit: int = 10) -> list[PatientResponse]:
         with self.session_factory() as session:
             patients = self.patient_repo.list_recent(session, limit=limit)

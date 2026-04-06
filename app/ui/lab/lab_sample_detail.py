@@ -23,21 +23,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.application.dto.lab_dto import (
-    LabSampleCreateRequest,
-    LabSampleResultUpdate,
-    LabSampleUpdateRequest,
-)
-from app.application.services.lab_service import LabService
-from app.application.services.reference_service import ReferenceService
-from app.ui.lab.lab_sample_detail_helpers import (
+from app.application.dto.lab_dto import LabSampleResultUpdate
+from app.application.services.lab_sample_payload_service import (
     PhageInput,
     SusceptibilityInput,
+    build_lab_sample_create_request,
+    build_lab_sample_update_request,
     build_phage_payload,
     build_susceptibility_payload,
     compose_lab_result_update,
     has_lab_result_data,
 )
+from app.application.services.lab_service import LabService
+from app.application.services.reference_service import ReferenceService
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, set_status
 from app.ui.widgets.table_utils import (
@@ -547,7 +545,7 @@ class LabSampleDetailDialog(QDialog):
         except Exception as exc:  # noqa: BLE001
             set_status(self.error_label, str(exc), "error")
 
-    def _collect_susceptibility(self) -> list[dict]:
+    def _collect_susceptibility_inputs(self) -> list[SusceptibilityInput]:
         rows: list[SusceptibilityInput] = []
         for row in range(self.susc_table.rowCount()):
             abx_widget = self.susc_table.cellWidget(row, 0)
@@ -564,9 +562,9 @@ class LabSampleDetailDialog(QDialog):
                     method=method_item.text() if method_item else None,
                 )
             )
-        return build_susceptibility_payload(rows)
+        return rows
 
-    def _collect_phages(self) -> list[dict]:
+    def _collect_phage_inputs(self) -> list[PhageInput]:
         rows: list[PhageInput] = []
         for row in range(self.phage_table.rowCount()):
             ph_widget = self.phage_table.cellWidget(row, 0)
@@ -581,39 +579,15 @@ class LabSampleDetailDialog(QDialog):
                     diameter_text=dia_item.text() if dia_item else None,
                 )
             )
-        return build_phage_payload(rows)
+        return rows
+
+    def _collect_susceptibility(self) -> list[dict]:
+        return build_susceptibility_payload(self._collect_susceptibility_inputs())
+
+    def _collect_phages(self) -> list[dict]:
+        return build_phage_payload(self._collect_phage_inputs())
 
     def _has_result_data(self) -> bool:
-        susceptibility_rows: list[SusceptibilityInput] = []
-        for row in range(self.susc_table.rowCount()):
-            abx_widget = self.susc_table.cellWidget(row, 0)
-            abx_combo = cast(QComboBox, abx_widget) if isinstance(abx_widget, QComboBox) else None
-            ris_item = self.susc_table.item(row, 1)
-            mic_item = self.susc_table.item(row, 2)
-            method_item = self.susc_table.item(row, 3)
-            susceptibility_rows.append(
-                SusceptibilityInput(
-                    row_number=row + 1,
-                    antibiotic_id=abx_combo.currentData() if abx_combo else None,
-                    ris=ris_item.text() if ris_item else None,
-                    mic_text=mic_item.text() if mic_item else None,
-                    method=method_item.text() if method_item else None,
-                )
-            )
-        phage_rows: list[PhageInput] = []
-        for row in range(self.phage_table.rowCount()):
-            ph_widget = self.phage_table.cellWidget(row, 0)
-            ph_combo = cast(QComboBox, ph_widget) if isinstance(ph_widget, QComboBox) else None
-            free_item = self.phage_table.item(row, 1)
-            dia_item = self.phage_table.item(row, 2)
-            phage_rows.append(
-                PhageInput(
-                    row_number=row + 1,
-                    phage_id=ph_combo.currentData() if ph_combo else None,
-                    phage_free=free_item.text() if free_item else "",
-                    diameter_text=dia_item.text() if dia_item else None,
-                )
-            )
         return has_lab_result_data(
             growth_flag=self.growth_flag.currentData(),
             colony_desc=self.colony_desc.text(),
@@ -621,8 +595,8 @@ class LabSampleDetailDialog(QDialog):
             cfu=self.cfu.text(),
             microorganism_id=self.micro_combo.currentData(),
             microorganism_free=self.micro_free.text(),
-            susceptibility_rows=susceptibility_rows,
-            phage_rows=phage_rows,
+            susceptibility_rows=self._collect_susceptibility_inputs(),
+            phage_rows=self._collect_phage_inputs(),
         )
 
     def _build_result_update(self) -> LabSampleResultUpdate:
@@ -646,30 +620,28 @@ class LabSampleDetailDialog(QDialog):
             phages=phages,
         )
 
+    @staticmethod
+    def _to_python_datetime(widget: QDateTimeEdit) -> datetime | None:
+        if widget.dateTime().isValid():
+            return cast(datetime | None, widget.dateTime().toPython())
+        return None
+
     def on_save(self) -> None:
         clear_status(self.error_label)
         if self.sample_id is None:
             try:
                 material_id = self.material_type.currentData()
-                if material_id is None:
-                    raise ValueError("Выберите тип материала")
                 qc_status = self.qc_status.currentData()
-                req = LabSampleCreateRequest(
+                req = build_lab_sample_create_request(
                     patient_id=self.patient_id,
                     emr_case_id=self.emr_case_id,
                     material_type_id=material_id,
-                    material_location=self.material_location.text().strip() or None,
-                    medium=self.medium.text().strip() or None,
+                    material_location=self.material_location.text(),
+                    medium=self.medium.text(),
                     study_kind=self.study_kind.currentData(),
-                    ordered_at=cast(datetime | None, self.ordered_at.dateTime().toPython())
-                    if self.ordered_at.dateTime().isValid()
-                    else None,
-                    taken_at=cast(datetime | None, self.taken_at.dateTime().toPython())
-                    if self.taken_at.dateTime().isValid()
-                    else None,
-                    delivered_at=cast(datetime | None, self.delivered_at.dateTime().toPython())
-                    if self.delivered_at.dateTime().isValid()
-                    else None,
+                    ordered_at=self._to_python_datetime(self.ordered_at),
+                    taken_at=self._to_python_datetime(self.taken_at),
+                    delivered_at=self._to_python_datetime(self.delivered_at),
                     created_by=None,
                 )
                 resp = self.lab_service.create_sample(req)
@@ -686,22 +658,14 @@ class LabSampleDetailDialog(QDialog):
         else:
             try:
                 material_id = self.material_type.currentData()
-                if material_id is None:
-                    raise ValueError("Выберите тип материала")
-                upd_sample = LabSampleUpdateRequest(
+                upd_sample = build_lab_sample_update_request(
                     material_type_id=material_id,
-                    material_location=self.material_location.text().strip() or None,
-                    medium=self.medium.text().strip() or None,
+                    material_location=self.material_location.text(),
+                    medium=self.medium.text(),
                     study_kind=self.study_kind.currentData(),
-                    ordered_at=cast(datetime | None, self.ordered_at.dateTime().toPython())
-                    if self.ordered_at.dateTime().isValid()
-                    else None,
-                    taken_at=cast(datetime | None, self.taken_at.dateTime().toPython())
-                    if self.taken_at.dateTime().isValid()
-                    else None,
-                    delivered_at=cast(datetime | None, self.delivered_at.dateTime().toPython())
-                    if self.delivered_at.dateTime().isValid()
-                    else None,
+                    ordered_at=self._to_python_datetime(self.ordered_at),
+                    taken_at=self._to_python_datetime(self.taken_at),
+                    delivered_at=self._to_python_datetime(self.delivered_at),
                 )
                 self.lab_service.update_sample(self.sample_id, upd_sample, actor_id=None)
                 upd = self._build_result_update()
