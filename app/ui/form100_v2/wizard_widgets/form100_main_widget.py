@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from PySide6.QtCore import QDate, Qt, QTime
 from PySide6.QtWidgets import (
@@ -223,7 +224,7 @@ class Form100MainWidget(QWidget):
         self.isolation_bar.style().polish(self.isolation_bar)
         self.isolation_bar.update()
 
-    def set_values(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]
+    def set_values(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:
         gender = str(payload.get("bodymap_gender") or "M")
         if gender in ("M", "F"):
             self.editor.set_gender(gender)
@@ -293,7 +294,7 @@ class Form100MainWidget(QWidget):
             d = QDate.fromString(val, "dd.MM.yyyy")
             date_edit.setDate(d if d.isValid() else QDate.currentDate())
 
-    def collect(self) -> tuple[dict[str, str], list[dict]]:  # type: ignore[type-arg]
+    def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         payload: dict[str, str] = {}
 
         payload["bodymap_gender"] = self.editor.gender()

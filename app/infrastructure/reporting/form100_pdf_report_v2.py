@@ -12,12 +12,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-try:
-    from PIL import Image as PILImage, ImageDraw
-except ImportError:  # pragma: no cover - handled by vector fallback
-    PILImage = None  # type: ignore[assignment]
-    ImageDraw = None  # type: ignore[assignment]
-
 from reportlab.graphics.shapes import (
     Circle,
     Drawing,
@@ -42,6 +36,17 @@ from reportlab.platypus import (
 )
 
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
+
+_PILImageModule: Any
+_ImageDrawModule: Any
+try:
+    from PIL import Image as _PILImageModule, ImageDraw as _ImageDrawModule
+except ImportError:  # pragma: no cover - handled by vector fallback
+    _PILImageModule = None
+    _ImageDrawModule = None
+
+PILImage: Any = _PILImageModule
+ImageDraw: Any = _ImageDrawModule
 
 # ── Константы ────────────────────────────────────────────────────────────────
 
@@ -105,19 +110,19 @@ def _checked_items(d: dict[str, Any], labels: dict[str, str]) -> list[str]:
 
 def _parse_annotations(raw: Any) -> list[dict[str, Any]]:
     if isinstance(raw, list):
-        return raw  # type: ignore[return-value]
+        return [item for item in raw if isinstance(item, dict)]
     if isinstance(raw, str):
         try:
             parsed = json.loads(raw)
             if isinstance(parsed, list):
-                return parsed  # type: ignore[return-value]
+                return [item for item in parsed if isinstance(item, dict)]
         except (json.JSONDecodeError, ValueError):
             pass
     return []
 
 
 def _to_float(value: object, default: float = 0.5) -> float:
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value)
     try:
         return float(str(value))
@@ -251,7 +256,7 @@ def _build_bodymap_image_flowable(
     flowable.drawHeight = max(1.0, float(canvas.height) * scale)
     flowable.hAlign = "CENTER"
     # keep in-memory PNG alive until document build completes
-    flowable._source_buffer = payload  # type: ignore[attr-defined]
+    flowable._source_buffer = payload
     return flowable
 
 

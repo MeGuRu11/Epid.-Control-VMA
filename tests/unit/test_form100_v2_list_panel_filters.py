@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import Form100V2Filters
 from app.ui.form100_v2.form100_list_panel import Form100ListPanel
@@ -17,7 +19,7 @@ class _ServiceStub:
 def test_list_panel_uses_patient_scope_first(qapp) -> None:
     service = _ServiceStub()
     panel = Form100ListPanel(
-        form100_service=service,  # type: ignore[arg-type]
+        form100_service=cast(Any, service),
         session=SessionContext(user_id=1, login="admin", role="admin"),
         patient_id=42,
         emr_case_id=777,

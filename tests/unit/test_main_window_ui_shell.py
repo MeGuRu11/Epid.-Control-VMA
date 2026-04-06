@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 from PySide6.QtWidgets import QWidget
 
@@ -25,7 +26,7 @@ def test_main_window_uses_transition_stack_and_shell_layers(monkeypatch, qapp) -
     )
     window = MainWindow(
         session=SessionContext(user_id=1, login="admin", role="admin"),
-        container=container,  # type: ignore[arg-type]
+        container=cast(Any, container),
     )
     qapp.processEvents()
 
@@ -73,7 +74,7 @@ def test_main_window_nav_menu_adapts_titles_on_small_width(monkeypatch, qapp) ->
     )
     window = MainWindow(
         session=SessionContext(user_id=1, login="admin", role="admin"),
-        container=container,  # type: ignore[arg-type]
+        container=cast(Any, container),
     )
     window.show()
     qapp.processEvents()

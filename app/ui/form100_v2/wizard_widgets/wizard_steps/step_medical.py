@@ -1,6 +1,8 @@
 """WizardStep3 — Медицинская помощь."""
 from __future__ import annotations
 
+from typing import Any
+
 from PySide6.QtWidgets import (
     QCheckBox,
     QFormLayout,
@@ -74,7 +76,7 @@ class StepMedical(QWidget):
         scroll.setWidget(mp_box)
         root.addWidget(scroll)
 
-    def set_values(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]  # noqa: ARG002
+    def set_values(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:  # noqa: ARG002
         self.mp_antibiotic.setChecked(_truthy(payload.get("mp_antibiotic")))
         self.mp_antibiotic_dose.setText(str(payload.get("mp_antibiotic_dose") or ""))
         self.mp_serum_pss.setChecked(_truthy(payload.get("mp_serum_pss")))
@@ -89,7 +91,7 @@ class StepMedical(QWidget):
         self.mp_immobilization.setChecked(_truthy(payload.get("mp_immobilization")))
         self.mp_bandage.setChecked(_truthy(payload.get("mp_bandage")))
 
-    def collect(self) -> tuple[dict[str, str], list[dict]]:  # type: ignore[type-arg]
+    def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         return {
             "mp_antibiotic":             "1" if self.mp_antibiotic.isChecked() else "0",
             "mp_antibiotic_dose":        self.mp_antibiotic_dose.text().strip(),

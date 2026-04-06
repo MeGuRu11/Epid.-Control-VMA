@@ -56,9 +56,9 @@ class TransitionStack(QStackedWidget):
         for idx in range(self.count()):
             page = self.widget(idx)
             if page is not None and page is not current and page.graphicsEffect() is not None:
-                page.setGraphicsEffect(None)  # type: ignore[arg-type]
+                page.setGraphicsEffect(None)  # type: ignore[arg-type]  # Qt API допускает None для сброса эффекта, stubs PySide6 конфликтуют
         if current.graphicsEffect() is not None:
-            current.setGraphicsEffect(None)  # type: ignore[arg-type]
+            current.setGraphicsEffect(None)  # type: ignore[arg-type]  # Qt API допускает None для сброса эффекта, stubs PySide6 конфликтуют
 
         self._busy = False
         queued = self._queued

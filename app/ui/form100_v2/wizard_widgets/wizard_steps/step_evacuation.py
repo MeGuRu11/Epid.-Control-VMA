@@ -1,6 +1,8 @@
 """WizardStep4 — Эвакуация + Флаги + Итог/Обзор."""
 from __future__ import annotations
 
+from typing import Any
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QBoxLayout,
@@ -160,7 +162,7 @@ class _ReviewPanel(QScrollArea):
 
         return card
 
-    def rebuild(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]
+    def rebuild(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:
         self._clear()
 
         name = (
@@ -364,15 +366,15 @@ class StepEvacuation(QWidget):
             self._review_panel.setMinimumWidth(220)
             self._bot_scroll.setMinimumHeight(0)
 
-    def set_values(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]
+    def set_values(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:
         self.flags_widget.set_values(payload)
         self.bottom_widget.set_values(payload)
         self._review_panel.rebuild(payload, markers)
 
-    def update_review(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]
+    def update_review(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:
         self._review_panel.rebuild(payload, markers)
 
-    def collect(self) -> tuple[dict[str, str], list[dict]]:  # type: ignore[type-arg]
+    def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         out = self.flags_widget.collect()
         out.update(self.bottom_widget.collect())
         return out, []

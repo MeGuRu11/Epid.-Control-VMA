@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 from app import main as main_module
 
@@ -28,9 +29,10 @@ def test_install_stderr_tee_tolerates_non_callable_flush(tmp_path: Path, monkeyp
     log_path = tmp_path / "app.log"
     main_module._install_stderr_tee(log_path)
 
-    tee = sys.stderr
+    tee = cast(Any, sys.stderr)
+    assert hasattr(tee, "_streams")
     # Simulate unexpected runtime mutation in bundled environment.
-    streams = tee._streams  # type: ignore[union-attr]
+    streams = cast(list[Any], tee._streams)
     streams.append(None)
     tee.write("test\n")
     tee.flush()

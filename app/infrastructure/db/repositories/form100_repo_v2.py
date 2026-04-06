@@ -37,7 +37,7 @@ def _to_json(value: object, *, default: str) -> str:
 def _from_json(value: object, *, default: object) -> object:
     if value is None:
         return default
-    if isinstance(value, (list, dict)):
+    if isinstance(value, list | dict):
         return value
     try:
         return json.loads(str(value))
@@ -191,9 +191,10 @@ class Form100RepositoryV2:
         if current_version != expected_version:
             raise ValueError("Конфликт версий Form100: запись была изменена другим пользователем")
         self._apply_card_payload(row, payload)
-        row.updated_at = _utc_now()  # type: ignore[assignment]
-        row.updated_by = actor_login  # type: ignore[assignment]
-        row.version = current_version + 1  # type: ignore[assignment]
+        mutable_row = cast(Any, row)
+        mutable_row.updated_at = _utc_now()
+        mutable_row.updated_by = actor_login
+        mutable_row.version = current_version + 1
 
         data_row = self.get_data(session, card_id)
         if data_row is None:
@@ -218,10 +219,11 @@ class Form100RepositoryV2:
         current_version = cast(int, row.version)
         if current_version != expected_version:
             raise ValueError("Конфликт версий Form100: запись была изменена другим пользователем")
-        row.is_archived = True  # type: ignore[assignment]
-        row.updated_at = _utc_now()  # type: ignore[assignment]
-        row.updated_by = actor_login  # type: ignore[assignment]
-        row.version = current_version + 1  # type: ignore[assignment]
+        mutable_row = cast(Any, row)
+        mutable_row.is_archived = True
+        mutable_row.updated_at = _utc_now()
+        mutable_row.updated_by = actor_login
+        mutable_row.version = current_version + 1
         session.flush()
         return row
 
@@ -244,11 +246,12 @@ class Form100RepositoryV2:
         row = self.get_card(session, card_id)
         if row is None:
             raise ValueError("Карточка Form100 не найдена")
-        row.artifact_path = artifact_path  # type: ignore[assignment]
-        row.artifact_sha256 = artifact_sha256  # type: ignore[assignment]
-        row.updated_at = _utc_now()  # type: ignore[assignment]
-        row.updated_by = actor_login  # type: ignore[assignment]
-        row.version = cast(int, row.version) + 1  # type: ignore[assignment]
+        mutable_row = cast(Any, row)
+        mutable_row.artifact_path = artifact_path
+        mutable_row.artifact_sha256 = artifact_sha256
+        mutable_row.updated_at = _utc_now()
+        mutable_row.updated_by = actor_login
+        mutable_row.version = cast(int, row.version) + 1
         session.flush()
         return row
 
@@ -309,9 +312,10 @@ class Form100RepositoryV2:
             setattr(row, key, value)
 
     def _apply_data_payload(self, row: models.Form100DataV2, payload: dict[str, object]) -> None:
+        mutable_row = cast(Any, row)
         for key, value in payload.items():
             if key == "bodymap_gender":
-                row.bodymap_gender = str(value or "M")  # type: ignore[assignment]
+                mutable_row.bodymap_gender = str(value or "M")
                 continue
             mapped = _DATA_JSON_FIELD_MAP.get(key)
             if not mapped:

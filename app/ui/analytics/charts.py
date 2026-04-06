@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any, cast
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
@@ -14,10 +15,10 @@ class TopMicrobesChart(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
+        self._plot: Any = None
         if pg is None:
             self._fallback = QLabel("pyqtgraph не установлен")
             layout.addWidget(self._fallback)
-            self._plot = None
             return
         self._plot = pg.PlotWidget()
         self._plot.setBackground("w")
@@ -25,7 +26,7 @@ class TopMicrobesChart(QWidget):
         self._plot.setLabel("left", "Количество")
         self._plot.setLabel("bottom", "Микроорганизмы")
         self._lock_plot_interaction()
-        layout.addWidget(self._plot)  # type: ignore[arg-type]
+        layout.addWidget(cast(QWidget, self._plot))
 
     def update_data(self, items: Iterable[tuple[str, int]]) -> None:
         if self._plot is None or pg is None:
@@ -55,10 +56,10 @@ class TrendChart(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
+        self._plot: Any = None
         if pg is None:
             self._fallback = QLabel("pyqtgraph не установлен")
             layout.addWidget(self._fallback)
-            self._plot = None
             return
         self._plot = pg.PlotWidget()
         self._plot.setBackground("w")
@@ -66,7 +67,7 @@ class TrendChart(QWidget):
         self._plot.setLabel("left", "Количество")
         self._plot.setLabel("bottom", "Дата")
         self._lock_plot_interaction()
-        layout.addWidget(self._plot)  # type: ignore[arg-type]
+        layout.addWidget(cast(QWidget, self._plot))
 
     def update_data(self, items: Iterable[tuple[str, int, int]]) -> None:
         if self._plot is None or pg is None:

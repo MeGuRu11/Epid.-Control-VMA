@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from sqlalchemy import func, select
 
@@ -61,7 +62,7 @@ class DashboardService:
                 .order_by(models.AuditLog.event_ts.desc())
                 .limit(1)
             )
-            return session.execute(stmt).scalar_one_or_none()
+            return cast(object | None, session.execute(stmt).scalar_one_or_none())
 
     def get_new_patients_count(self, days: int) -> int:
         since = datetime.now(UTC) - timedelta(days=days - 1)

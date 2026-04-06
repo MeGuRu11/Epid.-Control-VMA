@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPen, QPixmap, QPolygonF
@@ -526,7 +526,7 @@ class BodyMapWidget(QWidget):
     def annotations(self) -> list[AnnotationData]:
         return list(self._canvas._annotations)
 
-    def set_markers(self, markers: list[dict]) -> None:  # type: ignore[type-arg]
+    def set_markers(self, markers: list[dict[str, Any]]) -> None:
         out: list[AnnotationData] = []
         for m in markers:
             try:
@@ -555,7 +555,7 @@ class BodyMapWidget(QWidget):
         self._canvas._annotations = out
         self._canvas.update()
 
-    def markers(self) -> list[dict]:  # type: ignore[type-arg]
+    def markers(self) -> list[dict[str, Any]]:
         return [
             {
                 "annotation_type": a.annotation_type,
@@ -592,10 +592,10 @@ class BodyMapWidget(QWidget):
     def set_hidden_keys(self, keys: set[str]) -> None:
         pass
 
-    def set_payload(self, payload: dict) -> None:  # type: ignore[type-arg]
+    def set_payload(self, payload: dict[str, Any]) -> None:
         self.set_gender("M")
 
-    def payload(self) -> dict:  # type: ignore[type-arg]
+    def payload(self) -> dict[str, Any]:
         return {"bodymap_gender": self.gender()}
 
     def has_template(self) -> bool:

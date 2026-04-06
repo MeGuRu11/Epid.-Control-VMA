@@ -161,7 +161,7 @@ def _map_csv_row(table_name: str, row: dict[str, Any]) -> dict[str, Any]:
 def _parse_value(value: Any, column) -> Any:
     if value is None or value == "":
         return None
-    if isinstance(value, (date, datetime)):
+    if isinstance(value, date | datetime):
         return value
     if isinstance(column.type, Date):
         try:
@@ -529,14 +529,17 @@ class ExchangeService:
         actor_id: int | None = None,
         exported_by: str | None = None,
         card_id: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
-        return self.form100_v2_service.export_package_zip(
-            file_path=file_path,
-            actor_id=actor_id,
-            card_id=card_id,
-            exported_by=exported_by,
+        return cast(
+            dict[str, Any],
+            self.form100_v2_service.export_package_zip(
+                file_path=file_path,
+                actor_id=actor_id,
+                card_id=card_id,
+                exported_by=exported_by,
+            ),
         )
 
     def import_form100_package_zip(
@@ -545,13 +548,16 @@ class ExchangeService:
         *,
         actor_id: int | None = None,
         mode: str = "merge",
-    ) -> dict:
+    ) -> dict[str, Any]:
         if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
-        return self.form100_v2_service.import_package_zip(
-            file_path=file_path,
-            actor_id=actor_id,
-            mode=mode,
+        return cast(
+            dict[str, Any],
+            self.form100_v2_service.import_package_zip(
+                file_path=file_path,
+                actor_id=actor_id,
+                mode=mode,
+            ),
         )
 
     def list_packages(
@@ -566,7 +572,8 @@ class ExchangeService:
                     models.DataExchangePackage.file_path.ilike(f"%{query}%")
                     | models.DataExchangePackage.sha256.ilike(f"%{query}%")
                 )
-            return q.order_by(models.DataExchangePackage.created_at.desc()).limit(limit).all()
+            rows = q.order_by(models.DataExchangePackage.created_at.desc()).limit(limit).all()
+            return cast(list[models.DataExchangePackage], rows)
 
     def export_csv(self, file_path: str | Path, table_name: str) -> dict:
         file_path = Path(file_path)

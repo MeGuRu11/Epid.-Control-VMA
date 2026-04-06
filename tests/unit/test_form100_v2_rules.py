@@ -46,6 +46,7 @@ def test_validate_card_payload_v2_checks_annotations() -> None:
         "bodymap_tissue_types": ["мягкие ткани"],
     }
     validate_card_payload_v2(payload)
+    assert payload["bodymap_gender"] == "M"
 
 
 def test_build_changed_paths_v2_returns_only_changes() -> None:

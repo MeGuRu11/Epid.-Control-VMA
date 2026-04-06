@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.reference_repo import ReferenceRepository
 from app.infrastructure.db.session import session_scope
+
+logger = logging.getLogger(__name__)
 
 
 def seed():
@@ -38,8 +41,9 @@ def seed():
         repo.upsert_simple(session, models.RefAntibioticGroup, data["ref_antibiotic_groups"], identity_field="code")
         repo.upsert_simple(session, models.RefAntibiotic, data["ref_antibiotics"], identity_field="code")
         repo.upsert_simple(session, models.RefPhage, data["ref_phages"], identity_field="code")
-    print("Seeded:", json.dumps(data, ensure_ascii=False, indent=2))
+    logger.info("Seeded: %s", json.dumps(data, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     seed()

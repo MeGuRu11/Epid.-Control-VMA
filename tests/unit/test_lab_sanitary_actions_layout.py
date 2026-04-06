@@ -28,7 +28,7 @@ def test_lab_samples_view_uses_responsive_actions(monkeypatch, qapp) -> None:
         list_microorganisms=list,
     )
     lab = SimpleNamespace(list_samples=lambda _pid, _case: [])
-    view = LabSamplesView(lab_service=lab, reference_service=ref)  # type: ignore[arg-type]
+    view = LabSamplesView(lab_service=cast(Any, lab), reference_service=cast(Any, ref))
     view.show()
     qapp.processEvents()
 
@@ -50,7 +50,7 @@ def test_sanitary_views_use_responsive_actions(qapp) -> None:
         list_samples_by_department=lambda _dep_id: [],
     )
 
-    dashboard = SanitaryDashboard(sanitary_service=sanitary, reference_service=ref)  # type: ignore[arg-type]
+    dashboard = SanitaryDashboard(sanitary_service=cast(Any, sanitary), reference_service=cast(Any, ref))
     dashboard.show()
     qapp.processEvents()
     assert hasattr(dashboard, "_quick_actions_layout")

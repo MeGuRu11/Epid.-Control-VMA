@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -252,7 +253,7 @@ class StepBodymap(QWidget):
 
                 self._notes_vlay.addWidget(row)
 
-    def set_values(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]
+    def set_values(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:
         def _parse_json_list(raw: object) -> set[str]:
             try:
                 parsed = json.loads(str(raw or "[]"))
@@ -290,7 +291,7 @@ class StepBodymap(QWidget):
 
         self._refresh_notes()
 
-    def collect(self) -> tuple[dict[str, str], list[dict]]:  # type: ignore[type-arg]
+    def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         payload: dict[str, str] = {}
 
         lesion_sel = [k for k, b in self.lesion_widget.checks.items() if b.isChecked()]

@@ -87,3 +87,30 @@
 ### Риски/заметки
 
 1. В рабочем дереве остаются ранее существующие несвязанные изменения в других файлах; при коммите этапа 3 нужно стадировать только целевые файлы.
+
+---
+
+## Дополнение (этап 4: качество кода и документация, 2026-04-06)
+
+### Что сделано
+
+- Переведён `tests/unit/test_user_admin_password_policy.py` на реальную SQLite-базу (без моков репозиториев/сессий), добавлены проверки создания пользователя, сброса пароля, деактивации и записи аудита.
+- Усилены слабые тесты: `tests/unit/test_form100_v2_rules.py`, `tests/unit/test_startup_temp_cleanup.py`.
+- Убран основной массив `# type: ignore`: было 59, осталось 2 обоснованных в текущем состоянии (`transition_stack.py`).
+- Исправлены типы в Form100 V2 виджетах/шагах, убраны `type-arg` ignore.
+- `print()` заменён на `logging` в `scripts/build_reference_seed.py`, `scripts/seed_references.py`, `scripts/test_form100_pdf.py`.
+- Документация обновлена: `README.md` (битая ссылка), `docs/context.md` (метрики + аудит/очистка + историческая пометка чернового раздела).
+- `pyproject.toml` обновлён: включены `warn_return_any`, `warn_unused_ignores`; `disallow_untyped_defs` откатён после проверки порога; добавлены точечные mypy overrides.
+- Закрыты `warn_return_any` ошибки в `analytics_service.py`, `exchange_service.py`, `dashboard_service.py`.
+
+### Результаты проверок
+
+- `ruff check app tests` — успешно.
+- `mypy app tests` — успешно (`253 source files`).
+- `pytest -q` — успешно (`236 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — успешно.
+- `pytest --cov=app -q` — `TOTAL 44%`.
+
+### Следующий шаг
+
+1. Планомерно повышать покрытие низкопокрытых сервисов и крупных UI-модулей без расширения зоны `type: ignore`.

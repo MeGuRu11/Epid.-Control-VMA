@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from app.application.dto.analytics_dto import AnalyticsSampleRow, AnalyticsSearchRequest
 from app.infrastructure.db.repositories.analytics_repo import AnalyticsRepository
@@ -17,6 +17,9 @@ from app.infrastructure.db.session import session_scope
 class _CacheEntry:
     created_at: float
     value: Any
+
+
+T = TypeVar("T")
 
 
 class AnalyticsService:
@@ -39,11 +42,11 @@ class AnalyticsService:
         self._cache.clear()
 
     def _normalize_cache_value(self, value: Any) -> Any:
-        if isinstance(value, (date, datetime)):
+        if isinstance(value, date | datetime):
             return value.isoformat()
         if isinstance(value, dict):
             return {str(k): self._normalize_cache_value(v) for k, v in value.items()}
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, list | tuple):
             return [self._normalize_cache_value(v) for v in value]
         return value
 
@@ -89,14 +92,14 @@ class AnalyticsService:
         for key in oldest_keys[:overflow]:
             self._cache.pop(key, None)
 
-    def _cached_call(self, scope: str, payload: dict[str, Any], loader: Callable[[], Any]) -> Any:
+    def _cached_call(self, scope: str, payload: dict[str, Any], loader: Callable[[], T]) -> T:
         key = self._make_cache_key(scope, payload)
         cached = self._cache_get(key)
         if cached is not None:
-            return cached
+            return cast(T, cached)
         value = loader()
         self._cache_set(key, value)
-        return copy.deepcopy(value)
+        return cast(T, copy.deepcopy(value))
 
     def search_samples(self, request: AnalyticsSearchRequest) -> list[AnalyticsSampleRow]:
         with self.session_factory() as session:

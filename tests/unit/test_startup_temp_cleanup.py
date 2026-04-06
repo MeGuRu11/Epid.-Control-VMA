@@ -55,6 +55,7 @@ def test_noop_when_no_tmp_run(tmp_path: Path) -> None:
     # tmp_run doesn't exist — should not raise
     with patch("app.bootstrap.startup.Path.cwd", return_value=tmp_path):
         cleanup_stale_temp_dirs()
+    assert not (tmp_path / "tmp_run").exists()
 
 
 def test_mixed_cleanup(tmp_run_dir: Path) -> None:

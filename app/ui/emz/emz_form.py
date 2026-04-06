@@ -4,7 +4,15 @@ from collections.abc import Callable
 from datetime import date, datetime
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, QDateTime, Qt, QTime
+from PySide6.QtCore import (
+    QAbstractItemModel,
+    QDate,
+    QDateTime,
+    QModelIndex,
+    QPersistentModelIndex,
+    Qt,
+    QTime,
+)
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
     QBoxLayout,
@@ -19,6 +27,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QStyledItemDelegate,
+    QStyleOptionViewItem,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -142,17 +151,29 @@ class IntColumnDelegate(QStyledItemDelegate):
         self._min_value = min_value
         self._max_value = max_value
 
-    def createEditor(self, parent: QWidget, option, index):  # type: ignore[override]  # noqa: N802
+    def createEditor(  # noqa: N802
+        self,
+        parent: QWidget,
+        option: QStyleOptionViewItem,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> QWidget:
+        _ = option
+        _ = index
         editor = QLineEdit(parent)
         editor.setValidator(QIntValidator(self._min_value, self._max_value, editor))
         return editor
 
-    def setEditorData(self, editor: QWidget, index) -> None:  # type: ignore[override]  # noqa: N802
+    def setEditorData(self, editor: QWidget, index: QModelIndex | QPersistentModelIndex) -> None:  # noqa: N802
         if isinstance(editor, QLineEdit):
             value = index.data(Qt.ItemDataRole.EditRole)
             editor.setText("" if value is None else str(value))
 
-    def setModelData(self, editor: QWidget, model, index) -> None:  # type: ignore[override]  # noqa: N802
+    def setModelData(  # noqa: N802
+        self,
+        editor: QWidget,
+        model: QAbstractItemModel,
+        index: QModelIndex | QPersistentModelIndex,
+    ) -> None:
         if isinstance(editor, QLineEdit):
             model.setData(index, editor.text().strip(), Qt.ItemDataRole.EditRole)
 
@@ -328,11 +349,14 @@ class EmzForm(QWidget):
         self.department_combo.setEditable(False)
         self.department_combo.addItem("Выбрать", None)
 
-        self.injury_date = QDateTimeEdit(calendarPopup=True)
+        self.injury_date = QDateTimeEdit()
+        self.injury_date.setCalendarPopup(True)
         self.injury_date.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.admission_date = QDateTimeEdit(calendarPopup=True)
+        self.admission_date = QDateTimeEdit()
+        self.admission_date.setCalendarPopup(True)
         self.admission_date.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.outcome_date = QDateTimeEdit(calendarPopup=True)
+        self.outcome_date = QDateTimeEdit()
+        self.outcome_date.setCalendarPopup(True)
         self.outcome_date.setDisplayFormat("dd.MM.yyyy HH:mm")
         min_dt = self._dt_empty
         self.injury_date.setMinimumDateTime(min_dt)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -57,6 +58,7 @@ JOIN_ABX_WORDS = {
 
 
 SeedRow = dict[str, str]
+logger = logging.getLogger(__name__)
 
 
 def _normalize_line(value: str) -> str:
@@ -319,9 +321,10 @@ def main() -> int:
     }
 
     OUTPUT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Saved: {OUTPUT_PATH}")
+    logger.info("Saved: %s", OUTPUT_PATH)
     return 0
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     raise SystemExit(main())

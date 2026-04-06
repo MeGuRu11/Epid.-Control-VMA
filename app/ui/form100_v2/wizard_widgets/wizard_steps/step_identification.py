@@ -1,6 +1,8 @@
 """WizardStep1 — Идентификация + Корешок."""
 from __future__ import annotations
 
+from typing import Any
+
 from PySide6.QtCore import QDate, QTime
 from PySide6.QtWidgets import (
     QDateEdit,
@@ -92,7 +94,7 @@ class StepIdentification(QWidget):
         ident_scroll.setWidget(ident_box)
         layout.addWidget(ident_scroll, 1)
 
-    def set_values(self, payload: dict[str, str], markers: list[dict]) -> None:  # type: ignore[type-arg]  # noqa: ARG002
+    def set_values(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:  # noqa: ARG002
         self._stub.set_values(payload)
         self.main_issued_place.setText(str(payload.get("main_issued_place") or ""))
         self.main_rank.setText(str(payload.get("main_rank") or ""))
@@ -116,7 +118,7 @@ class StepIdentification(QWidget):
             d = QDate.fromString(val, "dd.MM.yyyy")
             date_edit.setDate(d if d.isValid() else QDate.currentDate())
 
-    def collect(self) -> tuple[dict[str, str], list[dict]]:  # type: ignore[type-arg]
+    def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         out = self._stub.collect()
         out["main_issued_place"] = self.main_issued_place.text().strip()
         out["main_rank"] = self.main_rank.text().strip()

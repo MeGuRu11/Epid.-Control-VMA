@@ -128,7 +128,7 @@ def _stringify(value: object) -> str:
         return ""
     if isinstance(value, bool):
         return _bool_to_flag(value)
-    if isinstance(value, (dict, list)):
+    if isinstance(value, dict | list):
         return json.dumps(value, ensure_ascii=False)
     return str(value)
 
@@ -591,9 +591,9 @@ class Form100Wizard(QDialog):
 
     # ── Сбор данных ──────────────────────────────────────────────────────────
 
-    def _collect_all(self) -> tuple[dict[str, str], list[dict]]:  # type: ignore[type-arg]
+    def _collect_all(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         payload: dict[str, str] = {}
-        markers: list[dict] = []  # type: ignore[type-arg]
+        markers: list[dict[str, Any]] = []
         for step in self._steps:
             p, m = step.collect()
             payload.update(p)
@@ -616,7 +616,7 @@ class Form100Wizard(QDialog):
             return
         self.accept()
 
-    def _do_save(self, payload: dict[str, str], markers: list[dict]) -> Form100CardV2Dto:  # type: ignore[type-arg]
+    def _do_save(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> Form100CardV2Dto:
         data = _build_structured_data(payload, markers)
         main_full_name = payload.get("main_full_name") or payload.get("stub_full_name") or ""
         main_unit = payload.get("main_unit") or payload.get("stub_unit") or ""

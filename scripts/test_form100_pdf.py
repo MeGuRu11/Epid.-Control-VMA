@@ -1,5 +1,8 @@
+import logging
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 sys.path.insert(0, str(Path(r"c:\Users\user\Desktop\Program\Epid_System_Codex")))
 
 from app.infrastructure.reporting.form100_pdf_report_v2 import export_form100_pdf_v2
@@ -87,7 +90,8 @@ def test_pdf():
     }
     
     export_form100_pdf_v2(card=card, file_path="test_form100_v2_new.pdf")
-    print("PDF generated: test_form100_v2_new.pdf")
+    logger.info("PDF generated: test_form100_v2_new.pdf")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     test_pdf()
