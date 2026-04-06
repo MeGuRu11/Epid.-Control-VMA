@@ -21,8 +21,14 @@ def _recreate_table(table_name: str, columns: list[str], create_table, create_in
     temp_name = f"{table_name}__old"
     op.rename_table(table_name, temp_name)
     create_table()
-    cols_csv = ", ".join(columns)
-    op.execute(f"INSERT INTO {table_name} ({cols_csv}) SELECT {cols_csv} FROM {temp_name}")
+    source = sa.table(temp_name, *[sa.column(column_name) for column_name in columns])
+    target = sa.table(table_name, *[sa.column(column_name) for column_name in columns])
+    op.execute(
+        sa.insert(target).from_select(
+            columns,
+            sa.select(*(source.c[column_name] for column_name in columns)),
+        )
+    )
     op.drop_table(temp_name)
     for create_index in create_indexes:
         create_index()

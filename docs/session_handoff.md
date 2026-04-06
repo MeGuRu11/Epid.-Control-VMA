@@ -56,3 +56,34 @@
 ### Следующий шаг
 
 1. Если нужно продолжать "массовый фикс", сначала дать конкретный артефакт источника проблемы (например, `pyright`-лог или конкретный CI-run), потому что текущие quality gates уже зелёные.
+
+---
+
+## Дополнение (этап 3: БД/миграции + SQL safety, 2026-04-06)
+
+### Что сделано
+
+- В `app/infrastructure/db/migrations/env.py` добавлен `include_object`:
+  - исключение FTS-таблиц/теневых FTS-таблиц (`*_fts*`) из `alembic check`;
+  - исключение reflected-only индексов (дрейф вида `remove_index`).
+- Выровнена metadata с фактической схемой для Form100:
+  - `Form100V2`: явный индекс `ix_form100_emr_case` в `__table_args__` вместо `index=True` на колонке;
+  - `Form100DataV2`: удалён `unique=True` на `form100_id`, оставлен именованный уникальный индекс `ux_form100_data_form`.
+- Исправлены SQL-участки:
+  - `fts_manager.py`: integrity-check переведён на whitelist предопределённых SQL-выражений (без динамического DML f-string);
+  - `0016_fk_cascade.py`: копирование данных переписано с строкового SQL на `sa.insert(...).from_select(...)`.
+- Добавлен `back_populates` для связи `RefAntibioticGroup` - `RefAntibiotic`.
+- Создан локальный `.vscode/settings.json` c `"python.analysis.typeCheckingMode": "off"` (Pylance type-check отключён, используем mypy).
+
+### Результаты проверок
+
+- `alembic upgrade head` — успешно.
+- `alembic check` — `No new upgrade operations detected.` (лог: `tmp_run/alembic_check_output.txt`).
+- `ruff check app tests` — успешно.
+- `mypy app tests` — успешно.
+- `pytest -q` — `236 passed, 2 warnings`.
+- `python -m compileall -q app tests scripts` — успешно.
+
+### Риски/заметки
+
+1. В рабочем дереве остаются ранее существующие несвязанные изменения в других файлах; при коммите этапа 3 нужно стадировать только целевые файлы.

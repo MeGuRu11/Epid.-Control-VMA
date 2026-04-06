@@ -10,6 +10,14 @@ from sqlalchemy.orm import Session
 
 from app.infrastructure.db.session import session_scope
 
+_FTS_INTEGRITY_CHECK_SQL = {
+    "patients_fts": text("INSERT INTO patients_fts(patients_fts) VALUES('integrity-check')"),
+    "ref_microorganisms_fts": text(
+        "INSERT INTO ref_microorganisms_fts(ref_microorganisms_fts) VALUES('integrity-check')"
+    ),
+    "ref_icd10_fts": text("INSERT INTO ref_icd10_fts(ref_icd10_fts) VALUES('integrity-check')"),
+}
+
 
 class FtsManager:
     def __init__(self, session_factory: Callable = session_scope) -> None:
@@ -104,7 +112,10 @@ class FtsManager:
 
     def _integrity_failed(self, session: Session, table_name: str) -> bool:
         try:
-            session.execute(text(f"INSERT INTO {table_name}({table_name}) VALUES('integrity-check')"))
+            statement = _FTS_INTEGRITY_CHECK_SQL.get(table_name)
+            if statement is None:
+                raise ValueError(f"Unsupported FTS table for integrity check: {table_name}")
+            session.execute(statement)
             return False
         except OperationalError:
             return True

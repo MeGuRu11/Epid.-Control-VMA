@@ -122,6 +122,8 @@ class RefAntibioticGroup(Base):
     code = Column(String, unique=True)
     name = Column(String, nullable=False)
 
+    antibiotics = relationship("RefAntibiotic", back_populates="group")
+
 
 class RefAntibiotic(Base):
     __tablename__ = "ref_antibiotics"
@@ -131,7 +133,7 @@ class RefAntibiotic(Base):
     name = Column(String, nullable=False)
     group_id = Column(Integer, ForeignKey("ref_antibiotic_groups.id"))
 
-    group = relationship("RefAntibioticGroup")
+    group = relationship("RefAntibioticGroup", back_populates="antibiotics")
 
 
 class RefPhage(Base):
@@ -541,7 +543,7 @@ class Form100V2(Base):
 
     id = Column(String(36), primary_key=True)
     legacy_card_id = Column(String(36), index=True)
-    emr_case_id = Column(Integer, ForeignKey("emr_case.id", ondelete="SET NULL"), nullable=True, index=True)
+    emr_case_id = Column(Integer, ForeignKey("emr_case.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=utc_now)
     created_by = Column(String, nullable=False)
     updated_at = Column(DateTime, nullable=False, default=utc_now)
@@ -564,6 +566,7 @@ class Form100V2(Base):
     data = relationship("Form100DataV2", back_populates="form", cascade="all, delete-orphan", uselist=False)
 
     __table_args__ = (
+        Index("ix_form100_emr_case", "emr_case_id"),
         Index("ix_form100_created_at", "created_at"),
         Index("ix_form100_status", "status"),
         Index("ix_form100_main_full_name", "main_full_name"),
@@ -575,7 +578,7 @@ class Form100DataV2(Base):
     __tablename__ = "form100_data"
 
     id = Column(String(36), primary_key=True)
-    form100_id = Column(String(36), ForeignKey("form100.id", ondelete="CASCADE"), nullable=False, unique=True)
+    form100_id = Column(String(36), ForeignKey("form100.id", ondelete="CASCADE"), nullable=False)
 
     stub_json = Column(Text, nullable=False, server_default=expression.literal("{}"))
     main_json = Column(Text, nullable=False, server_default=expression.literal("{}"))

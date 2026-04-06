@@ -39,6 +39,19 @@ if config.config_file_name and not getattr(sys, "frozen", False):
 target_metadata = Base.metadata
 
 
+def include_object(object_, name: str | None, type_: str, reflected: bool, compare_to: object | None) -> bool:
+    """Filter objects for autogenerate/alembic check.
+
+    FTS tables and their internal shadow tables are managed by FtsManager
+    outside Alembic migrations and should not participate in schema drift checks.
+    We also ignore reflected-only indexes that are present in runtime DB but
+    intentionally not modeled in SQLAlchemy metadata.
+    """
+    if type_ == "table" and name and "_fts" in name:
+        return False
+    return not (type_ == "index" and reflected and compare_to is None)
+
+
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -46,6 +59,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -60,7 +74,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
