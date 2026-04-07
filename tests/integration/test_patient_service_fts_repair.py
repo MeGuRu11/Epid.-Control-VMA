@@ -13,7 +13,7 @@ from app.application.dto.patient_dto import PatientCreateRequest
 from app.application.services.patient_service import PatientService
 from app.domain.constants import MilitaryCategory
 from app.infrastructure.db.fts_manager import FtsManager
-from app.infrastructure.db.models_sqlalchemy import Base
+from app.infrastructure.db.models_sqlalchemy import Base, User
 from app.infrastructure.db.repositories.patient_repo import PatientRepository
 
 
@@ -39,6 +39,14 @@ def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[S
     return _session_scope
 
 
+def _seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = User(login="patient_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return int(actor.id)
+
+
 def test_patient_service_repairs_fts_after_table_drop(tmp_path: Path) -> None:
     db_path = tmp_path / "patient_fts_repair.db"
     session_factory = make_session_factory(db_path)
@@ -50,6 +58,7 @@ def test_patient_service_repairs_fts_after_table_drop(tmp_path: Path) -> None:
         session_factory=session_factory,
         fts_manager=fts_manager,
     )
+    actor_id = _seed_actor(session_factory)
     created = service.create_or_get(
         PatientCreateRequest(
             full_name="Иванов Иван Иванович",
@@ -58,7 +67,8 @@ def test_patient_service_repairs_fts_after_table_drop(tmp_path: Path) -> None:
             category=MilitaryCategory.CIVILIAN_STAFF.value,
             military_unit="unit",
             military_district="district",
-        )
+        ),
+        actor_id=actor_id,
     )
 
     with session_factory() as session:
@@ -66,6 +76,7 @@ def test_patient_service_repairs_fts_after_table_drop(tmp_path: Path) -> None:
 
     service.update_details(
         created.id,
+        actor_id=actor_id,
         full_name="Петров Петр Петрович",
         dob=date(2000, 1, 1),
         sex="M",

@@ -1,4 +1,4 @@
-"""WizardStep2 — Поражения + Схема тела."""
+﻿"""WizardStep2 вЂ” РџРѕСЂР°Р¶РµРЅРёСЏ + РЎС…РµРјР° С‚РµР»Р°."""
 from __future__ import annotations
 
 import json
@@ -21,33 +21,33 @@ from app.ui.form100_v2.wizard_widgets.bodymap_widget import BodyMapWidget
 from app.ui.form100_v2.wizard_widgets.lesion_type_widget import LesionTypeWidget
 
 LESION_ITEMS: tuple[tuple[str, str], ...] = (
-    ("lesion_gunshot",    "О  Огнестрельное"),
-    ("lesion_nuclear",    "Я  Ядерное"),
-    ("lesion_chemical",   "Х  Химическое"),
-    ("lesion_biological", "Бак. Бактериол."),
-    ("lesion_other",      "Другие"),
-    ("lesion_frostbite",  "Отм. Отморожение"),
-    ("lesion_burn",       "Б  Ожог"),
-    ("lesion_misc",       "И  Иное"),
+    ("lesion_gunshot",    "Рћ  РћРіРЅРµСЃС‚СЂРµР»СЊРЅРѕРµ"),
+    ("lesion_nuclear",    "РЇ  РЇРґРµСЂРЅРѕРµ"),
+    ("lesion_chemical",   "РҐ  РҐРёРјРёС‡РµСЃРєРѕРµ"),
+    ("lesion_biological", "Р‘Р°Рє. Р‘Р°РєС‚РµСЂРёРѕР»."),
+    ("lesion_other",      "Р”СЂСѓРіРёРµ"),
+    ("lesion_frostbite",  "РћС‚Рј. РћС‚РјРѕСЂРѕР¶РµРЅРёРµ"),
+    ("lesion_burn",       "Р‘  РћР¶РѕРі"),
+    ("lesion_misc",       "Р  РРЅРѕРµ"),
 )
 
 SAN_LOSS_ITEMS: tuple[tuple[str, str], ...] = (
-    ("san_loss_gunshot",    "О  Огнестрельное"),
-    ("san_loss_nuclear",    "Я  Ядерное"),
-    ("san_loss_chemical",   "Х  Химическое"),
-    ("san_loss_biological", "Бак. Бактериол."),
-    ("san_loss_other",      "Другие"),
-    ("san_loss_frostbite",  "Отм. Отморожение"),
-    ("san_loss_burn",       "Б  Ожог"),
-    ("san_loss_misc",       "И  Иное"),
+    ("san_loss_gunshot",    "Рћ  РћРіРЅРµСЃС‚СЂРµР»СЊРЅРѕРµ"),
+    ("san_loss_nuclear",    "РЇ  РЇРґРµСЂРЅРѕРµ"),
+    ("san_loss_chemical",   "РҐ  РҐРёРјРёС‡РµСЃРєРѕРµ"),
+    ("san_loss_biological", "Р‘Р°Рє. Р‘Р°РєС‚РµСЂРёРѕР»."),
+    ("san_loss_other",      "Р”СЂСѓРіРёРµ"),
+    ("san_loss_frostbite",  "РћС‚Рј. РћС‚РјРѕСЂРѕР¶РµРЅРёРµ"),
+    ("san_loss_burn",       "Р‘  РћР¶РѕРі"),
+    ("san_loss_misc",       "Р  РРЅРѕРµ"),
 )
 
 TISSUE_TYPES: tuple[str, ...] = (
-    "мягкие ткани",
-    "кости",
-    "сосуды",
-    "полостные раны",
-    "ожоги",
+    "РјСЏРіРєРёРµ С‚РєР°РЅРё",
+    "РєРѕСЃС‚Рё",
+    "СЃРѕСЃСѓРґС‹",
+    "РїРѕР»РѕСЃС‚РЅС‹Рµ СЂР°РЅС‹",
+    "РѕР¶РѕРіРё",
 )
 
 
@@ -56,7 +56,7 @@ def _truthy(value: object) -> bool:
 
 
 class StepBodymap(QWidget):
-    """Шаг 2 мастера: виды поражений + схема тела + типы тканей."""
+    """РЁР°Рі 2 РјР°СЃС‚РµСЂР°: РІРёРґС‹ РїРѕСЂР°Р¶РµРЅРёР№ + СЃС…РµРјР° С‚РµР»Р° + С‚РёРїС‹ С‚РєР°РЅРµР№."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -64,7 +64,7 @@ class StepBodymap(QWidget):
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(8)
 
-        # ── Top row: controls ───────────────────────────────────────────────
+        # в”Ђв”Ђ Top row: controls в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
         self._controls = QWidget()
         self._controls_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._controls)
         self._controls_layout.setContentsMargins(0, 0, 0, 0)
@@ -77,7 +77,7 @@ class StepBodymap(QWidget):
         left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(6)
 
-        lesion_box = QGroupBox("Вид поражения")
+        lesion_box = QGroupBox("Р’РёРґ РїРѕСЂР°Р¶РµРЅРёСЏ")
         lesion_box.setObjectName("form100Lesion")
         lesion_lay = QVBoxLayout(lesion_box)
         lesion_lay.setContentsMargins(8, 6, 8, 6)
@@ -85,7 +85,7 @@ class StepBodymap(QWidget):
         lesion_lay.addWidget(self.lesion_widget)
         left_col.addWidget(lesion_box)
 
-        san_box = QGroupBox("Вид сан. потерь")
+        san_box = QGroupBox("Р’РёРґ СЃР°РЅ. РїРѕС‚РµСЂСЊ")
         san_box.setObjectName("form100Lesion")
         san_lay = QVBoxLayout(san_box)
         san_lay.setContentsMargins(8, 6, 8, 6)
@@ -102,7 +102,7 @@ class StepBodymap(QWidget):
         isolation_col.setContentsMargins(0, 0, 0, 0)
         isolation_col.setSpacing(4)
 
-        self.chk_isolation = QCheckBox("ИЗО-\nЛЯЦИЯ")
+        self.chk_isolation = QCheckBox("РР—Рћ-\nР›РЇР¦РРЇ")
         self.chk_isolation.setObjectName("isolationCheck")
         self.chk_isolation.toggled.connect(self._sync_isolation_bar)
         isolation_col.addWidget(self.chk_isolation, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -114,7 +114,7 @@ class StepBodymap(QWidget):
         self.isolation_bar.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
         )
-        self.isolation_bar.setToolTip("ИЗОЛЯЦИЯ")
+        self.isolation_bar.setToolTip("РР—РћР›РЇР¦РРЇ")
         isolation_col.addWidget(self.isolation_bar, 1, Qt.AlignmentFlag.AlignHCenter)
 
         self._controls_layout.addWidget(self._isolation_controls, 0)
@@ -125,7 +125,7 @@ class StepBodymap(QWidget):
         right_col.setContentsMargins(0, 0, 0, 0)
         right_col.setSpacing(8)
 
-        tissue_box = QGroupBox("Типы тканей")
+        tissue_box = QGroupBox("РўРёРїС‹ С‚РєР°РЅРµР№")
         tissue_box.setObjectName("form100Tissue")
         tissue_box.setMinimumWidth(140)
         tissue_box.setSizePolicy(
@@ -144,7 +144,7 @@ class StepBodymap(QWidget):
 
         right_col.addWidget(tissue_box)
 
-        notes_box = QGroupBox("Заметки на схеме")
+        notes_box = QGroupBox("Р—Р°РјРµС‚РєРё РЅР° СЃС…РµРјРµ")
         notes_box.setObjectName("form100Notes")
         notes_box.setMinimumWidth(140)
         notes_box.setSizePolicy(
@@ -155,7 +155,7 @@ class StepBodymap(QWidget):
         notes_lay.setSpacing(0)
 
         self._notes_hint = QLabel(
-            "Нет заметок.\nДобавьте метку\n«Заметка ◎» на схему."
+            "РќРµС‚ Р·Р°РјРµС‚РѕРє.\nР”РѕР±Р°РІСЊС‚Рµ РјРµС‚РєСѓ\nВ«Р—Р°РјРµС‚РєР° в—ЋВ» РЅР° СЃС…РµРјСѓ."
         )
         self._notes_hint.setWordWrap(True)
         self._notes_hint.setObjectName("form100NotesHint")
@@ -174,7 +174,7 @@ class StepBodymap(QWidget):
 
         self._controls_layout.addWidget(self._right_controls, 2)
 
-        # ── Bottom: body map editor (full width) ────────────────────────────
+        # в”Ђв”Ђ Bottom: body map editor (full width) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
         self.editor = BodyMapWidget()
         self.editor.markersChanged.connect(self._refresh_notes)
         self.editor.setMinimumHeight(300)
@@ -323,3 +323,4 @@ class StepBodymap(QWidget):
         for cb in self.chk_tissues:
             cb.setEnabled(enabled)
         self.chk_isolation.setEnabled(enabled)
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QPushButton, QSizePolicy, QWidget
@@ -112,3 +112,4 @@ class ResponsiveActionsPanel(QWidget):
             row = idx // columns
             col = idx % columns
             self._grid.addWidget(button, row, col, alignment=Qt.AlignmentFlag.AlignHCenter)
+

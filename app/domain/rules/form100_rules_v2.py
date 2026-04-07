@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 from app.domain.models.form100_v2 import (
     BODYMAP_ANNOTATION_TYPES,
@@ -10,7 +10,7 @@ from app.domain.models.form100_v2 import (
     FORM100_V2_STATUS_SIGNED,
 )
 
-_TISSUE_TYPES = {"мягкие ткани", "кости", "сосуды", "полостные раны", "ожоги"}
+_TISSUE_TYPES: set[str] = {"мягкие ткани", "кости", "сосуды", "полостные раны", "ожоги"}
 
 
 def validate_status_transition_v2(from_status: str, to_status: str) -> None:
@@ -59,15 +59,23 @@ def validate_card_payload_v2(payload: dict[str, Any]) -> None:
     if bodymap_gender not in {"M", "F"}:
         raise ValueError("bodymap_gender должен быть 'M' или 'F'")
 
-    tissue_types = payload.get("bodymap_tissue_types") or []
-    if not isinstance(tissue_types, list):
+    tissue_types_raw = payload.get("bodymap_tissue_types")
+    if tissue_types_raw is None:
+        tissue_types: list[Any] = []
+    elif isinstance(tissue_types_raw, list):
+        tissue_types = tissue_types_raw
+    else:
         raise ValueError("bodymap_tissue_types должен быть списком")
     for item in tissue_types:
         if str(item) not in _TISSUE_TYPES:
             raise ValueError(f"Недопустимый тип ткани: {item}")
 
-    annotations = payload.get("bodymap_annotations") or []
-    if not isinstance(annotations, list):
+    annotations_raw = payload.get("bodymap_annotations")
+    if annotations_raw is None:
+        annotations: list[Any] = []
+    elif isinstance(annotations_raw, list):
+        annotations = annotations_raw
+    else:
         raise ValueError("bodymap_annotations должен быть списком")
     for annotation in annotations:
         item = _as_dict(annotation)
@@ -100,10 +108,13 @@ def _walk_diff(
     after_changes: dict[str, Any],
 ) -> None:
     if isinstance(before, Mapping) and isinstance(after, Mapping):
-        keys = sorted(set(before.keys()) | set(after.keys()))
+        before_map = cast(Mapping[Any, Any], before)
+        after_map = cast(Mapping[Any, Any], after)
+        keys: list[Any] = sorted(set(before_map.keys()) | set(after_map.keys()), key=str)
         for key in keys:
-            child_path = f"{path}.{key}" if path else str(key)
-            _walk_diff(before.get(key), after.get(key), child_path, before_changes, after_changes)
+            key_str = str(key)
+            child_path = f"{path}.{key_str}" if path else key_str
+            _walk_diff(before_map.get(key), after_map.get(key), child_path, before_changes, after_changes)
         return
 
     if isinstance(before, list) and isinstance(after, list):
@@ -125,13 +136,13 @@ def _validate_bool_with_details(payload: Mapping[str, Any], *, bool_key: str, de
 
 
 def _as_dict(value: Any) -> dict[str, Any]:
-    if isinstance(value, dict):
-        return dict(value)
+    if isinstance(value, Mapping):
+        return {str(key): item for key, item in value.items()}
     return {}
 
 
 def _as_float(value: Any) -> float | None:
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value)
     try:
         return float(str(value))

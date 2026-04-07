@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.lab_dto import LabSampleCreateRequest, LabSampleResultUpdate
 from app.application.services.lab_service import LabService
-from app.infrastructure.db.models_sqlalchemy import Base, RefMaterialType
+from app.infrastructure.db.models_sqlalchemy import Base, RefMaterialType, User
 
 
 def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
@@ -42,9 +42,18 @@ def seed_material(session_factory: Callable[[], AbstractContextManager[Session]]
         return cast(int, mt.id)
 
 
+def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = User(login="lab_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return cast(int, actor.id)
+
+
 def test_lab_sample_autonumber(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "lab.db")
     material_type_id = seed_material(session_factory)
+    actor_id = seed_actor(session_factory)
     service = LabService(session_factory=session_factory)
 
     req = LabSampleCreateRequest(
@@ -54,18 +63,17 @@ def test_lab_sample_autonumber(tmp_path: Path) -> None:
         taken_at=datetime(2025, 12, 15, 10, 0, 0, tzinfo=UTC),
         study_kind="primary",
     )
-    resp1 = service.create_sample(req)
-    resp2 = service.create_sample(req)
+    resp1 = service.create_sample(req, actor_id=actor_id)
+    resp2 = service.create_sample(req, actor_id=actor_id)
 
     assert resp1.lab_no.startswith("BLD-20251215-")
     assert resp1.lab_no.endswith("-0001")
     assert resp2.lab_no.startswith("BLD-20251215-")
     assert resp2.lab_no.endswith("-0002")
 
-    # update result
     upd = LabSampleResultUpdate(
         growth_flag=1,
         growth_result_at=datetime(2025, 12, 16, 8, 0, 0, tzinfo=UTC),
     )
-    resp_update = service.update_result(resp1.id, upd, actor_id=None)
+    resp_update = service.update_result(resp1.id, upd, actor_id=actor_id)
     assert resp_update.growth_flag == 1

@@ -70,3 +70,4 @@ def _format_created_text(value: object) -> str:
     if isinstance(value, date):
         return value.strftime("%d.%m.%Y")
     return ""
+

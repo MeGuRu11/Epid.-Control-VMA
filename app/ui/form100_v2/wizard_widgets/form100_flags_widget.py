@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QWidget
@@ -13,9 +13,9 @@ class Form100FlagsWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
 
-        self.flag_emergency = QCheckBox("Неотложная помощь")
-        self.flag_radiation = QCheckBox("Радиационное поражение")
-        self.flag_sanitation = QCheckBox("Санитарная обработка")
+        self.flag_emergency = QCheckBox("РќРµРѕС‚Р»РѕР¶РЅР°СЏ РїРѕРјРѕС‰СЊ")
+        self.flag_radiation = QCheckBox("Р Р°РґРёР°С†РёРѕРЅРЅРѕРµ РїРѕСЂР°Р¶РµРЅРёРµ")
+        self.flag_sanitation = QCheckBox("РЎР°РЅРёС‚Р°СЂРЅР°СЏ РѕР±СЂР°Р±РѕС‚РєР°")
 
         self.flag_emergency.setObjectName("form100FlagEmergency")
         self.flag_radiation.setObjectName("form100FlagRadiation")
@@ -46,3 +46,4 @@ class Form100FlagsWidget(QWidget):
         self.flag_emergency.setEnabled(enabled)
         self.flag_radiation.setEnabled(enabled)
         self.flag_sanitation.setEnabled(enabled)
+

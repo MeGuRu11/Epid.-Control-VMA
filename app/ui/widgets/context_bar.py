@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.exceptions import AppError
 from app.application.services.emz_service import EmzService
 from app.application.services.patient_service import PatientService
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
@@ -60,7 +60,7 @@ class ContextBar(QWidget):
         header_row = QHBoxLayout()
         self.toggle_btn = QToolButton()
         self.toggle_btn.setObjectName("contextToggle")
-        self.toggle_btn.setText("▸")
+        self.toggle_btn.setText("?")
         self.toggle_btn.setToolTip("Показать/скрыть контекст пациента и госпитализации.")
         self.toggle_btn.setFixedSize(26, 26)
         self.toggle_btn.clicked.connect(self._toggle_content)
@@ -220,7 +220,7 @@ class ContextBar(QWidget):
         if expanding:
             self.content_widget.setVisible(True)
         self._animate_content(expanding)
-        self.toggle_btn.setText("▾" if expanding else "▸")
+        self.toggle_btn.setText("?" if expanding else "?")
 
     def _animate_content(self, expanding: bool) -> None:
         target_height = self.content_widget.sizeHint().height()
@@ -302,7 +302,7 @@ class ContextBar(QWidget):
                 patient_name=detail.patient_full_name,
                 emit=True,
             )
-        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
+        except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
             show_error(self, str(exc))
 
     def _find_patient(self) -> None:
@@ -310,7 +310,7 @@ class ContextBar(QWidget):
         if query.isdigit():
             try:
                 patient = self.patient_service.get_by_id(int(query))
-            except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
+            except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
                 show_error(self, f"Пациент не найден: {exc}")
                 return
             self._set_context(
@@ -426,7 +426,7 @@ class ContextBar(QWidget):
                 patient_name=detail.patient_full_name,
                 emit=True,
             )
-        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
+        except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
             show_error(self, str(exc))
 
     def _reset(self) -> None:
@@ -451,3 +451,5 @@ class ContextBar(QWidget):
     # Compatibility for external calls
     def set_context(self, patient_id: int | None, case_id: int | None, patient_name: str = "") -> None:
         self.update_context(patient_id, case_id, patient_name)
+
+

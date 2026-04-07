@@ -1,4 +1,4 @@
-"""WizardStep4 — Эвакуация + Флаги + Итог/Обзор."""
+﻿"""WizardStep4 вЂ” Р­РІР°РєСѓР°С†РёСЏ + Р¤Р»Р°РіРё + РС‚РѕРі/РћР±Р·РѕСЂ."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,7 +21,7 @@ from app.ui.form100_v2.wizard_widgets.form100_flags_widget import Form100FlagsWi
 
 
 class _ReviewPanel(QScrollArea):
-    """Прокручиваемая панель с карточками-секциями сводки Формы 100."""
+    """РџСЂРѕРєСЂСѓС‡РёРІР°РµРјР°СЏ РїР°РЅРµР»СЊ СЃ РєР°СЂС‚РѕС‡РєР°РјРё-СЃРµРєС†РёСЏРјРё СЃРІРѕРґРєРё Р¤РѕСЂРјС‹ 100."""
 
     _ACCENT_KEYS = {"id", "injury", "lesion", "med", "map", "evac", "flags", "diag"}
 
@@ -53,7 +53,7 @@ class _ReviewPanel(QScrollArea):
         lay.setContentsMargins(16, 12, 16, 12)
         lay.setSpacing(3)
 
-        name_lbl = QLabel(name or "—")
+        name_lbl = QLabel(name or "вЂ”")
         name_lbl.setObjectName("form100ReviewName")
         name_lbl.setWordWrap(True)
         lay.addWidget(name_lbl)
@@ -176,8 +176,8 @@ class _ReviewPanel(QScrollArea):
 
         id_tag = payload.get("stub_id_tag") or payload.get("main_id_tag") or ""
         card = self._make_card(
-            "🪪", "Идентификация",
-            [("Жетон / уд.", id_tag)],
+            "рџЄЄ", "РРґРµРЅС‚РёС„РёРєР°С†РёСЏ",
+            [("Р–РµС‚РѕРЅ / СѓРґ.", id_tag)],
             "id",
         )
         if card:
@@ -190,8 +190,8 @@ class _ReviewPanel(QScrollArea):
         injury_str = (inj_time + " " + inj_date).strip()
         issued_str = (issued_time + " " + issued_date).strip()
         card = self._make_card(
-            "🕐", "Время",
-            [("Ранен / заболел", injury_str), ("Выдана карточка", issued_str)],
+            "рџ•ђ", "Р’СЂРµРјСЏ",
+            [("Р Р°РЅРµРЅ / Р·Р°Р±РѕР»РµР»", injury_str), ("Р’С‹РґР°РЅР° РєР°СЂС‚РѕС‡РєР°", issued_str)],
             "injury",
         )
         if card:
@@ -199,11 +199,11 @@ class _ReviewPanel(QScrollArea):
 
         if markers:
             _type_names = {
-                "WOUND_X":    "Раны",
-                "BURN_HATCH":  "Ожоги",
-                "AMPUTATION":  "Ампутации",
-                "TOURNIQUET":  "Жгуты",
-                "NOTE_PIN":    "Заметки",
+                "WOUND_X":    "Р Р°РЅС‹",
+                "BURN_HATCH":  "РћР¶РѕРіРё",
+                "AMPUTATION":  "РђРјРїСѓС‚Р°С†РёРё",
+                "TOURNIQUET":  "Р–РіСѓС‚С‹",
+                "NOTE_PIN":    "Р—Р°РјРµС‚РєРё",
             }
             counts: dict[str, int] = {}
             for m in markers:
@@ -212,65 +212,65 @@ class _ReviewPanel(QScrollArea):
             badges = [
                 f"{_type_names.get(t, t)}: {n}" for t, n in counts.items()
             ]
-            card = self._make_badge_card("📍", "Схема тела", badges, "map")
+            card = self._make_badge_card("рџ“Ќ", "РЎС…РµРјР° С‚РµР»Р°", badges, "map")
             if card:
                 self._vlay.addWidget(card)
 
         _lesion_map = {
-            "lesion_gunshot":    "Огнестрельное",
-            "lesion_nuclear":    "Ядерное",
-            "lesion_chemical":   "Химическое",
-            "lesion_biological": "Бактериол.",
-            "lesion_burn":       "Ожог",
-            "lesion_frostbite":  "Отморожение",
-            "lesion_other":      "Другие",
-            "lesion_misc":       "Иное",
+            "lesion_gunshot":    "РћРіРЅРµСЃС‚СЂРµР»СЊРЅРѕРµ",
+            "lesion_nuclear":    "РЇРґРµСЂРЅРѕРµ",
+            "lesion_chemical":   "РҐРёРјРёС‡РµСЃРєРѕРµ",
+            "lesion_biological": "Р‘Р°РєС‚РµСЂРёРѕР».",
+            "lesion_burn":       "РћР¶РѕРі",
+            "lesion_frostbite":  "РћС‚РјРѕСЂРѕР¶РµРЅРёРµ",
+            "lesion_other":      "Р”СЂСѓРіРёРµ",
+            "lesion_misc":       "РРЅРѕРµ",
         }
         lesions = [v for k, v in _lesion_map.items() if str(payload.get(k) or "0") == "1"]
-        card = self._make_badge_card("💥", "Вид поражения", lesions, "lesion")
+        card = self._make_badge_card("рџ’Ґ", "Р’РёРґ РїРѕСЂР°Р¶РµРЅРёСЏ", lesions, "lesion")
         if card:
             self._vlay.addWidget(card)
 
         _mp_map = {
-            "mp_antibiotic":        "Антибиотик",
-            "mp_serum_pss":         "Сыворотка ПСС",
-            "mp_serum_pgs":         "Сыворотка ПГС",
-            "mp_analgesic":         "Обезболивающее",
-            "mp_transfusion_blood": "Переливание",
-            "mp_immobilization":    "Иммобилизация",
-            "mp_bandage":           "Перевязка",
+            "mp_antibiotic":        "РђРЅС‚РёР±РёРѕС‚РёРє",
+            "mp_serum_pss":         "РЎС‹РІРѕСЂРѕС‚РєР° РџРЎРЎ",
+            "mp_serum_pgs":         "РЎС‹РІРѕСЂРѕС‚РєР° РџР“РЎ",
+            "mp_analgesic":         "РћР±РµР·Р±РѕР»РёРІР°СЋС‰РµРµ",
+            "mp_transfusion_blood": "РџРµСЂРµР»РёРІР°РЅРёРµ",
+            "mp_immobilization":    "РРјРјРѕР±РёР»РёР·Р°С†РёСЏ",
+            "mp_bandage":           "РџРµСЂРµРІСЏР·РєР°",
         }
         mp_badges = [v for k, v in _mp_map.items() if str(payload.get(k) or "0") == "1"]
-        card = self._make_badge_card("🏥", "Мед. помощь", mp_badges, "med")
+        card = self._make_badge_card("рџЏҐ", "РњРµРґ. РїРѕРјРѕС‰СЊ", mp_badges, "med")
         if card:
             self._vlay.addWidget(card)
 
         mp_extra: list[tuple[str, str]] = []
         if payload.get("mp_toxoid"):
-            mp_extra.append(("Анатоксин", str(payload["mp_toxoid"])))
+            mp_extra.append(("РђРЅР°С‚РѕРєСЃРёРЅ", str(payload["mp_toxoid"])))
         if payload.get("mp_antidote"):
-            mp_extra.append(("Антидот", str(payload["mp_antidote"])))
+            mp_extra.append(("РђРЅС‚РёРґРѕС‚", str(payload["mp_antidote"])))
         if mp_extra:
-            card = self._make_card("💊", "Препараты", mp_extra, "med")
+            card = self._make_card("рџ’Љ", "РџСЂРµРїР°СЂР°С‚С‹", mp_extra, "med")
             if card:
                 self._vlay.addWidget(card)
 
         _dest_names = {
-            "lying": "Лёжа", "sitting": "Сидя", "stretcher": "Носилки",
+            "lying": "Р›С‘Р¶Р°", "sitting": "РЎРёРґСЏ", "stretcher": "РќРѕСЃРёР»РєРё",
         }
         _transport_names = {
-            "car": "Авто", "ambu": "Сан.", "ship": "Корабль",
-            "heli": "Вертолёт", "plane": "Самолёт",
+            "car": "РђРІС‚Рѕ", "ambu": "РЎР°РЅ.", "ship": "РљРѕСЂР°Р±Р»СЊ",
+            "heli": "Р’РµСЂС‚РѕР»С‘С‚", "plane": "РЎР°РјРѕР»С‘С‚",
         }
         evac_dest = _dest_names.get(payload.get("evacuation_dest") or "", "")
         evac_prio = payload.get("evacuation_priority") or ""
         transport = _transport_names.get(payload.get("transport_type") or "", "")
         card = self._make_card(
-            "🚑", "Эвакуация",
+            "рџљ‘", "Р­РІР°РєСѓР°С†РёСЏ",
             [
-                ("Позиция",    evac_dest),
-                ("Очерёдность", evac_prio),
-                ("Транспорт",  transport),
+                ("РџРѕР·РёС†РёСЏ",    evac_dest),
+                ("РћС‡РµСЂС‘РґРЅРѕСЃС‚СЊ", evac_prio),
+                ("РўСЂР°РЅСЃРїРѕСЂС‚",  transport),
             ],
             "evac",
         )
@@ -278,18 +278,18 @@ class _ReviewPanel(QScrollArea):
             self._vlay.addWidget(card)
 
         _flag_map = {
-            "flag_emergency":  "⚡ Неотложная",
-            "flag_radiation":  "☢ Радиация",
-            "flag_sanitation": "🧪 Санобработка",
+            "flag_emergency":  "вљЎ РќРµРѕС‚Р»РѕР¶РЅР°СЏ",
+            "flag_radiation":  "вў Р Р°РґРёР°С†РёСЏ",
+            "flag_sanitation": "рџ§Є РЎР°РЅРѕР±СЂР°Р±РѕС‚РєР°",
         }
         flags = [v for k, v in _flag_map.items() if str(payload.get(k) or "0") == "1"]
-        card = self._make_badge_card("⚠", "Флаги", flags, "flags")
+        card = self._make_badge_card("вљ ", "Р¤Р»Р°РіРё", flags, "flags")
         if card:
             self._vlay.addWidget(card)
 
         diag = payload.get("main_diagnosis") or payload.get("stub_diagnosis") or ""
         card = self._make_card(
-            "📋", "Диагноз",
+            "рџ“‹", "Р”РёР°РіРЅРѕР·",
             [("", diag)],
             "diag",
         )
@@ -297,7 +297,7 @@ class _ReviewPanel(QScrollArea):
             self._vlay.addWidget(card)
 
         if self._vlay.count() == 1:
-            placeholder = QLabel("Данные не введены")
+            placeholder = QLabel("Р”Р°РЅРЅС‹Рµ РЅРµ РІРІРµРґРµРЅС‹")
             placeholder.setObjectName("form100ReviewPlaceholder")
             placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._vlay.addWidget(placeholder)
@@ -306,7 +306,7 @@ class _ReviewPanel(QScrollArea):
 
 
 class StepEvacuation(QWidget):
-    """Шаг 4 мастера: флаги + эвакуация/заключение + обзор + подпись."""
+    """РЁР°Рі 4 РјР°СЃС‚РµСЂР°: С„Р»Р°РіРё + СЌРІР°РєСѓР°С†РёСЏ/Р·Р°РєР»СЋС‡РµРЅРёРµ + РѕР±Р·РѕСЂ + РїРѕРґРїРёСЃСЊ."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -341,7 +341,7 @@ class StepEvacuation(QWidget):
 
         root.addWidget(self._mid_wrap, 1)
 
-        self.btn_sign = QPushButton("Подписать карточку")
+        self.btn_sign = QPushButton("РџРѕРґРїРёСЃР°С‚СЊ РєР°СЂС‚РѕС‡РєСѓ")
         self.btn_sign.setObjectName("secondary")
         self.btn_sign.setVisible(False)
         root.addWidget(self.btn_sign)
@@ -385,3 +385,4 @@ class StepEvacuation(QWidget):
 
     def set_card_status(self, status: str) -> None:
         self.btn_sign.setVisible(status == "DRAFT")
+

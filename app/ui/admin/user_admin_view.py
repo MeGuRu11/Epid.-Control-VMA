@@ -20,9 +20,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import CreateUserRequest, ResetPasswordRequest, SessionContext
+from app.application.exceptions import AppError
 from app.application.security import can_manage_backups, can_manage_users
 from app.application.services.backup_service import BackupService
 from app.application.services.dashboard_service import DashboardService
@@ -33,7 +33,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import error_text
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
-_HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
+_HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
 
 class UserAdminView(QWidget):
@@ -507,3 +507,5 @@ class UserAdminView(QWidget):
             self._load_users()
         except _HANDLED_UI_ERRORS as exc:
             self.status.setText(error_text(exc, "Не удалось изменить статус пользователя"))
+
+

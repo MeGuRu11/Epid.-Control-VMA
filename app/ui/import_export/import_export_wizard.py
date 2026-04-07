@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.application.dto.auth_dto import SessionContext
+from app.application.security import can_manage_exchange
 from app.application.services.exchange_service import ExchangeService
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
@@ -53,7 +54,12 @@ class ImportExportWizard(QWizard):
         self.addPage(self._path_page)
         self.addPage(self._preview_page)
 
+    def _ensure_permissions(self) -> None:
+        if not can_manage_exchange(self.session.role):
+            raise ValueError("Недостаточно прав для операций импорта/экспорта")
+
     def accept(self) -> None:
+        self._ensure_permissions()
         direction = self._direction_page.direction.currentData()
         fmt = self._direction_page.format.currentData()
         table_name = self._direction_page.table_select.currentData()
@@ -113,26 +119,40 @@ class ImportExportWizard(QWizard):
         file_path: str,
         import_mode: str,
     ) -> tuple[str, bool]:
+        self._ensure_permissions()
+        actor_id = self.session.user_id
         if direction == "export":
             if fmt == "excel":
-                result = self.exchange_service.export_excel(file_path=file_path, exported_by=self.session.login)
+                result = self.exchange_service.export_excel(
+                    file_path=file_path,
+                    exported_by=self.session.login,
+                    actor_id=actor_id,
+                )
                 total = sum(result["counts"].values())
                 return f"{total} записей", False
             if fmt == "csv":
                 if not table_name:
                     raise ValueError("Выберите таблицу для CSV")
-                result = self.exchange_service.export_csv(file_path=file_path, table_name=table_name)
+                result = self.exchange_service.export_csv(
+                    file_path=file_path,
+                    table_name=table_name,
+                    actor_id=actor_id,
+                )
                 return f"{result['count']} записей", False
             if fmt == "pdf":
                 if not table_name:
                     raise ValueError("Выберите таблицу для PDF")
-                result = self.exchange_service.export_pdf(file_path=file_path, table_name=table_name)
+                result = self.exchange_service.export_pdf(
+                    file_path=file_path,
+                    table_name=table_name,
+                    actor_id=actor_id,
+                )
                 return f"{result['count']} записей", False
             if fmt == "zip":
                 result = self.exchange_service.export_zip(
                     file_path=file_path,
                     exported_by=self.session.login,
-                    actor_id=self.session.user_id,
+                    actor_id=actor_id,
                 )
                 total = sum(result["counts"].values())
                 return f"{total} записей", False
@@ -140,7 +160,7 @@ class ImportExportWizard(QWizard):
                 result = self.exchange_service.export_form100_package_zip(
                     file_path=file_path,
                     exported_by=self.session.login,
-                    actor_id=self.session.user_id,
+                    actor_id=actor_id,
                     card_id=None,
                 )
                 counts = result.get("counts", {})
@@ -148,7 +168,7 @@ class ImportExportWizard(QWizard):
                 return f"{total} записей", False
         else:
             if fmt == "excel":
-                result = self.exchange_service.import_excel(file_path=file_path, mode=import_mode)
+                result = self.exchange_service.import_excel(file_path=file_path, actor_id=actor_id, mode=import_mode)
                 return self._format_import_result(result)
             if fmt == "csv":
                 if not table_name:
@@ -156,20 +176,21 @@ class ImportExportWizard(QWizard):
                 result = self.exchange_service.import_csv(
                     file_path=file_path,
                     table_name=table_name,
+                    actor_id=actor_id,
                     mode=import_mode,
                 )
                 return self._format_import_result(result)
             if fmt == "zip":
                 result = self.exchange_service.import_zip(
                     file_path=file_path,
-                    actor_id=self.session.user_id,
+                    actor_id=actor_id,
                     mode=import_mode,
                 )
                 return self._format_import_result(result)
             if fmt == "form100_zip":
                 result = self.exchange_service.import_form100_package_zip(
                     file_path=file_path,
-                    actor_id=self.session.user_id,
+                    actor_id=actor_id,
                     mode=import_mode,
                 )
                 return self._format_import_result(result)
@@ -394,3 +415,4 @@ class PreviewPage(QWizardPage):
             for col_idx, value in enumerate(row):
                 self.preview_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
         resize_columns_to_content(self.preview_table)
+

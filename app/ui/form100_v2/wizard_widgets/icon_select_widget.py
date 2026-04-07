@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Iterable
 
@@ -62,3 +62,4 @@ class IconSelectWidget(QWidget):
         btn.style().unpolish(btn)
         btn.style().polish(btn)
         btn.update()
+

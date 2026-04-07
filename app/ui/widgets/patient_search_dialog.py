@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -170,3 +170,4 @@ class PatientSearchDialog(QDialog):
         self.selected_patient_id = pid
         self.selected_name = name
         self.accept()
+

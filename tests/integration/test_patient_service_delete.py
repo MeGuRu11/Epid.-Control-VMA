@@ -99,8 +99,17 @@ def _seed_related_entities(session: Session, patient_id: int) -> tuple[int, int]
     return cast(int, emr_case.id), cast(int, lab_sample.id)
 
 
+def _seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = models.User(login="patient_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return cast(int, actor.id)
+
+
 def test_delete_patient_removes_related_rows_and_keeps_unrelated_audit(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "patient_delete.db")
+    actor_id = _seed_actor(session_factory)
     service = PatientService(
         patient_repo=PatientRepository(),
         session_factory=session_factory,
@@ -115,13 +124,14 @@ def test_delete_patient_removes_related_rows_and_keeps_unrelated_audit(tmp_path:
             category=MilitaryCategory.CIVILIAN_STAFF.value,
             military_unit="unit",
             military_district="district",
-        )
+        ),
+        actor_id=actor_id,
     )
 
     with session_factory() as session:
         _seed_related_entities(session, created.id)
 
-    service.delete_patient(created.id)
+    service.delete_patient(created.id, actor_id=actor_id)
 
     with session_factory() as session:
         assert session.query(models.Patient).count() == 0
@@ -136,13 +146,19 @@ def test_delete_patient_removes_related_rows_and_keeps_unrelated_audit(tmp_path:
         assert session.query(models.LabPhagePanelResult).count() == 0
 
         audit_rows = session.query(models.AuditLog).all()
-        assert len(audit_rows) == 1
-        assert str(audit_rows[0].entity_type) == "other"
-        assert str(audit_rows[0].entity_id) == "keep"
+        assert len(audit_rows) == 2
+        by_action = {str(row.action): row for row in audit_rows}
+        assert "keep" in by_action
+        assert "delete_patient" in by_action
+        assert str(by_action["keep"].entity_type) == "other"
+        assert str(by_action["keep"].entity_id) == "keep"
+        assert str(by_action["delete_patient"].entity_type) == "patient"
+        assert str(by_action["delete_patient"].entity_id) == str(created.id)
 
 
 def test_delete_patient_raises_for_missing_patient(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "patient_delete_missing.db")
+    actor_id = _seed_actor(session_factory)
     service = PatientService(
         patient_repo=PatientRepository(),
         session_factory=session_factory,
@@ -150,4 +166,4 @@ def test_delete_patient_raises_for_missing_patient(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError):
-        service.delete_patient(99999)
+        service.delete_patient(99999, actor_id=actor_id)

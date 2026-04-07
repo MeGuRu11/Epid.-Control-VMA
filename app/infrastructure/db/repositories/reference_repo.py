@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy import or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Mapper, Session
 
 from app.infrastructure.db import models_sqlalchemy as models
 
@@ -19,7 +19,8 @@ class ReferenceRepository:
         return list(session.execute(stmt).scalars())
 
     def upsert_simple(self, session: Session, model: type, payloads: Iterable[dict], identity_field: str = "id") -> None:
-        pk_cols: list[Any] = list(inspect(model).primary_key)
+        mapper: Mapper[Any] = inspect(model)
+        pk_cols: list[Any] = list(mapper.primary_key)
         pk_fields: set[str] = set()
         for col in pk_cols:
             pk_fields.add(col.key)

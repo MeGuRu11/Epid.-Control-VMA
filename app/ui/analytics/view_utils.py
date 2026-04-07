@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
@@ -46,3 +46,4 @@ def quick_period_bounds(mode: str | None, today: date) -> tuple[date, date]:
         next_month = date(today.year + (1 if today.month == 12 else 0), 1 if today.month == 12 else today.month + 1, 1)
         date_to = next_month - timedelta(days=1)
     return date_from, date_to
+

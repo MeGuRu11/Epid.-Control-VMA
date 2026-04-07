@@ -27,11 +27,11 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.emz_dto import EmzCaseDetail, EmzCaseResponse
 from app.application.dto.patient_dto import PatientResponse
+from app.application.exceptions import AppError
 from app.application.services.emz_service import EmzService
 from app.application.services.patient_service import PatientService
 from app.application.services.reference_service import ReferenceService
@@ -48,7 +48,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.table_utils import resize_columns_to_content
 
-_HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
+_HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
 
 class PatientEmkView(QWidget):
@@ -818,7 +818,9 @@ class PatientEmkView(QWidget):
             return
         try:
             patient_id = self._current_patient.id
-            self.patient_service.delete_patient(patient_id)
+            if self._session is None:
+                raise ValueError("Сессия пользователя не найдена")
+            self.patient_service.delete_patient(patient_id, actor_id=self._session.user_id)
             self._reset_search()
             self._set_status("Пациент удалён", "success")
             if self.on_data_changed:
@@ -828,3 +830,5 @@ class PatientEmkView(QWidget):
                 f"Ошибка: {error_text(exc, 'Не удалось удалить пациента')}",
                 "error",
             )
+
+

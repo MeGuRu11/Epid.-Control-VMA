@@ -77,7 +77,9 @@ class EmzService:
         self.session_factory = session_factory
 
     def create_emr(self, request: EmzCreateRequest, actor_id: int | None) -> EmzCaseResponse:
-        patient_resp = self.patient_service.create_or_get(request.to_patient_request())
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
+        patient_resp = self.patient_service.create_or_get(request.to_patient_request(), actor_id=actor_id)
         with self.session_factory() as session:
             existing = self.emr_repo.get_case_by_patient_and_no(
                 session, patient_resp.id, request.hospital_case_no
@@ -438,9 +440,12 @@ class EmzService:
             )
 
     def _require_admin(self, session, actor_id: int | None) -> None:
-        if actor_id is None:
-            raise ValueError("Операция доступна только администратору")
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor and str(actor.role) == "admin":
             return
         raise ValueError("Операция доступна только администратору")
+
+
+

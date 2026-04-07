@@ -18,9 +18,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import LoginRequest, SessionContext
+from app.application.exceptions import AppError
 from app.application.services.auth_service import AuthService
 from app.config import settings
 from app.ui.runtime_ui import resolve_ui_runtime
@@ -371,7 +371,7 @@ class LoginDialog(QDialog):
             return
         try:
             session_ctx = self.auth_service.login(request)
-        except (ValueError, SQLAlchemyError, RuntimeError, TypeError) as exc:
+        except (ValueError, AppError, RuntimeError, TypeError) as exc:
             set_status(self.error_label, str(exc), "error")
             self.error_label.setVisible(True)
             self._failed_attempts += 1
@@ -392,5 +392,7 @@ if __name__ == "__main__":
     dlg = LoginDialog(auth_service=AuthService())
     dlg.show()
     sys.exit(app.exec())
+
+
 
 

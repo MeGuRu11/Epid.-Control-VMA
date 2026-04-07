@@ -146,3 +146,90 @@
 1. Закрыть P0: убрать мок SQLAlchemy engine в `tests/unit/test_backup_service_error_handling.py`.
 2. Закрыть P1: поднять покрытие `app/application/services/sanitary_sample_payload_service.py` выше 70% и укрепить слабые тесты по assert-ratio.
 3. Закрыть P1/P2: уменьшить долю `Any` в критичных сервисах (`exchange_service`, `form100_service_v2`, `reporting_service`) и добавить архитектурный CI-чек на запрещённые межслойные импорты.
+
+---
+
+## Дополнение (полный аудит безопасности, 2026-04-07)
+
+### Что сделано
+
+- Выполнен строгий security-аудит по 7 направлениям:
+  - аутентификация;
+  - авторизация;
+  - SQL-инъекции;
+  - защита данных пациентов;
+  - секреты и конфигурация;
+  - целостность БД;
+  - desktop-специфичные риски.
+- Сформирован отчёт `docs/security_review_2026-04-07.md` с приоритизацией рисков и конкретными фиксациями.
+
+### Ключевые выводы
+
+- КРИТИЧНЫЕ:
+  - отсутствует жёсткая role-based защита экспорта/импорта ПДн (операции доступны слишком широко);
+  - в audit payload Form100 сохраняются избыточные ПДн (`before/after` данные карточки).
+- ВАЖНЫЕ:
+  - bypass-паттерны при `actor_id=None` в части сервисов;
+  - неполный actor/audit-контур для части mutating операций;
+  - нет session TTL / lockout persistence;
+  - backup/экспортные файлы не шифруются.
+
+### Статистика
+
+- КРИТИЧНЫХ: 2
+- ВАЖНЫХ: 9
+- РЕКОМЕНДАЦИЙ: 3
+
+### Следующие шаги
+
+1. Закрыть P0: ввести permission check для import/export в UI + application слое, ограничить экспорт ПДн по ролям.
+2. Закрыть P0: убрать ПДн из `form100` audit payload (оставить только метаданные изменений).
+3. Закрыть P1: устранить bypass `actor_id=None` и унифицировать actor/audit для mutating-операций.
+4. Закрыть P1: внедрить session timeout и персистентный lockout.
+5. Закрыть P1: добавить шифрование backup/экспортных артефактов.
+
+---
+
+## Дополнение (P0: критичные исправления security + архитектуры, 2026-04-07)
+
+### Что сделано
+
+- Реализован permission-контур для import/export:
+  - добавлен `manage_exchange` в `role_matrix`;
+  - `ExchangeService` переведён на обязательный `actor_id` и проверку права;
+  - UI import/export теперь ограничивает доступ по роли и передаёт `actor_id`.
+- Убран full payload из аудита Form100:
+  - в audit сохраняются только метаданные изменений (`card_id`, `action`, `changed_fields`, `data_hash`, actor).
+- Закрыты bypass-паттерны `actor_id=None`:
+  - `reference_service`, `backup_service` и mutating-методы проверяют обязательность `actor_id`.
+- Усилен actor/audit-контур:
+  - `patient_service` (create/update/delete) получил `actor_id`, permission-check и audit;
+  - `lab_service`/`sanitary_service` используют trusted `actor_id`, а не caller-controlled поле.
+- Code-review fix по архитектуре ошибок:
+  - добавлен `app/application/exceptions.py`;
+  - из UI удалены зависимости на `sqlalchemy`, обработка через `AppError`.
+- Закрыт тестовый блок P0:
+  - `test_backup_service_error_handling` без мока SQLAlchemy engine (реальный `sqlite:///:memory:`);
+  - добавлен набор `test_sanitary_sample_payload_service.py`;
+  - покрытие `sanitary_sample_payload_service` поднято до **86%**.
+- Исправлены сопутствующие проблемы кодировки строк (часть UI/test), из-за которых падали unit-тесты.
+
+### Проверки
+
+- `rg -n "sqlalchemy" app/ui --glob "*.py"` — пусто.
+- `rg -n "actor_id is None" app/application/services/ | rg -v "raise"` — пусто.
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`255 source files`).
+- `pytest -q` — pass (`249 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+- Coverage:
+  - общий: `pytest --cov=app --cov-report=term-missing -q` -> `TOTAL 45%`;
+  - целевой модуль: `sanitary_sample_payload_service` -> **86%**.
+
+### Незавершённое / следующий шаг
+
+1. Зафиксировать изменения в git отдельными коммитами (по договорённости можно 2 коммита: security и code-review/tests).
+2. Довести P1 из security-аудита:
+   - session TTL/idle logout;
+   - персистентный lockout;
+   - шифрование backup/экспортных артефактов.

@@ -10,8 +10,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.exceptions import AppError
 from app.application.services.patient_service import PatientService
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import clear_status, set_status
@@ -69,7 +69,7 @@ class PatientSelector(QWidget):
 
         try:
             self.on_select(pid)
-        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
+        except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
             set_status(self.status, f"Не удалось выбрать пациента: {exc}", "error")
             return
 
@@ -103,3 +103,5 @@ class PatientSelector(QWidget):
 
     def _get_patient_name(self, patient_id: int) -> str | None:
         return self.patient_service.get_patient_name(patient_id)
+
+

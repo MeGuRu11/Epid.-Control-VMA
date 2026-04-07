@@ -171,3 +171,4 @@ def refresh_detail_reference_rows(
     resize_table(diagnosis_table)
     resize_table(abx_table)
     resize_table(ismp_table)
+

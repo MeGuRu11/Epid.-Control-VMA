@@ -57,3 +57,4 @@ class EmzEditDialog(QDialog):
     def _on_saved(self) -> None:
         if self.on_saved:
             self.on_saved()
+

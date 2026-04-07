@@ -725,3 +725,4 @@ def _set_time_edit_from_value(widget: QTimeEdit, value: object) -> None:
             widget.setTime(parsed)
             return
     widget.setTime(QTime.currentTime())
+

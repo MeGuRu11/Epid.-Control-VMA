@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtWidgets import QComboBox, QTableWidget
 
@@ -68,3 +68,4 @@ def connect_combo_resize_on_content(
         resize_columns_to_content(table)
 
     combo.currentIndexChanged.connect(_on_change)
+

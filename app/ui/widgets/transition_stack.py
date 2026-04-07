@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QTimer
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QStackedLayout, QStackedWidget, QWidget
@@ -56,12 +56,13 @@ class TransitionStack(QStackedWidget):
         for idx in range(self.count()):
             page = self.widget(idx)
             if page is not None and page is not current and page.graphicsEffect() is not None:
-                page.setGraphicsEffect(None)  # type: ignore[arg-type]  # Qt API допускает None для сброса эффекта, stubs PySide6 конфликтуют
+                page.setGraphicsEffect(None)  # type: ignore[arg-type]  # Qt API РґРѕРїСѓСЃРєР°РµС‚ None РґР»СЏ СЃР±СЂРѕСЃР° СЌС„С„РµРєС‚Р°, stubs PySide6 РєРѕРЅС„Р»РёРєС‚СѓСЋС‚
         if current.graphicsEffect() is not None:
-            current.setGraphicsEffect(None)  # type: ignore[arg-type]  # Qt API допускает None для сброса эффекта, stubs PySide6 конфликтуют
+            current.setGraphicsEffect(None)  # type: ignore[arg-type]  # Qt API РґРѕРїСѓСЃРєР°РµС‚ None РґР»СЏ СЃР±СЂРѕСЃР° СЌС„С„РµРєС‚Р°, stubs PySide6 РєРѕРЅС„Р»РёРєС‚СѓСЋС‚
 
         self._busy = False
         queued = self._queued
         self._queued = None
         if queued:
             QTimer.singleShot(0, lambda: self.setCurrentWidgetAnimated(*queued))
+

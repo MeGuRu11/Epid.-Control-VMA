@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import date, datetime
@@ -115,3 +115,4 @@ def collect_ismp(*, table: QTableWidget, date_empty: QDate) -> list[EmzIsmpDto]:
         if dto is not None:
             items.append(dto)
     return items
+

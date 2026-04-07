@@ -52,6 +52,7 @@ class LabSampleDetailDialog(QDialog):
         reference_service: ReferenceService,
         patient_id: int,
         emr_case_id: int | None,
+        actor_id: int | None,
         sample_id: int | None = None,
         parent=None,
     ) -> None:
@@ -60,6 +61,7 @@ class LabSampleDetailDialog(QDialog):
         self.reference_service = reference_service
         self.patient_id = patient_id
         self.emr_case_id = emr_case_id
+        self.actor_id = actor_id
         self.sample_id: int | None = sample_id
         self._abx_list: list[Any] = []
         self._phage_list: list[Any] = []
@@ -628,6 +630,9 @@ class LabSampleDetailDialog(QDialog):
 
     def on_save(self) -> None:
         clear_status(self.error_label)
+        if self.actor_id is None:
+            set_status(self.error_label, "Не удалось определить пользователя сессии", "error")
+            return
         if self.sample_id is None:
             try:
                 material_id = self.material_type.currentData()
@@ -644,14 +649,14 @@ class LabSampleDetailDialog(QDialog):
                     delivered_at=self._to_python_datetime(self.delivered_at),
                     created_by=None,
                 )
-                resp = self.lab_service.create_sample(req)
+                resp = self.lab_service.create_sample(req, actor_id=self.actor_id)
                 self.sample_id = resp.id
                 if resp.qc_due_at:
                     self.qc_due_at.setText(resp.qc_due_at.strftime("%d.%m.%Y %H:%M"))
                 needs_update = self._has_result_data() or (qc_status and qc_status != "valid")
                 if needs_update:
                     upd = self._build_result_update()
-                    self.lab_service.update_result(self.sample_id, upd, actor_id=None)
+                    self.lab_service.update_result(self.sample_id, upd, actor_id=self.actor_id)
                 self.accept()
             except Exception as exc:  # noqa: BLE001
                 set_status(self.error_label, str(exc), "error")
@@ -667,9 +672,9 @@ class LabSampleDetailDialog(QDialog):
                     taken_at=self._to_python_datetime(self.taken_at),
                     delivered_at=self._to_python_datetime(self.delivered_at),
                 )
-                self.lab_service.update_sample(self.sample_id, upd_sample, actor_id=None)
+                self.lab_service.update_sample(self.sample_id, upd_sample, actor_id=self.actor_id)
                 upd = self._build_result_update()
-                self.lab_service.update_result(self.sample_id, upd, actor_id=None)
+                self.lab_service.update_result(self.sample_id, upd, actor_id=self.actor_id)
                 self.accept()
             except Exception as exc:  # noqa: BLE001
                 set_status(self.error_label, str(exc), "error")
@@ -700,3 +705,4 @@ class LabSampleDetailDialog(QDialog):
             self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
             self.phage_table.setItem(idx, 2, QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""))
         resize_columns_to_content(self.phage_table)
+

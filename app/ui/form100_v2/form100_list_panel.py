@@ -19,13 +19,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import (
     Form100CardV2ListItemDto,
     Form100V2Filters,
 )
+from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.ui.form100_v2.form100_wizard import Form100Wizard
 from app.ui.widgets.notifications import error_text
@@ -34,7 +34,7 @@ _STATUS_LABELS: dict[str, str] = {
     "DRAFT":  "Черновик",
     "SIGNED": "Подписан",
 }
-_HANDLED_FORM100_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
+_HANDLED_FORM100_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
 
 class _PreviewPanel(QFrame):
@@ -160,7 +160,7 @@ class Form100ListPanel(QDialog):
         root.setContentsMargins(16, 16, 16, 16)
         root.setSpacing(12)
 
-        # ── Заголовок ────────────────────────────────────────────────────────
+        # -- Заголовок --------------------------------------------------------
         hdr = QHBoxLayout()
         hdr.setSpacing(12)
         title = QLabel("Карточки Формы 100")
@@ -172,7 +172,7 @@ class Form100ListPanel(QDialog):
         hdr.addWidget(self._btn_create)
         root.addLayout(hdr)
 
-        # ── Сплиттер ─────────────────────────────────────────────────────────
+        # -- Сплиттер ---------------------------------------------------------
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setChildrenCollapsible(False)
         self._splitter = splitter
@@ -262,7 +262,7 @@ class Form100ListPanel(QDialog):
         self.setMinimumSize(min_width, min_height)
         self.resize(target_width, target_height)
 
-    # ── Данные ───────────────────────────────────────────────────────────────
+    # -- Данные ---------------------------------------------------------------
 
     def _load_cards(self) -> None:
         if self._patient_id is not None:
@@ -305,7 +305,7 @@ class Form100ListPanel(QDialog):
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self._table.setItem(row, col, item)
 
-    # ── Выбор ────────────────────────────────────────────────────────────────
+    # -- Выбор ----------------------------------------------------------------
 
     def _on_selection_changed(self) -> None:
         card = self._selected_list_item()
@@ -331,7 +331,7 @@ class Form100ListPanel(QDialog):
             return
         self._open_wizard(card_item.id)
 
-    # ── Мастер ───────────────────────────────────────────────────────────────
+    # -- Мастер ---------------------------------------------------------------
 
     def _open_wizard(self, card_id: str | None) -> None:
         from app.application.dto.form100_v2_dto import Form100CardV2Dto
@@ -368,5 +368,7 @@ class Form100ListPanel(QDialog):
             self._load_cards()
             if self._on_data_changed:
                 self._on_data_changed()
+
+
 
 

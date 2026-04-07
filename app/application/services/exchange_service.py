@@ -9,7 +9,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, cast
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from openpyxl import Workbook, load_workbook
@@ -21,7 +21,9 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.security.role_matrix import Role, has_permission
 from app.infrastructure.db import models_sqlalchemy as models
+from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 from app.infrastructure.security.sha256 import sha256_file
@@ -326,9 +328,21 @@ class ExchangeService:
         self,
         session_factory: Callable = session_scope,
         form100_v2_service: Any | None = None,
+        user_repo: UserRepository | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.form100_v2_service = form100_v2_service
+        self.user_repo = user_repo or UserRepository()
+
+    def _require_permission(self, actor_id: int, permission: Literal["manage_exchange"]) -> None:
+        with self.session_factory() as session:
+            actor = self.user_repo.get_by_id(session, actor_id)
+            if actor is None:
+                raise ValueError("Пользователь не найден")
+            actor_role = cast(Role, str(actor.role))
+            if has_permission(actor_role, permission):
+                return
+        raise ValueError("Недостаточно прав для операций импорта/экспорта")
 
     def _log_package(
         self, direction: str, package_format: str, file_path: Path, sha256: str, created_by: int | None
@@ -344,7 +358,8 @@ class ExchangeService:
                 )
             )
 
-    def export_excel(self, file_path: str | Path, exported_by: str | None = None) -> dict:
+    def export_excel(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         wb = Workbook()
         meta = wb.active
@@ -371,11 +386,12 @@ class ExchangeService:
         wb.save(file_path)
         return {"path": str(file_path), "counts": counts}
 
-    def export_zip(self, file_path: str | Path, exported_by: str | None = None, actor_id: int | None = None) -> dict:
+    def export_zip(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir_path:
             excel_path = tmp_dir_path / "export.xlsx"
-            result = self.export_excel(excel_path, exported_by=exported_by)
+            result = self.export_excel(excel_path, exported_by=exported_by, actor_id=actor_id)
             files: list[Path] = [excel_path]
             manifest_files: list[dict[str, Any]] = []
             manifest: dict[str, Any] = {
@@ -404,7 +420,15 @@ class ExchangeService:
         self._log_package("export", "zip+excel", file_path, package_hash, actor_id)
         return {"path": str(file_path), "counts": result["counts"], "sha256": package_hash}
 
-    def import_excel(self, file_path: str | Path, mode: str = "merge", *, write_error_log: bool = True) -> dict:
+    def import_excel(
+        self,
+        file_path: str | Path,
+        *,
+        actor_id: int,
+        mode: str = "merge",
+        write_error_log: bool = True,
+    ) -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         wb = load_workbook(file_path, read_only=True, data_only=True)
         counts: dict[str, int] = {}
@@ -482,7 +506,8 @@ class ExchangeService:
             result["error_log_path"] = _write_import_error_log(file_path, errors)
         return result
 
-    def import_zip(self, file_path: str | Path, actor_id: int | None = None, mode: str = "merge") -> dict:
+    def import_zip(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir_path:
             with zipfile.ZipFile(file_path, "r") as zf:
@@ -506,7 +531,7 @@ class ExchangeService:
             excel_path = tmp_dir_path / "export.xlsx"
             if not excel_path.exists():
                 raise ValueError("В архиве отсутствует export.xlsx")
-            result = self.import_excel(excel_path, mode=mode, write_error_log=False)
+            result = self.import_excel(excel_path, actor_id=actor_id, mode=mode, write_error_log=False)
 
         package_hash = sha256_file(file_path)
         self._log_package("import", "zip+excel", file_path, package_hash, actor_id)
@@ -526,10 +551,11 @@ class ExchangeService:
         self,
         file_path: str | Path,
         *,
-        actor_id: int | None = None,
+        actor_id: int,
         exported_by: str | None = None,
         card_id: str | None = None,
     ) -> dict[str, Any]:
+        self._require_permission(actor_id, "manage_exchange")
         if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
         return cast(
@@ -546,9 +572,10 @@ class ExchangeService:
         self,
         file_path: str | Path,
         *,
-        actor_id: int | None = None,
+        actor_id: int,
         mode: str = "merge",
     ) -> dict[str, Any]:
+        self._require_permission(actor_id, "manage_exchange")
         if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
         return cast(
@@ -575,7 +602,8 @@ class ExchangeService:
             rows = q.order_by(models.DataExchangePackage.created_at.desc()).limit(limit).all()
             return cast(list[models.DataExchangePackage], rows)
 
-    def export_csv(self, file_path: str | Path, table_name: str) -> dict:
+    def export_csv(self, file_path: str | Path, table_name: str, *, actor_id: int) -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
             raise ValueError("Неизвестная таблица CSV")
@@ -592,7 +620,8 @@ class ExchangeService:
                     writer.writerow([data.get(col) for col in columns])
         return {"path": str(file_path), "count": len(rows)}
 
-    def import_csv(self, file_path: str | Path, table_name: str, mode: str = "merge") -> dict:
+    def import_csv(self, file_path: str | Path, table_name: str, *, actor_id: int, mode: str = "merge") -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
             raise ValueError("Неизвестная таблица CSV")
@@ -648,7 +677,8 @@ class ExchangeService:
             "summary": summary,
         }
 
-    def export_pdf(self, file_path: str | Path, table_name: str) -> dict:
+    def export_pdf(self, file_path: str | Path, table_name: str, *, actor_id: int) -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
             raise ValueError("Неизвестная таблица PDF")
@@ -712,7 +742,8 @@ class ExchangeService:
         return {"path": str(file_path), "count": len(data) - 1}
 
     # Legacy JSON support (not used in UI)
-    def export_json(self, file_path: str | Path, exported_by: str | None = None) -> dict:
+    def export_json(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         payload: dict[str, Any] = {
             "schema_version": "1.0",
@@ -729,7 +760,8 @@ class ExchangeService:
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return {"path": str(file_path), "counts": {k: len(v) for k, v in payload["data"].items()}}
 
-    def import_json(self, file_path: str | Path, mode: str = "merge") -> dict:
+    def import_json(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> dict:
+        self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         payload: dict[str, Any] = json.loads(file_path.read_text(encoding="utf-8"))
         if payload.get("schema_version") != "1.0":

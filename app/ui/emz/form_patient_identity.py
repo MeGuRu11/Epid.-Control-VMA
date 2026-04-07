@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
@@ -94,3 +94,4 @@ def identity_from_case_detail(detail: CaseDetailPatientLike) -> PatientIdentityD
         military_unit=detail.patient_military_unit,
         military_district=detail.patient_military_district,
     )
+

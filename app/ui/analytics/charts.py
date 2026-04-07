@@ -95,3 +95,4 @@ class TrendChart(QWidget):
         view = self._plot.getViewBox()
         view.setMouseEnabled(x=False, y=False)
         view.setMenuEnabled(False)
+

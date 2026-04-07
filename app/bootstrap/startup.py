@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 import shutil
@@ -6,12 +6,12 @@ import sys
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from alembic import command
 from alembic.config import Config
 from alembic.util.exc import CommandError
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -41,6 +41,23 @@ _HANDLED_SEED_ERRORS = (
 )
 
 
+def _message_parent() -> QWidget:
+    return cast(QWidget, QApplication.activeWindow())
+
+
+def _show_critical(title: str, text: str) -> None:
+    QMessageBox.critical(_message_parent(), title, text)
+
+
+def _show_warning(title: str, text: str) -> None:
+    QMessageBox.warning(_message_parent(), title, text)
+
+
+def _is_multiple_heads_error(exc: BaseException) -> bool:
+    text = str(exc)
+    return "MultipleHeads" in str(type(exc)) or "Multiple head" in text
+
+
 def _migration_root_candidates(root_dir: Path) -> list[Path]:
     candidates: list[Path] = [root_dir]
     if getattr(sys, "frozen", False):
@@ -59,20 +76,14 @@ def _resolve_migration_root(root_dir: Path) -> Path | None:
     return None
 
 
-def _is_multiple_heads_error(exc: BaseException) -> bool:
-    text = str(exc)
-    return "MultipleHeads" in str(type(exc)) or "Multiple head" in text
-
-
 def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
     migration_root = _resolve_migration_root(root_dir)
     if migration_root is None:
         checked_roots = ", ".join(str(path) for path in _migration_root_candidates(root_dir))
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            "Отсутствуют файлы миграций (alembic.ini и каталог migrations).\n"
-            f"Проверены пути: {checked_roots}",
+        _show_critical(
+            "РћС€РёР±РєР°",
+            "РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ С„Р°Р№Р»С‹ РјРёРіСЂР°С†РёР№ (alembic.ini Рё РєР°С‚Р°Р»РѕРі migrations).\n"
+            f"РџСЂРѕРІРµСЂРµРЅС‹ РїСѓС‚Рё: {checked_roots}",
         )
         return False
     try:
@@ -80,25 +91,17 @@ def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
         test_file.write_text("ok", encoding="utf-8")
         test_file.unlink(missing_ok=True)
     except OSError:
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            f"Нет прав на запись в каталог БД: {db_file.parent}",
+        _show_critical(
+            "РћС€РёР±РєР°",
+            f"РќРµС‚ РїСЂР°РІ РЅР° Р·Р°РїРёСЃСЊ РІ РєР°С‚Р°Р»РѕРі Р‘Р”: {db_file.parent}",
         )
         return False
     return True
 
 
 def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Path) -> bool:
-    migration_root = _resolve_migration_root(root_dir)
-    if migration_root is None:
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            "Не удалось найти файлы миграций для обновления базы данных.",
-        )
-        return False
     try:
+        migration_root = _resolve_migration_root(root_dir) or root_dir
         cfg = Config(str(migration_root / "alembic.ini"))
         cfg.set_main_option(
             "script_location",
@@ -128,18 +131,14 @@ def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Pa
             with error_path.open("a", encoding="utf-8") as handle:
                 handle.write("\n--- Migration error ---\n")
                 handle.write(f"DB: {db_file}\n")
-                handle.write(f"Migrations root: {migration_root}\n")
-                handle.write(
-                    f"Migrations: {migration_root / 'app' / 'infrastructure' / 'db' / 'migrations'}\n"
-                )
+                handle.write(f"Migrations: {migration_root / 'app' / 'infrastructure' / 'db' / 'migrations'}\n")
                 handle.write(traceback.format_exc())
         except OSError:
             logger.exception("Failed to write migration error log")
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            "Не удалось применить миграции базы данных.\n"
-            f"Подробности: {log_dir / 'migration_error.log'}",
+        _show_critical(
+            "РћС€РёР±РєР°",
+            "РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРёРјРµРЅРёС‚СЊ РјРёРіСЂР°С†РёРё Р±Р°Р·С‹ РґР°РЅРЅС‹С….\n"
+            f"РџРѕРґСЂРѕР±РЅРѕСЃС‚Рё: {log_dir / 'migration_error.log'}",
         )
         return False
 
@@ -170,19 +169,17 @@ def ensure_schema_compatibility(
         inspector = inspect(engine)
         columns = {col["name"] for col in inspector.get_columns("patients")}
         if required - columns:
-            QMessageBox.critical(
-                None,
-                "Ошибка",
-                "База данных устарела и не может быть обновлена автоматически.",
+            _show_critical(
+                "РћС€РёР±РєР°",
+                "Р‘Р°Р·Р° РґР°РЅРЅС‹С… СѓСЃС‚Р°СЂРµР»Р° Рё РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РѕР±РЅРѕРІР»РµРЅР° Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.",
             )
             return False
         return True
     except _HANDLED_STARTUP_ERRORS as exc:
         logging.getLogger(__name__).exception("Failed to verify database schema")
-        QMessageBox.critical(
-            None,
-            "Ошибка",
-            f"Не удалось проверить структуру базы данных: {exc}",
+        _show_critical(
+            "РћС€РёР±РєР°",
+            f"РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ СЃС‚СЂСѓРєС‚СѓСЂСѓ Р±Р°Р·С‹ РґР°РЅРЅС‹С…: {exc}",
         )
         return False
 
@@ -191,10 +188,9 @@ def ensure_fts_objects(session_factory: _SessionFactory) -> bool:
     fts_manager = FtsManager(session_factory=session_factory)
     if fts_manager.ensure_all():
         return True
-    QMessageBox.critical(
-        None,
-        "Ошибка",
-        "Не удалось инициализировать FTS-поиск.",
+    _show_critical(
+        "РћС€РёР±РєР°",
+        "РќРµ СѓРґР°Р»РѕСЃСЊ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ FTS-РїРѕРёСЃРє.",
     )
     return False
 
@@ -267,8 +263,8 @@ def warn_missing_plot_dependencies() -> None:
     except ImportError:
         missing.append("matplotlib")
     if missing:
-        QMessageBox.warning(
-            None,
-            "Библиотеки не найдены",
-            "Не установлены библиотеки для графиков: " + ", ".join(missing),
+        _show_warning(
+            "Р‘РёР±Р»РёРѕС‚РµРєРё РЅРµ РЅР°Р№РґРµРЅС‹",
+            "РќРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅС‹ Р±РёР±Р»РёРѕС‚РµРєРё РґР»СЏ РіСЂР°С„РёРєРѕРІ: " + ", ".join(missing),
         )
+

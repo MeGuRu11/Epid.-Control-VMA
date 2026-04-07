@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.exceptions import AppError
 from app.application.services.setup_service import SetupService
 from app.config import settings
 from app.ui.runtime_ui import resolve_ui_runtime
@@ -325,7 +325,7 @@ class FirstRunDialog(QDialog):
             set_status(self.error_label, str(exc), "error")
             self.error_label.setVisible(True)
             return
-        except (SQLAlchemyError, OSError, RuntimeError, TypeError):
+        except (AppError, OSError, RuntimeError, TypeError):
             set_status(
                 self.error_label,
                 "Не удалось создать администратора. Попробуйте позже.",
@@ -342,3 +342,5 @@ if __name__ == "__main__":
     dialog = FirstRunDialog()
     dialog.show()
     app.exec()
+
+

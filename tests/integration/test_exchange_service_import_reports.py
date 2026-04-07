@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.services.exchange_service import ExchangeService
 from app.infrastructure.db import models_sqlalchemy as models
-from app.infrastructure.db.models_sqlalchemy import Base
+from app.infrastructure.db.models_sqlalchemy import Base, User
 from app.infrastructure.security.sha256 import sha256_file
 
 
@@ -43,8 +43,17 @@ def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[S
     return _session_scope
 
 
+def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = User(login="exchange_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return int(actor.id)
+
+
 def test_import_csv_returns_error_report_and_log(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "exchange_csv_report.db")
+    actor_id = seed_actor(session_factory)
     service = ExchangeService(session_factory=session_factory)
     csv_path = tmp_path / "patients.csv"
 
@@ -54,7 +63,7 @@ def test_import_csv_returns_error_report_and_log(tmp_path: Path) -> None:
         writer.writerow([1, "Иванов Иван", "2024-01-01", "M", "cat", "", ""])
         writer.writerow([2, "Петров Петр", "bad-date", "M", "cat", "", ""])
 
-    result = service.import_csv(csv_path, "patients", mode="merge")
+    result = service.import_csv(csv_path, "patients", actor_id=actor_id, mode="merge")
 
     assert result["count"] == 1
     assert result["error_count"] == 1
@@ -76,6 +85,7 @@ def test_import_csv_returns_error_report_and_log(tmp_path: Path) -> None:
 
 def test_import_excel_returns_error_report_and_log(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "exchange_excel_report.db")
+    actor_id = seed_actor(session_factory)
     service = ExchangeService(session_factory=session_factory)
     xlsx_path = tmp_path / "import.xlsx"
 
@@ -88,7 +98,7 @@ def test_import_excel_returns_error_report_and_log(tmp_path: Path) -> None:
     ws.append([2, "Смирнов Семен", "bad-date", "M", "cat", "", ""])
     wb.save(xlsx_path)
 
-    result = service.import_excel(xlsx_path, mode="merge")
+    result = service.import_excel(xlsx_path, actor_id=actor_id, mode="merge")
 
     assert result["counts"]["patients"] == 2
     assert result["details"]["patients"]["added"] == 1
@@ -109,6 +119,7 @@ def test_import_excel_returns_error_report_and_log(tmp_path: Path) -> None:
 
 def test_import_zip_returns_nested_import_error_report(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "exchange_zip_report.db")
+    actor_id = seed_actor(session_factory)
     service = ExchangeService(session_factory=session_factory)
     xlsx_path = tmp_path / "export.xlsx"
     zip_path = tmp_path / "import.zip"
@@ -130,7 +141,7 @@ def test_import_zip_returns_nested_import_error_report(tmp_path: Path) -> None:
         zf.write(xlsx_path, arcname="export.xlsx")
         zf.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False))
 
-    result = service.import_zip(zip_path, actor_id=None, mode="merge")
+    result = service.import_zip(zip_path, actor_id=actor_id, mode="merge")
 
     assert result["error_count"] == 1
     assert result["summary"]["errors"] == 1

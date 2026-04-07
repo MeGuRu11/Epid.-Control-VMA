@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Iterable
 
@@ -50,3 +50,4 @@ class LesionTypeWidget(QWidget):
     @property
     def checks(self) -> dict[str, QPushButton]:
         return self._checks
+

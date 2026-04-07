@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import math
 import random
@@ -125,3 +125,4 @@ class MedicalBackground(QGraphicsView):
             scale_amp = 0.06 if not showcase else 0.14
             item.setScale(1.0 + scale_amp * math.sin(self._t * 1.5 + particle.phase))
             item.setPos(QPointF(x, y))
+

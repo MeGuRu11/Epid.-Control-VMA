@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.services import reference_service as reference_service_module
 from app.application.services.reference_service import ReferenceService
-from app.infrastructure.db.models_sqlalchemy import Base
+from app.infrastructure.db.models_sqlalchemy import Base, User
 
 
 def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
@@ -36,40 +36,49 @@ def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[S
     return _session_scope
 
 
+def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = User(login="ref_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return cast(int, actor.id)
+
+
 def test_antibiotic_group_and_antibiotic_crud_with_search(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_catalog_abx.db")
     monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
+    actor_id = seed_actor(session_factory)
     service = ReferenceService()
 
-    service.add_antibiotic_group("grp-1", "Group 1")
+    service.add_antibiotic_group("grp-1", "Group 1", actor_id=actor_id)
     group = service.list_antibiotic_groups()[0]
     group_id = cast(int, group.id)
 
-    service.add_antibiotic("abx-1", "Antibiotic 1", group_id)
+    service.add_antibiotic("abx-1", "Antibiotic 1", group_id, actor_id=actor_id)
     antibiotics = service.search_antibiotics("Antibiotic")
     assert len(antibiotics) == 1
     abx = antibiotics[0]
     abx_id = cast(int, abx.id)
     assert cast(int | None, abx.group_id) == group_id
 
-    service.update_antibiotic(abx_id, "abx-2", "Antibiotic 2", None)
+    service.update_antibiotic(abx_id, "abx-2", "Antibiotic 2", None, actor_id=actor_id)
     updated_abx = service.search_antibiotics("abx-2")
     assert len(updated_abx) == 1
     assert str(updated_abx[0].name) == "Antibiotic 2"
     assert updated_abx[0].group_id is None
 
-    service.update_antibiotic_group(group_id, "grp-2", "Group 2")
+    service.update_antibiotic_group(group_id, "grp-2", "Group 2", actor_id=actor_id)
     groups = service.list_antibiotic_groups()
     assert len(groups) == 1
     assert str(groups[0].code) == "grp-2"
     assert str(groups[0].name) == "Group 2"
 
-    service.delete_antibiotic(abx_id)
+    service.delete_antibiotic(abx_id, actor_id=actor_id)
     assert service.list_antibiotics() == []
-    service.delete_antibiotic_group(group_id)
+    service.delete_antibiotic_group(group_id, actor_id=actor_id)
     assert service.list_antibiotic_groups() == []
 
 
@@ -79,44 +88,45 @@ def test_microorganism_phage_ismp_and_icd10_crud(
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_catalog_other.db")
     monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
+    actor_id = seed_actor(session_factory)
     service = ReferenceService()
 
-    service.add_microorganism("micro-1", "Microbe 1", "tg1")
+    service.add_microorganism("micro-1", "Microbe 1", "tg1", actor_id=actor_id)
     microorganism = service.search_microorganisms("Microbe")[0]
     micro_id = cast(int, microorganism.id)
-    service.update_microorganism(micro_id, "micro-2", "Microbe 2", "tg2")
+    service.update_microorganism(micro_id, "micro-2", "Microbe 2", "tg2", actor_id=actor_id)
     search_micro = service.search_microorganisms("micro-2")
     assert len(search_micro) == 1
     assert str(search_micro[0].name) == "Microbe 2"
-    service.delete_microorganism(micro_id)
+    service.delete_microorganism(micro_id, actor_id=actor_id)
     assert service.list_microorganisms() == []
 
-    service.add_phage("phage-1", "Phage 1", True)
+    service.add_phage("phage-1", "Phage 1", True, actor_id=actor_id)
     phage = service.list_phages()[0]
     phage_id = cast(int, phage.id)
-    service.update_phage(phage_id, "phage-2", "Phage 2", False)
+    service.update_phage(phage_id, "phage-2", "Phage 2", False, actor_id=actor_id)
     updated_phage = service.list_phages()[0]
     assert str(updated_phage.code) == "phage-2"
     assert str(updated_phage.name) == "Phage 2"
     assert cast(bool, updated_phage.is_active) is False
-    service.delete_phage(phage_id)
+    service.delete_phage(phage_id, actor_id=actor_id)
     assert service.list_phages() == []
 
-    service.add_ismp_abbreviation("ismp-1", "ISMP 1", "desc")
+    service.add_ismp_abbreviation("ismp-1", "ISMP 1", "desc", actor_id=actor_id)
     ismp = service.list_ismp_abbreviations()[0]
     ismp_id = cast(int, ismp.id)
-    service.update_ismp_abbreviation(ismp_id, "ismp-2", "ISMP 2", "desc-2")
+    service.update_ismp_abbreviation(ismp_id, "ismp-2", "ISMP 2", "desc-2", actor_id=actor_id)
     updated_ismp = service.list_ismp_abbreviations()[0]
     assert str(updated_ismp.code) == "ismp-2"
     assert str(updated_ismp.name) == "ISMP 2"
-    service.delete_ismp_abbreviation(ismp_id)
+    service.delete_ismp_abbreviation(ismp_id, actor_id=actor_id)
     assert service.list_ismp_abbreviations() == []
 
-    service.add_icd10("A00", "Cholera")
+    service.add_icd10("A00", "Cholera", actor_id=actor_id)
     icd_rows = service.search_icd10("A00")
     assert len(icd_rows) == 1
     assert str(icd_rows[0].title) == "Cholera"
-    service.delete_icd10("A00")
+    service.delete_icd10("A00", actor_id=actor_id)
     assert service.list_icd10() == []
 
 
@@ -126,15 +136,16 @@ def test_reference_service_catalog_update_not_found_errors(
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_catalog_not_found.db")
     monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
+    actor_id = seed_actor(session_factory)
     service = ReferenceService()
 
     with pytest.raises(ValueError):
-        service.update_antibiotic(999, "abx", "ABX", None)
+        service.update_antibiotic(999, "abx", "ABX", None, actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.update_antibiotic_group(999, "grp", "Group")
+        service.update_antibiotic_group(999, "grp", "Group", actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.update_microorganism(999, "micro", "Micro", None)
+        service.update_microorganism(999, "micro", "Micro", None, actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.update_phage(999, "phage", "Phage", True)
+        service.update_phage(999, "phage", "Phage", True, actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.update_ismp_abbreviation(999, "ismp", "ISMP", None)
+        service.update_ismp_abbreviation(999, "ismp", "ISMP", None, actor_id=actor_id)

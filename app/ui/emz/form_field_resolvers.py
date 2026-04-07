@@ -35,3 +35,4 @@ def resolve_department_id(
         if str(attrgetter("name")(department)).strip() == name:
             return int(attrgetter("id")(department))
     return None
+

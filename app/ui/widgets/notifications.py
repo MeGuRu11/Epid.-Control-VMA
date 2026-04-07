@@ -108,3 +108,4 @@ def show_info(parent: QWidget | None, message: str, title: str = "Информа
 
 def show_toast(parent: QWidget | None, message: str, level: str = "info") -> None:
     _show_toast(parent, message, level=level)
+

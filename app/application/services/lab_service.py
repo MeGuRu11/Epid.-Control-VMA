@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from collections.abc import Callable
@@ -14,6 +14,7 @@ from app.application.dto.lab_dto import (
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.lab_repo import LabRepository
 from app.infrastructure.db.repositories.reference_repo import ReferenceRepository
+from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 
 
@@ -24,7 +25,7 @@ def _format_lab_no(material_code: str, seq_date: date, seq: int) -> str:
 def _is_blood_material(material_code: str | None, material_name: str | None) -> bool:
     code = (material_code or "").casefold()
     name = (material_name or "").casefold()
-    return "blood" in code or "кров" in name or "кров" in code
+    return "blood" in code or "РєСЂРѕРІ" in name or "РєСЂРѕРІ" in code
 
 
 def _compute_qc_due_at(taken_at: datetime | None, material_code: str | None, material_name: str | None) -> datetime:
@@ -39,20 +40,30 @@ class LabService:
         lab_repo: LabRepository | None = None,
         ref_repo: ReferenceRepository | None = None,
         audit_repo: AuditLogRepository | None = None,
+        user_repo: UserRepository | None = None,
         session_factory: Callable = session_scope,
     ) -> None:
         self.lab_repo = lab_repo or LabRepository()
         self.ref_repo = ref_repo or ReferenceRepository()
         self.audit_repo = audit_repo or AuditLogRepository()
+        self.user_repo = user_repo or UserRepository()
         self.session_factory = session_factory
 
-    def create_sample(self, request: LabSampleCreateRequest) -> LabSampleResponse:
+    def _require_write_access(self, session, actor_id: int) -> None:
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
+        actor = self.user_repo.get_by_id(session, actor_id)
+        if actor is None or not bool(getattr(actor, "is_active", False)):
+            raise ValueError("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ")
+
+    def create_sample(self, request: LabSampleCreateRequest, *, actor_id: int) -> LabSampleResponse:
         taken_at = request.taken_at or datetime.now(UTC)
         seq_date = taken_at.date()
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             material = self.ref_repo.get_material_type(session, request.material_type_id)
             if not material:
-                raise ValueError("Тип материала не найден")
+                raise ValueError("РўРёРї РјР°С‚РµСЂРёР°Р»Р° РЅРµ РЅР°Р№РґРµРЅ")
             seq = self.lab_repo.next_lab_number(session, seq_date, request.material_type_id)
             material_code = cast(str, material.code)
             lab_no = _format_lab_no(material_code, seq_date, seq)
@@ -76,12 +87,12 @@ class LabService:
                 delivered_at=request.delivered_at,
                 qc_due_at=qc_due_at,
                 qc_status="valid",
-                created_by=request.created_by,
+                created_by=actor_id,
             )
 
             self.audit_repo.add_event(
                 session,
-                user_id=request.created_by,
+                user_id=actor_id,
                 entity_type="lab_sample",
                 entity_id=str(sample.id),
                 action="create_lab_sample",
@@ -109,11 +120,12 @@ class LabService:
                 qc_status=qc_status,
             )
 
-    def update_result(self, sample_id: int, request: LabSampleResultUpdate, actor_id: int | None) -> LabSampleResponse:
+    def update_result(self, sample_id: int, request: LabSampleResultUpdate, actor_id: int) -> LabSampleResponse:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             sample = self.lab_repo.get_sample(session, sample_id)
             if not sample:
-                raise ValueError("Проба не найдена")
+                raise ValueError("РџСЂРѕР±Р° РЅРµ РЅР°Р№РґРµРЅР°")
 
             self.lab_repo.update_result(
                 session,
@@ -177,11 +189,12 @@ class LabService:
                 microorganism_free=microorganism_free,
             )
 
-    def update_sample(self, sample_id: int, request: LabSampleUpdateRequest, actor_id: int | None) -> None:
+    def update_sample(self, sample_id: int, request: LabSampleUpdateRequest, actor_id: int) -> None:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             sample = self.lab_repo.get_sample(session, sample_id)
             if not sample:
-                raise ValueError("Проба не найдена")
+                raise ValueError("РџСЂРѕР±Р° РЅРµ РЅР°Р№РґРµРЅР°")
 
             material_id = request.material_type_id or cast(int, sample.material_type_id)
             material = self.ref_repo.get_material_type(session, material_id)
@@ -253,7 +266,7 @@ class LabService:
         with self.session_factory() as session:
             sample = self.lab_repo.get_sample(session, sample_id)
             if not sample:
-                raise ValueError("Проба не найдена")
+                raise ValueError("РџСЂРѕР±Р° РЅРµ РЅР°Р№РґРµРЅР°")
             isolation = self.lab_repo.get_isolation(session, sample_id)
             susceptibility = self.lab_repo.get_susceptibility(session, sample_id)
             phages = self.lab_repo.get_phages(session, sample_id)
@@ -263,3 +276,6 @@ class LabService:
                 "susceptibility": susceptibility,
                 "phages": phages,
             }
+
+
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
@@ -1107,3 +1107,4 @@ def _build_qss(settings: Settings) -> str:
         font-weight: 700;
     }}
     """
+

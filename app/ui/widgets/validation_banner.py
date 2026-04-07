@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel, QWidget
 
@@ -17,3 +17,4 @@ class ValidationBanner(QLabel):
     def clear_error(self) -> None:
         self.clear()
         self.hide()
+

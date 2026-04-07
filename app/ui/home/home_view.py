@@ -14,9 +14,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
+from app.application.exceptions import AppError
 from app.application.services.dashboard_service import DashboardService
 from app.ui.widgets.notifications import set_status
 
@@ -282,7 +282,7 @@ class HomeView(QWidget):
             )
             set_status(self.status_label, "", "info")
             self.status_label.setVisible(False)
-        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
+        except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
             set_status(self.status_label, f"Ошибка: {exc}", "error")
             self.status_label.setVisible(True)
             self._animate_status()
@@ -310,3 +310,5 @@ class HomeView(QWidget):
     def _animate_status(self) -> None:
         self._status_anim.stop()
         self._status_anim.start()
+
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -68,3 +68,4 @@ def run_load_case(
         patient_id, identity = get_patient_identity(context.patient_id)
         apply_patient_selection(patient_id, identity)
     return False
+

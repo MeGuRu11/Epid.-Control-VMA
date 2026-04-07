@@ -8,7 +8,7 @@ from io import UnsupportedOperation
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from types import TracebackType
-from typing import TextIO
+from typing import TextIO, cast
 
 # Ensure project root on sys.path when running as script or bundled app
 _MEIPASS = getattr(sys, "_MEIPASS", None)
@@ -18,7 +18,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from PySide6.QtCore import QMessageLogContext, QtMsgType, qInstallMessageHandler  # noqa: E402
 from PySide6.QtGui import QIcon  # noqa: E402
-from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox  # noqa: E402
+from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QWidget  # noqa: E402
 
 from app.bootstrap.startup import (  # noqa: E402
     has_users,
@@ -130,7 +130,7 @@ def _install_exception_hook(log_path: Path) -> None:
         logging.getLogger(__name__).error("Unhandled exception", exc_info=(exc_type, exc, tb))
         if QApplication.instance() is not None:
             QMessageBox.critical(
-                None,
+                cast(QWidget, QApplication.activeWindow()),
                 "Ошибка",
                 f"Произошла непредвиденная ошибка.\nОтчет: {log_path}",
             )

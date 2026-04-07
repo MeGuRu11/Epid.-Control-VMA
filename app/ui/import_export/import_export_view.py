@@ -17,9 +17,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
+from app.application.exceptions import AppError
+from app.application.security import can_manage_exchange
 from app.application.services.exchange_service import ExchangeService
 from app.ui.import_export.import_export_wizard import ImportExportWizard
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
@@ -27,7 +28,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import error_text, show_error
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
-_HANDLED_IMPORT_EXPORT_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError, OSError)
+_HANDLED_IMPORT_EXPORT_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError, OSError)
 
 
 class ImportExportView(QWidget):
@@ -44,6 +45,7 @@ class ImportExportView(QWidget):
 
     def set_session(self, session: SessionContext) -> None:
         self.session = session
+        self._sync_permissions()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -66,6 +68,7 @@ class ImportExportView(QWidget):
         wizard_btn.setObjectName("primaryButton")
         wizard_btn.clicked.connect(self._open_wizard)
         compact_button(wizard_btn, min_width=132, max_width=300)
+        self._wizard_btn = wizard_btn
         refresh_history_btn = QPushButton("Обновить историю пакетов")
         refresh_history_btn.setObjectName("secondaryButton")
         compact_button(refresh_history_btn)
@@ -153,6 +156,7 @@ class ImportExportView(QWidget):
         layout.addWidget(history_box)
 
         layout.addStretch()
+        self._sync_permissions()
         self._load_history()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
@@ -177,6 +181,9 @@ class ImportExportView(QWidget):
         )
 
     def _open_wizard(self) -> None:
+        if not can_manage_exchange(self.session.role):
+            show_error(self, "Недостаточно прав для операций импорта/экспорта")
+            return
         wizard = ImportExportWizard(
             exchange_service=self.exchange_service,
             session=self.session,
@@ -184,6 +191,11 @@ class ImportExportView(QWidget):
             parent=self,
         )
         wizard.exec()
+
+    def _sync_permissions(self) -> None:
+        can_manage = can_manage_exchange(self.session.role)
+        self._wizard_btn.setEnabled(can_manage)
+        self._wizard_btn.setVisible(can_manage)
 
     def _load_history(self) -> None:
         try:
@@ -230,3 +242,5 @@ class ImportExportView(QWidget):
             return
         file_path = path_item.text().strip()
         QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+
+

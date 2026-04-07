@@ -30,7 +30,7 @@ def _utc_now() -> datetime:
 def _load_json(value: object, *, default: object) -> object:
     if value is None:
         return default
-    if isinstance(value, (list, dict)):
+    if isinstance(value, list | dict):
         return value
     try:
         return json.loads(str(value))
@@ -43,7 +43,7 @@ def _as_bool(value: object) -> bool:
         return value
     if value is None:
         return False
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return bool(value)
     text = str(value).strip().lower()
     return text in {"1", "true", "yes", "on"}
@@ -160,9 +160,9 @@ def upgrade() -> None:
                 x2 = shape.get("x2")
                 y1 = shape.get("y1")
                 y2 = shape.get("y2")
-                if isinstance(x1, (int, float)) and isinstance(x2, (int, float)):
+                if isinstance(x1, int | float) and isinstance(x2, int | float):
                     x = (x1 + x2) / 2
-                if isinstance(y1, (int, float)) and isinstance(y2, (int, float)):
+                if isinstance(y1, int | float) and isinstance(y2, int | float):
                     y = (y1 + y2) / 2
             try:
                 x_float = float(x if x is not None else 0.5)

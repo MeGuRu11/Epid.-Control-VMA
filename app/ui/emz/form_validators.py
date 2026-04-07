@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from datetime import datetime
@@ -81,3 +81,4 @@ def validate_table_datetime_rows(
             if error:
                 return error
     return None
+

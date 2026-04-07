@@ -23,10 +23,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
+from app.application.exceptions import AppError
 from app.application.services.analytics_service import AnalyticsService
 from app.application.services.reference_service import ReferenceService
 from app.application.services.reporting_service import ReportingService
@@ -51,7 +51,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error, show_info, show_warning
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
-_HANDLED_ANALYTICS_UI_ERRORS = (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError)
+_HANDLED_ANALYTICS_UI_ERRORS = (LookupError, RuntimeError, ValueError, AppError, TypeError)
 
 
 class AnalyticsSearchView(QWidget):
@@ -282,7 +282,7 @@ class AnalyticsSearchView(QWidget):
         saved_layout.addWidget(QLabel("Название"))
         saved_layout.addWidget(self.filter_name)
         saved_layout.addWidget(save_filter_btn)
-        self.saved_filters_toggle = QPushButton("Фильтры ▸")
+        self.saved_filters_toggle = QPushButton("Фильтры ?")
         compact_button(self.saved_filters_toggle)
         self.saved_filters_toggle.setCheckable(True)
         self.saved_filters_toggle.toggled.connect(self._toggle_saved_filters)
@@ -567,9 +567,9 @@ class AnalyticsSearchView(QWidget):
     def _toggle_saved_filters(self, checked: bool) -> None:
         self.saved_filters_container.setVisible(checked)
         if checked:
-            self.saved_filters_toggle.setText("Фильтры ▾")
+            self.saved_filters_toggle.setText("Фильтры ?")
         else:
-            self.saved_filters_toggle.setText("Фильтры ▸")
+            self.saved_filters_toggle.setText("Фильтры ?")
 
     def _wire_icd_search(self, combo: QComboBox) -> None:
         completer = QCompleter(combo.model(), combo)
@@ -1437,3 +1437,5 @@ class AnalyticsSearchView(QWidget):
         self.compare_period.setCurrentIndex(0)
         self.patient_category.setCurrentIndex(0)
         self._update_dashboard()
+
+

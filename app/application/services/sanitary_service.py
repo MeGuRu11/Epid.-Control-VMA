@@ -13,6 +13,7 @@ from app.application.dto.sanitary_dto import (
 )
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.sanitary_repo import SanitaryRepository
+from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 
 
@@ -25,15 +26,25 @@ class SanitaryService:
         self,
         repo: SanitaryRepository | None = None,
         audit_repo: AuditLogRepository | None = None,
+        user_repo: UserRepository | None = None,
         session_factory: Callable = session_scope,
     ) -> None:
         self.repo = repo or SanitaryRepository()
         self.audit_repo = audit_repo or AuditLogRepository()
+        self.user_repo = user_repo or UserRepository()
         self.session_factory = session_factory
 
-    def create_sample(self, request: SanitarySampleCreateRequest) -> SanitarySampleResponse:
+    def _require_write_access(self, session, actor_id: int) -> None:
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
+        actor = self.user_repo.get_by_id(session, actor_id)
+        if actor is None or not bool(getattr(actor, "is_active", False)):
+            raise ValueError("Пользователь не найден или неактивен")
+
+    def create_sample(self, request: SanitarySampleCreateRequest, *, actor_id: int) -> SanitarySampleResponse:
         seq_date = request.taken_at or datetime.now(UTC)
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             seq = self.repo.next_lab_number(session, seq_date)
             lab_no = _format_sanitary_lab_no(seq_date, seq)
             sample = self.repo.create_sample(
@@ -45,12 +56,12 @@ class SanitaryService:
                 medium=request.medium,
                 taken_at=request.taken_at,
                 delivered_at=request.delivered_at,
-                created_by=request.created_by,
+                created_by=actor_id,
             )
 
             self.audit_repo.add_event(
                 session,
-                user_id=request.created_by,
+                user_id=actor_id,
                 entity_type="sanitary_sample",
                 entity_id=str(cast(int, sample.id)),
                 action="create_sanitary_sample",
@@ -77,9 +88,10 @@ class SanitaryService:
             )
 
     def update_result(
-        self, sample_id: int, request: SanitarySampleResultUpdate, actor_id: int | None
+        self, sample_id: int, request: SanitarySampleResultUpdate, actor_id: int
     ) -> SanitarySampleResponse:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             sample = self.repo.get_sample(session, sample_id)
             if not sample:
                 raise ValueError("Проба не найдена")
@@ -142,8 +154,9 @@ class SanitaryService:
                 microorganism_free=microorganism_free,
             )
 
-    def update_sample(self, sample_id: int, request: SanitarySampleUpdateRequest, actor_id: int | None) -> None:
+    def update_sample(self, sample_id: int, request: SanitarySampleUpdateRequest, actor_id: int) -> None:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             sample = self.repo.get_sample(session, sample_id)
             if not sample:
                 raise ValueError("Проба не найдена")
@@ -220,3 +233,6 @@ class SanitaryService:
                 "susceptibility": susceptibility,
                 "phages": phages,
             }
+
+
+

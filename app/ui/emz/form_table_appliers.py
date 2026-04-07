@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import date, datetime
@@ -141,3 +141,4 @@ def apply_ismp_rows(
         date_widget.setDate(to_qdate(item.start_date))
         table.setCellWidget(row, 1, date_widget)
     resize_table(table)
+

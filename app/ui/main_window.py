@@ -14,10 +14,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
-from app.application.security import can_access_admin_view
+from app.application.exceptions import AppError
+from app.application.security import can_access_admin_view, can_manage_exchange
 from app.config import settings
 from app.container import Container
 from app.ui.admin.user_admin_view import UserAdminView
@@ -205,6 +205,9 @@ class MainWindow(QMainWindow):
         ref_action = self._add_nav_action(menubar, "Справочники", self._ref_view)
         admin_action = self._add_nav_action(menubar, "Администрирование", self._admin_view)
         self._admin_action = admin_action
+        if not can_manage_exchange(self.session.role):
+            exchange_action.setEnabled(False)
+            exchange_action.setToolTip("Недостаточно прав для импорта/экспорта")
         if not can_access_admin_view(self.session.role):
             admin_action.setEnabled(False)
             admin_action.setToolTip("Доступно только администратору")
@@ -322,7 +325,8 @@ class MainWindow(QMainWindow):
             action.setToolTip(tooltips.get(title, title))
 
     def _show_placeholder(self) -> None:
-        self._placeholder = QLabel("Добро пожаловать! Разделы в разработке.", alignment=Qt.AlignmentFlag.AlignCenter)
+        self._placeholder = QLabel("Добро пожаловать! Разделы в разработке.")
+        self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._stack.addWidget(self._placeholder)
         self._stack.setCurrentWidget(self._placeholder)
 
@@ -330,6 +334,7 @@ class MainWindow(QMainWindow):
         self._home_view = HomeView(session=self.session, dashboard_service=self.container.dashboard_service)
         self._emr_form = EmzForm(
             container=self.container,
+            session=self.session,
             on_case_selected=self._on_case_selected,
             on_edit_patient=self._open_patient_edit_dialog,
             on_data_changed=self._notify_data_changed,
@@ -337,6 +342,7 @@ class MainWindow(QMainWindow):
         self._lab_view = LabSamplesView(
             lab_service=self.container.lab_service,
             reference_service=self.container.reference_service,
+            session=self.session,
             on_open_emz=self._open_emz_from_emk,
             on_data_changed=self._notify_data_changed,
         )
@@ -371,6 +377,7 @@ class MainWindow(QMainWindow):
         self._sanitary_view = SanitaryDashboard(
             sanitary_service=self.container.sanitary_service,
             reference_service=self.container.reference_service,
+            session=self.session,
         )
         self._ref_view = ReferenceView(
             reference_service=self.container.reference_service,
@@ -399,8 +406,19 @@ class MainWindow(QMainWindow):
         self.session = session
         self.setWindowTitle(f"Эпид. Контроль - {session.login} ({session.role})")
         self._home_view.set_session(session)
+        self._emr_form.set_session(session)
         self._analytics_view.set_session(session)
+        self._lab_view.set_session(session)
+        self._sanitary_view.set_session(session)
         self._exchange_view.set_session(session)
+        exchange_allowed = can_manage_exchange(session.role)
+        exchange_action = self._nav_actions.get(self._exchange_view)
+        if exchange_action is not None:
+            exchange_action.setEnabled(exchange_allowed)
+            if exchange_allowed:
+                exchange_action.setToolTip("Обмен данными и пакеты")
+            else:
+                exchange_action.setToolTip("Недостаточно прав для импорта/экспорта")
         self._ref_view.set_session(session)
         self._admin_view.set_session(session)
         self._emk_view.set_session(session)
@@ -412,6 +430,8 @@ class MainWindow(QMainWindow):
             else:
                 self._admin_action.setToolTip("Доступно только администратору")
         if not can_access_admin_view(session.role) and self._stack.currentWidget() is self._admin_view:
+            self._set_active_view(self._home_view)
+        if not exchange_allowed and self._stack.currentWidget() is self._exchange_view:
             self._set_active_view(self._home_view)
         self._update_nav_presentation()
 
@@ -445,6 +465,8 @@ class MainWindow(QMainWindow):
 
     def _set_active_view(self, widget: QWidget) -> None:
         if widget is self._admin_view and not can_access_admin_view(self.session.role):
+            widget = self._home_view
+        if widget is self._exchange_view and not can_manage_exchange(self.session.role):
             widget = self._home_view
         direction = self._resolve_direction(self._stack.currentWidget(), widget)
         self._stack.setCurrentWidgetAnimated(widget, direction=direction)
@@ -569,6 +591,7 @@ class MainWindow(QMainWindow):
         dlg = PatientEditDialog(
             patient_service=self.container.patient_service,
             patient_id=patient_id,
+            actor_id=self.session.user_id,
             parent=self,
         )
         if dlg.exec() != QDialog.DialogCode.Accepted:
@@ -582,7 +605,7 @@ class MainWindow(QMainWindow):
             try:
                 patient = self.container.patient_service.get_by_id(patient_id)
                 patient_name = patient.full_name
-            except (ValueError, SQLAlchemyError, RuntimeError, TypeError):
+            except (ValueError, AppError, RuntimeError, TypeError):
                 patient_name = ""
             self._context_bar.update_context(self._current_patient_id, self._current_case_id, patient_name)
         self._notify_data_changed()
@@ -606,3 +629,5 @@ class MainWindow(QMainWindow):
         width = max(0, parent.width() - 2 * margin_x)
         height = self._context_bar.desired_height()
         self._context_bar.setGeometry(margin_x, margin_y, width, height)
+
+

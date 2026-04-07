@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import logging
@@ -34,9 +34,9 @@ class BackupService:
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         self._meta_path = self.backup_dir / "last_backup.json"
 
-    def _require_admin_access(self, *, actor_id: int | None, action: str) -> None:
-        if actor_id is None:
-            return
+    def _require_admin_access(self, *, actor_id: int, action: str) -> None:
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
         with session_scope() as session:
             actor = self.user_repo.get_by_id(session, actor_id)
             if actor is not None and str(actor.role) == "admin":
@@ -77,10 +77,10 @@ class BackupService:
             logging.getLogger(__name__).warning("Failed to parse backup metadata: %s", exc)
             return None
 
-    def create_backup(self, *, actor_id: int | None, reason: str = "manual") -> Path:
+    def create_backup(self, *, actor_id: int, reason: str = "manual") -> Path:
         self._require_admin_access(actor_id=actor_id, action="backup_create")
         if not DB_FILE.exists():
-            raise FileNotFoundError(f"База данных не найдена: {DB_FILE}")
+            raise FileNotFoundError(f"Р‘Р°Р·Р° РґР°РЅРЅС‹С… РЅРµ РЅР°Р№РґРµРЅР°: {DB_FILE}")
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"app_{timestamp}.db"
         try:
@@ -93,10 +93,10 @@ class BackupService:
         self._audit_event(actor_id, "backup_create", backup_path, reason)
         return backup_path
 
-    def restore_backup(self, backup_path: Path, *, actor_id: int | None) -> None:
+    def restore_backup(self, backup_path: Path, *, actor_id: int) -> None:
         self._require_admin_access(actor_id=actor_id, action="backup_restore")
         if not backup_path.exists():
-            raise FileNotFoundError(f"Файл резервной копии не найден: {backup_path}")
+            raise FileNotFoundError(f"Р¤Р°Р№Р» СЂРµР·РµСЂРІРЅРѕР№ РєРѕРїРёРё РЅРµ РЅР°Р№РґРµРЅ: {backup_path}")
         # Close pooled connections before overwriting DB file.
         try:
             from app.infrastructure.db.session import engine as sa_engine
@@ -115,11 +115,15 @@ class BackupService:
 
     def ensure_daily_backup(self) -> bool:
         last = self.get_last_backup()
+        backup_user_id = self._resolve_system_actor_id()
+        if backup_user_id is None:
+            logging.getLogger(__name__).warning("Automatic backup skipped: admin actor not found")
+            return False
         if not last:
-            self.create_backup(actor_id=None, reason="auto")
+            self.create_backup(actor_id=backup_user_id, reason="auto")
             return True
         if datetime.now(UTC) - last.created_at >= timedelta(days=1):
-            self.create_backup(actor_id=None, reason="auto")
+            self.create_backup(actor_id=backup_user_id, reason="auto")
             return True
         return False
 
@@ -131,7 +135,7 @@ class BackupService:
         }
         self._meta_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def _audit_event(self, actor_id: int | None, action: str, path: Path, reason: str) -> None:
+    def _audit_event(self, actor_id: int, action: str, path: Path, reason: str) -> None:
         payload = json.dumps(
             {"path": str(path), "reason": reason},
             ensure_ascii=False,
@@ -155,3 +159,13 @@ class BackupService:
                 source_conn.backup(target_conn)
         finally:
             source_conn.close()
+
+    def _resolve_system_actor_id(self) -> int | None:
+        with session_scope() as session:
+            for user in self.user_repo.list_users(session):
+                if str(user.role) == "admin":
+                    return int(user.id)
+        return None
+
+
+

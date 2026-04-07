@@ -67,6 +67,7 @@ def test_sanitary_views_use_responsive_actions(qapp) -> None:
         reference_service=cast(Any, ref),
         department_id=1,
         department_name="Тест",
+        actor_id=None,
     )
     history.show()
     qapp.processEvents()

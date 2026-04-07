@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
@@ -45,3 +45,4 @@ def run_async(
         task.signals.finished.connect(on_finished)
     QThreadPool.globalInstance().start(task)
     return task
+

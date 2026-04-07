@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -85,3 +85,4 @@ def apply_density_property(widget: QWidget, settings: Settings) -> None:
     widget.style().unpolish(widget)
     widget.style().polish(widget)
     widget.update()
+

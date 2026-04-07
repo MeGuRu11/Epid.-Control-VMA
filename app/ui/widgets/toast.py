@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from weakref import WeakKeyDictionary
 
@@ -114,3 +114,4 @@ def show_toast(parent: QWidget | None, text: str, level: str = "info") -> Toast 
         manager = ToastManager(host)
         _MANAGERS[host] = manager
     return manager.show(text=text, level=level)
+

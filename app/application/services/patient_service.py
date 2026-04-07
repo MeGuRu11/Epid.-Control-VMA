@@ -1,5 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Callable
 from datetime import date
@@ -24,7 +25,9 @@ from app.infrastructure.db.models_sqlalchemy import (
     LabSample,
     Patient,
 )
+from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.patient_repo import PatientRepository
+from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 
 
@@ -34,10 +37,14 @@ class PatientService:
         patient_repo: PatientRepository | None = None,
         session_factory: Callable = session_scope,
         fts_manager: FtsManager | None = None,
+        user_repo: UserRepository | None = None,
+        audit_repo: AuditLogRepository | None = None,
     ) -> None:
         self.patient_repo = patient_repo or PatientRepository()
         self.session_factory = session_factory
         self.fts_manager = fts_manager or FtsManager(session_factory=session_factory)
+        self.user_repo = user_repo or UserRepository()
+        self.audit_repo = audit_repo or AuditLogRepository()
 
     def _apply_identity_updates(self, existing_obj: Any, request: PatientCreateRequest) -> None:
         if existing_obj.category != request.category:
@@ -47,10 +54,46 @@ class PatientService:
         if request.military_district is not None and existing_obj.military_district != request.military_district:
             existing_obj.military_district = request.military_district
 
-    def create_or_get(self, request: PatientCreateRequest) -> PatientResponse:
+    def _require_write_access(self, session, actor_id: int) -> None:
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
+        actor = self.user_repo.get_by_id(session, actor_id)
+        if actor is None or not bool(getattr(actor, "is_active", False)):
+            raise ValueError("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ")
+
+    def _audit_mutation(
+        self,
+        session,
+        *,
+        actor_id: int,
+        patient_id: int,
+        action: str,
+        changed_fields: list[str] | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {"patient_id": patient_id}
+        if changed_fields:
+            payload["changed_fields"] = sorted(set(changed_fields))
+        self.audit_repo.add_event(
+            session,
+            user_id=actor_id,
+            entity_type="patient",
+            entity_id=str(patient_id),
+            action=action,
+            payload_json=json.dumps(payload, ensure_ascii=False),
+        )
+
+    def create_or_get(self, request: PatientCreateRequest, actor_id: int) -> PatientResponse:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             existing = self.patient_repo.find_by_identity(session, request.full_name, request.dob)
             if existing:
+                changed_fields: list[str] = []
+                if existing.category != request.category:
+                    changed_fields.append("category")
+                if request.military_unit is not None and existing.military_unit != request.military_unit:
+                    changed_fields.append("military_unit")
+                if request.military_district is not None and existing.military_district != request.military_district:
+                    changed_fields.append("military_district")
                 existing_obj = cast(Any, existing)
                 self._apply_identity_updates(existing_obj, request)
                 try:
@@ -81,6 +124,14 @@ class PatientService:
                             military_district=request.military_district,
                         )
                         self.fts_manager.rebuild_patients_fts(session)
+                if changed_fields:
+                    self._audit_mutation(
+                        session,
+                        actor_id=actor_id,
+                        patient_id=cast(int, existing.id),
+                        action="update_patient",
+                        changed_fields=changed_fields,
+                    )
                 patient_id = cast(int, existing.id)
                 full_name = cast(str, existing.full_name)
                 dob = cast("date | None", existing.dob)
@@ -107,6 +158,12 @@ class PatientService:
                 military_unit=request.military_unit,
                 military_district=request.military_district,
             )
+            self._audit_mutation(
+                session,
+                actor_id=actor_id,
+                patient_id=cast(int, patient.id),
+                action="create_patient",
+            )
             patient_id = cast(int, patient.id)
             full_name = cast(str, patient.full_name)
             dob = cast("date | None", patient.dob)
@@ -128,7 +185,7 @@ class PatientService:
         with self.session_factory() as session:
             patient = self.patient_repo.get_by_id(session, patient_id)
             if not patient:
-                raise ValueError("Пациент не найден")
+                raise ValueError("РџР°С†РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ")
             patient_id_value = cast(int, patient.id)
             full_name = cast(str, patient.full_name)
             dob = cast("date | None", patient.dob)
@@ -203,8 +260,9 @@ class PatientService:
                 )
             return results
 
-    def update_category(self, patient_id: int, category: str) -> None:
+    def update_category(self, patient_id: int, category: str, actor_id: int) -> None:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             try:
                 self.patient_repo.update_category(session, patient_id, category)
                 session.flush()
@@ -244,11 +302,19 @@ class PatientService:
                         logging.getLogger(__name__).warning(
                             "FTS rebuild failed after update_category", exc_info=True
                         )
+            self._audit_mutation(
+                session,
+                actor_id=actor_id,
+                patient_id=patient_id,
+                action="update_patient",
+                changed_fields=["category"],
+            )
 
     def update_details(
         self,
         patient_id: int,
         *,
+        actor_id: int,
         full_name: str | None,
         dob: date | None,
         sex: str | None,
@@ -257,6 +323,7 @@ class PatientService:
         military_district: str | None,
     ) -> None:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             try:
                 self.patient_repo.update_details(
                     session,
@@ -323,6 +390,26 @@ class PatientService:
                         logging.getLogger(__name__).warning(
                             "FTS rebuild failed after update_details", exc_info=True
                         )
+            changed_fields = []
+            if full_name is not None:
+                changed_fields.append("full_name")
+            if dob is not None:
+                changed_fields.append("dob")
+            if sex is not None:
+                changed_fields.append("sex")
+            if category is not None:
+                changed_fields.append("category")
+            if military_unit is not None:
+                changed_fields.append("military_unit")
+            if military_district is not None:
+                changed_fields.append("military_district")
+            self._audit_mutation(
+                session,
+                actor_id=actor_id,
+                patient_id=patient_id,
+                action="update_patient",
+                changed_fields=changed_fields,
+            )
 
     def _repair_database_raw(self, session) -> None:
         bind = session.get_bind()
@@ -376,7 +463,7 @@ class PatientService:
             )
             row = cur.fetchone()
             if not row:
-                raise ValueError("Пациент не найден")
+                raise ValueError("РџР°С†РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ")
             current_full_name, current_dob, current_sex, current_category, current_unit, current_district = row
             full_name_val = full_name if full_name is not None else current_full_name
             sex_val = sex if sex is not None else current_sex
@@ -396,7 +483,7 @@ class PatientService:
     def _delete_patient_impl(self, session, patient_id: int) -> None:
         patient = session.get(Patient, patient_id)
         if not patient:
-            raise ValueError("Пациент не найден")
+            raise ValueError("РџР°С†РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ")
 
         case_ids = list(
             session.execute(select(EmrCase.id).where(EmrCase.patient_id == patient_id)).scalars()
@@ -462,8 +549,9 @@ class PatientService:
 
         session.query(Patient).filter(Patient.id == patient_id).delete(synchronize_session=False)
 
-    def delete_patient(self, patient_id: int) -> None:
+    def delete_patient(self, patient_id: int, actor_id: int) -> None:
         with self.session_factory() as session:
+            self._require_write_access(session, actor_id)
             try:
                 # Ensure no stale FTS triggers block deletion.
                 self.fts_manager.drop_patients_fts(session)
@@ -484,3 +572,12 @@ class PatientService:
                         self.fts_manager.ensure_patients(session)
                     else:
                         raise
+            self._audit_mutation(
+                session,
+                actor_id=actor_id,
+                patient_id=patient_id,
+                action="delete_patient",
+            )
+
+
+

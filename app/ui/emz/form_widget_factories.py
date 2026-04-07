@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from typing import Protocol
@@ -39,7 +39,7 @@ class IsmpAbbreviationLike(Protocol):
 
 def create_diag_type_combo() -> QComboBox:
     combo = QComboBox()
-    combo.addItems(["Поступление", "Перевод", "Выписка", "Осложнение"])
+    combo.addItems(["РџРѕСЃС‚СѓРїР»РµРЅРёРµ", "РџРµСЂРµРІРѕРґ", "Р’С‹РїРёСЃРєР°", "РћСЃР»РѕР¶РЅРµРЅРёРµ"])
     return combo
 
 
@@ -48,16 +48,16 @@ def create_intervention_type_combo() -> QComboBox:
     combo.setEditable(True)
     combo.addItems(
         [
-            "Центральный катетер",
-            "ИВЛ",
-            "Дренаж",
-            "Перевязка",
-            "Операция",
-            "Другое (введите вручную)",
+            "Р¦РµРЅС‚СЂР°Р»СЊРЅС‹Р№ РєР°С‚РµС‚РµСЂ",
+            "РР’Р›",
+            "Р”СЂРµРЅР°Р¶",
+            "РџРµСЂРµРІСЏР·РєР°",
+            "РћРїРµСЂР°С†РёСЏ",
+            "Р”СЂСѓРіРѕРµ (РІРІРµРґРёС‚Рµ РІСЂСѓС‡РЅСѓСЋ)",
         ]
     )
     combo.setCurrentText("")
-    combo.setToolTip("Можно выбрать из списка или ввести вручную.")
+    combo.setToolTip("РњРѕР¶РЅРѕ РІС‹Р±СЂР°С‚СЊ РёР· СЃРїРёСЃРєР° РёР»Рё РІРІРµСЃС‚Рё РІСЂСѓС‡РЅСѓСЋ.")
     return combo
 
 
@@ -85,7 +85,7 @@ def create_icd_combo(*, icd_items: Sequence[IcdLike], wire_search: Callable[[QCo
     combo = QComboBox()
     combo.setEditable(True)
     combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-    combo.addItem("Выбрать", None)
+    combo.addItem("Р’С‹Р±СЂР°С‚СЊ", None)
     for icd in icd_items:
         combo.addItem(f"{icd.code} - {icd.title}", str(icd.code))
     wire_search(combo)
@@ -100,7 +100,7 @@ def populate_icd_combo(
     edit_text: str | None = None,
 ) -> None:
     combo.clear()
-    combo.addItem("Выбрать", None)
+    combo.addItem("Р’С‹Р±СЂР°С‚СЊ", None)
     for icd in icd_items:
         combo.addItem(f"{icd.code} - {icd.title}", str(icd.code))
     if selected_data is not None:
@@ -113,7 +113,7 @@ def populate_icd_combo(
 
 def create_abx_combo(*, antibiotics: Sequence[AntibioticLike]) -> QComboBox:
     combo = QComboBox()
-    combo.addItem("Выбрать", None)
+    combo.addItem("Р’С‹Р±СЂР°С‚СЊ", None)
     for abx in antibiotics:
         combo.addItem(f"{abx.code} - {abx.name}", int(abx.id))
     return combo
@@ -125,13 +125,14 @@ def create_ismp_type_combo(
     tooltip_role: int,
 ) -> QComboBox:
     combo = QComboBox()
-    combo.addItem("Выбрать", None)
+    combo.addItem("Р’С‹Р±СЂР°С‚СЊ", None)
     for item in abbreviations:
         code = str(item.code)
         name = str(item.name)
-        label = f"{code} — {name}"
+        label = f"{code} вЂ” {name}"
         combo.addItem(label, code)
         description = str(item.description or "")
         tooltip = description or name
         combo.setItemData(combo.count() - 1, tooltip, tooltip_role)
     return combo
+

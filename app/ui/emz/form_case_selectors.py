@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import datetime
@@ -18,3 +18,4 @@ def pick_latest_case_id(
             if latest_id is None or case_id > latest_id:
                 latest_id = case_id
     return latest_id
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from datetime import datetime
@@ -23,14 +23,14 @@ from PySide6.QtWidgets import (
 from app.ui.form100_v2.wizard_widgets.icon_select_widget import IconSelectWidget
 
 STUB_MED_HELP_ITEMS: tuple[tuple[str, str], ...] = (
-    ("stub_med_help_antibiotic", "Антибиотик"),
-    ("stub_med_help_serum", "Сыворотка ПСС/ПГС"),
-    ("stub_med_help_toxoid", "Анатоксин"),
-    ("stub_med_help_antidote", "Антидот"),
-    ("stub_med_help_analgesic", "Обезболивающее"),
-    ("stub_med_help_transfusion", "Переливание"),
-    ("stub_med_help_immobilization", "Иммобилизация/перевязка"),
-    ("stub_med_help_tourniquet", "Жгут/санобработка"),
+    ("stub_med_help_antibiotic", "РђРЅС‚РёР±РёРѕС‚РёРє"),
+    ("stub_med_help_serum", "РЎС‹РІРѕСЂРѕС‚РєР° РџРЎРЎ/РџР“РЎ"),
+    ("stub_med_help_toxoid", "РђРЅР°С‚РѕРєСЃРёРЅ"),
+    ("stub_med_help_antidote", "РђРЅС‚РёРґРѕС‚"),
+    ("stub_med_help_analgesic", "РћР±РµР·Р±РѕР»РёРІР°СЋС‰РµРµ"),
+    ("stub_med_help_transfusion", "РџРµСЂРµР»РёРІР°РЅРёРµ"),
+    ("stub_med_help_immobilization", "РРјРјРѕР±РёР»РёР·Р°С†РёСЏ/РїРµСЂРµРІСЏР·РєР°"),
+    ("stub_med_help_tourniquet", "Р–РіСѓС‚/СЃР°РЅРѕР±СЂР°Р±РѕС‚РєР°"),
 )
 
 
@@ -67,7 +67,7 @@ class Form100StubWidget(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(10)
 
-        top = QGroupBox("Корешок")
+        top = QGroupBox("РљРѕСЂРµС€РѕРє")
         top.setObjectName("form100StubSection")
         top_form = QFormLayout(top)
         top_form.setContentsMargins(10, 8, 10, 8)
@@ -86,17 +86,17 @@ class Form100StubWidget(QWidget):
         self.stub_injury_date = QDateEdit()
         self.stub_injury_date.setDisplayFormat("dd.MM.yyyy")
         self.stub_injury_date.setCalendarPopup(True)
-        top_form.addRow("Выдана (время)", self.stub_issued_time)
-        top_form.addRow("Выдана (дата)", self.stub_issued_date)
-        top_form.addRow("В/звание", self.stub_rank)
-        top_form.addRow("В/часть", self.stub_unit)
-        top_form.addRow("ФИО", self.stub_full_name)
-        top_form.addRow("Жетон / удостоверение", self.stub_id_tag)
-        top_form.addRow("Ранен (время)", self.stub_injury_time)
-        top_form.addRow("Ранен (дата)", self.stub_injury_date)
+        top_form.addRow("Р’С‹РґР°РЅР° (РІСЂРµРјСЏ)", self.stub_issued_time)
+        top_form.addRow("Р’С‹РґР°РЅР° (РґР°С‚Р°)", self.stub_issued_date)
+        top_form.addRow("Р’/Р·РІР°РЅРёРµ", self.stub_rank)
+        top_form.addRow("Р’/С‡Р°СЃС‚СЊ", self.stub_unit)
+        top_form.addRow("Р¤РРћ", self.stub_full_name)
+        top_form.addRow("Р–РµС‚РѕРЅ / СѓРґРѕСЃС‚РѕРІРµСЂРµРЅРёРµ", self.stub_id_tag)
+        top_form.addRow("Р Р°РЅРµРЅ (РІСЂРµРјСЏ)", self.stub_injury_time)
+        top_form.addRow("Р Р°РЅРµРЅ (РґР°С‚Р°)", self.stub_injury_date)
         root.addWidget(top)
 
-        evac = QGroupBox("Эвакуация (корешок)")
+        evac = QGroupBox("Р­РІР°РєСѓР°С†РёСЏ (РєРѕСЂРµС€РѕРє)")
         evac.setObjectName("form100StubSection")
         evac_layout = QVBoxLayout(evac)
         evac_layout.setContentsMargins(10, 8, 10, 8)
@@ -104,9 +104,9 @@ class Form100StubWidget(QWidget):
         self.stub_evacuation_method = QButtonGroup(self)
         method_row = QHBoxLayout()
         method_row.setContentsMargins(0, 0, 0, 0)
-        self.rb_airplane = QRadioButton("Самолёт")
-        self.rb_ambu = QRadioButton("Санг.")
-        self.rb_truck = QRadioButton("Грузавто")
+        self.rb_airplane = QRadioButton("РЎР°РјРѕР»С‘С‚")
+        self.rb_ambu = QRadioButton("РЎР°РЅРі.")
+        self.rb_truck = QRadioButton("Р“СЂСѓР·Р°РІС‚Рѕ")
         self.stub_evacuation_method.addButton(self.rb_airplane)
         self.stub_evacuation_method.addButton(self.rb_ambu)
         self.stub_evacuation_method.addButton(self.rb_truck)
@@ -118,15 +118,15 @@ class Form100StubWidget(QWidget):
 
         self.stub_evacuation_dest = IconSelectWidget(
             (
-                ("lying", "Лёжа"),
-                ("sitting", "Сидя"),
-                ("stretcher", "Носилки"),
+                ("lying", "Р›С‘Р¶Р°"),
+                ("sitting", "РЎРёРґСЏ"),
+                ("stretcher", "РќРѕСЃРёР»РєРё"),
             )
         )
         evac_layout.addWidget(self.stub_evacuation_dest)
         root.addWidget(evac)
 
-        help_grp = QGroupBox("Медицинская помощь (корешок)")
+        help_grp = QGroupBox("РњРµРґРёС†РёРЅСЃРєР°СЏ РїРѕРјРѕС‰СЊ (РєРѕСЂРµС€РѕРє)")
         help_grp.setObjectName("form100StubSection")
         help_layout = QVBoxLayout(help_grp)
         help_layout.setContentsMargins(10, 8, 10, 8)
@@ -147,22 +147,22 @@ class Form100StubWidget(QWidget):
         self.stub_antidote_type = QLineEdit()
         self.stub_analgesic_dose = QLineEdit()
         help_form = QFormLayout()
-        help_form.addRow("Доза антибиотика", self.stub_antibiotic_dose)
-        help_form.addRow("Доза ПСС/ПГС", self.stub_pss_pgs_dose)
-        help_form.addRow("Анатоксин", self.stub_toxoid_type)
-        help_form.addRow("Антидот", self.stub_antidote_type)
-        help_form.addRow("Обезболивающее", self.stub_analgesic_dose)
+        help_form.addRow("Р”РѕР·Р° Р°РЅС‚РёР±РёРѕС‚РёРєР°", self.stub_antibiotic_dose)
+        help_form.addRow("Р”РѕР·Р° РџРЎРЎ/РџР“РЎ", self.stub_pss_pgs_dose)
+        help_form.addRow("РђРЅР°С‚РѕРєСЃРёРЅ", self.stub_toxoid_type)
+        help_form.addRow("РђРЅС‚РёРґРѕС‚", self.stub_antidote_type)
+        help_form.addRow("РћР±РµР·Р±РѕР»РёРІР°СЋС‰РµРµ", self.stub_analgesic_dose)
         help_layout.addLayout(help_form)
 
-        self.stub_transfusion = QCheckBox("Переливание")
-        self.stub_immobilization = QCheckBox("Иммобилизация / перевязка")
-        self.stub_tourniquet = QCheckBox("Жгут / санобработка")
+        self.stub_transfusion = QCheckBox("РџРµСЂРµР»РёРІР°РЅРёРµ")
+        self.stub_immobilization = QCheckBox("РРјРјРѕР±РёР»РёР·Р°С†РёСЏ / РїРµСЂРµРІСЏР·РєР°")
+        self.stub_tourniquet = QCheckBox("Р–РіСѓС‚ / СЃР°РЅРѕР±СЂР°Р±РѕС‚РєР°")
         help_layout.addWidget(self.stub_transfusion)
         help_layout.addWidget(self.stub_immobilization)
         help_layout.addWidget(self.stub_tourniquet)
         root.addWidget(help_grp)
 
-        diag = QGroupBox("Диагноз (корешок)")
+        diag = QGroupBox("Р”РёР°РіРЅРѕР· (РєРѕСЂРµС€РѕРє)")
         diag.setObjectName("form100StubSection")
         diag_layout = QVBoxLayout(diag)
         diag_layout.setContentsMargins(10, 8, 10, 8)
@@ -258,3 +258,4 @@ class Form100StubWidget(QWidget):
 
     def set_enabled(self, enabled: bool) -> None:
         self.setEnabled(enabled)
+

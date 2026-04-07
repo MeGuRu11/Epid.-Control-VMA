@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import (
@@ -35,6 +34,7 @@ from app.application.dto.form100_v2_dto import (
     Form100SignV2Request,
     Form100UpdateV2Request,
 )
+from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_bodymap import StepBodymap
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_evacuation import StepEvacuation
@@ -47,7 +47,7 @@ _HANDLED_FORM100_WIZARD_ERRORS = (
     RuntimeError,
     LookupError,
     TypeError,
-    SQLAlchemyError,
+    AppError,
     OSError,
 )
 
@@ -304,12 +304,12 @@ class Form100Wizard(QDialog):
         self.setMinimumSize(920, 640)
         self.setWindowFlag(Qt.WindowType.WindowMaximizeButtonHint, True)
 
-        # ── Корневой layout ───────────────────────────────────────────────
+        # -- Корневой layout -----------------------------------------------
         outer = QHBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
-        # ── Левая панель: индикатор шагов ─────────────────────────────────
+        # -- Левая панель: индикатор шагов ---------------------------------
         step_panel = QFrame()
         step_panel.setObjectName("wizardStepPanel")
         step_panel.setMinimumWidth(164)
@@ -390,7 +390,7 @@ class Form100Wizard(QDialog):
 
         outer.addWidget(step_panel)
 
-        # ── Правая часть ──────────────────────────────────────────────────
+        # -- Правая часть --------------------------------------------------
         right_frame = QFrame()
         right_lay = QVBoxLayout(right_frame)
         right_lay.setContentsMargins(0, 0, 0, 0)
@@ -400,7 +400,7 @@ class Form100Wizard(QDialog):
         self._stack = QStackedWidget()
         right_lay.addWidget(self._stack, 1)
 
-        # ── Шаги ─────────────────────────────────────────────────────────
+        # -- Шаги ---------------------------------------------------------
         self._step1 = StepIdentification()
         self._step2 = StepBodymap()
         self._step3 = StepMedical()
@@ -424,7 +424,7 @@ class Form100Wizard(QDialog):
         card_status = card.status if card is not None else "DRAFT"
         self._step4.set_card_status(card_status)
 
-        # ── Навигационная панель ──────────────────────────────────────────
+        # -- Навигационная панель ------------------------------------------
         nav_bar = QFrame()
         nav_bar.setObjectName("wizardNavBar")
         nav_bar.setMinimumHeight(52)
@@ -433,13 +433,13 @@ class Form100Wizard(QDialog):
         nav_lay.setContentsMargins(20, 8, 20, 8)
         nav_lay.setSpacing(10)
 
-        self._btn_back = QPushButton("← Назад")
+        self._btn_back = QPushButton("< Назад")
         self._btn_back.setObjectName("secondary")
         self._btn_back.setMinimumWidth(86)
         self._btn_back.setMaximumWidth(136)
         self._btn_back.clicked.connect(self._go_back)
 
-        self._btn_next = QPushButton("Далее →")
+        self._btn_next = QPushButton("Далее >")
         self._btn_next.setMinimumWidth(86)
         self._btn_next.setMaximumWidth(136)
         self._btn_next.clicked.connect(self._go_next)
@@ -540,7 +540,7 @@ class Form100Wizard(QDialog):
         self._btn_cancel.setMinimumWidth(cancel_min)
         self._btn_cancel.setMaximumWidth(cancel_max)
 
-    # ── Навигация ────────────────────────────────────────────────────────────
+    # -- Навигация ------------------------------------------------------------
 
     def _goto_step(self, idx: int) -> None:
         self._current_step = max(0, min(idx, len(self._steps) - 1))
@@ -589,7 +589,7 @@ class Form100Wizard(QDialog):
                 badge.setText(str(i + 1))
                 self._set_step_visual_state(badge, name_lbl, "pending")
 
-    # ── Сбор данных ──────────────────────────────────────────────────────────
+    # -- Сбор данных ----------------------------------------------------------
 
     def _collect_all(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         payload: dict[str, str] = {}
@@ -601,7 +601,7 @@ class Form100Wizard(QDialog):
                 markers = m
         return payload, markers
 
-    # ── Сохранение ───────────────────────────────────────────────────────────
+    # -- Сохранение -----------------------------------------------------------
 
     def _save(self) -> None:
         payload, markers = self._collect_all()
@@ -655,7 +655,7 @@ class Form100Wizard(QDialog):
         self._step4.set_card_status(saved.status)
         return saved
 
-    # ── Подпись ──────────────────────────────────────────────────────────────
+    # -- Подпись --------------------------------------------------------------
 
     def _sign(self) -> None:
         signer, ok = QInputDialog.getText(self, "Подпись", "Подписант (разборчиво):")
@@ -691,3 +691,5 @@ class Form100Wizard(QDialog):
             )
             return
         self.accept()
+
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 
@@ -81,3 +81,4 @@ def delete_table_row(table: QTableWidget) -> None:
     if row < 0:
         row = table.rowCount() - 1
     table.removeRow(row)
+

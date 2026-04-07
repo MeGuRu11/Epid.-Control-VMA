@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import date, datetime
@@ -8,21 +8,21 @@ from app.application.dto.emz_dto import EmzCaseDetail
 
 def format_patient_sex(value: str | None) -> str:
     if not value:
-        return "—"
+        return "вЂ”"
     value_clean = value.strip()
     if not value_clean:
-        return "—"
+        return "вЂ”"
     lower = value_clean.lower()
-    if lower in {"m", "male", "м", "муж", "мужской"}:
-        return "Мужской"
-    if lower in {"f", "female", "ж", "жен", "женский"}:
-        return "Женский"
+    if lower in {"m", "male", "Рј", "РјСѓР¶", "РјСѓР¶СЃРєРѕР№"}:
+        return "РњСѓР¶СЃРєРѕР№"
+    if lower in {"f", "female", "Р¶", "Р¶РµРЅ", "Р¶РµРЅСЃРєРёР№"}:
+        return "Р–РµРЅСЃРєРёР№"
     return value_clean
 
 
 def format_emk_datetime(value: datetime | date | None) -> str:
     if value is None:
-        return "—"
+        return "вЂ”"
     if isinstance(value, datetime):
         return value.strftime("%d.%m.%Y %H:%M")
     return value.strftime("%d.%m.%Y")
@@ -68,3 +68,4 @@ def choose_latest_case_id(cases_cache: Sequence[tuple[EmzCaseDetail, object]]) -
             if latest_id is None or detail.id > latest_id:
                 latest_id = detail.id
     return latest_id
+

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.sanitary_dto import SanitarySampleCreateRequest, SanitarySampleResultUpdate
 from app.application.services.sanitary_service import SanitaryService
-from app.infrastructure.db.models_sqlalchemy import Base, Department
+from app.infrastructure.db.models_sqlalchemy import Base, Department, User
 
 
 def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
@@ -42,9 +42,18 @@ def seed_department(session_factory: Callable[[], AbstractContextManager[Session
         return cast(int, dep.id)
 
 
+def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = User(login="san_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return cast(int, actor.id)
+
+
 def test_sanitary_sample(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "san.db")
     dep_id = seed_department(session_factory)
+    actor_id = seed_actor(session_factory)
     service = SanitaryService(session_factory=session_factory)
 
     req = SanitarySampleCreateRequest(
@@ -53,12 +62,12 @@ def test_sanitary_sample(tmp_path: Path) -> None:
         room="101",
         taken_at=datetime(2025, 12, 15, 9, 0, 0, tzinfo=UTC),
     )
-    resp = service.create_sample(req)
+    resp = service.create_sample(req, actor_id=actor_id)
     assert resp.lab_no.startswith("SAN-")
 
     upd = SanitarySampleResultUpdate(
         growth_flag=0,
         growth_result_at=datetime(2025, 12, 16, 8, 0, 0, tzinfo=UTC),
     )
-    resp2 = service.update_result(resp.id, upd, actor_id=None)
+    resp2 = service.update_result(resp.id, upd, actor_id=actor_id)
     assert resp2.growth_flag == 0

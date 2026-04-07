@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from sqlalchemy import create_engine
 
 from app.application.services import backup_service as backup_service_module
 from app.application.services.backup_service import BackupService
@@ -47,7 +48,7 @@ def test_create_backup_falls_back_to_file_copy_when_sqlite_backup_fails(
     assert backup_path.read_bytes() == source_db.read_bytes()
 
 
-def test_restore_backup_continues_when_engine_dispose_unavailable(
+def test_restore_backup_with_real_engine_dispose(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -62,7 +63,8 @@ def test_restore_backup_continues_when_engine_dispose_unavailable(
 
     import app.infrastructure.db.session as session_module
 
-    monkeypatch.setattr(session_module, "engine", object())
+    memory_engine = create_engine("sqlite:///:memory:")
+    monkeypatch.setattr(session_module, "engine", memory_engine)
 
     service.restore_backup(backup_file, actor_id=1)
     assert source_db.read_bytes() == b"new-db"

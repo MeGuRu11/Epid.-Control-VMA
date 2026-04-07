@@ -18,10 +18,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import Form100V2Filters
+from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
 from app.ui.form100_v2.form100_editor import Form100EditorV2
@@ -30,7 +30,7 @@ from app.ui.widgets.notifications import error_text, show_error, show_info, show
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
-_HANDLED_FORM100_V2_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError, OSError)
+_HANDLED_FORM100_V2_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError, OSError)
 
 
 class Form100ViewV2(QWidget):
@@ -427,3 +427,5 @@ def _status_label(status: str, is_archived: bool) -> str:
         return "Архив"
     labels = {"DRAFT": "Черновик", "SIGNED": "Подписано"}
     return labels.get(status, status)
+
+

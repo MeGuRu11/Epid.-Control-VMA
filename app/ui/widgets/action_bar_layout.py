@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Sequence
 
@@ -26,3 +26,4 @@ def update_action_bar_direction(
         )
     if layout.direction() != target:
         layout.setDirection(target)
+

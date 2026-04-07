@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
@@ -60,3 +60,4 @@ def refresh_icd_combo(
             selected_data=current_data,
             edit_text=text,
         )
+

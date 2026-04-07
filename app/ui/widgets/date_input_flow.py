@@ -26,12 +26,12 @@ class DateInputAutoFlow(QObject):
 
             target: QDateEdit | QDateTimeEdit | None = None
             editor: QLineEdit | None = None
-            if isinstance(obj, (QDateTimeEdit, QDateEdit)):
+            if isinstance(obj, QDateTimeEdit | QDateEdit):
                 target = obj
                 editor = obj.lineEdit()
             elif isinstance(obj, QLineEdit):
                 parent = obj.parent()
-                if isinstance(parent, (QDateTimeEdit, QDateEdit)):
+                if isinstance(parent, QDateTimeEdit | QDateEdit):
                     target = parent
                     editor = obj
 
@@ -165,3 +165,4 @@ class DateInputAutoFlow(QObject):
         if not time_val.isValid():
             return None
         return time_val
+

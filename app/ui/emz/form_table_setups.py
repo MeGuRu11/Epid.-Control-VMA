@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable
 from typing import cast
@@ -93,7 +93,7 @@ def refresh_diagnosis_reference_rows(
     for row in range(table.rowCount()):
         type_widget = table.cellWidget(row, 0)
         type_combo = cast(QComboBox, type_widget) if isinstance(type_widget, QComboBox) else None
-        selected_type = type_combo.currentText() if type_combo else "Поступление"
+        selected_type = type_combo.currentText() if type_combo else "РџРѕСЃС‚СѓРїР»РµРЅРёРµ"
         new_type_combo = create_type_combo()
         new_type_combo.setCurrentText(selected_type)
         table.setCellWidget(row, 0, new_type_combo)
@@ -145,3 +145,4 @@ def refresh_ismp_reference_rows(
                 new_type_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 0, new_type_combo)
         connect_combo_resize_on_content(table, new_type_combo, row)
+

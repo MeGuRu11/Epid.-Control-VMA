@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.exceptions import AppError
 from app.application.services.patient_service import PatientService
 from app.domain.constants import MilitaryCategory
 from app.ui.widgets.button_utils import compact_button
@@ -30,11 +30,13 @@ class PatientEditDialog(QDialog):
         self,
         patient_service: PatientService,
         patient_id: int,
+        actor_id: int,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.patient_service = patient_service
         self.patient_id = patient_id
+        self.actor_id = actor_id
         self.setWindowTitle("Редактирование пациента")
         self.setWindowFlag(Qt.WindowType.Window, True)
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, True)
@@ -141,6 +143,7 @@ class PatientEditDialog(QDialog):
         try:
             self.patient_service.update_details(
                 self.patient_id,
+                actor_id=self.actor_id,
                 full_name=self.full_name.text().strip(),
                 dob=self._date_value(),
                 sex=sex_code,
@@ -148,8 +151,10 @@ class PatientEditDialog(QDialog):
                 military_unit=self.military_unit.text().strip() or None,
                 military_district=self.military_district.text().strip() or None,
             )
-        except (LookupError, RuntimeError, ValueError, SQLAlchemyError, TypeError) as exc:
+        except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
             QMessageBox.critical(self, "Ошибка", str(exc))
             return
         QMessageBox.information(self, "Готово", "Данные пациента обновлены.")
         self.accept()
+
+

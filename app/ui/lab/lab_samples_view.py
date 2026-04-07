@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.application.dto.auth_dto import SessionContext
 from app.application.services.lab_service import LabService
 from app.application.services.reference_service import ReferenceService
 from app.ui.lab.lab_sample_detail import LabSampleDetailDialog
@@ -39,6 +40,7 @@ class LabSamplesView(QWidget):
         self,
         lab_service: LabService,
         reference_service: ReferenceService,
+        session: SessionContext | None = None,
         on_open_emz: Callable[[int | None, int | None], None] | None = None,
         on_data_changed: Callable[[], None] | None = None,
         parent: QWidget | None = None,
@@ -46,6 +48,7 @@ class LabSamplesView(QWidget):
         super().__init__(parent)
         self.lab_service = lab_service
         self.reference_service = reference_service
+        self._session = session
         self.on_open_emz = on_open_emz
         self.on_data_changed = on_data_changed
         self.patient_id: int | None = None
@@ -56,6 +59,9 @@ class LabSamplesView(QWidget):
         self.page_index = 1
         self.page_size = 50
         self._build_ui()
+
+    def set_session(self, session: SessionContext) -> None:
+        self._session = session
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -206,6 +212,7 @@ class LabSamplesView(QWidget):
             self._quick_actions_layout,
             self._quick_actions_bar,
             [self._quick_work_group, self._quick_create_group],
+            extra_width=220,
         )
 
     def _toggle_filters(self, checked: bool) -> None:
@@ -268,6 +275,7 @@ class LabSamplesView(QWidget):
             self.reference_service,
             patient_id,
             self.emr_case_id,
+            actor_id=self._session.user_id if self._session is not None else None,
             parent=self,
         )
         self.references_updated.connect(dlg.refresh_references)
@@ -289,6 +297,7 @@ class LabSamplesView(QWidget):
             self.reference_service,
             patient_id,
             self.emr_case_id,
+            actor_id=self._session.user_id if self._session is not None else None,
             sample_id=sample_id,
             parent=self,
         )
@@ -480,3 +489,4 @@ class LabSamplesView(QWidget):
         start_label = start_idx + 1 if total > 0 else 0
         end_label = end_idx if total > 0 else 0
         return page_items, start_label, end_label
+

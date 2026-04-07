@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from collections import Counter
@@ -25,11 +25,11 @@ from app.application.dto.form100_v2_dto import Form100AnnotationDto
 _TEMPLATE_IMAGES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
 _SILHOUETTE_ORDER = ("male_front", "male_back")
 _TOOL_ITEMS: tuple[tuple[str, str], ...] = (
-    ("Рана (X)", "WOUND_X"),
-    ("Ожог (область)", "BURN_HATCH"),
-    ("Ампутация (область)", "AMPUTATION"),
-    ("Жгут (линия)", "TOURNIQUET"),
-    ("Заметка (пин)", "NOTE_PIN"),
+    ("Р Р°РЅР° (X)", "WOUND_X"),
+    ("РћР¶РѕРі (РѕР±Р»Р°СЃС‚СЊ)", "BURN_HATCH"),
+    ("РђРјРїСѓС‚Р°С†РёСЏ (РѕР±Р»Р°СЃС‚СЊ)", "AMPUTATION"),
+    ("Р–РіСѓС‚ (Р»РёРЅРёСЏ)", "TOURNIQUET"),
+    ("Р—Р°РјРµС‚РєР° (РїРёРЅ)", "NOTE_PIN"),
 )
 _POINT_TOOLS = {"WOUND_X", "NOTE_PIN"}
 _DRAG_TOOLS = {"BURN_HATCH", "AMPUTATION", "TOURNIQUET"}
@@ -40,7 +40,7 @@ def _clamp01(value: float) -> float:
 
 
 def _to_float(value: object, default: float = 0.5) -> float:
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value)
     try:
         return float(str(value))
@@ -125,17 +125,17 @@ def _load_silhouette_pixmaps() -> dict[str, QPixmap]:
 
 def _marks_stats(marks: list[dict[str, Any]]) -> str:
     if not marks:
-        return "Нет меток"
+        return "РќРµС‚ РјРµС‚РѕРє"
     labels = {
-        "WOUND_X": "рана",
-        "BURN_HATCH": "ожог",
-        "AMPUTATION": "ампутация",
-        "TOURNIQUET": "жгут",
-        "NOTE_PIN": "пин",
+        "WOUND_X": "СЂР°РЅР°",
+        "BURN_HATCH": "РѕР¶РѕРі",
+        "AMPUTATION": "Р°РјРїСѓС‚Р°С†РёСЏ",
+        "TOURNIQUET": "Р¶РіСѓС‚",
+        "NOTE_PIN": "РїРёРЅ",
     }
     counts = Counter(str(item.get("annotation_type") or "NOTE_PIN") for item in marks)
     parts = [f"{labels.get(key, key.lower())}: {value}" for key, value in counts.items() if value > 0]
-    return ", ".join(parts) if parts else "Нет меток"
+    return ", ".join(parts) if parts else "РќРµС‚ РјРµС‚РѕРє"
 
 
 class BodymapEditorV2(QWidget):
@@ -149,15 +149,15 @@ class BodymapEditorV2(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(6)
-        root.addWidget(QLabel("Метки схемы тела"))
-        self._summary = QLabel("Нет меток")
+        root.addWidget(QLabel("РњРµС‚РєРё СЃС…РµРјС‹ С‚РµР»Р°"))
+        self._summary = QLabel("РќРµС‚ РјРµС‚РѕРє")
         root.addWidget(self._summary)
 
         row = QHBoxLayout()
-        self._open_btn = QPushButton("Открыть окно рисования")
+        self._open_btn = QPushButton("РћС‚РєСЂС‹С‚СЊ РѕРєРЅРѕ СЂРёСЃРѕРІР°РЅРёСЏ")
         self._open_btn.clicked.connect(self._open_dialog)
         row.addWidget(self._open_btn)
-        self._clear_btn = QPushButton("Очистить метки")
+        self._clear_btn = QPushButton("РћС‡РёСЃС‚РёС‚СЊ РјРµС‚РєРё")
         self._clear_btn.clicked.connect(self.clear)
         row.addWidget(self._clear_btn)
         row.addStretch()
@@ -188,7 +188,7 @@ class BodymapEditorV2(QWidget):
             self._refresh_summary()
 
     def _refresh_summary(self) -> None:
-        self._summary.setText(f"Метки: {len(self._marks)}. {_marks_stats(self._marks)}.")
+        self._summary.setText(f"РњРµС‚РєРё: {len(self._marks)}. {_marks_stats(self._marks)}.")
 
 
 class _BodymapDialogV2(QDialog):
@@ -201,7 +201,7 @@ class _BodymapDialogV2(QDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Редактор схемы тела")
+        self.setWindowTitle("Р РµРґР°РєС‚РѕСЂ СЃС…РµРјС‹ С‚РµР»Р°")
         self.setMinimumSize(780, 560)
         self._apply_initial_size()
         self._read_only = read_only
@@ -212,14 +212,14 @@ class _BodymapDialogV2(QDialog):
 
         root.addWidget(
             QLabel(
-                "Клик: точечные метки (рана/пин). "
-                "Зажмите и протяните: область ожога/ампутации или линия жгута. "
-                "ПКМ: удалить ближайшую метку."
+                "РљР»РёРє: С‚РѕС‡РµС‡РЅС‹Рµ РјРµС‚РєРё (СЂР°РЅР°/РїРёРЅ). "
+                "Р—Р°Р¶РјРёС‚Рµ Рё РїСЂРѕС‚СЏРЅРёС‚Рµ: РѕР±Р»Р°СЃС‚СЊ РѕР¶РѕРіР°/Р°РјРїСѓС‚Р°С†РёРё РёР»Рё Р»РёРЅРёСЏ Р¶РіСѓС‚Р°. "
+                "РџРљРњ: СѓРґР°Р»РёС‚СЊ Р±Р»РёР¶Р°Р№С€СѓСЋ РјРµС‚РєСѓ."
             )
         )
 
         toolbar = QHBoxLayout()
-        toolbar.addWidget(QLabel("Инструмент:"))
+        toolbar.addWidget(QLabel("РРЅСЃС‚СЂСѓРјРµРЅС‚:"))
         self._tool_combo = QComboBox()
         for label, value in _TOOL_ITEMS:
             self._tool_combo.addItem(label, value)
@@ -243,16 +243,16 @@ class _BodymapDialogV2(QDialog):
             buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
             close_btn = buttons.button(QDialogButtonBox.StandardButton.Close)
             if close_btn:
-                close_btn.setText("Закрыть")
+                close_btn.setText("Р—Р°РєСЂС‹С‚СЊ")
             buttons.rejected.connect(self.reject)
         else:
             buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
             save_btn = buttons.button(QDialogButtonBox.StandardButton.Save)
             cancel_btn = buttons.button(QDialogButtonBox.StandardButton.Cancel)
             if save_btn:
-                save_btn.setText("Применить")
+                save_btn.setText("РџСЂРёРјРµРЅРёС‚СЊ")
             if cancel_btn:
-                cancel_btn.setText("Отмена")
+                cancel_btn.setText("РћС‚РјРµРЅР°")
             buttons.accepted.connect(self.accept)
             buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
@@ -290,7 +290,7 @@ class _BodymapDialogV2(QDialog):
 
     def _refresh_stats(self) -> None:
         marks = self._canvas.get_marks()
-        self._stats.setText(f"Итого: {len(marks)}. {_marks_stats(marks)}.")
+        self._stats.setText(f"РС‚РѕРіРѕ: {len(marks)}. {_marks_stats(marks)}.")
 
 
 class _BodymapCanvasV2(QWidget):
@@ -430,8 +430,8 @@ class _BodymapCanvasV2(QWidget):
 
             painter.setPen(QColor("#2E2E2E"))
             label_map = {
-                "male_front": "Вид спереди",
-                "male_back": "Вид сзади",
+                "male_front": "Р’РёРґ СЃРїРµСЂРµРґРё",
+                "male_back": "Р’РёРґ СЃР·Р°РґРё",
             }
             painter.drawText(QRectF(slot.x() + 6, slot.y() + 4, slot.width() - 12, 18), label_map[name])
 
@@ -480,7 +480,7 @@ class _BodymapCanvasV2(QWidget):
     def _add_point_mark(self, *, silhouette: str, norm: QPointF) -> None:
         note = ""
         if self._active_tool == "NOTE_PIN":
-            text, ok = QInputDialog.getText(self, "Заметка", "Комментарий:")
+            text, ok = QInputDialog.getText(self, "Р—Р°РјРµС‚РєР°", "РљРѕРјРјРµРЅС‚Р°СЂРёР№:")
             if not ok:
                 return
             note = text.strip()
@@ -620,7 +620,7 @@ class _BodymapCanvasV2(QWidget):
             "y": _clamp01(_to_float(mark.get("y"), 0.5)),
             "silhouette": silhouette,
             "note": str(mark.get("note") or ""),
-            "shape_json": {k: float(v) for k, v in shape.items() if isinstance(v, (int, float))},
+            "shape_json": {k: float(v) for k, v in shape.items() if isinstance(v, int | float)},
         }
 
     def _build_silhouette_path(self, body: QRectF, *, is_back: bool) -> QPainterPath:
@@ -727,3 +727,4 @@ class _BodymapCanvasV2(QWidget):
             )
             path = path.united(back)
         return path
+

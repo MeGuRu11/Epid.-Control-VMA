@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
@@ -137,3 +137,4 @@ def notify_case_selection(
 ) -> None:
     if emit and callback:
         callback(patient_id, emr_case_id)
+

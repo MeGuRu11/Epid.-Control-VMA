@@ -8,6 +8,7 @@ Permission = Literal[
     "manage_users",
     "manage_references",
     "manage_backups",
+    "manage_exchange",
 ]
 
 _ROLE_PERMISSIONS: Final[dict[Role, frozenset[Permission]]] = {
@@ -17,6 +18,7 @@ _ROLE_PERMISSIONS: Final[dict[Role, frozenset[Permission]]] = {
             "manage_users",
             "manage_references",
             "manage_backups",
+            "manage_exchange",
         }
     ),
     "operator": frozenset(),
@@ -41,3 +43,7 @@ def can_manage_references(role: Role) -> bool:
 
 def can_manage_backups(role: Role) -> bool:
     return has_permission(role, "manage_backups")
+
+
+def can_manage_exchange(role: Role) -> bool:
+    return has_permission(role, "manage_exchange")

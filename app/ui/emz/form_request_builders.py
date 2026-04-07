@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -101,3 +101,4 @@ def build_patient_update_fields(
         military_unit=military_unit,
         military_district=military_district,
     )
+

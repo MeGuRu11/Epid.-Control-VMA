@@ -37,13 +37,22 @@ def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[S
     return _session_scope
 
 
+def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -> int:
+    with session_factory() as session:
+        actor = models.User(login="ref_admin", password_hash="hash", role="admin", is_active=True)
+        session.add(actor)
+        session.flush()
+        return cast(int, actor.id)
+
+
 def test_department_and_material_type_crud_flow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     session_factory = make_session_factory(tmp_path / "reference_crud.db")
     monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
+    actor_id = seed_actor(session_factory)
     service = ReferenceService()
 
-    service.add_department("ICU")
-    service.add_material_type("BLOOD", "Blood")
+    service.add_department("ICU", actor_id=actor_id)
+    service.add_material_type("BLOOD", "Blood", actor_id=actor_id)
 
     departments = service.list_departments()
     material_types = service.list_material_types()
@@ -55,8 +64,8 @@ def test_department_and_material_type_crud_flow(tmp_path: Path, monkeypatch: pyt
     assert dep_id is not None
     assert mt_id is not None
 
-    service.update_department(dep_id, "ICU-2")
-    service.update_material_type(mt_id, "BLOOD-2", "Blood 2")
+    service.update_department(dep_id, "ICU-2", actor_id=actor_id)
+    service.update_material_type(mt_id, "BLOOD-2", "Blood 2", actor_id=actor_id)
 
     departments = service.list_departments()
     material_types = service.list_material_types()
@@ -64,8 +73,8 @@ def test_department_and_material_type_crud_flow(tmp_path: Path, monkeypatch: pyt
     assert str(material_types[0].code) == "BLOOD-2"
     assert str(material_types[0].name) == "Blood 2"
 
-    service.delete_department(dep_id)
-    service.delete_material_type(mt_id)
+    service.delete_department(dep_id, actor_id=actor_id)
+    service.delete_material_type(mt_id, actor_id=actor_id)
     assert service.list_departments() == []
     assert service.list_material_types() == []
 
@@ -76,26 +85,27 @@ def test_reference_service_validation_and_not_found_errors(
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_validation.db")
     monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
+    actor_id = seed_actor(session_factory)
     service = ReferenceService()
 
     with pytest.raises(ValueError):
-        service.add_department("")
+        service.add_department("", actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.add_material_type("", "Name")
+        service.add_material_type("", "Name", actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.add_icd10("", "Title")
+        service.add_icd10("", "Title", actor_id=actor_id)
 
     with pytest.raises(ValueError):
-        service.update_department(9999, "Missing")
+        service.update_department(9999, "Missing", actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.update_material_type(9999, "C", "Missing")
+        service.update_material_type(9999, "C", "Missing", actor_id=actor_id)
     with pytest.raises(ValueError):
-        service.update_icd10("A00", "Missing")
+        service.update_icd10("A00", "Missing", actor_id=actor_id)
 
     with session_factory() as session:
         session.add(models.RefICD10(code="A00", title="Initial"))
 
-    service.update_icd10("A00", "Updated")
+    service.update_icd10("A00", "Updated", actor_id=actor_id)
     icd10 = service.list_icd10()
     assert len(icd10) == 1
     assert str(icd10[0].title) == "Updated"

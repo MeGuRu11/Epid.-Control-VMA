@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import date, datetime
 
@@ -73,3 +73,4 @@ def map_ismp_case(
     if not ismp_type or start_date is None:
         return None
     return EmzIsmpDto(ismp_type=ismp_type, start_date=start_date)
+

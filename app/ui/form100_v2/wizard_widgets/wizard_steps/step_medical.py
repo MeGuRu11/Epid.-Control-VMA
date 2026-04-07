@@ -1,4 +1,4 @@
-"""WizardStep3 — Медицинская помощь."""
+﻿"""WizardStep3 вЂ” РњРµРґРёС†РёРЅСЃРєР°СЏ РїРѕРјРѕС‰СЊ."""
 from __future__ import annotations
 
 from typing import Any
@@ -20,7 +20,7 @@ def _truthy(value: object) -> bool:
 
 
 class StepMedical(QWidget):
-    """Шаг 3 мастера: поля медицинской помощи."""
+    """РЁР°Рі 3 РјР°СЃС‚РµСЂР°: РїРѕР»СЏ РјРµРґРёС†РёРЅСЃРєРѕР№ РїРѕРјРѕС‰Рё."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -28,42 +28,42 @@ class StepMedical(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        mp_box = QGroupBox("Медицинская помощь")
+        mp_box = QGroupBox("РњРµРґРёС†РёРЅСЃРєР°СЏ РїРѕРјРѕС‰СЊ")
         mp_box.setObjectName("form100Help")
         mp_lay = QFormLayout(mp_box)
         mp_lay.setContentsMargins(20, 16, 20, 16)
         mp_lay.setVerticalSpacing(10)
         mp_lay.setHorizontalSpacing(16)
 
-        self.mp_antibiotic = QCheckBox("Антибиотик")
+        self.mp_antibiotic = QCheckBox("РђРЅС‚РёР±РёРѕС‚РёРє")
         self.mp_antibiotic_dose = QLineEdit()
-        self.mp_antibiotic_dose.setPlaceholderText("доза")
+        self.mp_antibiotic_dose.setPlaceholderText("РґРѕР·Р°")
 
-        self.mp_serum_pss = QCheckBox("Сыворотка ПСС")
-        self.mp_serum_pgs = QCheckBox("Сыворотка ПГС")
+        self.mp_serum_pss = QCheckBox("РЎС‹РІРѕСЂРѕС‚РєР° РџРЎРЎ")
+        self.mp_serum_pgs = QCheckBox("РЎС‹РІРѕСЂРѕС‚РєР° РџР“РЎ")
         self.mp_serum_dose = QLineEdit()
-        self.mp_serum_dose.setPlaceholderText("доза")
+        self.mp_serum_dose.setPlaceholderText("РґРѕР·Р°")
 
         self.mp_toxoid = QLineEdit()
-        self.mp_toxoid.setPlaceholderText("анатоксин (какой)")
+        self.mp_toxoid.setPlaceholderText("Р°РЅР°С‚РѕРєСЃРёРЅ (РєР°РєРѕР№)")
 
         self.mp_antidote = QLineEdit()
-        self.mp_antidote.setPlaceholderText("антидот (какой)")
+        self.mp_antidote.setPlaceholderText("Р°РЅС‚РёРґРѕС‚ (РєР°РєРѕР№)")
 
-        self.mp_analgesic = QCheckBox("Обезболивающее")
+        self.mp_analgesic = QCheckBox("РћР±РµР·Р±РѕР»РёРІР°СЋС‰РµРµ")
         self.mp_analgesic_dose = QLineEdit()
-        self.mp_analgesic_dose.setPlaceholderText("доза")
+        self.mp_analgesic_dose.setPlaceholderText("РґРѕР·Р°")
 
-        self.mp_transfusion_blood = QCheckBox("Переливание крови")
-        self.mp_transfusion_substitute = QCheckBox("Кровезаменители")
-        self.mp_immobilization = QCheckBox("Иммобилизация")
-        self.mp_bandage = QCheckBox("Перевязка")
+        self.mp_transfusion_blood = QCheckBox("РџРµСЂРµР»РёРІР°РЅРёРµ РєСЂРѕРІРё")
+        self.mp_transfusion_substitute = QCheckBox("РљСЂРѕРІРµР·Р°РјРµРЅРёС‚РµР»Рё")
+        self.mp_immobilization = QCheckBox("РРјРјРѕР±РёР»РёР·Р°С†РёСЏ")
+        self.mp_bandage = QCheckBox("РџРµСЂРµРІСЏР·РєР°")
 
         mp_lay.addRow(self.mp_antibiotic, self.mp_antibiotic_dose)
         mp_lay.addRow(self.mp_serum_pss)
         mp_lay.addRow(self.mp_serum_pgs, self.mp_serum_dose)
-        mp_lay.addRow("Анатоксин:", self.mp_toxoid)
-        mp_lay.addRow("Антидот:", self.mp_antidote)
+        mp_lay.addRow("РђРЅР°С‚РѕРєСЃРёРЅ:", self.mp_toxoid)
+        mp_lay.addRow("РђРЅС‚РёРґРѕС‚:", self.mp_antidote)
         mp_lay.addRow(self.mp_analgesic, self.mp_analgesic_dose)
         mp_lay.addRow(self.mp_transfusion_blood)
         mp_lay.addRow(self.mp_transfusion_substitute)
@@ -126,3 +126,4 @@ class StepMedical(QWidget):
             self.mp_bandage,
         ):
             w.setEnabled(enabled)
+

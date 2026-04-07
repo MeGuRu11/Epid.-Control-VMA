@@ -1,5 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 import shutil
@@ -626,22 +627,26 @@ class Form100ServiceV2:
         new_version: int,
         changes: dict[str, Any],
     ) -> None:
+        before_changes = cast(dict[str, Any], changes.get("before") or {})
+        after_changes = cast(dict[str, Any], changes.get("after") or {})
+        changed_fields = sorted({str(key) for key in before_changes} | {str(key) for key in after_changes})
+        data_hash = hashlib.sha256(
+            json.dumps(after_changes, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
         payload_json = json.dumps(
             {
                 "schema": "form100.audit.v2",
-                "actor": {"user_id": actor_id, "role": actor_role},
+                "actor_id": actor_id,
+                "actor_role": actor_role,
                 "event": {
                     "ts": _utc_now().isoformat(),
                     "action": action,
                     "status_from": status_from,
                     "status_to": status_to,
                 },
-                "entity": {"type": "form100", "id": card_id},
-                "changes": {
-                    "format": "before_after",
-                    "before": changes.get("before", {}),
-                    "after": changes.get("after", {}),
-                },
+                "card_id": card_id,
+                "changed_fields": changed_fields,
+                "data_hash": data_hash,
                 "meta": {"expected_version": expected_version, "new_version": new_version},
             },
             ensure_ascii=False,
@@ -657,17 +662,17 @@ class Form100ServiceV2:
         )
 
     def _resolve_actor(self, actor_id: int | None) -> tuple[str, str]:
-        if actor_id is None:
-            return "system", "system"
-        with self.session_factory() as session:
-            actor = self.user_repo.get_by_id(session, actor_id)
-            if actor is None:
-                return f"user_{actor_id}", "unknown"
-            return str(actor.login), str(actor.role)
+        if actor_id is not None:
+            with self.session_factory() as session:
+                actor = self.user_repo.get_by_id(session, actor_id)
+                if actor is None:
+                    return f"user_{actor_id}", "unknown"
+                return str(actor.login), str(actor.role)
+        return "system", "system"
 
     def _require_admin(self, session, actor_id: int | None) -> None:
-        if actor_id is None:
-            return
+        if actor_id is None:  # raise on missing actor_id
+            raise ValueError("actor_id обязателен для операций записи")
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor is not None and str(actor.role) == "admin":
             return
@@ -696,4 +701,5 @@ def _inject_denormalized_fields(
         bottom = {}
         data_payload["bottom"] = bottom
     bottom.setdefault("main_diagnosis", main_diagnosis)
+
 

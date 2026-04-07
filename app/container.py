@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.application.exceptions import DatabaseError
 from app.application.services.analytics_service import AnalyticsService
 from app.application.services.auth_service import AuthService
 from app.application.services.backup_service import BackupService
@@ -69,59 +75,72 @@ def build_container() -> Container:
     analytics_repo = AnalyticsRepository()
     fts_manager = FtsManager(session_factory=session_scope)
 
-    auth_service = AuthService(user_repo=user_repo, audit_repo=audit_repo, session_factory=session_scope)
+    @contextmanager
+    def app_session_scope() -> Iterator[Session]:
+        try:
+            with session_scope() as session:
+                yield session
+        except SQLAlchemyError as exc:
+            raise DatabaseError("Ошибка при работе с БД", original=exc) from exc
+
+    auth_service = AuthService(user_repo=user_repo, audit_repo=audit_repo, session_factory=app_session_scope)
     user_admin_service = UserAdminService(
-        user_repo=user_repo, audit_repo=audit_repo, session_factory=session_scope
+        user_repo=user_repo, audit_repo=audit_repo, session_factory=app_session_scope
     )
     emz_service = EmzService(
         emz_repo=emz_repo,
         patient_repo=patient_repo,
         user_repo=user_repo,
         audit_repo=audit_repo,
-        session_factory=session_scope,
+        session_factory=app_session_scope,
     )
     form100_v2_service = Form100ServiceV2(
         repo=form100_v2_repo,
         user_repo=user_repo,
         audit_repo=audit_repo,
-        session_factory=session_scope,
+        session_factory=app_session_scope,
     )
     patient_service = PatientService(
         patient_repo=patient_repo,
-        session_factory=session_scope,
+        session_factory=app_session_scope,
         fts_manager=fts_manager,
+        user_repo=user_repo,
+        audit_repo=audit_repo,
     )
     lab_service = LabService(
         lab_repo=lab_repo,
         ref_repo=ref_repo,
         audit_repo=audit_repo,
-        session_factory=session_scope,
+        user_repo=user_repo,
+        session_factory=app_session_scope,
     )
     sanitary_service = SanitaryService(
         repo=san_repo,
         audit_repo=audit_repo,
-        session_factory=session_scope,
+        user_repo=user_repo,
+        session_factory=app_session_scope,
     )
     analytics_service = AnalyticsService(
         repo=analytics_repo,
-        session_factory=session_scope,
+        session_factory=app_session_scope,
     )
     exchange_service = ExchangeService(
-        session_factory=session_scope,
+        session_factory=app_session_scope,
         form100_v2_service=form100_v2_service,
+        user_repo=user_repo,
     )
-    dashboard_service = DashboardService(session_factory=session_scope)
+    dashboard_service = DashboardService(session_factory=app_session_scope)
     reference_service = ReferenceService(
         repo=ref_repo,
         user_repo=user_repo,
         audit_repo=audit_repo,
     )
-    saved_filter_service = SavedFilterService(session_factory=session_scope)
+    saved_filter_service = SavedFilterService(session_factory=app_session_scope)
     reporting_service = ReportingService(
         analytics_service=analytics_service,
         form100_v2_service=form100_v2_service,
         reference_service=reference_service,
-        session_factory=session_scope,
+        session_factory=app_session_scope,
     )
     backup_service = BackupService(audit_repo=audit_repo, user_repo=user_repo)
 

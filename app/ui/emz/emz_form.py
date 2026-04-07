@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.application.dto.auth_dto import SessionContext
 from app.application.dto.emz_dto import (
     EmzAntibioticCourseDto,
     EmzCaseDetail,
@@ -182,6 +183,7 @@ class EmzForm(QWidget):
     def __init__(
         self,
         container: Container,
+        session: SessionContext | None = None,
         on_case_selected: Callable[[int | None, int | None], None] | None = None,
         on_edit_patient: Callable[[int], None] | None = None,
         on_data_changed: Callable[[], None] | None = None,
@@ -192,6 +194,7 @@ class EmzForm(QWidget):
         self.on_case_selected = on_case_selected
         self.on_edit_patient = on_edit_patient
         self.on_data_changed = on_data_changed
+        self._session = session
         self._edit_mode = False
         self.emr_case_id: int | None = None
         self._current_patient_id: int | None = None
@@ -202,6 +205,9 @@ class EmzForm(QWidget):
         self._date_empty = QDate(2024, 1, 1)
         self._dt_empty = QDateTime(QDate(2024, 1, 1), QTime(0, 0))
         self._build_ui()
+
+    def set_session(self, session: SessionContext) -> None:
+        self._session = session
 
     def _build_ui(self) -> None:
         main_layout = QVBoxLayout(self)
@@ -982,6 +988,8 @@ class EmzForm(QWidget):
             self.on_data_changed()
 
     def _save_new_case(self, payload: EmzVersionPayload, category_value: str, department_value: int | None) -> None:
+        if self._session is None:
+            raise ValueError("Сессия пользователя не найдена")
         create_req = build_emz_create_request(
             patient_full_name=self.full_name.text(),
             patient_dob=self._date_value(self.dob),
@@ -993,7 +1001,7 @@ class EmzForm(QWidget):
             department_id=department_value,
             payload=payload,
         )
-        resp = self.container.emz_service.create_emr(create_req, actor_id=None)
+        resp = self.container.emz_service.create_emr(create_req, actor_id=self._session.user_id)
         self.emr_case_id = resp.id
         detail = self.container.emz_service.get_current(resp.id)
         self._current_patient_id = detail.patient_id
@@ -1003,6 +1011,8 @@ class EmzForm(QWidget):
         self._notify_case_changed(detail.patient_id, resp.id)
 
     def _save_existing_case(self, payload: EmzVersionPayload, category_value: str, department_value: int | None) -> None:
+        if self._session is None:
+            raise ValueError("Сессия пользователя не найдена")
         if self.emr_case_id is None:
             raise ValueError("Не выбрана госпитализация для обновления")
         emr_case_id = self.emr_case_id
@@ -1017,6 +1027,7 @@ class EmzForm(QWidget):
             )
             self.container.patient_service.update_details(
                 self._current_patient_id,
+                actor_id=self._session.user_id,
                 full_name=patient_update.full_name,
                 dob=patient_update.dob,
                 sex=patient_update.sex,
@@ -1028,10 +1039,10 @@ class EmzForm(QWidget):
             emr_case_id,
             hospital_case_no=self.hospital_case_no.text(),
             department_id=department_value,
-            actor_id=None,
+            actor_id=self._session.user_id,
         )
         update_req = build_emz_update_request(emr_case_id=emr_case_id, payload=payload)
-        self.container.emz_service.update_emr(update_req, actor_id=None)
+        self.container.emz_service.update_emr(update_req, actor_id=self._session.user_id)
         self._set_status(self._format_save_message(), "success")
         self._notify_case_changed(self._current_patient_id, emr_case_id)
 
@@ -1227,3 +1238,4 @@ class EmzForm(QWidget):
             create_date_cell=self._create_date_cell,
             to_qdate=self._to_qdate,
         )
+

@@ -25,9 +25,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.sanitary_dto import SanitarySampleResultUpdate
+from app.application.exceptions import AppError
 from app.application.services.reference_service import ReferenceService
 from app.application.services.sanitary_sample_payload_service import (
     PhageInput,
@@ -57,7 +57,7 @@ from app.ui.widgets.table_utils import (
     resize_columns_to_content,
 )
 
-_HANDLED_SANITARY_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, SQLAlchemyError)
+_HANDLED_SANITARY_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
 
 class SanitaryHistoryDialog(QDialog):
@@ -70,6 +70,7 @@ class SanitaryHistoryDialog(QDialog):
         reference_service: ReferenceService,
         department_id: int,
         department_name: str,
+        actor_id: int | None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -77,6 +78,7 @@ class SanitaryHistoryDialog(QDialog):
         self.reference_service = reference_service
         self.department_id = department_id
         self.department_name = department_name
+        self.actor_id = actor_id
         self._microbe_map: dict[int, str] = {}
         self._micro_search_updating: bool = False
         self._date_empty = QDate(2000, 1, 1)
@@ -320,6 +322,7 @@ class SanitaryHistoryDialog(QDialog):
             self.sanitary_service,
             self.reference_service,
             department_id=self.department_id,
+            actor_id=self.actor_id,
             parent=self,
         )
         self.references_updated.connect(dlg.refresh_references)
@@ -336,6 +339,7 @@ class SanitaryHistoryDialog(QDialog):
             self.sanitary_service,
             self.reference_service,
             department_id=self.department_id,
+            actor_id=self.actor_id,
             sample_id=sample_id,
             parent=self,
         )
@@ -357,6 +361,7 @@ class SanitarySampleDetailDialog(QDialog):
         sanitary_service: SanitaryService,
         reference_service: ReferenceService,
         department_id: int,
+        actor_id: int | None,
         sample_id: int | None = None,
         parent: QWidget | None = None,
     ) -> None:
@@ -364,6 +369,7 @@ class SanitarySampleDetailDialog(QDialog):
         self.sanitary_service = sanitary_service
         self.reference_service = reference_service
         self.department_id = department_id
+        self.actor_id = actor_id
         self.sample_id = sample_id
         self._abx_list: list[Any] = []
         self._phage_list: list[Any] = []
@@ -820,6 +826,9 @@ class SanitarySampleDetailDialog(QDialog):
 
     def on_save(self) -> None:
         clear_status(self.error_label)
+        if self.actor_id is None:
+            set_status(self.error_label, "Не удалось определить пользователя сессии", "error")
+            return
         if self.sample_id is None:
             try:
                 req = build_sanitary_sample_create_request(
@@ -831,11 +840,11 @@ class SanitarySampleDetailDialog(QDialog):
                     delivered_at=self._to_python_datetime(self.delivered_at),
                     created_by=None,
                 )
-                resp = self.sanitary_service.create_sample(req)
+                resp = self.sanitary_service.create_sample(req, actor_id=self.actor_id)
                 self.sample_id = resp.id
                 has_results, result_update = self._build_result_update()
                 if has_results:
-                    self.sanitary_service.update_result(self.sample_id, result_update, actor_id=None)
+                    self.sanitary_service.update_result(self.sample_id, result_update, actor_id=self.actor_id)
                 self.accept()
             except _HANDLED_SANITARY_ERRORS as exc:
                 set_status(self.error_label, error_text(exc, "Не удалось сохранить пробу"), "error")
@@ -848,9 +857,9 @@ class SanitarySampleDetailDialog(QDialog):
                     taken_at=self._to_python_datetime(self.taken_at),
                     delivered_at=self._to_python_datetime(self.delivered_at),
                 )
-                self.sanitary_service.update_sample(self.sample_id, upd_sample, actor_id=None)
+                self.sanitary_service.update_sample(self.sample_id, upd_sample, actor_id=self.actor_id)
                 _, result_update = self._build_result_update()
-                self.sanitary_service.update_result(self.sample_id, result_update, actor_id=None)
+                self.sanitary_service.update_result(self.sample_id, result_update, actor_id=self.actor_id)
                 self.accept()
             except _HANDLED_SANITARY_ERRORS as exc:
                 set_status(self.error_label, error_text(exc, "Не удалось обновить пробу"), "error")
@@ -881,3 +890,5 @@ class SanitarySampleDetailDialog(QDialog):
             self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
             self.phage_table.setItem(idx, 2, QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""))
         resize_columns_to_content(self.phage_table)
+
+

@@ -42,3 +42,4 @@ def build_new_case_access_state(edit_mode: bool) -> tuple[bool, bool, str | None
     if edit_mode:
         return False, False, None
     return True, False, "Новая госпитализация: заполните данные."
+

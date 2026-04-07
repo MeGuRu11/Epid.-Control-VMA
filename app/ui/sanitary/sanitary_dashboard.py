@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.application.dto.auth_dto import SessionContext
 from app.application.services.reference_service import ReferenceService
 from app.application.services.sanitary_service import SanitaryService
 from app.ui.sanitary.sanitary_history import SanitaryHistoryDialog
@@ -34,12 +35,17 @@ class SanitaryDashboard(QWidget):
         self,
         sanitary_service: SanitaryService,
         reference_service: ReferenceService,
+        session: SessionContext | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.sanitary_service = sanitary_service
         self.reference_service = reference_service
+        self._session = session
         self._build_ui()
+
+    def set_session(self, session: SessionContext) -> None:
+        self._session = session
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -306,6 +312,8 @@ class SanitaryDashboard(QWidget):
             self.reference_service,
             department_id=dep_id,
             department_name=dep_name,
+            actor_id=self._session.user_id if self._session is not None else None,
             parent=self,
         )
         dlg.exec()
+

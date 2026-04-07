@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPen
@@ -28,3 +28,4 @@ class PatternOverlay(QWidget):
         for x in range(0, width, step):
             for y in range(0, height, step):
                 painter.drawEllipse(x, y, radius, radius)
+
