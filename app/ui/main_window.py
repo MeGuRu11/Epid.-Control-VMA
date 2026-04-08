@@ -1,6 +1,8 @@
 ﻿from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from datetime import UTC, datetime
+
+from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
@@ -145,6 +147,14 @@ class MainWindow(QMainWindow):
         self._home_dirty = False
         self._menubar: NavMenuBar | None = None
         self._admin_action: QAction | None = None
+        self._session_timeout_seconds = max(60, int(settings.session_timeout_minutes) * 60)
+        self._last_activity_at = datetime.now(UTC)
+        self._idle_timeout_in_progress = False
+        self._idle_timer = QTimer(self)
+        self._idle_timer.setInterval(60_000)
+        self._idle_timer.timeout.connect(self._check_idle_timeout)
+        self._idle_timer.start()
+        app.installEventFilter(self)
 
         central = QWidget()
         layer_stack = QStackedLayout(central)
@@ -434,6 +444,7 @@ class MainWindow(QMainWindow):
         if not exchange_allowed and self._stack.currentWidget() is self._exchange_view:
             self._set_active_view(self._home_view)
         self._update_nav_presentation()
+        self._mark_user_activity()
 
     def _logout(self) -> None:
         confirm = QMessageBox(self)
@@ -446,14 +457,38 @@ class MainWindow(QMainWindow):
         confirm.exec()
         if confirm.clickedButton() is not yes_btn:
             return
+        self._relogin_or_close(show_timeout_message=False)
+
+    def _relogin_or_close(self, *, show_timeout_message: bool) -> None:
         self._clear_context()
         self.hide()
+        if show_timeout_message:
+            QMessageBox.information(
+                self,
+                "Сессия завершена",
+                "Сессия завершена по таймауту бездействия. Выполните вход повторно.",
+            )
         dlg = LoginDialog(auth_service=self.container.auth_service, parent=None)
         if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.session:
             self.close()
             return
         self._apply_session(dlg.session)
         self.show()
+
+    def _mark_user_activity(self) -> None:
+        self._last_activity_at = datetime.now(UTC)
+
+    def _check_idle_timeout(self) -> None:
+        if self._idle_timeout_in_progress or not self.isVisible():
+            return
+        elapsed = (datetime.now(UTC) - self._last_activity_at).total_seconds()
+        if elapsed <= self._session_timeout_seconds:
+            return
+        self._idle_timeout_in_progress = True
+        try:
+            self._relogin_or_close(show_timeout_message=True)
+        finally:
+            self._idle_timeout_in_progress = False
 
     def _clear_context(self) -> None:
         self._current_patient_id = None
@@ -610,6 +645,21 @@ class MainWindow(QMainWindow):
             self._context_bar.update_context(self._current_patient_id, self._current_case_id, patient_name)
         self._notify_data_changed()
 
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802
+        event_type = event.type()
+        if event_type in {
+            QEvent.Type.MouseButtonPress,
+            QEvent.Type.MouseButtonRelease,
+            QEvent.Type.MouseMove,
+            QEvent.Type.KeyPress,
+            QEvent.Type.Wheel,
+            QEvent.Type.TouchBegin,
+            QEvent.Type.TouchUpdate,
+            QEvent.Type.ShortcutOverride,
+        } and self.isVisible():
+            self._mark_user_activity()
+        return super().eventFilter(watched, event)
+
     def resizeEvent(self, event) -> None:  # noqa: D401, N802
         super().resizeEvent(event)
         self._position_context_bar()
@@ -617,6 +667,12 @@ class MainWindow(QMainWindow):
         if self._menubar:
             active = self._nav_actions.get(self._stack.currentWidget())
             self._menubar.set_highlight_action(active)
+
+    def closeEvent(self, event) -> None:  # noqa: N802
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.removeEventFilter(self)
+        super().closeEvent(event)
 
     def _position_context_bar(self) -> None:
         if not self._context_bar:

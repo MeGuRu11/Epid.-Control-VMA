@@ -2,11 +2,12 @@
 
 import csv
 import json
+import os
 import shutil
 import tempfile
 import zipfile
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal, cast
@@ -334,6 +335,12 @@ class ExchangeService:
         self.form100_v2_service = form100_v2_service
         self.user_repo = user_repo or UserRepository()
 
+    def _prepare_output_dir(self, path: Path) -> None:
+        path.mkdir(parents=True, exist_ok=True)
+        # Best-effort: some filesystems/platforms ignore chmod semantics.
+        with suppress(OSError):
+            os.chmod(path, 0o700)
+
     def _require_permission(self, actor_id: int, permission: Literal["manage_exchange"]) -> None:
         with self.session_factory() as session:
             actor = self.user_repo.get_by_id(session, actor_id)
@@ -382,7 +389,8 @@ class ExchangeService:
                     ws.append([data.get(col) for col in columns])
                 counts[name] = len(rows)
 
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        # TODO SECURITY: добавить шифрование бэкапов/экспортов (AES-GCM)
+        self._prepare_output_dir(file_path.parent)
         wb.save(file_path)
         return {"path": str(file_path), "counts": counts}
 
@@ -411,7 +419,7 @@ class ExchangeService:
             manifest_path = tmp_dir_path / "manifest.json"
             manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            self._prepare_output_dir(file_path.parent)
             with zipfile.ZipFile(file_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 zf.write(excel_path, arcname=excel_path.name)
                 zf.write(manifest_path, arcname=manifest_path.name)
@@ -611,7 +619,7 @@ class ExchangeService:
         with self.session_factory() as session:
             rows = session.query(model_cls).all()
             columns = [c.name for c in model_cls.__table__.columns]
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            self._prepare_output_dir(file_path.parent)
             with file_path.open("w", encoding="utf-8-sig", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(_get_csv_headers(table_name, columns))
@@ -707,7 +715,7 @@ class ExchangeService:
                     [Paragraph("" if record.get(col) is None else str(record.get(col)), cell_style) for col in columns]
                 )
 
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        self._prepare_output_dir(file_path.parent)
         doc = SimpleDocTemplate(
             str(file_path),
             pagesize=landscape(A4),
@@ -756,7 +764,7 @@ class ExchangeService:
             for name, model_cls in TABLE_MODELS.items():
                 payload["data"][name] = [_model_to_dict(x) for x in session.query(model_cls).all()]
 
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        self._prepare_output_dir(file_path.parent)
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return {"path": str(file_path), "counts": {k: len(v) for k, v in payload["data"].items()}}
 

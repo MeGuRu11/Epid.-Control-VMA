@@ -46,6 +46,8 @@ FILTER_LABELS: dict[str, str] = {
     "search_text": "Поиск",
 }
 
+SENSITIVE_FILTER_KEYS = {"patient_name", "fio", "search_text", "lab_no", "passport", "snils"}
+
 logger = logging.getLogger(__name__)
 
 def _format_value(value: Any) -> Any:
@@ -403,10 +405,11 @@ class ReportingService:
         sha256: str,
         created_by: int | None,
     ) -> int:
+        safe_filters = self._sanitize_filters(cast(dict[str, Any], filters))
         with self.session_factory() as session:
             row = models.ReportRun(
                 report_type=report_type,
-                filters_json=json.dumps(filters, ensure_ascii=False),
+                filters_json=json.dumps(safe_filters, ensure_ascii=False),
                 result_summary_json=json.dumps(summary, ensure_ascii=False),
                 artifact_path=str(file_path),
                 artifact_sha256=sha256,
@@ -415,6 +418,15 @@ class ReportingService:
             session.add(row)
             session.flush()
             return _as_int(row.id)
+
+    def _sanitize_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
+        sanitized: dict[str, Any] = {}
+        for key, value in filters.items():
+            if key.lower() in SENSITIVE_FILTER_KEYS:
+                sanitized[key] = "***"
+                continue
+            sanitized[key] = value
+        return sanitized
 
     def _build_report_history_row(
         self,

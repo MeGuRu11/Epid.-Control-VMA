@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import shutil
 import sqlite3
 from contextlib import suppress
@@ -31,8 +32,14 @@ class BackupService:
         self.audit_repo = audit_repo
         self.user_repo = user_repo or UserRepository()
         self.backup_dir = DATA_DIR / "backups"
-        self.backup_dir.mkdir(parents=True, exist_ok=True)
+        self._prepare_artifacts_dir(self.backup_dir)
         self._meta_path = self.backup_dir / "last_backup.json"
+
+    def _prepare_artifacts_dir(self, path: Path) -> None:
+        path.mkdir(parents=True, exist_ok=True)
+        # Best-effort: some filesystems/platforms ignore chmod semantics.
+        with suppress(OSError):
+            os.chmod(path, 0o700)
 
     def _require_admin_access(self, *, actor_id: int, action: str) -> None:
         if actor_id is None:  # raise on missing actor_id
@@ -81,6 +88,7 @@ class BackupService:
         self._require_admin_access(actor_id=actor_id, action="backup_create")
         if not DB_FILE.exists():
             raise FileNotFoundError(f"Р‘Р°Р·Р° РґР°РЅРЅС‹С… РЅРµ РЅР°Р№РґРµРЅР°: {DB_FILE}")
+        # TODO SECURITY: добавить шифрование бэкапов/экспортов (AES-GCM)
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"app_{timestamp}.db"
         try:

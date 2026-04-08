@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -94,3 +95,39 @@ def test_main_window_nav_menu_adapts_titles_on_small_width(monkeypatch, qapp) ->
     assert window._nav_label_mode == "full"
     assert window.menuBar().property("compactNav") is False
     assert all(action.text() == title for action, title in window._nav_action_titles.items())
+
+
+def test_main_window_idle_timeout_requests_relogin(monkeypatch, qapp) -> None:
+    def _stub_init_views(self) -> None:  # noqa: ANN001
+        return
+
+    def _stub_build_menu(self) -> None:  # noqa: ANN001
+        return
+
+    monkeypatch.setattr(MainWindow, "_init_views", _stub_init_views)
+    monkeypatch.setattr(MainWindow, "_build_menu", _stub_build_menu)
+
+    container = SimpleNamespace(
+        emz_service=SimpleNamespace(),
+        patient_service=SimpleNamespace(),
+    )
+    window = MainWindow(
+        session=SessionContext(user_id=1, login="admin", role="admin"),
+        container=cast(Any, container),
+    )
+    window.show()
+    qapp.processEvents()
+
+    called: dict[str, bool] = {"value": False}
+
+    def _stub_relogin(*, show_timeout_message: bool) -> None:
+        called["value"] = show_timeout_message
+
+    monkeypatch.setattr(window, "_relogin_or_close", _stub_relogin)
+    window._session_timeout_seconds = 60
+    window._last_activity_at = datetime.now(UTC) - timedelta(seconds=120)
+
+    window._check_idle_timeout()
+
+    assert called["value"] is True
+    assert window._idle_timeout_in_progress is False

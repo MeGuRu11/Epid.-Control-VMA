@@ -34,6 +34,17 @@ def _env_ui_density(name: str, default: UiDensity) -> UiDensity:
         return cast(UiDensity, raw)
     return default
 
+
+def _env_positive_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
 def _resolve_data_dir() -> Path:
     env_dir = os.getenv("EPIDCONTROL_DATA_DIR") or os.getenv("CODEX_DATA_DIR")
     if env_dir:
@@ -82,6 +93,7 @@ class Settings:
     ui_premium_enabled: bool = _env_bool("EPIDCONTROL_UI_PREMIUM", True)
     ui_animation_policy: AnimationPolicy = _env_animation_policy("EPIDCONTROL_UI_ANIMATION", "adaptive")
     ui_density: UiDensity = _env_ui_density("EPIDCONTROL_UI_DENSITY", "normal")
+    session_timeout_minutes: int = _env_positive_int("EPIDCONTROL_SESSION_TIMEOUT_MINUTES", 30)
 
 
 settings = Settings()

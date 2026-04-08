@@ -27,9 +27,6 @@ from app.ui.runtime_ui import resolve_ui_runtime
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.notifications import clear_status, set_status
 
-_MAX_ATTEMPTS = 5
-_LOCKOUT_SECONDS = 60
-
 
 class LoginDialog(QDialog):
     Accepted = QDialog.DialogCode.Accepted
@@ -47,9 +44,6 @@ class LoginDialog(QDialog):
         self._ui_runtime = resolve_ui_runtime(self, app, settings)
         self._animated_bg: MedicalBackground | None = None
         self._centered_once = False
-        self._failed_attempts: int = 0
-        self._lockout_remaining: int = 0
-        self._lockout_timer: QTimer | None = None
         self.setWindowTitle("Вход - Эпидемиологический контроль")
         self.setModal(True)
         self._build_ui()
@@ -134,7 +128,6 @@ class LoginDialog(QDialog):
         self.login_edit.setMinimumHeight(42)
         self.login_edit.setPlaceholderText("Введите логин")
         self.login_edit.setClearButtonEnabled(True)
-        self.login_edit.textChanged.connect(self._on_login_text_changed)
         self.password_edit = QLineEdit()
         self.password_edit.setObjectName("loginInput")
         self.password_edit.setMinimumHeight(42)
@@ -152,12 +145,6 @@ class LoginDialog(QDialog):
         self.error_label.setObjectName("statusLabel")
         self.error_label.setWordWrap(True)
         self.error_label.setVisible(False)
-
-        self._lock_label = QLabel()
-        self._lock_label.setObjectName("statusLabel")
-        self._lock_label.setProperty("statusLevel", "error")
-        self._lock_label.setWordWrap(True)
-        self._lock_label.setVisible(False)
 
         self._login_btn = QPushButton("Войти")
         self._login_btn.setObjectName("loginPrimaryButton")
@@ -184,7 +171,6 @@ class LoginDialog(QDialog):
 
         card_layout.addLayout(form)
         card_layout.addWidget(self.error_label)
-        card_layout.addWidget(self._lock_label)
         card_layout.addWidget(card_meta)
         card_layout.addLayout(btn_row)
 
@@ -204,36 +190,6 @@ class LoginDialog(QDialog):
 
         self.login_edit.setFocus()
         self._apply_glass_effect(self._card)
-    def _on_login_text_changed(self) -> None:
-        # Attempts are tracked per dialog session; editing login must not reset lockout counters.
-        return
-
-    def _start_lockout(self) -> None:
-        self._lockout_remaining = _LOCKOUT_SECONDS
-        self._login_btn.setEnabled(False)
-        self._lock_label.setText(
-            f"Слишком много неудачных попыток. Подождите {self._lockout_remaining} с."
-        )
-        self._lock_label.setVisible(True)
-        timer = QTimer(self)
-        timer.setInterval(1000)
-        timer.timeout.connect(self._tick_lockout)
-        self._lockout_timer = timer
-        timer.start()
-
-    def _tick_lockout(self) -> None:
-        self._lockout_remaining -= 1
-        if self._lockout_remaining <= 0:
-            if self._lockout_timer is not None:
-                self._lockout_timer.stop()
-                self._lockout_timer = None
-            self._failed_attempts = 0
-            self._login_btn.setEnabled(True)
-            self._lock_label.setVisible(False)
-        else:
-            self._lock_label.setText(
-                f"Слишком много неудачных попыток. Подождите {self._lockout_remaining} с."
-            )
 
     def _apply_initial_size(self) -> None:
         app = QApplication.instance()
@@ -349,8 +305,6 @@ class LoginDialog(QDialog):
         self.move(frame.topLeft())
 
     def _on_login(self) -> None:
-        if self._lockout_timer is not None:
-            return
         clear_status(self.error_label)
         self.error_label.setVisible(False)
         login = self.login_edit.text().strip()
@@ -365,21 +319,14 @@ class LoginDialog(QDialog):
             msg = exc.errors()[0].get("msg", "Проверьте логин и пароль.")
             set_status(self.error_label, msg, "error")
             self.error_label.setVisible(True)
-            self._failed_attempts += 1
-            if self._failed_attempts >= _MAX_ATTEMPTS:
-                self._start_lockout()
             return
         try:
             session_ctx = self.auth_service.login(request)
         except (ValueError, AppError, RuntimeError, TypeError) as exc:
             set_status(self.error_label, str(exc), "error")
             self.error_label.setVisible(True)
-            self._failed_attempts += 1
-            if self._failed_attempts >= _MAX_ATTEMPTS:
-                self._start_lockout()
             return
 
-        self._failed_attempts = 0
         self.session = session_ctx
         self.accept()
 

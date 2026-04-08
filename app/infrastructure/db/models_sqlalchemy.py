@@ -71,6 +71,8 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False)
     is_active = Column(Boolean, nullable=False, server_default=expression.true())
+    failed_login_count = Column(Integer, nullable=False, server_default=expression.literal("0"))
+    locked_until = Column(DateTime)
     created_at = Column(DateTime, nullable=False, default=utc_now)
 
     __table_args__ = (

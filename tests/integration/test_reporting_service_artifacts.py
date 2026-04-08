@@ -51,7 +51,12 @@ def test_export_report_saves_artifact_and_history(tmp_path: Path, monkeypatch: p
 
     export_path = tmp_path / "analytics.xlsx"
     result = service.export_analytics_xlsx(
-        request=AnalyticsSearchRequest(),
+        request=AnalyticsSearchRequest(
+            patient_name="Иванов И.И.",
+            lab_no="LAB-001",
+            search_text="стафилококк",
+            department_id=1,
+        ),
         file_path=export_path,
         actor_id=None,
     )
@@ -65,6 +70,10 @@ def test_export_report_saves_artifact_and_history(tmp_path: Path, monkeypatch: p
     rows = service.list_report_runs(limit=10)
     assert len(rows) == 1
     assert rows[0]["artifact_path"] == str(artifact_path)
+    assert rows[0]["filters"]["patient_name"] == "***"
+    assert rows[0]["filters"]["lab_no"] == "***"
+    assert rows[0]["filters"]["search_text"] == "***"
+    assert rows[0]["filters"]["department_id"] == 1
 
     verify = service.verify_report_run(int(rows[0]["id"]))
     assert verify["status"] == "ok"

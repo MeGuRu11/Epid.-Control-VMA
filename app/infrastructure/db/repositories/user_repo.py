@@ -23,7 +23,14 @@ class UserRepository:
         return list(session.execute(stmt).scalars())
 
     def create(self, session: Session, login: str, password_hash: str, role: str) -> User:
-        user = User(login=login, password_hash=password_hash, role=role, is_active=True)
+        user = User(
+            login=login,
+            password_hash=password_hash,
+            role=role,
+            is_active=True,
+            failed_login_count=0,
+            locked_until=None,
+        )
         session.add(user)
         session.flush()  # populate id
         return user

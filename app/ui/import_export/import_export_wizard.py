@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -69,6 +70,20 @@ class ImportExportWizard(QWizard):
         if not file_path:
             show_warning(self, "Укажите путь к файлу")
             return
+        if direction == "export":
+            reply = QMessageBox.warning(
+                self,
+                "Внимание: персональные данные",
+                (
+                    "Экспортируемый файл может содержать персональные и медицинские данные.\n"
+                    "Обеспечьте безопасное хранение и передачу файла.\n\n"
+                    "Продолжить экспорт?"
+                ),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
 
         self._set_busy(True)
 
