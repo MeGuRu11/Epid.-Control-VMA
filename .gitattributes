@@ -1,0 +1,3 @@
+*.py text eol=lf encoding=utf-8
+*.md text eol=lf encoding=utf-8
+*.qss text eol=lf encoding=utf-8

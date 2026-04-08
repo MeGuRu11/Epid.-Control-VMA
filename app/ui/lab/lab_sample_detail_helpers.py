@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from app.application.services.lab_sample_payload_service import (
     PhageInput,

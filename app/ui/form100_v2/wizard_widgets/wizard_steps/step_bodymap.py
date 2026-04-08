@@ -1,4 +1,4 @@
-﻿"""WizardStep2 вЂ” РџРѕСЂР°Р¶РµРЅРёСЏ + РЎС…РµРјР° С‚РµР»Р°."""
+"""WizardStep2 вЂ” РџРѕСЂР°Р¶РµРЅРёСЏ + РЎС…РµРјР° С‚РµР»Р°."""
 from __future__ import annotations
 
 import json

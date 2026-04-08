@@ -1,4 +1,4 @@
-﻿from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path

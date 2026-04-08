@@ -1,4 +1,4 @@
-﻿"""Form100ListPanel — диалог со списком карточек Формы 100."""
+"""Form100ListPanel — диалог со списком карточек Формы 100."""
 from __future__ import annotations
 
 from collections.abc import Callable

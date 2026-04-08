@@ -1,4 +1,4 @@
-﻿from app.infrastructure.db.models_sqlalchemy import (
+from app.infrastructure.db.models_sqlalchemy import (
     EmrAntibioticCourse,
     EmrCase,
     EmrCaseVersion,

@@ -1,4 +1,4 @@
-﻿"""Data exchange package table"""
+"""Data exchange package table"""
 from __future__ import annotations
 
 import sqlalchemy as sa

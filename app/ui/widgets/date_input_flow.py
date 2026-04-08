@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from PySide6.QtCore import QDate, QDateTime, QEvent, QObject, Qt, QTime
 from PySide6.QtGui import QKeyEvent

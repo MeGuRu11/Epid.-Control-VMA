@@ -1,4 +1,4 @@
-﻿"""WizardStep4 вЂ” Р­РІР°РєСѓР°С†РёСЏ + Р¤Р»Р°РіРё + РС‚РѕРі/РћР±Р·РѕСЂ."""
+"""WizardStep4 вЂ” Р­РІР°РєСѓР°С†РёСЏ + Р¤Р»Р°РіРё + РС‚РѕРі/РћР±Р·РѕСЂ."""
 from __future__ import annotations
 
 from typing import Any
