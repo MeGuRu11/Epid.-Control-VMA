@@ -9,7 +9,6 @@ from typing import cast
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.services import reference_service as reference_service_module
 from app.application.services.reference_service import ReferenceService
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.models_sqlalchemy import Base
@@ -39,11 +38,9 @@ def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[S
 
 def test_seed_defaults_imports_groups_abx_micro_and_replaces_ismp(
     tmp_path: Path,
-    monkeypatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_seed.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     seed_payload_v1 = {
         "antibiotic_groups": [{"code": "grp-a", "name": "Group A"}],
@@ -89,8 +86,7 @@ def test_seed_defaults_if_empty_calls_seed_only_for_empty_target_tables(
     monkeypatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_seed_if_empty.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     called: list[str] = []
     monkeypatch.setattr(service, "seed_defaults", lambda seed_path=None: called.append("called"))

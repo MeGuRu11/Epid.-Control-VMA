@@ -9,7 +9,6 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.services import reference_service as reference_service_module
 from app.application.services.reference_service import ReferenceService
 from app.infrastructure.db.models_sqlalchemy import Base, User
 
@@ -46,12 +45,10 @@ def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -
 
 def test_antibiotic_group_and_antibiotic_crud_with_search(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_catalog_abx.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
     actor_id = seed_actor(session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     service.add_antibiotic_group("grp-1", "Group 1", actor_id=actor_id)
     group = service.list_antibiotic_groups()[0]
@@ -84,12 +81,10 @@ def test_antibiotic_group_and_antibiotic_crud_with_search(
 
 def test_microorganism_phage_ismp_and_icd10_crud(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_catalog_other.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
     actor_id = seed_actor(session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     service.add_microorganism("micro-1", "Microbe 1", "tg1", actor_id=actor_id)
     microorganism = service.search_microorganisms("Microbe")[0]
@@ -132,12 +127,10 @@ def test_microorganism_phage_ismp_and_icd10_crud(
 
 def test_reference_service_catalog_update_not_found_errors(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_catalog_not_found.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
     actor_id = seed_actor(session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     with pytest.raises(ValueError):
         service.update_antibiotic(999, "abx", "ABX", None, actor_id=actor_id)

@@ -275,3 +275,30 @@
 
 1. Выполнить второй коммит текущей сессии (этапы 6-11) и при необходимости push в `main`.
 2. Отдельной задачей спланировать полноценное шифрование экспортов/бэкапов (AES-GCM) вместо `TODO SECURITY`.
+
+---
+
+## Дополнение (P1: перевод integration-тестов на явный DI, 2026-04-08)
+
+### Что сделано
+
+- Убрана зависимость integration-тестов от monkeypatch-подмены `session_scope` для `ReferenceService` и `BackupService`.
+- В `ReferenceService` добавлен `session_factory` в конструктор и выполнен перевод всех DB-контекстов на `self.session_factory()`.
+- В `BackupService` добавлен `session_factory` в конструктор и переведены DB-контексты на `self.session_factory()`.
+- Переписаны тесты:
+  - `tests/integration/test_backup_service_acl.py`
+  - `tests/integration/test_reference_service.py`
+  - `tests/integration/test_reference_service_acl.py`
+  - `tests/integration/test_reference_service_catalogs.py`
+  - `tests/integration/test_reference_service_crud.py`
+- `monkeypatch` оставлен только для не-DB подмен (константы путей/локальные методы), без подмены `session_scope`.
+
+### Проверки
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`257 source files`).
+- `pytest -q` — pass (`253 passed, 2 warnings`).
+
+### Следующий шаг
+
+1. Сфокусироваться на оставшихся P1/P2 задачах security (шифрование backup/export артефактов).

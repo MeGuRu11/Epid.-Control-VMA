@@ -2,9 +2,12 @@
 
 import json
 import logging
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, cast
+
+from sqlalchemy.orm import Session
 
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
@@ -19,10 +22,12 @@ class ReferenceService:
         repo: ReferenceRepository | None = None,
         user_repo: UserRepository | None = None,
         audit_repo: AuditLogRepository | None = None,
+        session_factory: Callable[[], AbstractContextManager[Session]] | None = None,
     ) -> None:
         self.repo = repo or ReferenceRepository()
         self.user_repo = user_repo or UserRepository()
         self.audit_repo = audit_repo or AuditLogRepository()
+        self.session_factory = session_factory or session_scope
         self._logger = logging.getLogger(__name__)
 
     def _require_admin_write(self, session, actor_id: int, *, action: str) -> None:
@@ -31,7 +36,7 @@ class ReferenceService:
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor is not None and str(actor.role) == "admin":
             return
-        with session_scope() as audit_session:
+        with self.session_factory() as audit_session:
             self.audit_repo.add_event(
                 audit_session,
                 user_id=actor_id,
@@ -63,7 +68,7 @@ class ReferenceService:
             len(payload.get("ismp_abbreviations", [])),
         )
 
-        with session_scope() as session:
+        with self.session_factory() as session:
             self.repo.upsert_simple(
                 session,
                 models.RefAntibioticGroup,
@@ -108,7 +113,7 @@ class ReferenceService:
         self._logger.info("Reference seed applied")
 
     def seed_defaults_if_empty(self) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             has_groups = session.query(models.RefAntibioticGroup).first() is not None
             has_abx = session.query(models.RefAntibiotic).first() is not None
             has_micro = session.query(models.RefMicroorganism).first() is not None
@@ -116,68 +121,68 @@ class ReferenceService:
             self.seed_defaults()
 
     def list_material_types(self) -> list[models.RefMaterialType]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefMaterialType)
 
     def list_departments(self) -> list[models.Department]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.Department)
 
     def upsert_bulk(self, model: type, items: Iterable[dict]) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self.repo.upsert_simple(session, model, items)
 
     def list_microorganisms(self) -> list[models.RefMicroorganism]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefMicroorganism)
 
     def list_icd10(self) -> list[models.RefICD10]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefICD10)
 
     def search_microorganisms(self, query: str, limit: int = 50) -> list[models.RefMicroorganism]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.search_microorganisms(session, query, limit=limit)
 
     def search_icd10(self, query: str, limit: int = 50) -> list[models.RefICD10]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.search_icd10(session, query, limit=limit)
 
     def search_antibiotics(self, query: str, limit: int = 50) -> list[models.RefAntibiotic]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.search_antibiotics(session, query, limit=limit)
 
     def search_material_types(self, query: str, limit: int = 50) -> list[models.RefMaterialType]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.search_material_types(session, query, limit=limit)
 
     def list_antibiotics(self) -> list[models.RefAntibiotic]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefAntibiotic)
 
     def list_antibiotic_groups(self) -> list[models.RefAntibioticGroup]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefAntibioticGroup)
 
     def list_phages(self) -> list[models.RefPhage]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefPhage)
 
     def list_ismp_abbreviations(self) -> list[models.RefIsmpAbbreviation]:
-        with session_scope() as session:
+        with self.session_factory() as session:
             return self.repo.list_all(session, models.RefIsmpAbbreviation)
 
     def add_department(self, name: str, *, actor_id: int) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_department")
             self.repo.upsert_simple(session, models.Department, [{"name": name}], identity_field="name")
 
     def add_material_type(self, code: str, name: str, *, actor_id: int) -> None:
         if not code or not name:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_material_type")
             self.repo.upsert_simple(
                 session,
@@ -187,19 +192,19 @@ class ReferenceService:
             )
 
     def delete_department(self, dep_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_department")
             self.repo.delete_by_id(session, models.Department, dep_id)
 
     def delete_material_type(self, mt_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_material_type")
             self.repo.delete_by_id(session, models.RefMaterialType, mt_id)
 
     def add_icd10(self, code: str, title: str, *, actor_id: int) -> None:
         if not code or not title:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_icd10")
             self.repo.upsert_simple(
                 session,
@@ -209,7 +214,7 @@ class ReferenceService:
             )
 
     def delete_icd10(self, code: str, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_icd10")
             obj = session.get(models.RefICD10, code)
             if obj:
@@ -225,7 +230,7 @@ class ReferenceService:
     ) -> None:
         if not code or not name:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_antibiotic")
             self.repo.upsert_simple(
                 session,
@@ -235,7 +240,7 @@ class ReferenceService:
             )
 
     def delete_antibiotic(self, abx_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_antibiotic")
             self.repo.delete_by_id(session, models.RefAntibiotic, abx_id)
 
@@ -249,13 +254,13 @@ class ReferenceService:
     ) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_microorganism")
             payload = {"code": code, "name": name, "taxon_group": taxon_group}
             self.repo.upsert_simple(session, models.RefMicroorganism, [payload], identity_field="code")
 
     def delete_microorganism(self, micro_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_microorganism")
             self.repo.delete_by_id(session, models.RefMicroorganism, micro_id)
 
@@ -268,7 +273,7 @@ class ReferenceService:
     ) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_antibiotic_group")
             self.repo.upsert_simple(
                 session,
@@ -278,7 +283,7 @@ class ReferenceService:
             )
 
     def delete_antibiotic_group(self, group_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_antibiotic_group")
             self.repo.delete_by_id(session, models.RefAntibioticGroup, group_id)
 
@@ -292,7 +297,7 @@ class ReferenceService:
     ) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_phage")
             self.repo.upsert_simple(
                 session,
@@ -302,7 +307,7 @@ class ReferenceService:
             )
 
     def delete_phage(self, phage_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_phage")
             self.repo.delete_by_id(session, models.RefPhage, phage_id)
 
@@ -316,7 +321,7 @@ class ReferenceService:
     ) -> None:
         if not code or not name:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_ismp_abbreviation")
             self.repo.upsert_simple(
                 session,
@@ -326,14 +331,14 @@ class ReferenceService:
             )
 
     def delete_ismp_abbreviation(self, item_id: int, *, actor_id: int) -> None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="delete_ismp_abbreviation")
             self.repo.delete_by_id(session, models.RefIsmpAbbreviation, item_id)
 
     def update_department(self, dep_id: int, name: str, *, actor_id: int) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_department")
             obj = session.get(models.Department, dep_id)
             if not obj:
@@ -351,7 +356,7 @@ class ReferenceService:
     ) -> None:
         if not code or not name:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_material_type")
             obj = session.get(models.RefMaterialType, mt_id)
             if not obj:
@@ -363,7 +368,7 @@ class ReferenceService:
     def update_icd10(self, code: str, title: str, *, actor_id: int) -> None:
         if not code or not title:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_icd10")
             obj = session.get(models.RefICD10, code)
             if not obj:
@@ -382,7 +387,7 @@ class ReferenceService:
     ) -> None:
         if not code or not name:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_antibiotic")
             obj = session.get(models.RefAntibiotic, abx_id)
             if not obj:
@@ -402,7 +407,7 @@ class ReferenceService:
     ) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_antibiotic_group")
             obj = session.get(models.RefAntibioticGroup, group_id)
             if not obj:
@@ -422,7 +427,7 @@ class ReferenceService:
     ) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_microorganism")
             obj = session.get(models.RefMicroorganism, micro_id)
             if not obj:
@@ -443,7 +448,7 @@ class ReferenceService:
     ) -> None:
         if not name:
             raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_phage")
             obj = session.get(models.RefPhage, phage_id)
             if not obj:
@@ -465,7 +470,7 @@ class ReferenceService:
     ) -> None:
         if not code or not name:
             raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
-        with session_scope() as session:
+        with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_ismp_abbreviation")
             obj = session.get(models.RefIsmpAbbreviation, item_id)
             if not obj:

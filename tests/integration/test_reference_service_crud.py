@@ -9,7 +9,6 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.services import reference_service as reference_service_module
 from app.application.services.reference_service import ReferenceService
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.models_sqlalchemy import Base
@@ -45,11 +44,10 @@ def seed_actor(session_factory: Callable[[], AbstractContextManager[Session]]) -
         return cast(int, actor.id)
 
 
-def test_department_and_material_type_crud_flow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_department_and_material_type_crud_flow(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "reference_crud.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
     actor_id = seed_actor(session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     service.add_department("ICU", actor_id=actor_id)
     service.add_material_type("BLOOD", "Blood", actor_id=actor_id)
@@ -81,12 +79,10 @@ def test_department_and_material_type_crud_flow(tmp_path: Path, monkeypatch: pyt
 
 def test_reference_service_validation_and_not_found_errors(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_validation.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
     actor_id = seed_actor(session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     with pytest.raises(ValueError):
         service.add_department("", actor_id=actor_id)

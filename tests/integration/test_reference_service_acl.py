@@ -10,7 +10,6 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.services import reference_service as reference_service_module
 from app.application.services.reference_service import ReferenceService
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.models_sqlalchemy import Base
@@ -63,11 +62,9 @@ def _seed_user(
 
 def test_reference_writes_require_admin_and_log_denial(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "reference_acl.db")
-    monkeypatch.setattr(reference_service_module, "session_scope", session_factory)
-    service = ReferenceService()
+    service = ReferenceService(session_factory=session_factory)
 
     admin_id = _seed_user(session_factory, login="admin", role="admin")
     operator_id = _seed_user(session_factory, login="operator", role="operator")

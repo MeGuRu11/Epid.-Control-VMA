@@ -5,10 +5,13 @@ import logging
 import os
 import shutil
 import sqlite3
-from contextlib import suppress
+from collections.abc import Callable
+from contextlib import AbstractContextManager, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from sqlalchemy.orm import Session
 
 from app.config import DATA_DIR, DB_FILE
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
@@ -28,9 +31,11 @@ class BackupService:
         self,
         audit_repo: AuditLogRepository,
         user_repo: UserRepository | None = None,
+        session_factory: Callable[[], AbstractContextManager[Session]] | None = None,
     ) -> None:
         self.audit_repo = audit_repo
         self.user_repo = user_repo or UserRepository()
+        self.session_factory = session_factory or session_scope
         self.backup_dir = DATA_DIR / "backups"
         self._prepare_artifacts_dir(self.backup_dir)
         self._meta_path = self.backup_dir / "last_backup.json"
@@ -44,7 +49,7 @@ class BackupService:
     def _require_admin_access(self, *, actor_id: int, action: str) -> None:
         if actor_id is None:  # raise on missing actor_id
             raise ValueError("actor_id обязателен для операций записи")
-        with session_scope() as session:
+        with self.session_factory() as session:
             actor = self.user_repo.get_by_id(session, actor_id)
             if actor is not None and str(actor.role) == "admin":
                 return
@@ -148,7 +153,7 @@ class BackupService:
             {"path": str(path), "reason": reason},
             ensure_ascii=False,
         )
-        with session_scope() as session:
+        with self.session_factory() as session:
             self.audit_repo.add_event(
                 session,
                 user_id=actor_id,
@@ -169,7 +174,7 @@ class BackupService:
             source_conn.close()
 
     def _resolve_system_actor_id(self) -> int | None:
-        with session_scope() as session:
+        with self.session_factory() as session:
             for user in self.user_repo.list_users(session):
                 if str(user.role) == "admin":
                     return int(user.id)

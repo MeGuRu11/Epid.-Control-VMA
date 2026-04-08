@@ -67,10 +67,9 @@ def test_backup_operations_require_admin_and_audit_denial(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory = make_session_factory(tmp_path / "backup_acl.db")
-    monkeypatch.setattr(backup_service_module, "session_scope", session_factory)
     monkeypatch.setattr(backup_service_module, "DATA_DIR", tmp_path)
     monkeypatch.setattr(backup_service_module, "DB_FILE", tmp_path / "app.db")
-    service = BackupService(audit_repo=AuditLogRepository())
+    service = BackupService(audit_repo=AuditLogRepository(), session_factory=session_factory)
 
     operator_id = _seed_user(session_factory, login="operator", role="operator")
 
