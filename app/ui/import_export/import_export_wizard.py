@@ -1,7 +1,9 @@
 ﻿from __future__ import annotations
 
 import csv
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 from openpyxl import load_workbook
 from PySide6.QtWidgets import (
@@ -138,95 +140,97 @@ class ImportExportWizard(QWizard):
         actor_id = self.session.user_id
         if direction == "export":
             if fmt == "excel":
-                result = self.exchange_service.export_excel(
+                excel_result = self.exchange_service.export_excel(
                     file_path=file_path,
                     exported_by=self.session.login,
                     actor_id=actor_id,
                 )
-                total = sum(result["counts"].values())
+                total = sum(excel_result["counts"].values())
                 return f"{total} записей", False
             if fmt == "csv":
                 if not table_name:
                     raise ValueError("Выберите таблицу для CSV")
-                result = self.exchange_service.export_csv(
+                csv_result = self.exchange_service.export_csv(
                     file_path=file_path,
                     table_name=table_name,
                     actor_id=actor_id,
                 )
-                return f"{result['count']} записей", False
+                return f"{csv_result['count']} записей", False
             if fmt == "pdf":
                 if not table_name:
                     raise ValueError("Выберите таблицу для PDF")
-                result = self.exchange_service.export_pdf(
+                pdf_result = self.exchange_service.export_pdf(
                     file_path=file_path,
                     table_name=table_name,
                     actor_id=actor_id,
                 )
-                return f"{result['count']} записей", False
+                return f"{pdf_result['count']} записей", False
             if fmt == "zip":
-                result = self.exchange_service.export_zip(
+                zip_result = self.exchange_service.export_zip(
                     file_path=file_path,
                     exported_by=self.session.login,
                     actor_id=actor_id,
                 )
-                total = sum(result["counts"].values())
+                total = sum(zip_result["counts"].values())
                 return f"{total} записей", False
             if fmt == "form100_zip":
-                result = self.exchange_service.export_form100_package_zip(
+                form100_result = self.exchange_service.export_form100_package_zip(
                     file_path=file_path,
                     exported_by=self.session.login,
                     actor_id=actor_id,
                     card_id=None,
                 )
-                counts = result.get("counts", {})
-                total = sum(int(value) for value in counts.values())
+                counts = cast(dict[str, int], cast(dict[str, object], form100_result).get("counts", {}))
+                total = sum(counts.values())
                 return f"{total} записей", False
         else:
             if fmt == "excel":
-                result = self.exchange_service.import_excel(file_path=file_path, actor_id=actor_id, mode=import_mode)
-                return self._format_import_result(result)
+                excel_import_result = self.exchange_service.import_excel(
+                    file_path=file_path, actor_id=actor_id, mode=import_mode
+                )
+                return self._format_import_result(excel_import_result)
             if fmt == "csv":
                 if not table_name:
                     raise ValueError("Выберите таблицу для CSV")
-                result = self.exchange_service.import_csv(
+                csv_import_result = self.exchange_service.import_csv(
                     file_path=file_path,
                     table_name=table_name,
                     actor_id=actor_id,
                     mode=import_mode,
                 )
-                return self._format_import_result(result)
+                return self._format_import_result(csv_import_result)
             if fmt == "zip":
-                result = self.exchange_service.import_zip(
+                zip_import_result = self.exchange_service.import_zip(
                     file_path=file_path,
                     actor_id=actor_id,
                     mode=import_mode,
                 )
-                return self._format_import_result(result)
+                return self._format_import_result(zip_import_result)
             if fmt == "form100_zip":
-                result = self.exchange_service.import_form100_package_zip(
+                form100_import_result = self.exchange_service.import_form100_package_zip(
                     file_path=file_path,
                     actor_id=actor_id,
                     mode=import_mode,
                 )
-                return self._format_import_result(result)
+                return self._format_import_result(cast(Mapping[str, object], form100_import_result))
 
         raise ValueError("Неподдерживаемый формат операции")
 
-    def _format_import_result(self, result: dict) -> tuple[str, bool]:
-        summary = result.get("summary") or {}
-        rows_total = int(summary.get("rows_total") or 0)
-        added = int(summary.get("added") or 0)
-        updated = int(summary.get("updated") or 0)
-        skipped = int(summary.get("skipped") or 0)
-        errors = int(summary.get("errors") or 0)
-        details = result.get("details") or {}
+    def _format_import_result(self, result: Mapping[str, object]) -> tuple[str, bool]:
+        summary = cast(dict[str, object], result.get("summary") or {})
+        rows_total = _to_int(summary.get("rows_total"))
+        added = _to_int(summary.get("added"))
+        updated = _to_int(summary.get("updated"))
+        skipped = _to_int(summary.get("skipped"))
+        errors = _to_int(summary.get("errors"))
+        details = cast(dict[str, dict[str, object]], result.get("details") or {})
         details_items = []
         for scope, values in details.items():
-            rows = int(values.get("rows") or 0)
-            scope_added = int(values.get("added") or 0)
-            scope_updated = int(values.get("updated") or 0)
-            scope_skipped = int(values.get("skipped") or 0)
-            scope_errors = int(values.get("errors") or 0)
+            rows = _to_int(values.get("rows"))
+            scope_added = _to_int(values.get("added"))
+            scope_updated = _to_int(values.get("updated"))
+            scope_skipped = _to_int(values.get("skipped"))
+            scope_errors = _to_int(values.get("errors"))
             details_items.append(
                 f"{scope}: rows={rows}, +{scope_added}/~{scope_updated}/-{scope_skipped}/!{scope_errors}"
             )
@@ -242,6 +246,21 @@ class ImportExportWizard(QWizard):
         if error_log_path:
             message_parts.append(f"лог ошибок: {error_log_path}")
         return " | ".join(message_parts), errors > 0
+
+
+def _to_int(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
 
 
 class DirectionPage(QWizardPage):

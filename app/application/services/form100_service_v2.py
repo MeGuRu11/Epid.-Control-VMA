@@ -10,9 +10,18 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, cast
+from typing import SupportsInt, cast
 from uuid import uuid4
 
+from app.application.dto.form100_service_dto import (
+    Form100Changes,
+    Form100ImportError,
+    Form100ManifestFileEntry,
+    Form100PackageExportResult,
+    Form100PackageImportResult,
+    Form100PackageSummary,
+    Form100PdfExportResult,
+)
 from app.application.dto.form100_v2_dto import (
     Form100CardV2Dto,
     Form100CardV2ListItemDto,
@@ -28,6 +37,7 @@ from app.domain.rules.form100_rules_v2 import (
     validate_card_payload_v2,
     validate_status_transition_v2,
 )
+from app.domain.types import JSONDict, JSONValue
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.form100_repo_v2 import Form100RepositoryV2
@@ -45,7 +55,7 @@ def _utc_now() -> datetime:
 
 
 def _as_int(value: object) -> int:
-    return int(cast(Any, value))
+    return int(cast(SupportsInt | str | bytes | bytearray, value))
 
 
 @contextmanager
@@ -149,7 +159,7 @@ class Form100ServiceV2:
 
     def create_card(self, request: Form100CreateV2Request, actor_id: int | None) -> Form100CardV2Dto:
         actor_login, actor_role = self._resolve_actor(actor_id)
-        data_payload = request.data.model_dump()
+        data_payload = cast(JSONDict, request.data.model_dump())
         _inject_denormalized_fields(
             data_payload,
             main_full_name=request.main_full_name,
@@ -177,7 +187,7 @@ class Form100ServiceV2:
                     "birth_date": request.birth_date,
                     "status": FORM100_V2_STATUS_DRAFT,
                 },
-                data_payload=data_payload,
+                data_payload=cast(dict[str, object], data_payload),
                 actor_login=actor_login,
             )
             self._write_audit(
@@ -223,9 +233,9 @@ class Form100ServiceV2:
                 "birth_date": request.birth_date if request.birth_date is not None else row.birth_date,
             }
             merged_data_payload = (
-                request.data.model_dump()
+                cast(JSONDict, request.data.model_dump())
                 if request.data is not None
-                else cast(dict[str, Any], before_payload.get("data") or {})
+                else cast(JSONDict, before_payload.get("data") or {})
             )
             _inject_denormalized_fields(
                 merged_data_payload,
@@ -240,7 +250,7 @@ class Form100ServiceV2:
                 session,
                 card_id=card_id,
                 payload=merged_card_payload,
-                data_payload=merged_data_payload,
+                data_payload=cast(dict[str, object], merged_data_payload),
                 expected_version=expected_version,
                 actor_login=actor_login,
             )
@@ -255,9 +265,12 @@ class Form100ServiceV2:
                 status_to=str(after_payload.get("status") or FORM100_V2_STATUS_DRAFT),
                 expected_version=expected_version,
                 new_version=_as_int(row.version),
-                changes=build_changed_paths_v2(
-                    cast(dict[str, Any], before_payload),
-                    cast(dict[str, Any], after_payload),
+                changes=cast(
+                    Form100Changes,
+                    build_changed_paths_v2(
+                        cast(dict[str, object], before_payload),
+                        cast(dict[str, object], after_payload),
+                    ),
                 ),
             )
             return Form100CardV2Dto.model_validate(after_payload)
@@ -303,9 +316,12 @@ class Form100ServiceV2:
                 status_to=FORM100_V2_STATUS_SIGNED,
                 expected_version=expected_version,
                 new_version=_as_int(row.version),
-                changes=build_changed_paths_v2(
-                    cast(dict[str, Any], before_payload),
-                    cast(dict[str, Any], after_payload),
+                changes=cast(
+                    Form100Changes,
+                    build_changed_paths_v2(
+                        cast(dict[str, object], before_payload),
+                        cast(dict[str, object], after_payload),
+                    ),
                 ),
             )
             return Form100CardV2Dto.model_validate(after_payload)
@@ -335,9 +351,12 @@ class Form100ServiceV2:
                 status_to=str(after_payload.get("status")),
                 expected_version=expected_version,
                 new_version=_as_int(row.version),
-                changes=build_changed_paths_v2(
-                    cast(dict[str, Any], before_payload),
-                    cast(dict[str, Any], after_payload),
+                changes=cast(
+                    Form100Changes,
+                    build_changed_paths_v2(
+                        cast(dict[str, object], before_payload),
+                        cast(dict[str, object], after_payload),
+                    ),
                 ),
             )
             return Form100CardV2Dto.model_validate(after_payload)
@@ -357,7 +376,7 @@ class Form100ServiceV2:
                 payload_json=json.dumps({"schema": "form100.audit.v2"}, ensure_ascii=False),
             )
 
-    def export_pdf(self, card_id: str, file_path: str | Path, actor_id: int | None) -> dict[str, Any]:
+    def export_pdf(self, card_id: str, file_path: str | Path, actor_id: int | None) -> Form100PdfExportResult:
         actor_login, actor_role = self._resolve_actor(actor_id)
         file_path = Path(file_path)
         with self.session_factory() as session:
@@ -402,7 +421,7 @@ class Form100ServiceV2:
         card_id: str | None = None,
         filters: Form100V2Filters | None = None,
         exported_by: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> Form100PackageExportResult:
         filter_payload = filters.model_dump(exclude_none=True) if filters else {}
         with self.session_factory() as session:
             rows = self.repo.find_cards_for_export(session, card_id=card_id, filters=filter_payload)
@@ -465,7 +484,7 @@ class Form100ServiceV2:
         file_path: str | Path,
         actor_id: int | None,
         mode: str = "merge",
-    ) -> dict[str, Any]:
+    ) -> Form100PackageImportResult:
         actor_login, actor_role = self._resolve_actor(actor_id)
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir:
@@ -476,7 +495,7 @@ class Form100ServiceV2:
             if not manifest_path.exists():
                 raise ValueError("manifest.json is missing in archive")
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            files = cast(list[dict[str, Any]], manifest.get("files") or [])
+            files = cast(list[Form100ManifestFileEntry], manifest.get("files") or [])
             for entry in files:
                 payload_path = (tmp_dir / str(entry.get("name"))).resolve()
                 if not payload_path.exists():
@@ -488,19 +507,19 @@ class Form100ServiceV2:
             if not json_path.exists():
                 raise ValueError("form100.json is missing in archive")
             import_module = importlib.import_module("app.infrastructure.import.form100_import_v2")
-            load_form100_json = cast(Callable[[Path], list[dict[str, Any]]], import_module.load_form100_json)
+            load_form100_json = cast(Callable[[Path], list[JSONDict]], import_module.load_form100_json)
             cards = load_form100_json(json_path)
 
             added = 0
             updated = 0
             skipped = 0
-            errors_list = []
+            errors_list: list[Form100ImportError] = []
             with self.session_factory() as session:
                 for item in cards:
                     incoming_id = str(item.get("id") or "").strip() or str(uuid4())
                     existing = self.repo.get_card(session, incoming_id)
-                    incoming_data = cast(dict[str, Any], item.get("data") or {})
-                    card_payload = {
+                    incoming_data = cast(JSONDict, item.get("data") or {})
+                    card_payload: dict[str, object] = {
                         "emr_case_id": item.get("emr_case_id"),
                         "main_full_name": item.get("main_full_name") or "",
                         "main_unit": item.get("main_unit") or "",
@@ -525,7 +544,7 @@ class Form100ServiceV2:
                             session,
                             card_id=incoming_id,
                             payload=card_payload,
-                            data_payload=incoming_data,
+                            data_payload=cast(dict[str, object], incoming_data),
                             actor_login=actor_login,
                         )
                     elif mode == "append":
@@ -537,7 +556,7 @@ class Form100ServiceV2:
                             session,
                             card_id=incoming_id,
                             payload=card_payload,
-                            data_payload=incoming_data,
+                            data_payload=cast(dict[str, object], incoming_data),
                             expected_version=_as_int(existing.version),
                             actor_login=actor_login,
                         )
@@ -565,6 +584,13 @@ class Form100ServiceV2:
                         notes=json.dumps({"mode": mode}, ensure_ascii=False),
                     )
                 )
+                audit_summary: Form100PackageSummary = {
+                    "rows_total": len(cards),
+                    "added": added,
+                    "updated": updated,
+                    "skipped": skipped,
+                    "errors": len(errors_list),
+                }
                 self.audit_repo.add_event(
                     session,
                     user_id=actor_id,
@@ -574,29 +600,24 @@ class Form100ServiceV2:
                     payload_json=json.dumps(
                         {
                             "schema": "form100.audit.v2",
-                            "summary": {
-                                "rows_total": len(cards),
-                                "added": added,
-                                "updated": updated,
-                                "skipped": skipped,
-                                "errors": len(errors_list)
-                            },
+                            "summary": audit_summary,
                             "actor_role": actor_role,
                         },
                         ensure_ascii=False,
                     ),
                 )
 
+        result_summary: Form100PackageSummary = {
+            "rows_total": len(cards),
+            "added": added,
+            "updated": updated,
+            "skipped": skipped,
+            "errors": len(errors_list),
+        }
         return {
             "path": str(file_path),
             "counts": {"form100": len(cards)},
-            "summary": {
-                "rows_total": len(cards),
-                "added": added,
-                "updated": updated,
-                "skipped": skipped,
-                "errors": len(errors_list)
-            },
+            "summary": result_summary,
             "error_count": len(errors_list),
             "errors": errors_list,
         }
@@ -625,10 +646,10 @@ class Form100ServiceV2:
         status_to: str | None,
         expected_version: int | None,
         new_version: int,
-        changes: dict[str, Any],
+        changes: Form100Changes,
     ) -> None:
-        before_changes = cast(dict[str, Any], changes.get("before") or {})
-        after_changes = cast(dict[str, Any], changes.get("after") or {})
+        before_changes = cast(dict[str, object], changes.get("before") or {})
+        after_changes = cast(dict[str, object], changes.get("after") or {})
         changed_fields = sorted({str(key) for key in before_changes} | {str(key) for key in after_changes})
         data_hash = hashlib.sha256(
             json.dumps(after_changes, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
@@ -680,7 +701,7 @@ class Form100ServiceV2:
 
 
 def _inject_denormalized_fields(
-    data_payload: dict[str, Any],
+    data_payload: JSONDict,
     *,
     main_full_name: str,
     main_unit: str,
@@ -690,16 +711,18 @@ def _inject_denormalized_fields(
     main = data_payload.setdefault("main", {})
     if not isinstance(main, dict):
         main = {}
-        data_payload["main"] = main
-    main.setdefault("main_full_name", main_full_name)
-    main.setdefault("main_unit", main_unit)
+        data_payload["main"] = cast(JSONValue, main)
+    main_dict = cast(JSONDict, main)
+    main_dict.setdefault("main_full_name", main_full_name)
+    main_dict.setdefault("main_unit", main_unit)
     if main_id_tag:
-        main.setdefault("main_id_tag", main_id_tag)
+        main_dict.setdefault("main_id_tag", main_id_tag)
 
     bottom = data_payload.setdefault("bottom", {})
     if not isinstance(bottom, dict):
         bottom = {}
-        data_payload["bottom"] = bottom
-    bottom.setdefault("main_diagnosis", main_diagnosis)
+        data_payload["bottom"] = cast(JSONValue, bottom)
+    bottom_dict = cast(JSONDict, bottom)
+    bottom_dict.setdefault("main_diagnosis", main_diagnosis)
 
 

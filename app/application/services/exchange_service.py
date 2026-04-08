@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, Literal, cast
+from typing import Literal, cast
 from uuid import uuid4
 
 from openpyxl import Workbook, load_workbook
@@ -22,14 +22,31 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.application.dto.exchange_dto import (
+    CsvExportResult,
+    CsvImportResult,
+    ExcelExportResult,
+    ExcelImportResult,
+    ExchangeImportErrorEntry,
+    ExchangeImportSummary,
+    ExchangeManifest,
+    ExchangeManifestFileEntry,
+    ExchangeTableStats,
+    Form100ExchangeService,
+    LegacyJsonExportResult,
+    LegacyJsonImportResult,
+    ZipExportResult,
+    ZipImportResult,
+)
 from app.application.security.role_matrix import Role, has_permission
+from app.domain.types import JSONDict, JSONValue
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 from app.infrastructure.security.sha256 import sha256_file
 
-TABLE_MODELS: dict[str, type[Any]] = {
+TABLE_MODELS: dict[str, type[models.Base]] = {
     "departments": models.Department,
     "ref_icd10": models.RefICD10,
     "ref_microorganisms": models.RefMicroorganism,
@@ -53,7 +70,7 @@ TABLE_MODELS: dict[str, type[Any]] = {
     "san_phage_panel_result": models.SanPhagePanelResult,
 }
 
-CSV_TABLES: dict[str, type[Any]] = {
+CSV_TABLES: dict[str, type[models.Base]] = {
     "lab_sample": models.LabSample,
     "sanitary_sample": models.SanitarySample,
     "patients": models.Patient,
@@ -131,7 +148,7 @@ _HANDLED_IMPORT_ERRORS = (
 )
 
 
-def _format_date_value(value: Any) -> Any:
+def _format_date_value(value: object) -> JSONValue | object:
     if isinstance(value, datetime):
         return value.strftime("%d.%m.%Y %H:%M")
     if isinstance(value, date):
@@ -139,14 +156,14 @@ def _format_date_value(value: Any) -> Any:
     return value
 
 
-def _serialize_value(value: Any) -> Any:
+def _serialize_value(value: object) -> JSONValue | object:
     return _format_date_value(value)
 
 
-def _model_to_dict(obj: Any) -> dict:
-    data = {}
+def _model_to_dict(obj: models.Base) -> JSONDict:
+    data: JSONDict = {}
     for column in obj.__table__.columns:
-        data[column.name] = _serialize_value(getattr(obj, column.name))
+        data[column.name] = cast(JSONValue, _serialize_value(getattr(obj, column.name)))
     return data
 
 
@@ -155,35 +172,37 @@ def _get_csv_headers(table_name: str, columns: list[str]) -> list[str]:
     return [header_map.get(col, col) for col in columns]
 
 
-def _map_csv_row(table_name: str, row: dict[str, Any]) -> dict[str, Any]:
+def _map_csv_row(table_name: str, row: dict[str, object]) -> dict[str, object]:
     header_map = CSV_HEADERS.get(table_name, {})
     reverse_map = {label: key for key, label in header_map.items()}
     return {reverse_map.get(key, key): value for key, value in row.items()}
 
 
-def _parse_value(value: Any, column) -> Any:
+def _parse_value(value: object, column: object) -> object:
     if value is None or value == "":
         return None
     if isinstance(value, date | datetime):
         return value
-    if isinstance(column.type, Date):
+    value_text = str(value)
+    column_type = getattr(column, "type", None)
+    if isinstance(column_type, Date):
         try:
-            return date.fromisoformat(value)
+            return date.fromisoformat(value_text)
         except (TypeError, ValueError):
-            parts = value.split(".")
+            parts = value_text.split(".")
             return date(int(parts[2]), int(parts[1]), int(parts[0]))
-    if isinstance(column.type, DateTime):
+    if isinstance(column_type, DateTime):
         try:
-            return datetime.fromisoformat(value)
+            return datetime.fromisoformat(value_text)
         except (TypeError, ValueError):
             try:
-                return datetime.strptime(value, "%d.%m.%Y %H:%M").replace(tzinfo=UTC)
+                return datetime.strptime(value_text, "%d.%m.%Y %H:%M").replace(tzinfo=UTC)
             except (TypeError, ValueError):
-                return datetime.strptime(value, "%d.%m.%Y %H:%M:%S").replace(tzinfo=UTC)
+                return datetime.strptime(value_text, "%d.%m.%Y %H:%M:%S").replace(tzinfo=UTC)
     return value
 
 
-def _dict_to_model(model_cls: type[Any], data: dict) -> Any:
+def _dict_to_model(model_cls: type[models.Base], data: dict[str, object]) -> models.Base:
     obj = model_cls()
     for column in model_cls.__table__.columns:
         name = column.name
@@ -233,8 +252,8 @@ def _safe_extract_zip(zip_file: zipfile.ZipFile, destination: Path) -> list[Path
     return extracted
 
 
-def _get_pk_identity(model_cls: type[Any], data: dict) -> Any | None:
-    pk_cols = list(model_cls.__table__.primary_key.columns)
+def _get_pk_identity(model_cls: type[models.Base], data: dict[str, object]) -> object | None:
+    pk_cols = list(model_cls.__mapper__.primary_key)
     if len(pk_cols) != 1:
         return None
     pk_name = pk_cols[0].name
@@ -250,7 +269,7 @@ def _format_import_error(exc: Exception) -> str:
 
 def _write_import_error_log(
     source_file: Path,
-    errors: list[dict[str, Any]],
+    errors: list[ExchangeImportErrorEntry],
 ) -> str | None:
     if not errors:
         return None
@@ -270,10 +289,10 @@ def _write_import_error_log(
 
 
 def _build_import_summary(
-    details: dict[str, dict[str, int]],
+    details: dict[str, ExchangeTableStats],
     *,
     errors_count: int,
-) -> dict[str, int]:
+) -> ExchangeImportSummary:
     rows_total = 0
     added = 0
     updated = 0
@@ -328,7 +347,7 @@ class ExchangeService:
     def __init__(
         self,
         session_factory: Callable = session_scope,
-        form100_v2_service: Any | None = None,
+        form100_v2_service: Form100ExchangeService | None = None,
         user_repo: UserRepository | None = None,
     ) -> None:
         self.session_factory = session_factory
@@ -365,7 +384,9 @@ class ExchangeService:
                 )
             )
 
-    def export_excel(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> dict:
+    def export_excel(
+        self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int
+    ) -> ExcelExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         wb = Workbook()
@@ -394,15 +415,15 @@ class ExchangeService:
         wb.save(file_path)
         return {"path": str(file_path), "counts": counts}
 
-    def export_zip(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> dict:
+    def export_zip(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> ZipExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir_path:
             excel_path = tmp_dir_path / "export.xlsx"
             result = self.export_excel(excel_path, exported_by=exported_by, actor_id=actor_id)
             files: list[Path] = [excel_path]
-            manifest_files: list[dict[str, Any]] = []
-            manifest: dict[str, Any] = {
+            manifest_files: list[ExchangeManifestFileEntry] = []
+            manifest: ExchangeManifest = {
                 "schema_version": "1.0",
                 "exported_at": datetime.now(UTC).isoformat(),
                 "exported_by": exported_by,
@@ -435,13 +456,13 @@ class ExchangeService:
         actor_id: int,
         mode: str = "merge",
         write_error_log: bool = True,
-    ) -> dict:
+    ) -> ExcelImportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         wb = load_workbook(file_path, read_only=True, data_only=True)
         counts: dict[str, int] = {}
-        details: dict[str, dict[str, int]] = {}
-        errors: list[dict[str, Any]] = []
+        details: dict[str, ExchangeTableStats] = {}
+        errors: list[ExchangeImportErrorEntry] = []
         with self.session_factory() as session:
             for sheet_name in wb.sheetnames:
                 if sheet_name == "meta":
@@ -502,7 +523,7 @@ class ExchangeService:
                     "errors": sheet_errors,
                 }
         summary = _build_import_summary(details, errors_count=len(errors))
-        result: dict[str, Any] = {
+        result: ExcelImportResult = {
             "path": str(file_path),
             "counts": counts,
             "details": details,
@@ -514,7 +535,7 @@ class ExchangeService:
             result["error_log_path"] = _write_import_error_log(file_path, errors)
         return result
 
-    def import_zip(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> dict:
+    def import_zip(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> ZipImportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir_path:
@@ -527,8 +548,8 @@ class ExchangeService:
             manifest_path = tmp_dir_path / "manifest.json"
             if not manifest_path.exists():
                 raise ValueError("В архиве отсутствует manifest.json")
-            manifest: dict[str, Any] = json.loads(manifest_path.read_text(encoding="utf-8"))
-            manifest_files = cast(list[dict[str, Any]], manifest.get("files", []))
+            manifest = cast(ExchangeManifest, json.loads(manifest_path.read_text(encoding="utf-8")))
+            manifest_files = manifest.get("files", [])
             for entry in manifest_files:
                 f = tmp_dir_path / entry["name"]
                 if not f.exists():
@@ -543,15 +564,15 @@ class ExchangeService:
 
         package_hash = sha256_file(file_path)
         self._log_package("import", "zip+excel", file_path, package_hash, actor_id)
-        errors = cast(list[dict[str, Any]], result.get("errors", []))
+        errors = result["errors"]
         return {
             "path": str(file_path),
-            "counts": result.get("counts", {}),
-            "details": result.get("details", {}),
+            "counts": result["counts"],
+            "details": result["details"],
             "errors": errors,
             "error_count": len(errors),
             "error_log_path": _write_import_error_log(file_path, errors),
-            "summary": result.get("summary", {}),
+            "summary": result["summary"],
             "sha256": package_hash,
         }
 
@@ -562,12 +583,12 @@ class ExchangeService:
         actor_id: int,
         exported_by: str | None = None,
         card_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         self._require_permission(actor_id, "manage_exchange")
         if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
         return cast(
-            dict[str, Any],
+            dict[str, object],
             self.form100_v2_service.export_package_zip(
                 file_path=file_path,
                 actor_id=actor_id,
@@ -582,12 +603,12 @@ class ExchangeService:
         *,
         actor_id: int,
         mode: str = "merge",
-    ) -> dict[str, Any]:
+    ) -> dict[str, object]:
         self._require_permission(actor_id, "manage_exchange")
         if self.form100_v2_service is None:
             raise ValueError("Сервис Form100 не подключён")
         return cast(
-            dict[str, Any],
+            dict[str, object],
             self.form100_v2_service.import_package_zip(
                 file_path=file_path,
                 actor_id=actor_id,
@@ -610,7 +631,7 @@ class ExchangeService:
             rows = q.order_by(models.DataExchangePackage.created_at.desc()).limit(limit).all()
             return cast(list[models.DataExchangePackage], rows)
 
-    def export_csv(self, file_path: str | Path, table_name: str, *, actor_id: int) -> dict:
+    def export_csv(self, file_path: str | Path, table_name: str, *, actor_id: int) -> CsvExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
@@ -628,7 +649,9 @@ class ExchangeService:
                     writer.writerow([data.get(col) for col in columns])
         return {"path": str(file_path), "count": len(rows)}
 
-    def import_csv(self, file_path: str | Path, table_name: str, *, actor_id: int, mode: str = "merge") -> dict:
+    def import_csv(
+        self, file_path: str | Path, table_name: str, *, actor_id: int, mode: str = "merge"
+    ) -> CsvImportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
@@ -637,7 +660,7 @@ class ExchangeService:
         count = 0
         rows_total = 0
         added = updated = skipped = 0
-        errors: list[dict[str, Any]] = []
+        errors: list[ExchangeImportErrorEntry] = []
         with self.session_factory() as session, file_path.open("r", encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f)
             for row_idx, row in enumerate(reader, start=2):
@@ -664,7 +687,7 @@ class ExchangeService:
                             "message": _format_import_error(exc),
                         }
                     )
-        details = {
+        details: dict[str, ExchangeTableStats] = {
             table_name: {
                 "rows": rows_total,
                 "added": added,
@@ -685,7 +708,7 @@ class ExchangeService:
             "summary": summary,
         }
 
-    def export_pdf(self, file_path: str | Path, table_name: str, *, actor_id: int) -> dict:
+    def export_pdf(self, file_path: str | Path, table_name: str, *, actor_id: int) -> CsvExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
@@ -750,38 +773,46 @@ class ExchangeService:
         return {"path": str(file_path), "count": len(data) - 1}
 
     # Legacy JSON support (not used in UI)
-    def export_json(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> dict:
+    def export_json(
+        self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int
+    ) -> LegacyJsonExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
-        payload: dict[str, Any] = {
+        payload: JSONDict = {
             "schema_version": "1.0",
             "exported_at": datetime.now(UTC).isoformat(),
             "exported_by": exported_by,
-            "data": {},
+            "data": cast(JSONValue, {}),
         }
 
         with self.session_factory() as session:
             for name, model_cls in TABLE_MODELS.items():
-                payload["data"][name] = [_model_to_dict(x) for x in session.query(model_cls).all()]
+                data_payload = cast(JSONDict, payload["data"])
+                data_payload[name] = cast(JSONValue, [_model_to_dict(x) for x in session.query(model_cls).all()])
 
         self._prepare_output_dir(file_path.parent)
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        return {"path": str(file_path), "counts": {k: len(v) for k, v in payload["data"].items()}}
+        data_payload = cast(JSONDict, payload["data"])
+        return {
+            "path": str(file_path),
+            "counts": {k: len(cast(list[object], v)) for k, v in data_payload.items()},
+        }
 
-    def import_json(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> dict:
+    def import_json(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> LegacyJsonImportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
-        payload: dict[str, Any] = json.loads(file_path.read_text(encoding="utf-8"))
+        payload = cast(JSONDict, json.loads(file_path.read_text(encoding="utf-8")))
         if payload.get("schema_version") != "1.0":
             raise ValueError("Неподдерживаемая версия схемы")
-        data: dict[str, Any] = payload.get("data") or {}
+        data = cast(dict[str, object], payload.get("data") or {})
 
         counts: dict[str, int] = {}
-        details: dict[str, dict[str, int]] = {}
-        errors: list[dict[str, Any]] = []
+        details: dict[str, ExchangeTableStats] = {}
+        errors: list[ExchangeImportErrorEntry] = []
         with self.session_factory() as session:
             for name, model_cls in TABLE_MODELS.items():
-                items = data.get(name) or []
+                raw_items = data.get(name)
+                items = cast(list[dict[str, object]], raw_items if isinstance(raw_items, list) else [])
                 rows_total = 0
                 added = updated = skipped = 0
                 table_errors = 0

@@ -302,3 +302,51 @@
 ### Следующий шаг
 
 1. Сфокусироваться на оставшихся P1/P2 задачах security (шифрование backup/export артефактов).
+
+---
+
+## Дополнение (P2: сужение Any в ключевых файлах, 2026-04-08)
+
+### Что сделано
+
+- `app/bootstrap/startup.py`:
+  - `seed_core_data(container: Any)` -> `seed_core_data(container: Container)` (через `TYPE_CHECKING` импорт).
+- Добавлен `app/domain/types.py`:
+  - `JSONValue`, `JSONDict`.
+- `app/domain/rules/form100_rules_v2.py`:
+  - удалены `Any` из сигнатур и локальных структур;
+  - применены `JSONValue`/`JSONDict` на JSON-участках;
+  - дифф-функции переведены на `object`.
+- Добавлены новые DTO-типы:
+  - `app/application/dto/exchange_dto.py` (`TypedDict` + `Form100ExchangeService Protocol`);
+  - `app/application/dto/form100_service_dto.py` (`TypedDict` для audit/import/export структур Form100).
+- `app/application/services/exchange_service.py`:
+  - типизированы манифест/ошибки/summary/result;
+  - убраны `Any` (замены на `object`, `JSONDict`, `TypedDict`).
+- `app/application/services/form100_service_v2.py`:
+  - типизированы контракты результатов и `changes`;
+  - убраны `Any` в пользу `JSONDict`/`dict[str, object]` и `TypedDict`.
+- UI-слой подправлен для совместимости с новыми TypedDict-контрактами:
+  - `app/ui/import_export/import_export_wizard.py`
+  - `app/ui/form100_v2/form100_view.py`
+
+### Метрики
+
+- Общее количество `Any` (`rg "\bAny\b" app tests`):
+  - до: `304`
+  - после: `238`
+- По целевым файлам P2:
+  - до: `66`
+  - после: `0`
+
+### Проверки
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`260 source files`).
+- `pytest -q` — pass (`253 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Незавершённое / риски
+
+1. В репозитории остаются untracked каталоги со скиллами в `.agents/skills/*` и `.npm-cache/` (не трогались в рамках P2).
+2. Для следующего шага можно продолжить целевой рефакторинг `Any` в оставшихся высоконагруженных модулях (без изменения поведения).

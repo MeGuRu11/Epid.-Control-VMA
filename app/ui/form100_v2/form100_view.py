@@ -1,6 +1,8 @@
 ﻿from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -373,7 +375,7 @@ class Form100ViewV2(QWidget):
                 actor_id=self.session.user_id,
                 mode="merge",
             )
-            summary = result.get("summary") or {}
+            summary = cast(dict[str, int], result.get("summary") or {})
             err_count = result.get("error_count", 0)
             msg = (
                 f"Импорт завершён: всего={summary.get('rows_total', 0)}, "
@@ -405,6 +407,7 @@ class Form100ViewV2(QWidget):
         if not path:
             return
         try:
+            result: Mapping[str, object]
             if self.reporting_service is not None:
                 result = self.reporting_service.export_form100_pdf(
                     card_id=self.editor.current_card.id,

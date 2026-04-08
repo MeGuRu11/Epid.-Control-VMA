@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import cast
 
 from app.domain.models.form100_v2 import (
     BODYMAP_ANNOTATION_TYPES,
@@ -9,6 +9,7 @@ from app.domain.models.form100_v2 import (
     FORM100_V2_STATUS_DRAFT,
     FORM100_V2_STATUS_SIGNED,
 )
+from app.domain.types import JSONDict, JSONValue
 
 _TISSUE_TYPES: set[str] = {"мягкие ткани", "кости", "сосуды", "полостные раны", "ожоги"}
 
@@ -21,7 +22,7 @@ def validate_status_transition_v2(from_status: str, to_status: str) -> None:
     raise ValueError("Разрешен только переход статуса DRAFT -> SIGNED")
 
 
-def validate_card_payload_v2(payload: dict[str, Any]) -> None:
+def validate_card_payload_v2(payload: Mapping[str, object]) -> None:
     main = _as_dict(payload.get("main"))
     bottom = _as_dict(payload.get("bottom"))
     medical_help = _as_dict(payload.get("medical_help"))
@@ -61,9 +62,9 @@ def validate_card_payload_v2(payload: dict[str, Any]) -> None:
 
     tissue_types_raw = payload.get("bodymap_tissue_types")
     if tissue_types_raw is None:
-        tissue_types: list[Any] = []
+        tissue_types: list[JSONValue] = []
     elif isinstance(tissue_types_raw, list):
-        tissue_types = tissue_types_raw
+        tissue_types = cast(list[JSONValue], tissue_types_raw)
     else:
         raise ValueError("bodymap_tissue_types должен быть списком")
     for item in tissue_types:
@@ -72,9 +73,9 @@ def validate_card_payload_v2(payload: dict[str, Any]) -> None:
 
     annotations_raw = payload.get("bodymap_annotations")
     if annotations_raw is None:
-        annotations: list[Any] = []
+        annotations: list[JSONValue] = []
     elif isinstance(annotations_raw, list):
-        annotations = annotations_raw
+        annotations = cast(list[JSONValue], annotations_raw)
     else:
         raise ValueError("bodymap_annotations должен быть списком")
     for annotation in annotations:
@@ -93,24 +94,24 @@ def validate_card_payload_v2(payload: dict[str, Any]) -> None:
             raise ValueError("Координаты аннотаций должны быть в диапазоне 0..1")
 
 
-def build_changed_paths_v2(before: Mapping[str, Any], after: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
-    before_changes: dict[str, Any] = {}
-    after_changes: dict[str, Any] = {}
+def build_changed_paths_v2(before: Mapping[str, object], after: Mapping[str, object]) -> dict[str, dict[str, object]]:
+    before_changes: dict[str, object] = {}
+    after_changes: dict[str, object] = {}
     _walk_diff(before, after, "", before_changes, after_changes)
     return {"before": before_changes, "after": after_changes}
 
 
 def _walk_diff(
-    before: Any,
-    after: Any,
+    before: object,
+    after: object,
     path: str,
-    before_changes: dict[str, Any],
-    after_changes: dict[str, Any],
+    before_changes: dict[str, object],
+    after_changes: dict[str, object],
 ) -> None:
     if isinstance(before, Mapping) and isinstance(after, Mapping):
-        before_map = cast(Mapping[Any, Any], before)
-        after_map = cast(Mapping[Any, Any], after)
-        keys: list[Any] = sorted(set(before_map.keys()) | set(after_map.keys()), key=str)
+        before_map = cast(Mapping[object, object], before)
+        after_map = cast(Mapping[object, object], after)
+        keys: list[object] = sorted(set(before_map.keys()) | set(after_map.keys()), key=str)
         for key in keys:
             key_str = str(key)
             child_path = f"{path}.{key_str}" if path else key_str
@@ -128,20 +129,22 @@ def _walk_diff(
         after_changes[path] = after
 
 
-def _validate_bool_with_details(payload: Mapping[str, Any], *, bool_key: str, details_key: str, label: str) -> None:
+def _validate_bool_with_details(
+    payload: Mapping[str, JSONValue], *, bool_key: str, details_key: str, label: str
+) -> None:
     enabled = payload.get(bool_key)
     details = str(payload.get(details_key) or "").strip()
     if bool(enabled) and not details:
         raise ValueError(f"{label}: укажите дозу/детали")
 
 
-def _as_dict(value: Any) -> dict[str, Any]:
+def _as_dict(value: object) -> JSONDict:
     if isinstance(value, Mapping):
-        return {str(key): item for key, item in value.items()}
+        return {str(key): cast(JSONValue, item) for key, item in value.items()}
     return {}
 
 
-def _as_float(value: Any) -> float | None:
+def _as_float(value: object) -> float | None:
     if isinstance(value, int | float):
         return float(value)
     try:

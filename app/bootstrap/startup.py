@@ -6,7 +6,7 @@ import sys
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, cast
 
 from alembic import command
 from alembic.config import Config
@@ -19,6 +19,9 @@ from sqlalchemy.orm import Session
 from app.infrastructure.db.engine import get_engine
 from app.infrastructure.db.fts_manager import FtsManager
 from app.infrastructure.db.models_sqlalchemy import User
+
+if TYPE_CHECKING:
+    from app.container import Container
 
 _SessionFactory = Callable[[], AbstractContextManager[Session]]
 _HANDLED_STARTUP_ERRORS = (
@@ -241,7 +244,7 @@ def initialize_database(
     return ensure_fts_objects(session_factory)
 
 
-def seed_core_data(container: Any) -> None:
+def seed_core_data(container: Container) -> None:
     try:
         container.reference_service.seed_defaults()
     except _HANDLED_SEED_ERRORS:
