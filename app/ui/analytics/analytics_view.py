@@ -2,6 +2,7 @@
 
 import json
 from datetime import date
+from pathlib import Path
 from typing import cast
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, QUrl
@@ -31,6 +32,7 @@ from app.application.services.analytics_service import AnalyticsService
 from app.application.services.reference_service import ReferenceService
 from app.application.services.reporting_service import ReportingService
 from app.application.services.saved_filter_service import SavedFilterService
+from app.config import DATA_DIR
 from app.domain.constants import MilitaryCategory
 from app.ui.analytics.charts import TopMicrobesChart, TrendChart
 from app.ui.analytics.report_history_helpers import (
@@ -52,6 +54,12 @@ from app.ui.widgets.notifications import show_error, show_info, show_warning
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
 _HANDLED_ANALYTICS_UI_ERRORS = (LookupError, RuntimeError, ValueError, AppError, TypeError)
+_ALLOWED_ARTIFACT_DIRS = [DATA_DIR / "artifacts", DATA_DIR / "backups", DATA_DIR / "reports"]
+
+
+def _is_safe_path(path: Path) -> bool:
+    resolved = path.resolve(strict=False)
+    return any(resolved.is_relative_to(base_dir.resolve(strict=False)) for base_dir in _ALLOWED_ARTIFACT_DIRS)
 
 
 class AnalyticsSearchView(QWidget):
@@ -1061,7 +1069,14 @@ class AnalyticsSearchView(QWidget):
         if not path_item or not path_item.text().strip():
             show_warning(self, "Путь к артефакту не указан.")
             return
-        QDesktopServices.openUrl(QUrl.fromLocalFile(path_item.text().strip()))
+        artifact_path = Path(path_item.text().strip())
+        if not artifact_path.exists():
+            show_warning(self, "Файл артефакта не найден на диске.")
+            return
+        if not _is_safe_path(artifact_path):
+            show_warning(self, "Открытие артефакта запрещено: путь вне разрешённых директорий.")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(artifact_path.resolve(strict=False))))
 
     def _save_as_report_artifact(self) -> None:
         import shutil

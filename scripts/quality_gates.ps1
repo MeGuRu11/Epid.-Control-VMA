@@ -33,9 +33,10 @@ function Invoke-PythonStep {
 }
 
 Invoke-PythonStep -Args @("-m", "ruff", "check", "app", "tests")
+Invoke-PythonStep -Args @("scripts/check_architecture.py")
 Invoke-PythonStep -Args @("-m", "mypy", "app", "tests")
 Invoke-PythonStep -Args @("-m", "pytest", "-q")
 Invoke-PythonStep -Args @("-m", "compileall", "-q", "app", "tests", "scripts")
 
 Write-Host ""
-Write-Host "Quality gates passed: ruff, mypy, pytest, compileall."
+Write-Host "Quality gates passed: ruff, architecture, mypy, pytest, compileall."

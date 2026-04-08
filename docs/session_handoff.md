@@ -350,3 +350,38 @@
 
 1. В репозитории остаются untracked каталоги со скиллами в `.agents/skills/*` и `.npm-cache/` (не трогались в рамках P2).
 2. Для следующего шага можно продолжить целевой рефакторинг `Any` в оставшихся высоконагруженных модулях (без изменения поведения).
+
+---
+
+## Дополнение (P2: CI-чек архитектуры, FK policies, path validation, UI smoke, 2026-04-08)
+
+### Что сделано
+
+- Добавлен новый скрипт `scripts/check_architecture.py` (проверка запрещённых межслойных импортов).
+- Скрипт включён в quality gates:
+  - `scripts/quality_gates.ps1`;
+  - `.github/workflows/quality-gates.yml`.
+- Усилены FK-политики в `app/infrastructure/db/models_sqlalchemy.py`:
+  - `emr_case.patient_id` -> `ondelete="CASCADE"`;
+  - `lab_sample.patient_id` -> `ondelete="CASCADE"`;
+  - `lab_microbe_isolation.microorganism_id` -> `ondelete="SET NULL"`.
+- Создана и применена миграция:
+  - `app/infrastructure/db/migrations/versions/2daa0dea652d_feat_fk_ondelete_policies.py`.
+- Добавлена защита открытия файлов по whitelist директорий в UI:
+  - `app/ui/import_export/import_export_view.py`;
+  - `app/ui/analytics/analytics_view.py`.
+- Добавлены smoke-тесты UI:
+  - `tests/unit/test_ui_smoke.py` (analytics/emz/sanitary).
+
+### Проверки
+
+- `python scripts/check_architecture.py` — pass (`No architectural violations found.`).
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`262 source files`).
+- `pytest -q` — pass (`256 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Незавершённое / риски
+
+1. Миграция и alembic-команды запускались с `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` из-за readonly БД в дефолтном окружении.
+2. В рабочем дереве остаются несвязанные `untracked` каталоги `.agents/skills/*` и `.npm-cache/` (не трогались в этой задаче).

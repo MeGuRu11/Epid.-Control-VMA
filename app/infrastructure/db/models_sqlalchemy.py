@@ -181,7 +181,7 @@ class EmrCase(Base):
     __tablename__ = "emr_case"
 
     id = Column(Integer, primary_key=True)
-    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
+    patient_id = Column(Integer, ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
     hospital_case_no = Column(String, nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"))
     created_at = Column(DateTime, nullable=False, default=utc_now)
@@ -286,7 +286,7 @@ class LabSample(Base):
     __tablename__ = "lab_sample"
 
     id = Column(Integer, primary_key=True)
-    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
+    patient_id = Column(Integer, ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
     emr_case_id = Column(Integer, ForeignKey("emr_case.id"))
     lab_no = Column(String, nullable=False, unique=True)
     barcode = Column(String)
@@ -313,7 +313,7 @@ class LabMicrobeIsolation(Base):
 
     id = Column(Integer, primary_key=True)
     lab_sample_id = Column(Integer, ForeignKey("lab_sample.id", ondelete="CASCADE"), nullable=False)
-    microorganism_id = Column(Integer, ForeignKey("ref_microorganisms.id"))
+    microorganism_id = Column(Integer, ForeignKey("ref_microorganisms.id", ondelete="SET NULL"))
     microorganism_free = Column(Text)
     notes = Column(Text)
 

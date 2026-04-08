@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
@@ -22,6 +23,7 @@ from app.application.dto.auth_dto import SessionContext
 from app.application.exceptions import AppError
 from app.application.security import can_manage_exchange
 from app.application.services.exchange_service import ExchangeService
+from app.config import DATA_DIR
 from app.ui.import_export.import_export_wizard import ImportExportWizard
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
@@ -29,6 +31,12 @@ from app.ui.widgets.notifications import error_text, show_error
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
 _HANDLED_IMPORT_EXPORT_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError, OSError)
+_ALLOWED_ARTIFACT_DIRS = [DATA_DIR / "artifacts", DATA_DIR / "backups", DATA_DIR / "reports"]
+
+
+def _is_safe_path(path: Path) -> bool:
+    resolved = path.resolve(strict=False)
+    return any(resolved.is_relative_to(base_dir.resolve(strict=False)) for base_dir in _ALLOWED_ARTIFACT_DIRS)
 
 
 class ImportExportView(QWidget):
@@ -240,7 +248,13 @@ class ImportExportView(QWidget):
         if not path_item or not path_item.text().strip():
             show_error(self, "Файл не указан.")
             return
-        file_path = path_item.text().strip()
-        QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
+        file_path = Path(path_item.text().strip())
+        if not file_path.exists():
+            show_error(self, "Файл не найден на диске.")
+            return
+        if not _is_safe_path(file_path):
+            show_error(self, "Открытие файла запрещено: путь вне разрешённых директорий артефактов.")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(file_path.resolve(strict=False))))
 
 
