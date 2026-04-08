@@ -1266,10 +1266,11 @@ resources/
 ### 17.6 Проверки качества
 
 1. `ruff check app tests` — зелёный.
-2. `pytest -q` — зелёный (`236+ passed`).
+2. `pytest -q` — зелёный (`253 passed`, 2026-04-08).
 3. Добавлены unit-тесты на новый UI-слой: theme/transition/toast/responsive/table-layout/shell.
 4. Inline-стили в `app/ui` устранены; постоянные стили централизованы в `app/ui/theme.py`.
 5. Добавлен guard-тест `tests/unit/test_ui_no_inline_styles.py` (запрещает возврат inline `setStyleSheet(...)` в `app/ui/**`).
+6. Текущее покрытие `pytest --cov=app` — около `45%` (целевой рост в следующих итерациях).
 
 ### 17.7 Гайд По Стилю И `objectName`
 

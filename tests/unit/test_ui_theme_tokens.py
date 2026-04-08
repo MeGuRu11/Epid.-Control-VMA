@@ -17,9 +17,11 @@ def test_theme_contains_required_semantic_tokens() -> None:
         "info",
     }
     assert required.issubset(COL.keys())
+    assert COL["bg"] != ""
 
 
 def test_apply_theme_runs_with_default_settings(qapp) -> None:
     settings = Settings()
     apply_theme(qapp, settings)
     assert qapp.styleSheet()
+    assert len(qapp.styleSheet()) > 0

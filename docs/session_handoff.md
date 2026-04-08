@@ -233,3 +233,45 @@
    - session TTL/idle logout;
    - персистентный lockout;
    - шифрование backup/экспортных артефактов.
+
+---
+
+## Дополнение (P1: security-усиление + качество/документация, 2026-04-08)
+
+### Что сделано
+
+1. Закрыт security-блок P1 (пункты 1-5):
+   - lockout перенесён в БД (`failed_login_count`, `locked_until` + миграция `0020_login_lockout_fields.py`);
+   - в `AuthService` внедрена политика блокировки (5 неудачных попыток -> 15 минут lockout) и сброс на успешном входе;
+   - убран in-memory lockout из `app/ui/login_dialog.py`;
+   - реализован idle session timeout в `MainWindow` (таймер + `eventFilter` + auto-logout) и параметризация таймаута через `EPIDCONTROL_SESSION_TIMEOUT_MINUTES`;
+   - в `SetupService` добавлена проверка минимальной длины пароля (8+ символов);
+   - добавлено предупреждение о ПДн при экспорте, в `backup_service`/`exchange_service` добавлены `TODO SECURITY` на AES-GCM;
+   - в `reporting_service` внедрена маскировка чувствительных фильтров перед сохранением `filters_json`.
+2. Закрыт блок качества/документации P1 (пункты 6-11):
+   - в `emz_dto.py` добавлена аннотация `to_patient_request(...) -> PatientCreateRequest`;
+   - усилены слабые unit-тесты:
+     - `test_responsive_actions.py`,
+     - `test_ui_theme_tokens.py`,
+     - `test_emz_form_case_selectors.py`;
+   - в `fts_manager.py` добавлены комментарии `SQL-injection safe` к DDL f-string;
+   - обновлён `docs/context.md` (метрика `pytest -q: 253 passed` + покрытие ~45%);
+   - подтверждена валидность ссылок `manual_regression_scenarios.md` в `README.md`, `docs/build_release.md`, `docs/tech_guide.md`;
+   - подтверждена синхронизация quality-gates в `README.md` (ruff/mypy/pytest/compileall).
+
+### Проверки качества
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`257 source files`).
+- `pytest -q` — pass (`253 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Коммиты
+
+1. `a639706` — `security: lockout в БД, session timeout, пароль 8+, маскировка фильтров`.
+2. Текущая сессия: подготовлен второй пакет изменений (документация/качество), требуется отдельный коммит после финального stage.
+
+### Незавершённое / следующий шаг
+
+1. Выполнить второй коммит текущей сессии (этапы 6-11) и при необходимости push в `main`.
+2. Отдельной задачей спланировать полноценное шифрование экспортов/бэкапов (AES-GCM) вместо `TODO SECURITY`.

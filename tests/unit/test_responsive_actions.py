@@ -27,6 +27,7 @@ def test_responsive_actions_reflow_changes_columns_by_width(qapp) -> None:
     )
 
     assert narrow_columns < wide_columns
+    assert 1 <= narrow_columns <= panel._max_columns
 
 
 def test_responsive_actions_compact_mode_reduces_min_width(qapp) -> None:
@@ -39,3 +40,4 @@ def test_responsive_actions_compact_mode_reduces_min_width(qapp) -> None:
     compact_min = button.minimumWidth()
 
     assert compact_min < regular_min
+    assert compact_min > 0

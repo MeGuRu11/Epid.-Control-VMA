@@ -1,10 +1,14 @@
 ﻿from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from app.domain.constants import IsmpType, MilitaryCategory
+
+if TYPE_CHECKING:
+    from app.application.dto.patient_dto import PatientCreateRequest
 
 
 class EmzDiagnosisDto(BaseModel):
@@ -86,7 +90,7 @@ class EmzCreateRequest(BaseModel):
     department_id: int | None = None
     payload: EmzVersionPayload
 
-    def to_patient_request(self):
+    def to_patient_request(self) -> PatientCreateRequest:
         from app.application.dto.patient_dto import PatientCreateRequest
 
         return PatientCreateRequest(
@@ -144,3 +148,4 @@ class EmzCaseDetail(BaseModel):
     interventions: list[EmzInterventionDto]
     antibiotic_courses: list[EmzAntibioticCourseDto]
     ismp_cases: list[EmzIsmpDto] = Field(default_factory=list)
+

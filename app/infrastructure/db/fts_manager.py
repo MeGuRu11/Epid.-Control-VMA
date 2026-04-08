@@ -71,6 +71,7 @@ class FtsManager:
                 ).scalars()
             )
             for name in trigger_names:
+                # SQL-injection safe: идентификатор контролируется программно, не пользовательский ввод.
                 db.execute(text(f'DROP TRIGGER IF EXISTS "{name}"'))
             for table_name in (
                 "patients_fts",
@@ -80,6 +81,7 @@ class FtsManager:
                 "patients_fts_docsize",
                 "patients_fts_config",
             ):
+                # SQL-injection safe: идентификатор контролируется программно, не пользовательский ввод.
                 db.execute(text(f'DROP TABLE IF EXISTS "{table_name}"'))
 
     def rebuild_patients_fts(self, session: Session | None = None) -> bool:
@@ -108,6 +110,7 @@ class FtsManager:
             ).scalars()
         )
         for name in trigger_names:
+            # SQL-injection safe: идентификатор контролируется программно, не пользовательский ввод.
             session.execute(text(f'DROP TRIGGER IF EXISTS "{name}"'))
 
     def _integrity_failed(self, session: Session, table_name: str) -> bool:
@@ -138,11 +141,13 @@ class FtsManager:
                 raise
             self.logger.warning("[FTS] %s unavailable: %s", table_name, exc)
             unavailable_cleanup(session)
+            # SQL-injection safe: table_name берётся из внутреннего whitelist, не из пользовательского ввода.
             session.execute(text(f"DROP TABLE IF EXISTS {table_name}"))
             return False, False
         if self._integrity_failed(session, table_name):
             self.logger.warning("[FTS] integrity failed for %s, rebuilding", table_name)
             rebuild = True
+            # SQL-injection safe: table_name берётся из внутреннего whitelist, не из пользовательского ввода.
             session.execute(text(f"DROP TABLE IF EXISTS {table_name}"))
             session.execute(text(ddl))
         self._drop_triggers_for_table(session, source_table)
@@ -311,6 +316,7 @@ class FtsManager:
 
     def _drop_known_triggers(self, session: Session, *names: str) -> None:
         for name in names:
+            # SQL-injection safe: name задаётся в коде как константа, не пользовательский ввод.
             session.execute(text(f"DROP TRIGGER IF EXISTS {name}"))
 
     def _is_fts_unavailable(self, exc: OperationalError) -> bool:
