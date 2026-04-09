@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import Any, cast
@@ -127,6 +128,16 @@ def _build_view() -> AnalyticsSearchView:
     )
 
 
+def _wait_until(qapp: Any, predicate: Any, timeout: float = 1.5) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        qapp.processEvents()
+        if predicate():
+            return
+        time.sleep(0.01)
+    raise AssertionError("Аналитический экран не обновился за ожидаемое время")
+
+
 def test_apply_search_results_sends_percentage_share_to_top_microbes_chart(qapp) -> None:
     view = _build_view()
     view.chart = cast(Any, _ChartCapture())
@@ -148,10 +159,18 @@ def test_apply_search_results_sends_percentage_share_to_top_microbes_chart(qapp)
         ("SAU - S. aureus", 25.0),
     ]
     assert view.top_table.columnCount() == 3
-    assert view.top_table.item(0, 0).text() == "ECO - E. coli"
-    assert view.top_table.item(0, 1).text() == "3"
-    assert view.top_table.item(0, 2).text() == "75.0%"
-    assert view.top_table.item(1, 2).text() == "25.0%"
+    first_name_item = view.top_table.item(0, 0)
+    first_count_item = view.top_table.item(0, 1)
+    first_share_item = view.top_table.item(0, 2)
+    second_share_item = view.top_table.item(1, 2)
+    assert first_name_item is not None
+    assert first_count_item is not None
+    assert first_share_item is not None
+    assert second_share_item is not None
+    assert first_name_item.text() == "ECO - E. coli"
+    assert first_count_item.text() == "3"
+    assert first_share_item.text() == "75.0%"
+    assert second_share_item.text() == "25.0%"
     view.close()
 
 
@@ -244,6 +263,57 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
     assert view.summary_share.text() == "Доля: 50.0%"
     assert view.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
     assert len(view.trend_chart._items) == current_date.day
+    assert view.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
+    assert view.trend_chart._items[current_date.day - 1][1] == 50.0
+    view.close()
+
+
+def test_analytics_view_initializes_current_month_with_real_async(qapp) -> None:
+    current_date = datetime.now(tz=UTC).date()
+
+    class _AnalyticsStartupStub(_AnalyticsServiceStub):
+        def get_aggregates(self, request: AnalyticsSearchRequest) -> dict[str, Any]:
+            assert request.date_from == date(current_date.year, current_date.month, 1)
+            assert request.date_to == current_date
+            return {
+                "total": 4,
+                "positives": 2,
+                "positive_share": 0.5,
+                "top_microbes": [("ECO - E. coli", 2), ("SAU - S. aureus", 1)],
+                "total_microbe_isolations": 3,
+            }
+
+        def get_trend_by_day(
+            self,
+            date_from: date | None,
+            date_to: date | None,
+            patient_category: str | None = None,
+        ) -> list[dict[str, Any]]:
+            _ = patient_category
+            assert date_from is not None
+            assert date_to is not None
+            return [
+                {"day": date_from.isoformat(), "total": 2, "positives": 1},
+                {"day": current_date.isoformat(), "total": 4, "positives": 2},
+            ]
+
+    view = AnalyticsSearchView(
+        analytics_service=cast(Any, _AnalyticsStartupStub()),
+        reference_service=cast(Any, _ReferenceServiceStub()),
+        saved_filter_service=cast(Any, _SavedFilterServiceStub()),
+        reporting_service=cast(Any, _ReportingServiceStub()),
+        session=_session_context(),
+    )
+    view.show()
+
+    _wait_until(qapp, lambda: len(view.trend_chart._items) == current_date.day)
+
+    first_day = date(current_date.year, current_date.month, 1)
+    assert view.quick_period.currentData() == "month"
+    assert view.date_from.date().toPython() == first_day
+    assert view.date_to.date().toPython() == current_date
+    assert view.summary_share.text().endswith("50.0%")
+    assert view.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
     assert view.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
     assert view.trend_chart._items[current_date.day - 1][1] == 50.0
     view.close()
