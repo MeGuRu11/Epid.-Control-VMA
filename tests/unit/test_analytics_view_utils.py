@@ -41,7 +41,7 @@ def test_formatters_and_quick_period_bounds() -> None:
 
     month_from, month_to = quick_period_bounds("month", date(2026, 2, 12))
     assert month_from == date(2026, 2, 1)
-    assert month_to == date(2026, 2, 28)
+    assert month_to == date(2026, 2, 12)
 
 
 def test_build_trend_chart_items_formats_real_dates_and_calculates_percentages() -> None:

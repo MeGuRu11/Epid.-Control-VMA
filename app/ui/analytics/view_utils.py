@@ -103,12 +103,7 @@ def quick_period_bounds(mode: str | None, today: date) -> tuple[date, date]:
     elif mode == "month":
         first_day = date(today.year, today.month, 1)
         date_from = first_day
-        next_month = date(
-            today.year + (1 if today.month == 12 else 0),
-            1 if today.month == 12 else today.month + 1,
-            1,
-        )
-        date_to = next_month - timedelta(days=1)
+        date_to = today
     return date_from, date_to
 
 

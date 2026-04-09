@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from calendar import monthrange
 from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import Any, cast
@@ -183,7 +182,7 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
     class _AnalyticsStartupStub(_AnalyticsServiceStub):
         def get_aggregates(self, request: AnalyticsSearchRequest) -> dict[str, Any]:
             assert request.date_from == date(current_date.year, current_date.month, 1)
-            assert request.date_to == date(current_date.year, current_date.month, monthrange(current_date.year, current_date.month)[1])
+            assert request.date_to == current_date
             return {
                 "total": 4,
                 "positives": 2,
@@ -239,13 +238,12 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
     qapp.processEvents()
 
     first_day = date(current_date.year, current_date.month, 1)
-    last_day = date(current_date.year, current_date.month, monthrange(current_date.year, current_date.month)[1])
     assert view.quick_period.currentData() == "month"
     assert view.date_from.date().toPython() == first_day
-    assert view.date_to.date().toPython() == last_day
+    assert view.date_to.date().toPython() == current_date
     assert view.summary_share.text() == "Доля: 50.0%"
     assert view.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
-    assert len(view.trend_chart._items) == last_day.day
+    assert len(view.trend_chart._items) == current_date.day
     assert view.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
     assert view.trend_chart._items[current_date.day - 1][1] == 50.0
     view.close()

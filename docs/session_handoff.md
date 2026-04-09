@@ -740,3 +740,31 @@
 - `app/ui/analytics/analytics_view.py`
 - `app/ui/main_window.py`
 - `tests/unit/test_main_window_context_selection.py`
+---
+
+## Дополнение (аналитика: текущий месяц только до сегодня + preload при создании view, 2026-04-09)
+
+### Что сделано
+
+- `quick_period_bounds("month")` теперь возвращает диапазон от первого числа месяца до сегодняшней даты.
+- `AnalyticsSearchView` запускает первичную загрузку сразу после создания, не ожидая показа stacked-page.
+- По реальной пользовательской БД проверено: за текущий месяц нет записей `lab_sample` и `lab_microbe_isolation`.
+
+### Проверки
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`265 source files`).
+- `pytest -q` — pass (`272 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Открытые вопросы / риски
+
+1. Если после очередного перезапуска пользователь всё ещё увидит дефолтную ось `0.1..0.9`, нужно будет добавить runtime-логирование в `TrendChart.update_data()` / `TopMicrobesChart.update_data()` и проверить фактический вызов на его машине.
+2. Сейчас по данным БД `Топ микроорганизмов` должен быть пустым по сути данных; ожидать непустой график без данных некорректно.
+
+### Ключевые файлы
+
+- `app/ui/analytics/view_utils.py`
+- `app/ui/analytics/analytics_view.py`
+- `tests/unit/test_analytics_view_utils.py`
+- `tests/unit/test_analytics_chart_data.py`

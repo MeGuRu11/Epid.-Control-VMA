@@ -139,6 +139,7 @@ class AnalyticsSearchView(QWidget):
         self._load_saved_filters()
         self._load_report_history()
         self._initialize_default_period()
+        QTimer.singleShot(0, self.activate_view)
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         super().showEvent(event)
