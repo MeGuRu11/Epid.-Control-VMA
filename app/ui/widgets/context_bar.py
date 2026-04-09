@@ -26,6 +26,9 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 
+_COLLAPSED_ARROW = "▾"
+_EXPANDED_ARROW = "▴"
+
 
 class ContextBar(QWidget):
     def __init__(
@@ -60,7 +63,7 @@ class ContextBar(QWidget):
         header_row = QHBoxLayout()
         self.toggle_btn = QToolButton()
         self.toggle_btn.setObjectName("contextToggle")
-        self.toggle_btn.setText("?")
+        self.toggle_btn.setText(_COLLAPSED_ARROW)
         self.toggle_btn.setToolTip("Показать/скрыть контекст пациента и госпитализации.")
         self.toggle_btn.setFixedSize(26, 26)
         self.toggle_btn.clicked.connect(self._toggle_content)
@@ -220,7 +223,7 @@ class ContextBar(QWidget):
         if expanding:
             self.content_widget.setVisible(True)
         self._animate_content(expanding)
-        self.toggle_btn.setText("?" if expanding else "?")
+        self.toggle_btn.setText(_EXPANDED_ARROW if expanding else _COLLAPSED_ARROW)
 
     def _animate_content(self, expanding: bool) -> None:
         target_height = self.content_widget.sizeHint().height()

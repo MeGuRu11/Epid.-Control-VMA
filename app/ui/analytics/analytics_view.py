@@ -55,6 +55,8 @@ from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_t
 
 _HANDLED_ANALYTICS_UI_ERRORS = (LookupError, RuntimeError, ValueError, AppError, TypeError)
 _ALLOWED_ARTIFACT_DIRS = [DATA_DIR / "artifacts", DATA_DIR / "backups", DATA_DIR / "reports"]
+_COLLAPSED_ARROW = "▾"
+_EXPANDED_ARROW = "▴"
 
 
 def _is_safe_path(path: Path) -> bool:
@@ -290,7 +292,7 @@ class AnalyticsSearchView(QWidget):
         saved_layout.addWidget(QLabel("Название"))
         saved_layout.addWidget(self.filter_name)
         saved_layout.addWidget(save_filter_btn)
-        self.saved_filters_toggle = QPushButton("Фильтры ?")
+        self.saved_filters_toggle = QPushButton(f"Фильтры {_COLLAPSED_ARROW}")
         compact_button(self.saved_filters_toggle)
         self.saved_filters_toggle.setCheckable(True)
         self.saved_filters_toggle.toggled.connect(self._toggle_saved_filters)
@@ -575,9 +577,9 @@ class AnalyticsSearchView(QWidget):
     def _toggle_saved_filters(self, checked: bool) -> None:
         self.saved_filters_container.setVisible(checked)
         if checked:
-            self.saved_filters_toggle.setText("Фильтры ?")
+            self.saved_filters_toggle.setText(f"Фильтры {_EXPANDED_ARROW}")
         else:
-            self.saved_filters_toggle.setText("Фильтры ?")
+            self.saved_filters_toggle.setText(f"Фильтры {_COLLAPSED_ARROW}")
 
     def _wire_icd_search(self, combo: QComboBox) -> None:
         completer = QCompleter(combo.model(), combo)
