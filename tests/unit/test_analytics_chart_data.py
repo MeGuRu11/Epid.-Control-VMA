@@ -95,6 +95,11 @@ def test_apply_search_results_sends_percentage_share_to_top_microbes_chart(qapp)
         ("ECO - E. coli", 75.0),
         ("SAU - S. aureus", 25.0),
     ]
+    assert view.top_table.columnCount() == 3
+    assert view.top_table.item(0, 0).text() == "ECO - E. coli"
+    assert view.top_table.item(0, 1).text() == "3"
+    assert view.top_table.item(0, 2).text() == "75.0%"
+    assert view.top_table.item(1, 2).text() == "25.0%"
     view.close()
 
 

@@ -649,3 +649,30 @@
 - `tests/unit/test_analytics_view_utils.py`
 - `tests/unit/test_analytics_chart_data.py`
 - `tests/integration/test_analytics_service_queries.py`
+---
+
+## Дополнение (таблица топ-микроорганизмов: количество + доля, 2026-04-09)
+
+### Что сделано
+
+- В таблицу `Топ микроорганизмов` добавлена третья колонка `Доля`.
+- Процент в таблице считается по тому же знаменателю `total_microbe_isolations`, что и столбчатый график, чтобы UI больше не расходился по метрике.
+- Абсолютное количество сохранено, поэтому сценарий ручного анализа не потерян: теперь рядом видны и count, и `%`.
+- Добавлен регрессионный тест на таблицу в `tests/unit/test_analytics_chart_data.py`.
+
+### Проверки
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`265 source files`).
+- `pytest -q` — pass (`270 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Следующие шаги
+
+1. Если нужно, следующим шагом можно запушить оба сегодняшних коммита с аналитикой и UI-фиксами.
+2. Если требуется, можно отдельно доработать подписи/tooltip у новых процентных колонок, чтобы пользователю была явно видна формула расчёта.
+
+### Ключевые файлы
+
+- `app/ui/analytics/analytics_view.py`
+- `tests/unit/test_analytics_chart_data.py`

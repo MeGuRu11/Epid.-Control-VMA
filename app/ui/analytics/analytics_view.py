@@ -538,8 +538,8 @@ class AnalyticsSearchView(QWidget):
         self.chart = TopMicrobesChart()
         self.chart.setMinimumHeight(340)
         top_layout.addWidget(self.chart)
-        self.top_table = QTableWidget(0, 2)
-        self.top_table.setHorizontalHeaderLabels(["Микроорганизм", "Количество"])
+        self.top_table = QTableWidget(0, 3)
+        self.top_table.setHorizontalHeaderLabels(["Микроорганизм", "Количество", "Доля"])
         self.top_table.horizontalHeader().setStretchLastSection(True)
         self.top_table.verticalHeader().setVisible(False)
         self.top_table.setAlternatingRowColors(True)
@@ -946,11 +946,16 @@ class AnalyticsSearchView(QWidget):
                 total_microbe_isolations=top_microbe_total,
             )
         )
+        top_microbe_chart_items = build_top_microbe_chart_items(
+            top_microbes,
+            total_microbe_isolations=top_microbe_total,
+        )
         self.top_table.clearContents()
         self.top_table.setRowCount(len(top_microbes))
         for idx, (name, count) in enumerate(top_microbes):
             self.top_table.setItem(idx, 0, QTableWidgetItem(name))
             self.top_table.setItem(idx, 1, QTableWidgetItem(str(count)))
+            self.top_table.setItem(idx, 2, QTableWidgetItem(f"{top_microbe_chart_items[idx][1]:.1f}%"))
         resize_columns_to_content(self.top_table)
         self.table.clearContents()
 
