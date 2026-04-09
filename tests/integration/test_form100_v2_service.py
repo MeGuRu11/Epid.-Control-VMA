@@ -17,7 +17,10 @@ from app.application.dto.form100_v2_dto import (
     Form100UpdateV2Request,
     Form100V2Filters,
 )
-from app.application.services import reporting_service as reporting_service_module
+from app.application.services import (
+    form100_service_v2 as form100_service_module,
+    reporting_service as reporting_service_module,
+)
 from app.application.services.analytics_service import AnalyticsService
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
@@ -177,6 +180,7 @@ def test_form100_v2_create_update_sign_audit(tmp_path: Path) -> None:
 def test_form100_v2_exchange_and_reporting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     session_factory = make_session_factory(tmp_path / "form100_v2_exchange.db")
     monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    monkeypatch.setattr(form100_service_module, "FORM100_V2_ARTIFACT_DIR", tmp_path / "artifacts" / "form100_v2")
     admin_id, operator_id = seed_users(session_factory)
     service = Form100ServiceV2(session_factory=session_factory)
     created = service.create_card(make_create_request(), actor_id=operator_id)

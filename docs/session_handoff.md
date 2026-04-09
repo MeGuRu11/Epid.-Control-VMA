@@ -443,3 +443,34 @@
 1. ???????? ?????????????? ???? (??????????? ????????? ? ???????? ????/???????? ?????? ? ??????????).
 2. ???????? ?? ? ?????????? alembic state ? ???????? `alembic check = pass`.
 3. ????? ????? ????????? ?????? quality-gate ? ??????????? release-ready ??????.
+
+---
+
+## Дополнение (fix блокеров релиза, 2026-04-09)
+
+### Что сделано
+
+- Воспроизведён и исправлен падение теста `tests/integration/test_form100_v2_service.py::test_form100_v2_exchange_and_reporting`.
+- Причина: `Form100ServiceV2` при импорте пакета записывал PDF в `FORM100_V2_ARTIFACT_DIR` внутри `%LOCALAPPDATA%`, что в текущем окружении приводило к `PermissionError`.
+- Исправление: в тесте добавлен monkeypatch `FORM100_V2_ARTIFACT_DIR -> tmp_path / "artifacts" / "form100_v2"`.
+- Alembic синхронизирован: `alembic upgrade head` выполнен в `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`.
+- Проверено: `python -m alembic check` в том же каталоге данных возвращает `No new upgrade operations detected`.
+
+### Проверки
+
+- `python scripts/check_architecture.py` — pass.
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`262 source files`).
+- `pytest -q` — pass (`256 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+- `$env:EPIDCONTROL_DATA_DIR='tmp_run/epid-data'; python -m alembic check` — pass.
+
+### Незавершённое / риски
+
+1. Дефолтная БД в `%LOCALAPPDATA%` остаётся read-only для миграций в этом окружении; для локальных миграций использовать `EPIDCONTROL_DATA_DIR=tmp_run/epid-data` или другой writable каталог.
+
+### Ключевые файлы
+
+- `tests/integration/test_form100_v2_service.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
