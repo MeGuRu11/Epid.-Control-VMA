@@ -474,3 +474,53 @@
 - `tests/integration/test_form100_v2_service.py`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
+
+---
+
+## Дополнение (онбординг + код-ревью GPT-5.4, 2026-04-09)
+
+### Что сделано
+
+- Выполнен полный онбординг по проекту:
+  - прочитаны `AGENTS.md`, `.agents/skills/epid-control/SKILL.md`, `docs/session_handoff.md`, `docs/context.md`, хвост `docs/progress_report.md`;
+  - перечитаны `docs/final_audit_report.md`, `docs/security_review_2026-04-07.md`, `docs/code_review_report.md`, `docs/tech_guide.md`;
+  - проверены `pyproject.toml`, `alembic.ini` и список локальных скиллов (`20` штук).
+- Выполнен новый полный review проекта без правок кода.
+- Подготовлен новый отчёт: `docs/code_review_gpt54.md`.
+
+### Проверки
+
+- `python scripts/check_architecture.py` — pass.
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`262 source files`).
+- `pytest --cov=app -q` — pass (`256 passed, 2 warnings`, `TOTAL 49.91%`).
+- `python -m alembic check` — fail (`current=0019_form100_v2_schema`, `head=2daa0dea652d`).
+- `$env:EPIDCONTROL_DATA_DIR='tmp_run/epid-data'; python -m alembic check` — pass.
+
+### Главные выводы
+
+1. Архитектурные запреты по слоям соблюдаются: `UI -> Infrastructure = 0`, `sqlalchemy` в `app/ui = 0`, `Domain -> внешнее = 0`.
+2. Security-фиксы предыдущих этапов в основном закреплены, но остаются gaps:
+   - `EmzService` и `Form100ServiceV2` всё ещё допускают `actor_id: int | None` в части mutating-методов;
+   - `SavedFilterService.save_filter()` пишет в БД без mandatory actor/audit.
+3. Последний fix релизного blocker-а по Form100 стабилизировал тест, но не устранил продуктовый сценарий: `_store_imported_pdf()` всё ещё может падать при существующем non-writable каталоге артефактов.
+4. Дефолтный Alembic-state остаётся не self-contained: обычный `python -m alembic check` всё ещё красный.
+5. В коде и документации сохраняются mojibake-фрагменты, несмотря на предыдущий проход по UTF-8/BOM.
+
+### Незавершённое / что делать следующим
+
+1. Исправить реальную причину `PermissionError` в `app/application/services/form100_service_v2.py::_store_imported_pdf` и добавить regression-тест на non-writable каталог.
+2. Привести default Alembic target DB к `head` или зафиксировать единый env/bootstrap для CLI и документации.
+3. Убрать `actor_id: int | None` из интерактивных mutating-операций `EmzService`, `Form100ServiceV2`, `SavedFilterService`.
+4. Починить mojibake в `app/` и `docs/`, затем добавить guard-check на типичные повреждённые последовательности.
+5. После закрытия P0/P1 можно повторить релизный review и обновить `docs/final_audit_report.md`.
+
+### Ключевые файлы
+
+- `docs/code_review_gpt54.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+- `app/application/services/form100_service_v2.py`
+- `app/application/services/emz_service.py`
+- `app/application/services/saved_filter_service.py`
+- `alembic.ini`
