@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from datetime import date
+from calendar import monthrange
+from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
+from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
 from app.ui.analytics.analytics_view import AnalyticsSearchView
 
@@ -50,7 +52,58 @@ class _ReportingServiceStub:
 
 
 class _AnalyticsServiceStub:
-    pass
+    def clear_cache(self) -> None:
+        return None
+
+    def get_aggregates(self, _request: AnalyticsSearchRequest) -> dict[str, Any]:
+        return {
+            "total": 0,
+            "positives": 0,
+            "positive_share": 0.0,
+            "top_microbes": [],
+            "total_microbe_isolations": 0,
+        }
+
+    def get_department_summary(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+        patient_category: str | None = None,
+    ) -> list[dict[str, Any]]:
+        _ = patient_category
+        return []
+
+    def get_trend_by_day(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+        patient_category: str | None = None,
+    ) -> list[dict[str, Any]]:
+        _ = patient_category
+        return []
+
+    def compare_periods(
+        self,
+        *,
+        current_from: date,
+        current_to: date,
+        prev_from: date,
+        prev_to: date,
+        patient_category: str | None = None,
+    ) -> dict[str, Any]:
+        _ = (current_from, current_to, prev_from, prev_to, patient_category)
+        return {
+            "current": {"total": 0, "positive_share": 0.0},
+            "previous": {"total": 0, "positive_share": 0.0},
+        }
+
+    def get_ismp_metrics(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+        _department_id: int | None,
+    ) -> dict[str, Any]:
+        return {}
 
 
 class _ChartCapture:
@@ -121,4 +174,78 @@ def test_apply_trend_sends_real_dates_and_daily_percentage_to_chart(qapp) -> Non
         ("02.04.2026", 0.0),
         ("03.04.2026", 25.0),
     ]
+    view.close()
+
+
+def test_analytics_view_initializes_current_month_and_populates_charts(qapp, monkeypatch) -> None:
+    current_date = datetime.now(tz=UTC).date()
+
+    class _AnalyticsStartupStub(_AnalyticsServiceStub):
+        def get_aggregates(self, request: AnalyticsSearchRequest) -> dict[str, Any]:
+            assert request.date_from == date(current_date.year, current_date.month, 1)
+            assert request.date_to == date(current_date.year, current_date.month, monthrange(current_date.year, current_date.month)[1])
+            return {
+                "total": 4,
+                "positives": 2,
+                "positive_share": 0.5,
+                "top_microbes": [("ECO - E. coli", 2), ("SAU - S. aureus", 1)],
+                "total_microbe_isolations": 3,
+            }
+
+        def get_trend_by_day(
+            self,
+            date_from: date | None,
+            date_to: date | None,
+            patient_category: str | None = None,
+        ) -> list[dict[str, Any]]:
+            _ = patient_category
+            assert date_from is not None
+            assert date_to is not None
+            return [
+                {"day": date_from.isoformat(), "total": 2, "positives": 1},
+                {"day": current_date.isoformat(), "total": 4, "positives": 2},
+            ]
+
+    def _run_async_sync(
+        _parent: Any,
+        fn: Any,
+        on_success: Any = None,
+        on_error: Any = None,
+        on_finished: Any = None,
+    ) -> Any:
+        try:
+            result = fn()
+        except Exception as exc:  # noqa: BLE001
+            if on_error is not None:
+                on_error(exc)
+        else:
+            if on_success is not None:
+                on_success(result)
+        finally:
+            if on_finished is not None:
+                on_finished()
+        return None
+
+    monkeypatch.setattr("app.ui.analytics.analytics_view.run_async", _run_async_sync)
+
+    view = AnalyticsSearchView(
+        analytics_service=cast(Any, _AnalyticsStartupStub()),
+        reference_service=cast(Any, _ReferenceServiceStub()),
+        saved_filter_service=cast(Any, _SavedFilterServiceStub()),
+        reporting_service=cast(Any, _ReportingServiceStub()),
+        session=_session_context(),
+    )
+    view.show()
+    qapp.processEvents()
+
+    first_day = date(current_date.year, current_date.month, 1)
+    last_day = date(current_date.year, current_date.month, monthrange(current_date.year, current_date.month)[1])
+    assert view.quick_period.currentData() == "month"
+    assert view.date_from.date().toPython() == first_day
+    assert view.date_to.date().toPython() == last_day
+    assert view.summary_share.text() == "Доля: 50.0%"
+    assert view.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
+    assert len(view.trend_chart._items) == last_day.day
+    assert view.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
+    assert view.trend_chart._items[current_date.day - 1][1] == 50.0
     view.close()

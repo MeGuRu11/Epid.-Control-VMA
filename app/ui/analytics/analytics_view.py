@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import cast
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
@@ -81,6 +81,7 @@ class AnalyticsSearchView(QWidget):
         self.saved_filter_service = saved_filter_service
         self.reporting_service = reporting_service
         self.session = session
+        self._default_analytics_loaded = False
         self._search_delay_ms = 250
         self._icd_search_updating = False
         self._micro_search_updating = False
@@ -137,6 +138,20 @@ class AnalyticsSearchView(QWidget):
 
         self._load_saved_filters()
         self._load_report_history()
+        self._initialize_default_period()
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        super().showEvent(event)
+        if self._default_analytics_loaded:
+            return
+        self._default_analytics_loaded = True
+        QTimer.singleShot(0, self._update_dashboard)
+
+    def _initialize_default_period(self) -> None:
+        month_index = self.quick_period.findData("month")
+        if month_index >= 0:
+            self.quick_period.setCurrentIndex(month_index)
+        self._apply_quick_period()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
@@ -931,25 +946,24 @@ class AnalyticsSearchView(QWidget):
             on_finished=_on_finished,
         )
 
-    def _apply_search_results(self, rows: list, agg: dict) -> None:
-        self.summary_total.setText(f"Итого: {agg['total']}")
-        self.summary_positive.setText(f"Положительных: {agg['positives']}")
-        self.summary_share.setText(f"Доля: {agg['positive_share'] * 100:.1f}%")
-        top_microbes = agg.get("top_microbes", [])
-        top_microbe_total = int(
+    def _apply_aggregate_summary(self, agg: dict) -> None:
+        total = int(agg.get("total", 0))
+        positives = int(agg.get("positives", 0))
+        positive_share = float(agg.get("positive_share", 0.0))
+        top_microbes = cast(list[tuple[str, int]], agg.get("top_microbes", []))
+        total_microbe_isolations = int(
             agg.get("total_microbe_isolations")
             or sum(count for _name, count in top_microbes)
         )
-        self.chart.update_data(
-            build_top_microbe_chart_items(
-                top_microbes,
-                total_microbe_isolations=top_microbe_total,
-            )
-        )
         top_microbe_chart_items = build_top_microbe_chart_items(
             top_microbes,
-            total_microbe_isolations=top_microbe_total,
+            total_microbe_isolations=total_microbe_isolations,
         )
+
+        self.summary_total.setText(f"Итого: {total}")
+        self.summary_positive.setText(f"Положительных: {positives}")
+        self.summary_share.setText(f"Доля: {positive_share * 100:.1f}%")
+        self.chart.update_data(top_microbe_chart_items)
         self.top_table.clearContents()
         self.top_table.setRowCount(len(top_microbes))
         for idx, (name, count) in enumerate(top_microbes):
@@ -957,6 +971,9 @@ class AnalyticsSearchView(QWidget):
             self.top_table.setItem(idx, 1, QTableWidgetItem(str(count)))
             self.top_table.setItem(idx, 2, QTableWidgetItem(f"{top_microbe_chart_items[idx][1]:.1f}%"))
         resize_columns_to_content(self.top_table)
+
+    def _apply_search_results(self, rows: list, agg: dict) -> None:
+        self._apply_aggregate_summary(agg)
         self.table.clearContents()
 
         display_rows = rows[:1000]
@@ -1280,20 +1297,24 @@ class AnalyticsSearchView(QWidget):
         compare_days = int(self.compare_period.currentData() or 7)
         patient_category = self.patient_category.currentData()
         department_id = self.department.currentData()
+        request = self._build_request()
         self._set_dashboard_busy(True)
 
         def _run() -> dict:
             self.analytics_service.clear_cache()
-            return self._fetch_dashboard_data(
+            dashboard = self._fetch_dashboard_data(
                 date_from=date_from,
                 date_to=date_to,
                 patient_category=patient_category,
                 department_id=department_id,
                 compare_days=compare_days,
             )
+            agg = self.analytics_service.get_aggregates(request)
+            return {"dashboard": dashboard, "agg": agg}
 
-        def _on_success(data: dict) -> None:
-            self._apply_dashboard_data(data)
+        def _on_success(result: dict) -> None:
+            self._apply_dashboard_data(result["dashboard"])
+            self._apply_aggregate_summary(result["agg"])
 
         run_async(
             self,

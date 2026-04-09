@@ -42,12 +42,14 @@ class TopMicrobesChart(QWidget):
         values = [count for _name, count in self._items]
         self._plot.clear()
         self._plot.setYRange(0, 100, padding=0.02)
+        ax = self._plot.getAxis("bottom")
         if not values:
+            ax.setTicks([[]])
+            self._plot.setXRange(-0.5, 0.5, padding=0.02)
             return
         x = list(range(len(values)))
         bar = pg.BarGraphItem(x=x, height=values, width=0.6, brush="#4C78A8")
         self._plot.addItem(bar)
-        ax = self._plot.getAxis("bottom")
         ax.setTicks([list(zip(x, labels, strict=False))])
         self._plot.setXRange(-0.5, max(len(values) - 0.5, 0.5), padding=0.02)
 
@@ -86,21 +88,16 @@ class TrendChart(QWidget):
         values = [value for _label, value in self._items]
         self._plot.clear()
         self._plot.setYRange(0, 100, padding=0.02)
+        ax = self._plot.getAxis("bottom")
         if not values:
+            ax.setTicks([[]])
+            self._plot.setXRange(-0.5, 0.5, padding=0.02)
             return
         x = list(range(len(values)))
-        rate_line = pg.PlotDataItem(
-            x=x,
-            y=values,
-            pen=pg.mkPen("#4C78A8", width=2),
-            symbol="o",
-            symbolSize=6,
-            symbolBrush="#4C78A8",
-        )
-        self._plot.addItem(rate_line)
-        ax = self._plot.getAxis("bottom")
+        bar = pg.BarGraphItem(x=x, height=values, width=0.75, brush="#4C78A8")
+        self._plot.addItem(bar)
         ax.setTicks([list(zip(x, labels, strict=False))])
-        self._plot.setXRange(-0.25, max(len(values) - 0.75, 0.75), padding=0.02)
+        self._plot.setXRange(-0.5, max(len(values) - 0.5, 0.5), padding=0.02)
 
     def _lock_plot_interaction(self) -> None:
         if self._plot is None:

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import date
 from types import SimpleNamespace
 from typing import Any, cast
 
+from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
 from app.container import Container
 from app.ui.analytics.analytics_view import AnalyticsSearchView
@@ -52,7 +54,58 @@ class _ReportingServiceStub:
 
 
 class _AnalyticsServiceStub:
-    pass
+    def clear_cache(self) -> None:
+        return None
+
+    def get_aggregates(self, _request: AnalyticsSearchRequest) -> dict[str, Any]:
+        return {
+            "total": 0,
+            "positives": 0,
+            "positive_share": 0.0,
+            "top_microbes": [],
+            "total_microbe_isolations": 0,
+        }
+
+    def get_department_summary(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+        patient_category: str | None = None,
+    ) -> list[dict[str, Any]]:
+        _ = patient_category
+        return []
+
+    def get_trend_by_day(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+        patient_category: str | None = None,
+    ) -> list[dict[str, Any]]:
+        _ = patient_category
+        return []
+
+    def compare_periods(
+        self,
+        *,
+        current_from: date,
+        current_to: date,
+        prev_from: date,
+        prev_to: date,
+        patient_category: str | None = None,
+    ) -> dict[str, Any]:
+        _ = (current_from, current_to, prev_from, prev_to, patient_category)
+        return {
+            "current": {"total": 0, "positive_share": 0.0},
+            "previous": {"total": 0, "positive_share": 0.0},
+        }
+
+    def get_ismp_metrics(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+        _department_id: int | None,
+    ) -> dict[str, Any]:
+        return {}
 
 
 class _SanitaryServiceStub:
