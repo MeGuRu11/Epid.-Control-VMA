@@ -41,9 +41,10 @@ from app.ui.analytics.report_history_helpers import (
     to_report_history_view_row,
 )
 from app.ui.analytics.view_utils import (
+    build_top_microbe_chart_items,
+    build_trend_chart_items,
     calculate_compare_window,
     format_analytics_datetime,
-    format_day_label,
     normalize_date_range,
     quick_period_bounds,
 )
@@ -934,10 +935,20 @@ class AnalyticsSearchView(QWidget):
         self.summary_total.setText(f"Итого: {agg['total']}")
         self.summary_positive.setText(f"Положительных: {agg['positives']}")
         self.summary_share.setText(f"Доля: {agg['positive_share'] * 100:.1f}%")
-        self.chart.update_data(agg["top_microbes"])
+        top_microbes = agg.get("top_microbes", [])
+        top_microbe_total = int(
+            agg.get("total_microbe_isolations")
+            or sum(count for _name, count in top_microbes)
+        )
+        self.chart.update_data(
+            build_top_microbe_chart_items(
+                top_microbes,
+                total_microbe_isolations=top_microbe_total,
+            )
+        )
         self.top_table.clearContents()
-        self.top_table.setRowCount(len(agg["top_microbes"]))
-        for idx, (name, count) in enumerate(agg["top_microbes"]):
+        self.top_table.setRowCount(len(top_microbes))
+        for idx, (name, count) in enumerate(top_microbes):
             self.top_table.setItem(idx, 0, QTableWidgetItem(name))
             self.top_table.setItem(idx, 1, QTableWidgetItem(str(count)))
         resize_columns_to_content(self.top_table)
@@ -1316,14 +1327,19 @@ class AnalyticsSearchView(QWidget):
             "department_rows": department_rows,
             "trend_rows": trend_rows,
             "compare": compare,
-            "end_date": date_to,
+            "date_from": date_from,
+            "date_to": date_to,
             "ismp": ismp,
         }
 
     def _apply_dashboard_data(self, data: dict) -> None:
         self._apply_department_summary(data.get("department_rows", []))
-        self._apply_trend(data.get("trend_rows", []))
-        self._apply_compare(data.get("compare"), data.get("end_date"))
+        self._apply_trend(
+            data.get("trend_rows", []),
+            data.get("date_from"),
+            data.get("date_to"),
+        )
+        self._apply_compare(data.get("compare"), data.get("date_to"))
         self._apply_ismp_metrics(data.get("ismp", {}))
 
     def _update_ismp_metrics(self, date_from, date_to) -> None:
@@ -1371,7 +1387,7 @@ class AnalyticsSearchView(QWidget):
         rows = self.analytics_service.get_trend_by_day(
             date_from, date_to, patient_category=self.patient_category.currentData()
         )
-        self._apply_trend(rows)
+        self._apply_trend(rows, date_from, date_to)
 
     def _update_compare(self, end_date) -> None:
         if end_date is None:
@@ -1404,11 +1420,13 @@ class AnalyticsSearchView(QWidget):
             self.department_table.setItem(idx, 4, QTableWidgetItem(last_date))
         resize_columns_to_content(self.department_table)
 
-    def _apply_trend(self, rows: list[dict]) -> None:
-        items = []
-        for item in rows:
-            day_label = format_day_label(item.get("day"))
-            items.append((day_label, item["total"], item["positives"]))
+    def _apply_trend(
+        self,
+        rows: list[dict],
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> None:
+        items = build_trend_chart_items(rows, date_from, date_to)
         self.trend_chart.update_data(items)
 
     def _apply_compare(self, compare: dict | None, end_date: date | None) -> None:

@@ -158,6 +158,7 @@ def test_get_aggregates_counts_microbes_without_cross_product(tmp_path: Path) ->
 
     assert agg["total"] == 1
     assert agg["positives"] == 1
+    assert agg["total_microbe_isolations"] == 2
     top_map = dict(agg["top_microbes"])
     assert top_map.get("ECO - E. coli") == 1
     assert top_map.get("SAU - S. aureus") == 1

@@ -434,10 +434,17 @@ class AnalyticsRepository:
             .limit(5)
         )
         top_microbes = [(str(row.microorganism), int(row.count_value)) for row in session.execute(top_stmt).all()]
+        micro_total_stmt = (
+            select(func.count(LabMicrobeIsolation.id))
+            .select_from(LabMicrobeIsolation)
+            .join(filtered, filtered.c.sample_id == LabMicrobeIsolation.lab_sample_id)
+        )
+        total_microbe_isolations = int(session.execute(micro_total_stmt).scalar() or 0)
 
         return {
             "total": total,
             "positives": positives,
             "positive_share": positive_share,
             "top_microbes": top_microbes,
+            "total_microbe_isolations": total_microbe_isolations,
         }

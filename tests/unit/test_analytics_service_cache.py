@@ -30,6 +30,7 @@ class FakeRepo:
             "positives": 2,
             "positive_share": 0.4,
             "top_microbes": [("ECO - E. coli", 2)],
+            "total_microbe_isolations": 2,
         }
 
     def get_aggregate_counts(

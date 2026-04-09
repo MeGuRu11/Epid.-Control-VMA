@@ -162,12 +162,14 @@ class AnalyticsService:
         positives = sum(1 for v in sample_flags.values() if v == 1)
         share = (positives / total) if total else 0.0
         top_microbes = sorted(micro_counts.items(), key=lambda kv: kv[1], reverse=True)[:5]
+        total_microbe_isolations = sum(micro_counts.values())
 
         return {
             "total": total,
             "positives": positives,
             "positive_share": share,
             "top_microbes": top_microbes,
+            "total_microbe_isolations": total_microbe_isolations,
         }
 
     def get_aggregates(self, request: AnalyticsSearchRequest) -> dict:

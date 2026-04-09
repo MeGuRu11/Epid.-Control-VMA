@@ -610,3 +610,42 @@
 - `app/ui/widgets/context_bar.py`
 - `app/ui/analytics/analytics_view.py`
 - `tests/unit/test_dropdown_indicators.py`
+---
+
+## Дополнение (аналитические графики: реальные даты и показатели по формуле, 2026-04-09)
+
+### Что сделано
+
+- Трендовый график переведён на процентный показатель `positives / total * 100` вместо абсолютного количества.
+- Нижняя ось тренда теперь отображает реальные даты периода в формате `ДД.ММ.ГГГГ`; пропущенные дни в диапазоне заполняются нулевыми точками.
+- График `Топ микроорганизмов` переведён на долю выделений `count / total_microbe_isolations * 100`.
+- На уровне аналитических агрегатов добавлен `total_microbe_isolations`, чтобы процент для `top_microbes` считался по правильному знаменателю.
+- Добавлены unit/integration тесты на формулы, формат дат и payload, передаваемый из `AnalyticsSearchView` в графики.
+
+### Проверки
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`265 source files`).
+- `pytest -q` — pass (`270 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Открытые вопросы / риски
+
+1. Таблица под графиком `Топ микроорганизмов` по-прежнему показывает абсолютные количества, а не проценты; это оставлено осознанно, чтобы не ломать текущий табличный сценарий анализа.
+2. В консольном выводе PowerShell всё ещё встречаются старые повреждённые строки из исторических записей документации; новые изменения в коде и актуальный хвост логов записаны в UTF-8.
+
+### Следующие шаги
+
+1. При необходимости можно отдельной задачей добавить переключатель метрики в аналитике: `количество / доля / на 1000`.
+2. Если пользователь подтвердит визуально, зафиксировать задачу как закрытую и при желании запушить коммит.
+
+### Ключевые файлы
+
+- `app/ui/analytics/view_utils.py`
+- `app/ui/analytics/charts.py`
+- `app/ui/analytics/analytics_view.py`
+- `app/application/services/analytics_service.py`
+- `app/infrastructure/db/repositories/analytics_repo.py`
+- `tests/unit/test_analytics_view_utils.py`
+- `tests/unit/test_analytics_chart_data.py`
+- `tests/integration/test_analytics_service_queries.py`

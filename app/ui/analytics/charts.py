@@ -10,12 +10,18 @@ try:
 except Exception:  # pragma: no cover
     pg = None
 
+TOP_MICROBES_LEFT_LABEL = "Доля выделений, %"
+TOP_MICROBES_BOTTOM_LABEL = "Микроорганизмы"
+TREND_LEFT_LABEL = "Доля положительных, %"
+TREND_BOTTOM_LABEL = "Дата"
+
 
 class TopMicrobesChart(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
         self._plot: Any = None
+        self._items: list[tuple[str, float]] = []
         if pg is None:
             self._fallback = QLabel("pyqtgraph не установлен")
             layout.addWidget(self._fallback)
@@ -23,17 +29,19 @@ class TopMicrobesChart(QWidget):
         self._plot = pg.PlotWidget()
         self._plot.setBackground("w")
         self._plot.showGrid(x=True, y=True, alpha=0.2)
-        self._plot.setLabel("left", "Количество")
-        self._plot.setLabel("bottom", "Микроорганизмы")
+        self._plot.setLabel("left", TOP_MICROBES_LEFT_LABEL)
+        self._plot.setLabel("bottom", TOP_MICROBES_BOTTOM_LABEL)
         self._lock_plot_interaction()
         layout.addWidget(cast(QWidget, self._plot))
 
-    def update_data(self, items: Iterable[tuple[str, int]]) -> None:
+    def update_data(self, items: Iterable[tuple[str, float]]) -> None:
+        self._items = list(items)
         if self._plot is None or pg is None:
             return
-        labels = [name for name, _count in items]
-        values = [count for _name, count in items]
+        labels = [name for name, _count in self._items]
+        values = [count for _name, count in self._items]
         self._plot.clear()
+        self._plot.setYRange(0, 100, padding=0.02)
         if not values:
             return
         x = list(range(len(values)))
@@ -41,7 +49,7 @@ class TopMicrobesChart(QWidget):
         self._plot.addItem(bar)
         ax = self._plot.getAxis("bottom")
         ax.setTicks([list(zip(x, labels, strict=False))])
-        self._plot.setYRange(0, max(values) * 1.1)
+        self._plot.setXRange(-0.5, max(len(values) - 0.5, 0.5), padding=0.02)
 
     def _lock_plot_interaction(self) -> None:
         if self._plot is None:
@@ -57,6 +65,7 @@ class TrendChart(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         self._plot: Any = None
+        self._items: list[tuple[str, float]] = []
         if pg is None:
             self._fallback = QLabel("pyqtgraph не установлен")
             layout.addWidget(self._fallback)
@@ -64,29 +73,34 @@ class TrendChart(QWidget):
         self._plot = pg.PlotWidget()
         self._plot.setBackground("w")
         self._plot.showGrid(x=True, y=True, alpha=0.2)
-        self._plot.setLabel("left", "Количество")
-        self._plot.setLabel("bottom", "Дата")
+        self._plot.setLabel("left", TREND_LEFT_LABEL)
+        self._plot.setLabel("bottom", TREND_BOTTOM_LABEL)
         self._lock_plot_interaction()
         layout.addWidget(cast(QWidget, self._plot))
 
-    def update_data(self, items: Iterable[tuple[str, int, int]]) -> None:
+    def update_data(self, items: Iterable[tuple[str, float]]) -> None:
+        self._items = list(items)
         if self._plot is None or pg is None:
             return
-        labels = [label for label, _total, _pos in items]
-        totals = [total for _label, total, _pos in items]
-        positives = [pos for _label, _total, pos in items]
+        labels = [label for label, _value in self._items]
+        values = [value for _label, value in self._items]
         self._plot.clear()
-        if not totals:
+        self._plot.setYRange(0, 100, padding=0.02)
+        if not values:
             return
-        x = list(range(len(totals)))
-        total_line = pg.PlotDataItem(x=x, y=totals, pen=pg.mkPen("#4C78A8", width=2))
-        pos_line = pg.PlotDataItem(x=x, y=positives, pen=pg.mkPen("#E18A85", width=2))
-        self._plot.addItem(total_line)
-        self._plot.addItem(pos_line)
+        x = list(range(len(values)))
+        rate_line = pg.PlotDataItem(
+            x=x,
+            y=values,
+            pen=pg.mkPen("#4C78A8", width=2),
+            symbol="o",
+            symbolSize=6,
+            symbolBrush="#4C78A8",
+        )
+        self._plot.addItem(rate_line)
         ax = self._plot.getAxis("bottom")
         ax.setTicks([list(zip(x, labels, strict=False))])
-        max_val = max(totals + positives)
-        self._plot.setYRange(0, max_val * 1.1)
+        self._plot.setXRange(-0.25, max(len(values) - 0.75, 0.75), padding=0.02)
 
     def _lock_plot_interaction(self) -> None:
         if self._plot is None:
@@ -95,4 +109,3 @@ class TrendChart(QWidget):
         view = self._plot.getViewBox()
         view.setMouseEnabled(x=False, y=False)
         view.setMenuEnabled(False)
-
