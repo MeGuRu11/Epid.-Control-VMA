@@ -514,6 +514,8 @@ class MainWindow(QMainWindow):
             self._menubar.set_highlight_action(active)
         if widget is self._home_view:
             self._refresh_home(force=True)
+        elif widget is self._analytics_view:
+            self._analytics_view.activate_view()
 
     def _resolve_direction(self, current: QWidget | None, target: QWidget) -> int:
         if current is None:

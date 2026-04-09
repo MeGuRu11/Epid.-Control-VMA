@@ -713,3 +713,30 @@
 - `tests/unit/test_analytics_chart_data.py`
 - `tests/unit/test_ui_smoke.py`
 - `tests/unit/test_dropdown_indicators.py`
+---
+
+## Дополнение (аналитика: активация через stacked navigation, 2026-04-09)
+
+### Что сделано
+
+- Подтверждён реальный runtime-path: аналитика открывается через `MainWindow._set_active_view(...)`, а не как самостоятельное окно.
+- Для этого пути добавлена явная активация аналитической страницы: `MainWindow` теперь вызывает `AnalyticsSearchView.activate_view()` при переходе на аналитику.
+- Добавлен unit-регресс на переключение страницы и вызов `activate_view()`.
+
+### Проверки
+
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`265 source files`).
+- `pytest -q` — pass (`272 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+
+### Открытые вопросы / риски
+
+1. Если после этого пользователь всё ещё видит пустые графики, значит проблема уже не в активации страницы, а в фактическом отсутствии данных за текущий месяц или в окружении запуска старой сборки/старого процесса.
+2. В таком случае следующим шагом нужно будет проверить реальный runtime: какой именно Python/process/сборка запускается и какие данные реально возвращает `AnalyticsService` в продовом окружении.
+
+### Ключевые файлы
+
+- `app/ui/analytics/analytics_view.py`
+- `app/ui/main_window.py`
+- `tests/unit/test_main_window_context_selection.py`

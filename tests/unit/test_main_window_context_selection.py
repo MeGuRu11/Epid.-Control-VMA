@@ -3,6 +3,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import cast
 
+from PySide6.QtWidgets import QWidget
+
+from app.application.dto.auth_dto import SessionContext
 from app.ui.main_window import MainWindow
 
 
@@ -59,6 +62,40 @@ class _FakeRefreshView:
 
     def refresh_patient(self, patient_id: int) -> None:
         self.refreshed.append(patient_id)
+
+
+class _FakeStack:
+    def __init__(self, current: QWidget | None = None) -> None:
+        self._current = current
+        self.calls: list[tuple[QWidget, int]] = []
+
+    def currentWidget(self) -> QWidget | None:  # noqa: N802
+        return self._current
+
+    def setCurrentWidgetAnimated(self, widget: QWidget, direction: int = 0) -> None:  # noqa: N802
+        self._current = widget
+        self.calls.append((widget, direction))
+
+
+class _FakeAction:
+    def __init__(self) -> None:
+        self.checked = False
+        self.properties: dict[str, object] = {}
+
+    def setChecked(self, value: bool) -> None:  # noqa: N802
+        self.checked = value
+
+    def setProperty(self, key: str, value: object) -> None:  # noqa: N802
+        self.properties[key] = value
+
+
+class _FakeAnalyticsWidget(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.activate_calls = 0
+
+    def activate_view(self) -> None:
+        self.activate_calls += 1
 
 
 def test_on_case_selected_loads_case_once_for_non_empty_context() -> None:
@@ -145,3 +182,36 @@ def test_after_patient_edit_saved_skips_context_update_for_non_current_patient()
     assert window._emr_form.refreshed == [7]
     assert window._context_bar.calls == []
     assert changed["count"] == 1
+
+
+def test_set_active_view_activates_analytics_page(qapp) -> None:
+    home = QWidget()
+    analytics = _FakeAnalyticsWidget()
+    home_action = _FakeAction()
+    analytics_action = _FakeAction()
+    window = SimpleNamespace()
+    window.session = SessionContext(user_id=1, login="admin", role="admin")
+    window._admin_view = QWidget()
+    window._exchange_view = QWidget()
+    window._home_view = home
+    window._analytics_view = analytics
+    window._stack = _FakeStack(current=home)
+    window._nav_actions = {
+        home: home_action,
+        analytics: analytics_action,
+    }
+    window._nav_action_titles = {
+        home_action: "Главная",
+        analytics_action: "Аналитика",
+    }
+    window._update_nav_presentation = lambda: None
+    window._menubar = None
+    window._refresh_home = lambda force=False: None
+    window._resolve_direction = lambda _current, _target: 1
+
+    MainWindow._set_active_view(cast(MainWindow, window), analytics)
+
+    assert window._stack.calls == [(analytics, 1)]
+    assert analytics.activate_calls == 1
+    assert analytics_action.checked is True
+    assert analytics_action.properties["active"] is True

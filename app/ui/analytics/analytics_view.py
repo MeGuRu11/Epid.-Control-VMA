@@ -142,6 +142,9 @@ class AnalyticsSearchView(QWidget):
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         super().showEvent(event)
+        self.activate_view()
+
+    def activate_view(self) -> None:
         if self._default_analytics_loaded:
             return
         self._default_analytics_loaded = True
