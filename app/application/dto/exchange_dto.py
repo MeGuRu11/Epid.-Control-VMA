@@ -108,7 +108,7 @@ class Form100ExchangeService(Protocol):
         self,
         *,
         file_path: str | Path,
-        actor_id: int | None,
+        actor_id: int,
         card_id: str | None = None,
         filters: Form100V2Filters | None = None,
         exported_by: str | None = None,
@@ -120,4 +120,5 @@ class Form100ExchangeService(Protocol):
         file_path: str | Path,
         actor_id: int | None,
         mode: str = "merge",
+        system: bool = False,
     ) -> Mapping[str, object]: ...

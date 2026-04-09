@@ -15,6 +15,7 @@ from app.application.dto.emz_dto import (
     EmzIsmpDto,
     EmzUpdateRequest,
 )
+from app.application.exceptions import PermissionError as AppPermissionError
 from app.application.services.patient_service import PatientService
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.emz_repo import EmzRepository
@@ -76,9 +77,8 @@ class EmzService:
         self.audit_repo = audit_repo or AuditLogRepository()
         self.session_factory = session_factory
 
-    def create_emr(self, request: EmzCreateRequest, actor_id: int | None) -> EmzCaseResponse:
-        if actor_id is None:  # raise on missing actor_id
-            raise ValueError("actor_id обязателен для операций записи")
+    def create_emr(self, request: EmzCreateRequest, actor_id: int) -> EmzCaseResponse:
+        actor_id = self._require_actor_id(actor_id)
         patient_resp = self.patient_service.create_or_get(request.to_patient_request(), actor_id=actor_id)
         with self.session_factory() as session:
             existing = self.emr_repo.get_case_by_patient_and_no(
@@ -161,7 +161,8 @@ class EmzService:
                 length_of_stay_days=length_of_stay_days,
             )
 
-    def update_emr(self, request: EmzUpdateRequest, actor_id: int | None) -> EmzCaseResponse:
+    def update_emr(self, request: EmzUpdateRequest, actor_id: int) -> EmzCaseResponse:
+        actor_id = self._require_actor_id(actor_id)
         with self.session_factory() as session:
             current = self.emr_repo.get_current_version(session, request.emr_case_id)
             if not current:
@@ -323,8 +324,9 @@ class EmzService:
         *,
         hospital_case_no: str,
         department_id: int | None,
-        actor_id: int | None,
+        actor_id: int,
     ) -> None:
+        actor_id = self._require_actor_id(actor_id)
         with self.session_factory() as session:
             case = self.emr_repo.get_case(session, emr_case_id)
             if not case:
@@ -424,7 +426,7 @@ class EmzService:
             cases = self.emr_repo.search_cases_by_case_no(session, query, limit=limit)
             return [{"id": c.id, "case_no": c.hospital_case_no} for c in cases]
 
-    def delete_emr(self, emr_case_id: int, actor_id: int | None) -> None:
+    def delete_emr(self, emr_case_id: int, actor_id: int) -> None:
         with self.session_factory() as session:
             self._require_admin(session, actor_id)
             deleted = self.emr_repo.delete_case(session, emr_case_id)
@@ -440,12 +442,16 @@ class EmzService:
             )
 
     def _require_admin(self, session, actor_id: int | None) -> None:
-        if actor_id is None:  # raise on missing actor_id
-            raise ValueError("actor_id обязателен для операций записи")
+        actor_id = self._require_actor_id(actor_id)
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor and str(actor.role) == "admin":
             return
-        raise ValueError("Операция доступна только администратору")
+        raise AppPermissionError("Операция доступна только администратору")
+
+    def _require_actor_id(self, actor_id: int | None) -> int:
+        if actor_id is None:
+            raise AppPermissionError("actor_id обязателен для операций записи")
+        return actor_id
 
 
 

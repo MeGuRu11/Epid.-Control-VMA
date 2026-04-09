@@ -105,3 +105,20 @@ def test_form100_v2_zip_roundtrip_append_and_hash_validation(tmp_path: Path) -> 
     _tamper_zip_payload(zip_path, tampered_zip)
     with pytest.raises(ValueError):
         service.import_package_zip(file_path=tampered_zip, actor_id=admin_id, mode="merge")
+
+
+def test_form100_v2_import_allows_system_actor_when_explicit(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "form100_v2_system_import.db")
+    admin_id = seed_admin(session_factory)
+    service = Form100ServiceV2(session_factory=session_factory)
+
+    created = service.create_card(make_create_request(), actor_id=admin_id)
+    zip_path = tmp_path / "form100_v2_system_import.zip"
+    service.export_package_zip(file_path=zip_path, actor_id=admin_id, card_id=created.id, exported_by="admin")
+    service.delete_card(created.id, actor_id=admin_id)
+
+    result = service.import_package_zip(file_path=zip_path, actor_id=None, mode="merge", system=True)
+
+    assert result["summary"]["added"] == 1
+    restored = service.get_card(created.id)
+    assert restored.id == created.id

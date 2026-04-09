@@ -1,4 +1,4 @@
-"""Form100MainWidget вЂ” С†РµРЅС‚СЂР°Р»СЊРЅР°СЏ С‡Р°СЃС‚СЊ Р±Р»Р°РЅРєР° Р¤РѕСЂРјС‹ 100."""
+"""Form100MainWidget — центральная часть бланка Формы 100."""
 from __future__ import annotations
 
 import json
@@ -24,33 +24,33 @@ from app.ui.form100_v2.wizard_widgets.bodymap_widget import BodyMapWidget
 from app.ui.form100_v2.wizard_widgets.lesion_type_widget import LesionTypeWidget
 
 LESION_ITEMS: tuple[tuple[str, str], ...] = (
-    ("lesion_gunshot",    "Рћ  РћРіРЅРµСЃС‚СЂРµР»СЊРЅРѕРµ"),
-    ("lesion_nuclear",    "РЇ  РЇРґРµСЂРЅРѕРµ"),
-    ("lesion_chemical",   "РҐ  РҐРёРјРёС‡РµСЃРєРѕРµ"),
-    ("lesion_biological", "Р‘Р°Рє. Р‘Р°РєС‚РµСЂРёРѕР»."),
-    ("lesion_other",      "Р”СЂСѓРіРёРµ"),
-    ("lesion_frostbite",  "РћС‚Рј. РћС‚РјРѕСЂРѕР¶РµРЅРёРµ"),
-    ("lesion_burn",       "Р‘  РћР¶РѕРі"),
-    ("lesion_misc",       "Р  РРЅРѕРµ"),
+    ("lesion_gunshot",    "О  Огнестрельное"),
+    ("lesion_nuclear",    "Я  Ядерное"),
+    ("lesion_chemical",   "Х  Химическое"),
+    ("lesion_biological", "Бак. Бактериол."),
+    ("lesion_other",      "Другие"),
+    ("lesion_frostbite",  "Отм. Отморожение"),
+    ("lesion_burn",       "Б  Ожог"),
+    ("lesion_misc",       "И  Иное"),
 )
 
 SAN_LOSS_ITEMS: tuple[tuple[str, str], ...] = (
-    ("san_loss_gunshot",    "Рћ  РћРіРЅРµСЃС‚СЂРµР»СЊРЅРѕРµ"),
-    ("san_loss_nuclear",    "РЇ  РЇРґРµСЂРЅРѕРµ"),
-    ("san_loss_chemical",   "РҐ  РҐРёРјРёС‡РµСЃРєРѕРµ"),
-    ("san_loss_biological", "Р‘Р°Рє. Р‘Р°РєС‚РµСЂРёРѕР»."),
-    ("san_loss_other",      "Р”СЂСѓРіРёРµ"),
-    ("san_loss_frostbite",  "РћС‚Рј. РћС‚РјРѕСЂРѕР¶РµРЅРёРµ"),
-    ("san_loss_burn",       "Р‘  РћР¶РѕРі"),
-    ("san_loss_misc",       "Р  РРЅРѕРµ"),
+    ("san_loss_gunshot",    "О  Огнестрельное"),
+    ("san_loss_nuclear",    "Я  Ядерное"),
+    ("san_loss_chemical",   "Х  Химическое"),
+    ("san_loss_biological", "Бак. Бактериол."),
+    ("san_loss_other",      "Другие"),
+    ("san_loss_frostbite",  "Отм. Отморожение"),
+    ("san_loss_burn",       "Б  Ожог"),
+    ("san_loss_misc",       "И  Иное"),
 )
 
 TISSUE_TYPES: tuple[str, ...] = (
-    "РјСЏРіРєРёРµ С‚РєР°РЅРё",
-    "РєРѕСЃС‚Рё",
-    "СЃРѕСЃСѓРґС‹",
-    "РїРѕР»РѕСЃС‚РЅС‹Рµ СЂР°РЅС‹",
-    "РѕР¶РѕРіРё",
+    "мягкие ткани",
+    "кости",
+    "сосуды",
+    "полостные раны",
+    "ожоги",
 )
 
 
@@ -59,7 +59,7 @@ def _truthy(value: object) -> bool:
 
 
 class Form100MainWidget(QWidget):
-    """РћСЃРЅРѕРІРЅРѕР№ Р±Р»Р°РЅРє Р¤РѕСЂРјС‹ 100: РїРѕСЂР°Р¶РµРЅРёСЏ + СЃС…РµРјР° С‚РµР»Р° + РјРµРґРёС†РёРЅСЃРєР°СЏ РїРѕРјРѕС‰СЊ + РёРґРµРЅС‚РёС„РёРєР°С†РёСЏ."""
+    """Основной бланк Формы 100: поражения + схема тела + медицинская помощь + идентификация."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -76,7 +76,7 @@ class Form100MainWidget(QWidget):
         left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(6)
 
-        lesion_box = QGroupBox("Р’РёРґ РїРѕСЂР°Р¶РµРЅРёСЏ")
+        lesion_box = QGroupBox("Вид поражения")
         lesion_box.setObjectName("form100Lesion")
         lesion_lay = QVBoxLayout(lesion_box)
         lesion_lay.setContentsMargins(8, 6, 8, 6)
@@ -84,7 +84,7 @@ class Form100MainWidget(QWidget):
         lesion_lay.addWidget(self.lesion_widget)
         left_col.addWidget(lesion_box)
 
-        san_box = QGroupBox("Р’РёРґ СЃР°РЅ. РїРѕС‚РµСЂСЊ")
+        san_box = QGroupBox("Вид сан. потерь")
         san_box.setObjectName("form100Lesion")
         san_lay = QVBoxLayout(san_box)
         san_lay.setContentsMargins(8, 6, 8, 6)
@@ -92,7 +92,7 @@ class Form100MainWidget(QWidget):
         san_lay.addWidget(self.san_loss_widget)
         left_col.addWidget(san_box)
 
-        tissue_box = QGroupBox("РўРёРїС‹ С‚РєР°РЅРµР№")
+        tissue_box = QGroupBox("Типы тканей")
         tissue_box.setObjectName("form100Tissue")
         tissue_lay = QGridLayout(tissue_box)
         tissue_lay.setContentsMargins(8, 6, 8, 6)
@@ -112,7 +112,7 @@ class Form100MainWidget(QWidget):
         isolation_col.setContentsMargins(0, 0, 0, 0)
         isolation_col.setSpacing(4)
 
-        self.chk_isolation = QCheckBox("РР—Рћ-\nР›РЇР¦РРЇ")
+        self.chk_isolation = QCheckBox("ИЗО-\nЛЯЦИЯ")
         self.chk_isolation.setObjectName("isolationCheck")
         self.chk_isolation.toggled.connect(self._sync_isolation_bar)
         isolation_col.addWidget(self.chk_isolation, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -121,7 +121,7 @@ class Form100MainWidget(QWidget):
         self.isolation_bar.setObjectName("form100Isolation")
         self.isolation_bar.setMinimumWidth(18)
         self.isolation_bar.setMaximumWidth(24)
-        self.isolation_bar.setToolTip("РР—РћР›РЇР¦РРЇ")
+        self.isolation_bar.setToolTip("ИЗОЛЯЦИЯ")
         isolation_col.addWidget(self.isolation_bar, 1, Qt.AlignmentFlag.AlignHCenter)
 
         top_row.addLayout(isolation_col)
@@ -129,36 +129,36 @@ class Form100MainWidget(QWidget):
         self.editor = BodyMapWidget()
         top_row.addWidget(self.editor, 1)
 
-        mp_box = QGroupBox("РњРµРґРёС†РёРЅСЃРєР°СЏ РїРѕРјРѕС‰СЊ")
+        mp_box = QGroupBox("Медицинская помощь")
         mp_box.setObjectName("form100Help")
         mp_lay = QFormLayout(mp_box)
         mp_lay.setContentsMargins(10, 8, 10, 8)
         mp_lay.setVerticalSpacing(5)
 
-        self.mp_antibiotic = QCheckBox("РђРЅС‚РёР±РёРѕС‚РёРє")
+        self.mp_antibiotic = QCheckBox("Антибиотик")
         self.mp_antibiotic_dose = QLineEdit()
-        self.mp_antibiotic_dose.setPlaceholderText("РґРѕР·Р°")
-        self.mp_serum_pss = QCheckBox("РЎС‹РІРѕСЂРѕС‚РєР° РџРЎРЎ")
-        self.mp_serum_pgs = QCheckBox("РЎС‹РІРѕСЂРѕС‚РєР° РџР“РЎ")
+        self.mp_antibiotic_dose.setPlaceholderText("доза")
+        self.mp_serum_pss = QCheckBox("Сыворотка ПСС")
+        self.mp_serum_pgs = QCheckBox("Сыворотка ПГС")
         self.mp_serum_dose = QLineEdit()
-        self.mp_serum_dose.setPlaceholderText("РґРѕР·Р°")
+        self.mp_serum_dose.setPlaceholderText("доза")
         self.mp_toxoid = QLineEdit()
-        self.mp_toxoid.setPlaceholderText("Р°РЅР°С‚РѕРєСЃРёРЅ (РєР°РєРѕР№)")
+        self.mp_toxoid.setPlaceholderText("анатоксин (какой)")
         self.mp_antidote = QLineEdit()
-        self.mp_antidote.setPlaceholderText("Р°РЅС‚РёРґРѕС‚ (РєР°РєРѕР№)")
-        self.mp_analgesic = QCheckBox("РћР±РµР·Р±РѕР»РёРІР°СЋС‰РµРµ")
+        self.mp_antidote.setPlaceholderText("антидот (какой)")
+        self.mp_analgesic = QCheckBox("Обезболивающее")
         self.mp_analgesic_dose = QLineEdit()
-        self.mp_analgesic_dose.setPlaceholderText("РґРѕР·Р°")
-        self.mp_transfusion_blood = QCheckBox("РџРµСЂРµР»РёРІР°РЅРёРµ РєСЂРѕРІРё")
-        self.mp_transfusion_substitute = QCheckBox("РљСЂРѕРІРµР·Р°РјРµРЅРёС‚РµР»Рё")
-        self.mp_immobilization = QCheckBox("РРјРјРѕР±РёР»РёР·Р°С†РёСЏ")
-        self.mp_bandage = QCheckBox("РџРµСЂРµРІСЏР·РєР°")
+        self.mp_analgesic_dose.setPlaceholderText("доза")
+        self.mp_transfusion_blood = QCheckBox("Переливание крови")
+        self.mp_transfusion_substitute = QCheckBox("Кровезаменители")
+        self.mp_immobilization = QCheckBox("Иммобилизация")
+        self.mp_bandage = QCheckBox("Перевязка")
 
         mp_lay.addRow(self.mp_antibiotic, self.mp_antibiotic_dose)
         mp_lay.addRow(self.mp_serum_pss)
         mp_lay.addRow(self.mp_serum_pgs, self.mp_serum_dose)
-        mp_lay.addRow("РђРЅР°С‚РѕРєСЃРёРЅ:", self.mp_toxoid)
-        mp_lay.addRow("РђРЅС‚РёРґРѕС‚:", self.mp_antidote)
+        mp_lay.addRow("Анатоксин:", self.mp_toxoid)
+        mp_lay.addRow("Антидот:", self.mp_antidote)
         mp_lay.addRow(self.mp_analgesic, self.mp_analgesic_dose)
         mp_lay.addRow(self.mp_transfusion_blood)
         mp_lay.addRow(self.mp_transfusion_substitute)
@@ -167,7 +167,7 @@ class Form100MainWidget(QWidget):
 
         top_row.addWidget(mp_box)
 
-        ident_box = QGroupBox("РРґРµРЅС‚РёС„РёРєР°С†РёСЏ вЂ” РѕСЃРЅРѕРІРЅРѕР№ Р±Р»Р°РЅРє")
+        ident_box = QGroupBox("Идентификация — основной бланк")
         ident_box.setObjectName("form100Ident")
         ident_lay = QFormLayout(ident_box)
         ident_lay.setContentsMargins(10, 8, 10, 8)
@@ -175,7 +175,7 @@ class Form100MainWidget(QWidget):
         ident_lay.setHorizontalSpacing(12)
 
         self.main_issued_place = QLineEdit()
-        self.main_issued_place.setPlaceholderText("РњРµРґ. РїСѓРЅРєС‚ / СѓС‡СЂРµР¶РґРµРЅРёРµ")
+        self.main_issued_place.setPlaceholderText("Мед. пункт / учреждение")
 
         issued_time_row = QHBoxLayout()
         self.main_issued_time = QTimeEdit()
@@ -184,18 +184,18 @@ class Form100MainWidget(QWidget):
         self.main_issued_date.setDisplayFormat("dd.MM.yyyy")
         self.main_issued_date.setCalendarPopup(True)
         issued_time_row.addWidget(self.main_issued_time)
-        issued_time_row.addWidget(QLabel("РѕС‚"))
+        issued_time_row.addWidget(QLabel("от"))
         issued_time_row.addWidget(self.main_issued_date)
         issued_time_row.addStretch(1)
 
         self.main_rank = QLineEdit()
-        self.main_rank.setPlaceholderText("РІ/Р·РІР°РЅРёРµ")
+        self.main_rank.setPlaceholderText("в/звание")
         self.main_unit = QLineEdit()
-        self.main_unit.setPlaceholderText("РІ/С‡Р°СЃС‚СЊ")
+        self.main_unit.setPlaceholderText("в/часть")
         self.main_full_name = QLineEdit()
-        self.main_full_name.setPlaceholderText("С„Р°РјРёР»РёСЏ, РёРјСЏ, РѕС‚С‡РµСЃС‚РІРѕ")
+        self.main_full_name.setPlaceholderText("фамилия, имя, отчество")
         self.main_id_tag = QLineEdit()
-        self.main_id_tag.setPlaceholderText("СѓРґРѕСЃС‚РѕРІРµСЂРµРЅРёРµ / Р¶РµС‚РѕРЅ в„–")
+        self.main_id_tag.setPlaceholderText("удостоверение / жетон №")
 
         injury_time_row = QHBoxLayout()
         self.main_injury_time = QTimeEdit()
@@ -204,17 +204,17 @@ class Form100MainWidget(QWidget):
         self.main_injury_date.setDisplayFormat("dd.MM.yyyy")
         self.main_injury_date.setCalendarPopup(True)
         injury_time_row.addWidget(self.main_injury_time)
-        injury_time_row.addWidget(QLabel("РѕС‚"))
+        injury_time_row.addWidget(QLabel("от"))
         injury_time_row.addWidget(self.main_injury_date)
         injury_time_row.addStretch(1)
 
-        ident_lay.addRow("Р’С‹РґР°РЅР°:", self.main_issued_place)
-        ident_lay.addRow("Р’СЂРµРјСЏ / РґР°С‚Р° РІС‹РґР°С‡Рё:", issued_time_row)
-        ident_lay.addRow("Р’/Р·РІР°РЅРёРµ:", self.main_rank)
-        ident_lay.addRow("Р’/С‡Р°СЃС‚СЊ:", self.main_unit)
-        ident_lay.addRow("Р¤РРћ:", self.main_full_name)
-        ident_lay.addRow("Р–РµС‚РѕРЅ в„–:", self.main_id_tag)
-        ident_lay.addRow("Р Р°РЅРµРЅ / Р·Р°Р±РѕР»РµР»:", injury_time_row)
+        ident_lay.addRow("Выдана:", self.main_issued_place)
+        ident_lay.addRow("Время / дата выдачи:", issued_time_row)
+        ident_lay.addRow("В/звание:", self.main_rank)
+        ident_lay.addRow("В/часть:", self.main_unit)
+        ident_lay.addRow("ФИО:", self.main_full_name)
+        ident_lay.addRow("Жетон №:", self.main_id_tag)
+        ident_lay.addRow("Ранен / заболел:", injury_time_row)
 
         root.addWidget(ident_box)
 

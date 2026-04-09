@@ -1233,7 +1233,7 @@ class AnalyticsSearchView(QWidget):
                 filter_type="analytics",
                 name=name,
                 payload=payload,
-                created_by=self.session.user_id,
+                actor_id=self.session.user_id,
             )
         except ValueError as exc:
             show_warning(self, str(exc))

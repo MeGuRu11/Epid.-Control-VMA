@@ -84,9 +84,9 @@ def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
     if migration_root is None:
         checked_roots = ", ".join(str(path) for path in _migration_root_candidates(root_dir))
         _show_critical(
-            "РћС€РёР±РєР°",
-            "РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ С„Р°Р№Р»С‹ РјРёРіСЂР°С†РёР№ (alembic.ini Рё РєР°С‚Р°Р»РѕРі migrations).\n"
-            f"РџСЂРѕРІРµСЂРµРЅС‹ РїСѓС‚Рё: {checked_roots}",
+            "Ошибка",
+            "Отсутствуют файлы миграций (alembic.ini и каталог migrations).\n"
+            f"Проверены пути: {checked_roots}",
         )
         return False
     try:
@@ -95,8 +95,8 @@ def check_startup_prerequisites(root_dir: Path, db_file: Path) -> bool:
         test_file.unlink(missing_ok=True)
     except OSError:
         _show_critical(
-            "РћС€РёР±РєР°",
-            f"РќРµС‚ РїСЂР°РІ РЅР° Р·Р°РїРёСЃСЊ РІ РєР°С‚Р°Р»РѕРі Р‘Р”: {db_file.parent}",
+            "Ошибка",
+            f"Нет прав на запись в каталог БД: {db_file.parent}",
         )
         return False
     return True
@@ -139,9 +139,9 @@ def run_migrations(root_dir: Path, database_url: str, log_dir: Path, db_file: Pa
         except OSError:
             logger.exception("Failed to write migration error log")
         _show_critical(
-            "РћС€РёР±РєР°",
-            "РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРёРјРµРЅРёС‚СЊ РјРёРіСЂР°С†РёРё Р±Р°Р·С‹ РґР°РЅРЅС‹С….\n"
-            f"РџРѕРґСЂРѕР±РЅРѕСЃС‚Рё: {log_dir / 'migration_error.log'}",
+            "Ошибка",
+            "Не удалось применить миграции базы данных.\n"
+            f"Подробности: {log_dir / 'migration_error.log'}",
         )
         return False
 
@@ -173,16 +173,16 @@ def ensure_schema_compatibility(
         columns = {col["name"] for col in inspector.get_columns("patients")}
         if required - columns:
             _show_critical(
-                "РћС€РёР±РєР°",
-                "Р‘Р°Р·Р° РґР°РЅРЅС‹С… СѓСЃС‚Р°СЂРµР»Р° Рё РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РѕР±РЅРѕРІР»РµРЅР° Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё.",
+                "Ошибка",
+                "База данных устарела и не может быть обновлена автоматически.",
             )
             return False
         return True
     except _HANDLED_STARTUP_ERRORS as exc:
         logging.getLogger(__name__).exception("Failed to verify database schema")
         _show_critical(
-            "РћС€РёР±РєР°",
-            f"РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ СЃС‚СЂСѓРєС‚СѓСЂСѓ Р±Р°Р·С‹ РґР°РЅРЅС‹С…: {exc}",
+            "Ошибка",
+            f"Не удалось проверить структуру базы данных: {exc}",
         )
         return False
 
@@ -192,8 +192,8 @@ def ensure_fts_objects(session_factory: _SessionFactory) -> bool:
     if fts_manager.ensure_all():
         return True
     _show_critical(
-        "РћС€РёР±РєР°",
-        "РќРµ СѓРґР°Р»РѕСЃСЊ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ FTS-РїРѕРёСЃРє.",
+        "Ошибка",
+        "Не удалось инициализировать FTS-поиск.",
     )
     return False
 
@@ -267,7 +267,7 @@ def warn_missing_plot_dependencies() -> None:
         missing.append("matplotlib")
     if missing:
         _show_warning(
-            "Р‘РёР±Р»РёРѕС‚РµРєРё РЅРµ РЅР°Р№РґРµРЅС‹",
-            "РќРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅС‹ Р±РёР±Р»РёРѕС‚РµРєРё РґР»СЏ РіСЂР°С„РёРєРѕРІ: " + ", ".join(missing),
+            "Библиотеки не найдены",
+            "Не установлены библиотеки для графиков: " + ", ".join(missing),
         )
 

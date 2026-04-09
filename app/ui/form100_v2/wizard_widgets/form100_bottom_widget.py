@@ -33,7 +33,7 @@ def _parse_time(raw: str) -> QTime:
 
 
 def _row(label_text: str, field: QWidget, label_w: int = 120) -> QHBoxLayout:
-    """Р“РѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅР°СЏ СЃС‚СЂРѕРєР°: QLabel(fixed) + РїРѕР»Рµ."""
+    """Горизонтальная строка: QLabel(fixed) + поле."""
     lay = QHBoxLayout()
     lay.setContentsMargins(0, 0, 0, 0)
     lay.setSpacing(10)
@@ -47,7 +47,7 @@ def _row(label_text: str, field: QWidget, label_w: int = 120) -> QHBoxLayout:
 
 
 def _sep() -> QFrame:
-    """РўРѕРЅРєРёР№ РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅС‹Р№ СЂР°Р·РґРµР»РёС‚РµР»СЊ."""
+    """Тонкий горизонтальный разделитель."""
     f = QFrame()
     f.setObjectName("form100BottomSeparator")
     f.setFrameShape(QFrame.Shape.HLine)
@@ -62,13 +62,13 @@ class Form100BottomWidget(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        block = QGroupBox("Р­РІР°РєСѓР°С†РёСЏ Рё Р·Р°РєР»СЋС‡РµРЅРёРµ")
+        block = QGroupBox("Эвакуация и заключение")
         block.setObjectName("form100Bottom")
         vlay = QVBoxLayout(block)
         vlay.setContentsMargins(14, 12, 14, 14)
         vlay.setSpacing(8)
 
-        # в”Ђв”Ђ Р–РіСѓС‚ (РІСЂРµРјСЏ) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+        # ── Жгут (время) ──────────────────────────────────────────────────
         self.tourniquet_time = QTimeEdit()
         self.tourniquet_time.setDisplayFormat("HH:mm")
         self.tourniquet_time.setMinimumWidth(96)
@@ -76,7 +76,7 @@ class Form100BottomWidget(QWidget):
         tq_lay = QHBoxLayout()
         tq_lay.setContentsMargins(0, 0, 0, 0)
         tq_lay.setSpacing(10)
-        lbl_tq = QLabel("Р–РіСѓС‚ (РІСЂРµРјСЏ)")
+        lbl_tq = QLabel("Жгут (время)")
         lbl_tq.setObjectName("form100BottomRowLabel")
         lbl_tq.setMinimumWidth(120)
         lbl_tq.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -85,39 +85,39 @@ class Form100BottomWidget(QWidget):
         tq_lay.addStretch(1)
         vlay.addLayout(tq_lay)
 
-        # в”Ђв”Ђ РЎР°РЅРѕР±СЂР°Р±РѕС‚РєР° в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+        # ── Санобработка ──────────────────────────────────────────────────
         san_widget = QWidget()
         san_widget.setObjectName("form100BottomInlineContainer")
         san_inner = QHBoxLayout(san_widget)
         san_inner.setContentsMargins(0, 0, 0, 0)
         san_inner.setSpacing(16)
         self.sanitation_group = QButtonGroup(self)
-        self.rb_san_full = QRadioButton("РџРѕР»РЅР°СЏ")
-        self.rb_san_partial = QRadioButton("Р§Р°СЃС‚РёС‡РЅР°СЏ")
-        self.rb_san_none = QRadioButton("РќРµ РїСЂРѕРІРѕРґРёР»Р°СЃСЊ")
+        self.rb_san_full = QRadioButton("Полная")
+        self.rb_san_partial = QRadioButton("Частичная")
+        self.rb_san_none = QRadioButton("Не проводилась")
         for rb in (self.rb_san_full, self.rb_san_partial, self.rb_san_none):
             self.sanitation_group.addButton(rb)
             san_inner.addWidget(rb)
         san_inner.addStretch(1)
-        vlay.addLayout(_row("РЎР°РЅРѕР±СЂР°Р±РѕС‚РєР°", san_widget))
+        vlay.addLayout(_row("Санобработка", san_widget))
 
         vlay.addWidget(_sep())
 
-        # в”Ђв”Ђ РџРѕР·РёС†РёСЏ РїСЂРё СЌРІР°РєСѓР°С†РёРё в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-        sec_lbl = QLabel("Р­Р’РђРљРЈРђР¦РРЇ")
+        # ── Позиция при эвакуации ─────────────────────────────────────────
+        sec_lbl = QLabel("ЭВАКУАЦИЯ")
         sec_lbl.setObjectName("form100BottomSectionLabel")
         vlay.addWidget(sec_lbl)
 
         self.evacuation_dest = IconSelectWidget(
             (
-                ("lying",     "Р›С‘Р¶Р°"),
-                ("sitting",   "РЎРёРґСЏ"),
-                ("stretcher", "РќРѕСЃРёР»РєРё"),
+                ("lying",     "Лёжа"),
+                ("sitting",   "Сидя"),
+                ("stretcher", "Носилки"),
             )
         )
-        vlay.addLayout(_row("РџРѕР·РёС†РёСЏ", self.evacuation_dest))
+        vlay.addLayout(_row("Позиция", self.evacuation_dest))
 
-        # в”Ђв”Ђ РћС‡РµСЂС‘РґРЅРѕСЃС‚СЊ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+        # ── Очерёдность ───────────────────────────────────────────────────
         prio_widget = QWidget()
         prio_widget.setObjectName("form100BottomInlineContainer")
         prio_inner = QHBoxLayout(prio_widget)
@@ -131,31 +131,31 @@ class Form100BottomWidget(QWidget):
             self.priority_group.addButton(rb)
             prio_inner.addWidget(rb)
         prio_inner.addStretch(1)
-        vlay.addLayout(_row("РћС‡РµСЂС‘РґРЅРѕСЃС‚СЊ", prio_widget))
+        vlay.addLayout(_row("Очерёдность", prio_widget))
 
-        # в”Ђв”Ђ РўСЂР°РЅСЃРїРѕСЂС‚ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+        # ── Транспорт ─────────────────────────────────────────────────────
         self.transport_type = IconSelectWidget(
             (
-                ("car",   "РђРІС‚Рѕ"),
-                ("ambu",  "РЎР°РЅ."),
-                ("ship",  "РљРѕСЂР°Р±Р»СЊ"),
-                ("heli",  "Р’РµСЂС‚РѕР»С‘С‚"),
-                ("plane", "РЎР°РјРѕР»С‘С‚"),
+                ("car",   "Авто"),
+                ("ambu",  "Сан."),
+                ("ship",  "Корабль"),
+                ("heli",  "Вертолёт"),
+                ("plane", "Самолёт"),
             )
         )
-        vlay.addLayout(_row("РўСЂР°РЅСЃРїРѕСЂС‚", self.transport_type))
+        vlay.addLayout(_row("Транспорт", self.transport_type))
 
         vlay.addWidget(_sep())
 
-        # в”Ђв”Ђ РџРѕРґРїРёСЃСЊ РІСЂР°С‡Р° + Р”РёР°РіРЅРѕР· в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-        sec_lbl2 = QLabel("Р—РђРљР›Р®Р§Р•РќРР•")
+        # ── Подпись врача + Диагноз ───────────────────────────────────────
+        sec_lbl2 = QLabel("ЗАКЛЮЧЕНИЕ")
         sec_lbl2.setObjectName("form100BottomSectionLabel")
         vlay.addWidget(sec_lbl2)
 
         self.doctor_signature = QLineEdit()
-        vlay.addLayout(_row("РџРѕРґРїРёСЃСЊ РІСЂР°С‡Р°", self.doctor_signature))
+        vlay.addLayout(_row("Подпись врача", self.doctor_signature))
 
-        diag_lbl = QLabel("Р”РёР°РіРЅРѕР·")
+        diag_lbl = QLabel("Диагноз")
         diag_lbl.setObjectName("form100BottomRowLabel")
         vlay.addWidget(diag_lbl)
         self.main_diagnosis = QTextEdit()
@@ -168,7 +168,7 @@ class Form100BottomWidget(QWidget):
 
         root.addWidget(block)
 
-    # в”Ђв”Ђ Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    # ── Вспомогательные ──────────────────────────────────────────────────────
 
     def _set_sanitation_type(self, value: str) -> None:
         if value == "full":
@@ -214,7 +214,7 @@ class Form100BottomWidget(QWidget):
             return "III"
         return ""
 
-    # в”Ђв”Ђ РџСѓР±Р»РёС‡РЅС‹Р№ API в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    # ── Публичный API ────────────────────────────────────────────────────────
 
     def set_values(self, payload: dict[str, str]) -> None:
         self.tourniquet_time.setTime(

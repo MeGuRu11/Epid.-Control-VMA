@@ -789,7 +789,10 @@ class PatientEmkView(QWidget):
         if confirm != QMessageBox.StandardButton.Yes:
             return
         try:
-            actor_id = self._session.user_id if self._session is not None else None
+            if self._session is None or self._session.user_id is None:
+                self._set_status("Сессия не активна.", "error")
+                return
+            actor_id = self._session.user_id
             self.emz_service.delete_emr(self._current_case_id, actor_id=actor_id)
             self._current_case_id = None
             self._load_cases(self._current_patient.id)

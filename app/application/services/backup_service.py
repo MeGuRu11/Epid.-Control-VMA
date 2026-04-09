@@ -92,7 +92,7 @@ class BackupService:
     def create_backup(self, *, actor_id: int, reason: str = "manual") -> Path:
         self._require_admin_access(actor_id=actor_id, action="backup_create")
         if not DB_FILE.exists():
-            raise FileNotFoundError(f"Р‘Р°Р·Р° РґР°РЅРЅС‹С… РЅРµ РЅР°Р№РґРµРЅР°: {DB_FILE}")
+            raise FileNotFoundError(f"База данных не найдена: {DB_FILE}")
         # TODO SECURITY: добавить шифрование бэкапов/экспортов (AES-GCM)
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"app_{timestamp}.db"
@@ -109,7 +109,7 @@ class BackupService:
     def restore_backup(self, backup_path: Path, *, actor_id: int) -> None:
         self._require_admin_access(actor_id=actor_id, action="backup_restore")
         if not backup_path.exists():
-            raise FileNotFoundError(f"Р¤Р°Р№Р» СЂРµР·РµСЂРІРЅРѕР№ РєРѕРїРёРё РЅРµ РЅР°Р№РґРµРЅ: {backup_path}")
+            raise FileNotFoundError(f"Файл резервной копии не найден: {backup_path}")
         # Close pooled connections before overwriting DB file.
         try:
             from app.infrastructure.db.session import engine as sa_engine

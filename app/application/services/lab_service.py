@@ -25,7 +25,7 @@ def _format_lab_no(material_code: str, seq_date: date, seq: int) -> str:
 def _is_blood_material(material_code: str | None, material_name: str | None) -> bool:
     code = (material_code or "").casefold()
     name = (material_name or "").casefold()
-    return "blood" in code or "РєСЂРѕРІ" in name or "РєСЂРѕРІ" in code
+    return "blood" in code or "кров" in name or "кров" in code
 
 
 def _compute_qc_due_at(taken_at: datetime | None, material_code: str | None, material_name: str | None) -> datetime:
@@ -54,7 +54,7 @@ class LabService:
             raise ValueError("actor_id обязателен для операций записи")
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor is None or not bool(getattr(actor, "is_active", False)):
-            raise ValueError("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ")
+            raise ValueError("Пользователь не найден или неактивен")
 
     def create_sample(self, request: LabSampleCreateRequest, *, actor_id: int) -> LabSampleResponse:
         taken_at = request.taken_at or datetime.now(UTC)
@@ -63,7 +63,7 @@ class LabService:
             self._require_write_access(session, actor_id)
             material = self.ref_repo.get_material_type(session, request.material_type_id)
             if not material:
-                raise ValueError("РўРёРї РјР°С‚РµСЂРёР°Р»Р° РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Тип материала не найден")
             seq = self.lab_repo.next_lab_number(session, seq_date, request.material_type_id)
             material_code = cast(str, material.code)
             lab_no = _format_lab_no(material_code, seq_date, seq)
@@ -125,7 +125,7 @@ class LabService:
             self._require_write_access(session, actor_id)
             sample = self.lab_repo.get_sample(session, sample_id)
             if not sample:
-                raise ValueError("РџСЂРѕР±Р° РЅРµ РЅР°Р№РґРµРЅР°")
+                raise ValueError("Проба не найдена")
 
             self.lab_repo.update_result(
                 session,
@@ -194,7 +194,7 @@ class LabService:
             self._require_write_access(session, actor_id)
             sample = self.lab_repo.get_sample(session, sample_id)
             if not sample:
-                raise ValueError("РџСЂРѕР±Р° РЅРµ РЅР°Р№РґРµРЅР°")
+                raise ValueError("Проба не найдена")
 
             material_id = request.material_type_id or cast(int, sample.material_type_id)
             material = self.ref_repo.get_material_type(session, material_id)
@@ -266,7 +266,7 @@ class LabService:
         with self.session_factory() as session:
             sample = self.lab_repo.get_sample(session, sample_id)
             if not sample:
-                raise ValueError("РџСЂРѕР±Р° РЅРµ РЅР°Р№РґРµРЅР°")
+                raise ValueError("Проба не найдена")
             isolation = self.lab_repo.get_isolation(session, sample_id)
             susceptibility = self.lab_repo.get_susceptibility(session, sample_id)
             phages = self.lab_repo.get_phages(session, sample_id)

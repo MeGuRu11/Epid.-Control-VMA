@@ -524,3 +524,58 @@
 - `app/application/services/emz_service.py`
 - `app/application/services/saved_filter_service.py`
 - `alembic.ini`
+
+---
+
+## Дополнение (исправление находок code review GPT-5.4, 2026-04-09)
+
+### Что сделано
+
+- Исправлен product-case в `Form100ServiceV2`: сохранение импортированного PDF теперь делает fallback, если основной каталог артефактов недоступен для записи.
+- Добавлен регрессионный тест на non-writable каталог артефактов Form100.
+- Синхронизированы quality gates и CI:
+  - перед `alembic check` всегда выполняется `alembic upgrade head`;
+  - используется `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`;
+  - проверка mojibake вынесена в `scripts/check_mojibake.py`.
+- Ужесточён `actor_id`:
+  - `EmzService` mutating-методы требуют обязательный actor;
+  - `Form100ServiceV2` различает interactive/system path через `system=True`;
+  - `SavedFilterService.save_filter()` требует actor и пишет audit.
+- Дочищены строки mojibake в сервисах, README и `docs/code_review_gpt54.md`.
+
+### Проверки
+
+- `python scripts/check_architecture.py` — pass.
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass (`263 source files`).
+- `pytest -q` — pass (`264 passed, 2 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
+- `$env:EPIDCONTROL_DATA_DIR='tmp_run/epid-data'; python -m alembic upgrade head` — pass.
+- `$env:EPIDCONTROL_DATA_DIR='tmp_run/epid-data'; python -m alembic check` — pass.
+- `python scripts/check_mojibake.py` — pass.
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` — pass.
+
+### Открытые вопросы / риски
+
+1. В более ранних частях `docs/session_handoff.md` и `docs/progress_report.md` остаются старые повреждённые записи 2026-04-08; в этой сессии обновлён только актуальный хвост.
+2. В рабочем дереве по-прежнему лежат несвязанные `untracked` каталоги `.agents/skills/*` и `.npm-cache/`; они не относятся к этой задаче и не трогались.
+
+### Следующие шаги
+
+1. Если понадобится полная санитарная чистка документации, отдельно переписать старые повреждённые записи 2026-04-08 в `docs/progress_report.md`.
+2. Новую работу по release/security начинать от этого handoff и текущего `docs/code_review_gpt54.md`.
+
+### Ключевые файлы
+
+- `app/application/services/form100_service_v2.py`
+- `app/application/services/emz_service.py`
+- `app/application/services/saved_filter_service.py`
+- `app/application/services/reporting_service.py`
+- `app/ui/patient/patient_emk_view.py`
+- `scripts/check_mojibake.py`
+- `scripts/quality_gates.ps1`
+- `.github/workflows/quality-gates.yml`
+- `tests/integration/test_form100_v2_service.py`
+- `tests/integration/test_emz_service.py`
+- `docs/code_review_gpt54.md`
+- `docs/progress_report.md`

@@ -59,7 +59,7 @@ class PatientService:
             raise ValueError("actor_id обязателен для операций записи")
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor is None or not bool(getattr(actor, "is_active", False)):
-            raise ValueError("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РЅРµР°РєС‚РёРІРµРЅ")
+            raise ValueError("Пользователь не найден или неактивен")
 
     def _audit_mutation(
         self,
@@ -185,7 +185,7 @@ class PatientService:
         with self.session_factory() as session:
             patient = self.patient_repo.get_by_id(session, patient_id)
             if not patient:
-                raise ValueError("РџР°С†РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Пациент не найден")
             patient_id_value = cast(int, patient.id)
             full_name = cast(str, patient.full_name)
             dob = cast("date | None", patient.dob)
@@ -463,7 +463,7 @@ class PatientService:
             )
             row = cur.fetchone()
             if not row:
-                raise ValueError("РџР°С†РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Пациент не найден")
             current_full_name, current_dob, current_sex, current_category, current_unit, current_district = row
             full_name_val = full_name if full_name is not None else current_full_name
             sex_val = sex if sex is not None else current_sex
@@ -483,7 +483,7 @@ class PatientService:
     def _delete_patient_impl(self, session, patient_id: int) -> None:
         patient = session.get(Patient, patient_id)
         if not patient:
-            raise ValueError("РџР°С†РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ")
+            raise ValueError("Пациент не найден")
 
         case_ids = list(
             session.execute(select(EmrCase.id).where(EmrCase.patient_id == patient_id)).scalars()

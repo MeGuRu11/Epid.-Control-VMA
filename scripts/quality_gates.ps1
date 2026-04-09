@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
@@ -37,6 +37,9 @@ Invoke-PythonStep -Args @("scripts/check_architecture.py")
 Invoke-PythonStep -Args @("-m", "mypy", "app", "tests")
 Invoke-PythonStep -Args @("-m", "pytest", "-q")
 Invoke-PythonStep -Args @("-m", "compileall", "-q", "app", "tests", "scripts")
+Invoke-PythonStep -Args @("-m", "alembic", "upgrade", "head")
+Invoke-PythonStep -Args @("-m", "alembic", "check")
+Invoke-PythonStep -Args @("scripts/check_mojibake.py")
 
 Write-Host ""
-Write-Host "Quality gates passed: ruff, architecture, mypy, pytest, compileall."
+Write-Host "Quality gates passed: ruff, architecture, mypy, pytest, compileall, alembic, mojibake."

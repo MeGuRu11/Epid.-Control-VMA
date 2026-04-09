@@ -61,13 +61,13 @@ class ReferenceView(QWidget):
         main_layout.setContentsMargins(12, 12, 12, 12)
 
         header = QHBoxLayout()
-        title = QLabel("РЎРїСЂР°РІРѕС‡РЅРёРєРё")
+        title = QLabel("Справочники")
         title.setObjectName("pageTitle")
         header.addWidget(title)
         header.addStretch()
         main_layout.addLayout(header)
 
-        self.role_hint = QLabel("Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РґРѕСЃС‚СѓРїРЅРѕ С‚РѕР»СЊРєРѕ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂСѓ")
+        self.role_hint = QLabel("Редактирование доступно только администратору")
         self.role_hint.setObjectName("muted")
         main_layout.addWidget(self.role_hint)
 
@@ -81,24 +81,24 @@ class ReferenceView(QWidget):
         controls_main.setContentsMargins(0, 0, 0, 0)
         controls_main.setSpacing(8)
         self.type_selector = QComboBox()
-        self.type_selector.addItem("РћС‚РґРµР»РµРЅРёСЏ", "departments")
-        self.type_selector.addItem("РўРёРїС‹ РјР°С‚РµСЂРёР°Р»РѕРІ", "material_types")
-        self.type_selector.addItem("РњРљР‘-10", "icd10")
-        self.type_selector.addItem("РђРЅС‚РёР±РёРѕС‚РёРєРё", "antibiotics")
-        self.type_selector.addItem("Р“СЂСѓРїРїС‹ Р°РЅС‚РёР±РёРѕС‚РёРєРѕРІ", "antibiotic_groups")
-        self.type_selector.addItem("РњРёРєСЂРѕРѕСЂРіР°РЅРёР·РјС‹", "microorganisms")
-        self.type_selector.addItem("Р¤Р°РіРё", "phages")
-        self.type_selector.addItem("РРЎРњРџ (СЃРѕРєСЂР°С‰РµРЅРёСЏ)", "ismp_abbrev")
+        self.type_selector.addItem("Отделения", "departments")
+        self.type_selector.addItem("Типы материалов", "material_types")
+        self.type_selector.addItem("МКБ-10", "icd10")
+        self.type_selector.addItem("Антибиотики", "antibiotics")
+        self.type_selector.addItem("Группы антибиотиков", "antibiotic_groups")
+        self.type_selector.addItem("Микроорганизмы", "microorganisms")
+        self.type_selector.addItem("Фаги", "phages")
+        self.type_selector.addItem("ИСМП (сокращения)", "ismp_abbrev")
         self.type_selector.currentIndexChanged.connect(self._on_type_changed)
 
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("РџРѕРёСЃРє")
+        self.search_input.setPlaceholderText("Поиск")
         self.search_input.textChanged.connect(self.refresh)
-        self._clear_search_btn = QPushButton("РЎР±СЂРѕСЃРёС‚СЊ")
+        self._clear_search_btn = QPushButton("Сбросить")
         compact_button(self._clear_search_btn)
         self._clear_search_btn.clicked.connect(self._clear_search)
 
-        controls_main.addWidget(QLabel("РўРёРї СЃРїСЂР°РІРѕС‡РЅРёРєР°"))
+        controls_main.addWidget(QLabel("Тип справочника"))
         controls_main.addWidget(self.type_selector)
         controls_main.addWidget(self.search_input)
 
@@ -124,24 +124,24 @@ class ReferenceView(QWidget):
         self.list_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._content_layout.addWidget(self.list_box, 2)
 
-        self.form_box = QGroupBox("Р”Р°РЅРЅС‹Рµ")
+        self.form_box = QGroupBox("Данные")
         self.form_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         form_layout = QVBoxLayout(self.form_box)
         self.form_fields = QFormLayout()
         form_layout.addLayout(self.form_fields)
 
-        self.add_btn = QPushButton("Р”РѕР±Р°РІРёС‚СЊ")
+        self.add_btn = QPushButton("Добавить")
         compact_button(self.add_btn)
         self.add_btn.clicked.connect(self._add_item)
-        self.save_btn = QPushButton("РЎРѕС…СЂР°РЅРёС‚СЊ")
+        self.save_btn = QPushButton("Сохранить")
         self.save_btn.setObjectName("primaryButton")
         compact_button(self.save_btn)
         self.save_btn.clicked.connect(self._update_item)
-        self.delete_btn = QPushButton("РЈРґР°Р»РёС‚СЊ")
+        self.delete_btn = QPushButton("Удалить")
         self.delete_btn.setObjectName("secondaryButton")
         compact_button(self.delete_btn)
         self.delete_btn.clicked.connect(self._delete_item)
-        self.clear_btn = QPushButton("РћС‡РёСЃС‚РёС‚СЊ")
+        self.clear_btn = QPushButton("Очистить")
         self.clear_btn.setObjectName("secondaryButton")
         compact_button(self.clear_btn)
         self.clear_btn.clicked.connect(self._clear_form)
@@ -267,48 +267,48 @@ class ReferenceView(QWidget):
 
     def _get_field_config(self) -> list[tuple[str, str, Callable[[], QWidget]]]:
         if self._current_type == "departments":
-            return [("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit)]
+            return [("name", "Название", QLineEdit)]
         if self._current_type == "material_types":
             return [
-                ("code", "РљРѕРґ", QLineEdit),
-                ("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
+                ("code", "Код", QLineEdit),
+                ("name", "Название", QLineEdit),
             ]
         if self._current_type == "icd10":
             return [
-                ("code", "РљРѕРґ", QLineEdit),
-                ("title", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
+                ("code", "Код", QLineEdit),
+                ("title", "Название", QLineEdit),
             ]
         if self._current_type == "antibiotics":
             return [
-                ("code", "РљРѕРґ", QLineEdit),
-                ("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
-                ("group_id", "Р“СЂСѓРїРїР°", self._create_abx_group_combo),
+                ("code", "Код", QLineEdit),
+                ("name", "Название", QLineEdit),
+                ("group_id", "Группа", self._create_abx_group_combo),
             ]
         if self._current_type == "antibiotic_groups":
             return [
-                ("code", "РљРѕРґ", QLineEdit),
-                ("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
+                ("code", "Код", QLineEdit),
+                ("name", "Название", QLineEdit),
             ]
         if self._current_type == "microorganisms":
             return [
-                ("code", "РљРѕРґ", QLineEdit),
-                ("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
-                ("taxon_group", "Р“СЂСѓРїРїР°", QLineEdit),
+                ("code", "Код", QLineEdit),
+                ("name", "Название", QLineEdit),
+                ("taxon_group", "Группа", QLineEdit),
             ]
         if self._current_type == "ismp_abbrev":
             return [
-                ("code", "РљРѕРґ", QLineEdit),
-                ("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
-                ("description", "РћРїРёСЃР°РЅРёРµ", QLineEdit),
+                ("code", "Код", QLineEdit),
+                ("name", "Название", QLineEdit),
+                ("description", "Описание", QLineEdit),
             ]
         return [
-            ("code", "РљРѕРґ", QLineEdit),
-            ("name", "РќР°Р·РІР°РЅРёРµ", QLineEdit),
+            ("code", "Код", QLineEdit),
+            ("name", "Название", QLineEdit),
         ]
 
     def _create_abx_group_combo(self) -> QWidget:
         combo = QComboBox()
-        combo.addItem("Р’С‹Р±СЂР°С‚СЊ", None)
+        combo.addItem("Выбрать", None)
         for group in self.reference_service.list_antibiotic_groups():
             combo.addItem(f"{group.code or '-'} - {group.name}", group.id)
         return combo
@@ -509,11 +509,11 @@ class ReferenceView(QWidget):
             self._clear_form()
             self.refresh()
         except _HANDLED_REFERENCE_ERRORS as exc:
-            show_error(self, error_text(exc, "РќРµ СѓРґР°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ Р·Р°РїРёСЃСЊ"))
+            show_error(self, error_text(exc, "Не удалось добавить запись"))
 
     def _update_item(self) -> None:
         if self._current_id is None:
-            show_error(self, "Р’С‹Р±РµСЂРёС‚Рµ Р·Р°РїРёСЃСЊ РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ.")
+            show_error(self, "Выберите запись для изменения.")
             return
         try:
             data = self._collect_form()
@@ -577,11 +577,11 @@ class ReferenceView(QWidget):
                 )
             self.refresh()
         except _HANDLED_REFERENCE_ERRORS as exc:
-            show_error(self, error_text(exc, "РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ Р·Р°РїРёСЃСЊ"))
+            show_error(self, error_text(exc, "Не удалось обновить запись"))
 
     def _delete_item(self) -> None:
         if self._current_id is None:
-            show_error(self, "Р’С‹Р±РµСЂРёС‚Рµ Р·Р°РїРёСЃСЊ РґР»СЏ СѓРґР°Р»РµРЅРёСЏ.")
+            show_error(self, "Выберите запись для удаления.")
             return
         try:
             if self._current_type == "departments":
@@ -603,6 +603,6 @@ class ReferenceView(QWidget):
             self._clear_form()
             self.refresh()
         except _HANDLED_REFERENCE_ERRORS as exc:
-            show_error(self, error_text(exc, "РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ Р·Р°РїРёСЃСЊ"))
+            show_error(self, error_text(exc, "Не удалось удалить запись"))
 
 

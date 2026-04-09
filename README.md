@@ -26,9 +26,15 @@ powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1
 
 This script runs:
 - `ruff check app tests`
+- `python scripts/check_architecture.py`
 - `mypy app tests`
 - `pytest -q`
 - `python -m compileall -q app tests scripts`
+- `python -m alembic upgrade head`
+- `python -m alembic check`
+- проверку на mojibake в `app/`, `docs/`, `scripts/`, `tests/`
+
+`scripts/quality_gates.ps1` автоматически выставляет `EPIDCONTROL_DATA_DIR=tmp_run/epid-data`, поэтому `alembic check` и `alembic upgrade head` выполняются в writable-каталоге без ручной настройки ENV.
 
 ## CI
 - Automatic quality checks are configured in `.github/workflows/quality-gates.yml`.

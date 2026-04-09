@@ -1,4 +1,4 @@
-"""WizardStep1 вЂ” РРґРµРЅС‚РёС„РёРєР°С†РёСЏ + РљРѕСЂРµС€РѕРє."""
+"""WizardStep1 — Идентификация + Корешок."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,7 +21,7 @@ from app.ui.form100_v2.wizard_widgets.form100_stub_widget import Form100StubWidg
 
 
 class StepIdentification(QWidget):
-    """РЁР°Рі 1 РјР°СЃС‚РµСЂР°: РљРѕСЂРµС€РѕРє + РРґРµРЅС‚РёС„РёРєР°С†РёСЏ РѕСЃРЅРѕРІРЅРѕРіРѕ Р±Р»Р°РЅРєР°."""
+    """Шаг 1 мастера: Корешок + Идентификация основного бланка."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -36,14 +36,14 @@ class StepIdentification(QWidget):
         stub_scroll.setWidget(self._stub)
         layout.addWidget(stub_scroll, 1)
 
-        ident_box = QGroupBox("РРґРµРЅС‚РёС„РёРєР°С†РёСЏ вЂ” РѕСЃРЅРѕРІРЅРѕР№ Р±Р»Р°РЅРє")
+        ident_box = QGroupBox("Идентификация — основной бланк")
         ident_lay = QFormLayout(ident_box)
         ident_lay.setContentsMargins(14, 12, 14, 12)
         ident_lay.setVerticalSpacing(10)
         ident_lay.setHorizontalSpacing(14)
 
         self.main_issued_place = QLineEdit()
-        self.main_issued_place.setPlaceholderText("РњРµРґ. РїСѓРЅРєС‚ / СѓС‡СЂРµР¶РґРµРЅРёРµ")
+        self.main_issued_place.setPlaceholderText("Мед. пункт / учреждение")
 
         issued_row = QHBoxLayout()
         issued_row.setContentsMargins(0, 0, 0, 0)
@@ -54,18 +54,18 @@ class StepIdentification(QWidget):
         self.main_issued_date.setDisplayFormat("dd.MM.yyyy")
         self.main_issued_date.setCalendarPopup(True)
         issued_row.addWidget(self.main_issued_time)
-        issued_row.addWidget(QLabel("РѕС‚"))
+        issued_row.addWidget(QLabel("от"))
         issued_row.addWidget(self.main_issued_date)
         issued_row.addStretch(1)
 
         self.main_rank = QLineEdit()
-        self.main_rank.setPlaceholderText("РІ/Р·РІР°РЅРёРµ")
+        self.main_rank.setPlaceholderText("в/звание")
         self.main_unit = QLineEdit()
-        self.main_unit.setPlaceholderText("РІ/С‡Р°СЃС‚СЊ")
+        self.main_unit.setPlaceholderText("в/часть")
         self.main_full_name = QLineEdit()
-        self.main_full_name.setPlaceholderText("С„Р°РјРёР»РёСЏ, РёРјСЏ, РѕС‚С‡РµСЃС‚РІРѕ")
+        self.main_full_name.setPlaceholderText("фамилия, имя, отчество")
         self.main_id_tag = QLineEdit()
-        self.main_id_tag.setPlaceholderText("СѓРґРѕСЃС‚РѕРІРµСЂРµРЅРёРµ / Р¶РµС‚РѕРЅ в„–")
+        self.main_id_tag.setPlaceholderText("удостоверение / жетон №")
 
         injury_row = QHBoxLayout()
         injury_row.setContentsMargins(0, 0, 0, 0)
@@ -76,17 +76,17 @@ class StepIdentification(QWidget):
         self.main_injury_date.setDisplayFormat("dd.MM.yyyy")
         self.main_injury_date.setCalendarPopup(True)
         injury_row.addWidget(self.main_injury_time)
-        injury_row.addWidget(QLabel("РѕС‚"))
+        injury_row.addWidget(QLabel("от"))
         injury_row.addWidget(self.main_injury_date)
         injury_row.addStretch(1)
 
-        ident_lay.addRow("Р’С‹РґР°РЅР°:", self.main_issued_place)
-        ident_lay.addRow("Р’СЂРµРјСЏ / РґР°С‚Р° РІС‹РґР°С‡Рё:", issued_row)
-        ident_lay.addRow("Р’/Р·РІР°РЅРёРµ:", self.main_rank)
-        ident_lay.addRow("Р’/С‡Р°СЃС‚СЊ:", self.main_unit)
-        ident_lay.addRow("Р¤РРћ:", self.main_full_name)
-        ident_lay.addRow("Р–РµС‚РѕРЅ в„–:", self.main_id_tag)
-        ident_lay.addRow("Р Р°РЅРµРЅ / Р·Р°Р±РѕР»РµР»:", injury_row)
+        ident_lay.addRow("Выдана:", self.main_issued_place)
+        ident_lay.addRow("Время / дата выдачи:", issued_row)
+        ident_lay.addRow("В/звание:", self.main_rank)
+        ident_lay.addRow("В/часть:", self.main_unit)
+        ident_lay.addRow("ФИО:", self.main_full_name)
+        ident_lay.addRow("Жетон №:", self.main_id_tag)
+        ident_lay.addRow("Ранен / заболел:", injury_row)
 
         ident_scroll = QScrollArea()
         ident_scroll.setWidgetResizable(True)

@@ -8,21 +8,21 @@ from app.application.dto.emz_dto import EmzCaseDetail
 
 def format_patient_sex(value: str | None) -> str:
     if not value:
-        return "вЂ”"
+        return "—"
     value_clean = value.strip()
     if not value_clean:
-        return "вЂ”"
+        return "—"
     lower = value_clean.lower()
-    if lower in {"m", "male", "Рј", "РјСѓР¶", "РјСѓР¶СЃРєРѕР№"}:
-        return "РњСѓР¶СЃРєРѕР№"
-    if lower in {"f", "female", "Р¶", "Р¶РµРЅ", "Р¶РµРЅСЃРєРёР№"}:
-        return "Р–РµРЅСЃРєРёР№"
+    if lower in {"m", "male", "м", "муж", "мужской"}:
+        return "Мужской"
+    if lower in {"f", "female", "ж", "жен", "женский"}:
+        return "Женский"
     return value_clean
 
 
 def format_emk_datetime(value: datetime | date | None) -> str:
     if value is None:
-        return "вЂ”"
+        return "—"
     if isinstance(value, datetime):
         return value.strftime("%d.%m.%Y %H:%M")
     return value.strftime("%d.%m.%Y")

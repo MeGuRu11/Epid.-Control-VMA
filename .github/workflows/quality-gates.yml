@@ -1,4 +1,4 @@
-name: Quality Gates
+﻿name: Quality Gates
 
 on:
   pull_request:
@@ -41,3 +41,11 @@ jobs:
 
       - name: Compileall
         run: python -m compileall -q app tests scripts
+
+      - name: Alembic
+        run: |
+          python -m alembic upgrade head
+          python -m alembic check
+
+      - name: Mojibake
+        run: python scripts/check_mojibake.py

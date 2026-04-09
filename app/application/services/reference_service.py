@@ -174,14 +174,14 @@ class ReferenceService:
 
     def add_department(self, name: str, *, actor_id: int) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_department")
             self.repo.upsert_simple(session, models.Department, [{"name": name}], identity_field="name")
 
     def add_material_type(self, code: str, name: str, *, actor_id: int) -> None:
         if not code or not name:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_material_type")
             self.repo.upsert_simple(
@@ -203,7 +203,7 @@ class ReferenceService:
 
     def add_icd10(self, code: str, title: str, *, actor_id: int) -> None:
         if not code or not title:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_icd10")
             self.repo.upsert_simple(
@@ -229,7 +229,7 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not code or not name:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_antibiotic")
             self.repo.upsert_simple(
@@ -253,7 +253,7 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_microorganism")
             payload = {"code": code, "name": name, "taxon_group": taxon_group}
@@ -272,7 +272,7 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_antibiotic_group")
             self.repo.upsert_simple(
@@ -296,7 +296,7 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_phage")
             self.repo.upsert_simple(
@@ -320,7 +320,7 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not code or not name:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="add_ismp_abbreviation")
             self.repo.upsert_simple(
@@ -337,12 +337,12 @@ class ReferenceService:
 
     def update_department(self, dep_id: int, name: str, *, actor_id: int) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_department")
             obj = session.get(models.Department, dep_id)
             if not obj:
-                raise ValueError("РћС‚РґРµР»РµРЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ")
+                raise ValueError("Отделение не найдено")
             obj_any = cast(Any, obj)
             obj_any.name = name
 
@@ -355,24 +355,24 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not code or not name:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_material_type")
             obj = session.get(models.RefMaterialType, mt_id)
             if not obj:
-                raise ValueError("РўРёРї РјР°С‚РµСЂРёР°Р»Р° РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Тип материала не найден")
             obj_any = cast(Any, obj)
             obj_any.code = code
             obj_any.name = name
 
     def update_icd10(self, code: str, title: str, *, actor_id: int) -> None:
         if not code or not title:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_icd10")
             obj = session.get(models.RefICD10, code)
             if not obj:
-                raise ValueError("РњРљР‘-10 РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("МКБ-10 не найден")
             obj_any = cast(Any, obj)
             obj_any.title = title
 
@@ -386,12 +386,12 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not code or not name:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_antibiotic")
             obj = session.get(models.RefAntibiotic, abx_id)
             if not obj:
-                raise ValueError("РђРЅС‚РёР±РёРѕС‚РёРє РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Антибиотик не найден")
             obj_any = cast(Any, obj)
             obj_any.code = code
             obj_any.name = name
@@ -406,12 +406,12 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_antibiotic_group")
             obj = session.get(models.RefAntibioticGroup, group_id)
             if not obj:
-                raise ValueError("Р“СЂСѓРїРїР° Р°РЅС‚РёР±РёРѕС‚РёРєРѕРІ РЅРµ РЅР°Р№РґРµРЅР°")
+                raise ValueError("Группа антибиотиков не найдена")
             obj_any = cast(Any, obj)
             obj_any.code = code
             obj_any.name = name
@@ -426,12 +426,12 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_microorganism")
             obj = session.get(models.RefMicroorganism, micro_id)
             if not obj:
-                raise ValueError("РњРёРєСЂРѕРѕСЂРіР°РЅРёР·Рј РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Микроорганизм не найден")
             obj_any = cast(Any, obj)
             obj_any.code = code
             obj_any.name = name
@@ -447,12 +447,12 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not name:
-            raise ValueError("РќР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ")
+            raise ValueError("Название обязательно")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_phage")
             obj = session.get(models.RefPhage, phage_id)
             if not obj:
-                raise ValueError("Р¤Р°Рі РЅРµ РЅР°Р№РґРµРЅ")
+                raise ValueError("Фаг не найден")
             obj_any = cast(Any, obj)
             obj_any.code = code
             obj_any.name = name
@@ -469,12 +469,12 @@ class ReferenceService:
         actor_id: int,
     ) -> None:
         if not code or not name:
-            raise ValueError("РљРѕРґ Рё РЅР°Р·РІР°РЅРёРµ РѕР±СЏР·Р°С‚РµР»СЊРЅС‹")
+            raise ValueError("Код и название обязательны")
         with self.session_factory() as session:
             self._require_admin_write(session, actor_id, action="update_ismp_abbreviation")
             obj = session.get(models.RefIsmpAbbreviation, item_id)
             if not obj:
-                raise ValueError("РЎРѕРєСЂР°С‰РµРЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ")
+                raise ValueError("Сокращение не найдено")
             obj_any = cast(Any, obj)
             obj_any.code = code
             obj_any.name = name

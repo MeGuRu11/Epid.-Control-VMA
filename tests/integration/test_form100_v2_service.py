@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
+import stat
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import cast
 
@@ -223,6 +225,65 @@ def test_form100_v2_exchange_and_reporting(tmp_path: Path, monkeypatch: pytest.M
         report_rows = session.query(models.ReportRun).filter(models.ReportRun.report_type == "form100").all()
     assert any(row.package_format == "form100+zip" for row in exchange_rows)
     assert len(report_rows) == 1
+
+
+def test_form100_v2_import_uses_fallback_when_artifact_dir_unwritable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tmp_path = tmp_path.resolve()
+    session_factory = make_session_factory(tmp_path / "form100_v2_import_fallback.db")
+    admin_id, _operator_id = seed_users(session_factory)
+    service = Form100ServiceV2(session_factory=session_factory)
+    created = service.create_card(make_create_request(), actor_id=admin_id)
+
+    zip_path = (tmp_path / "form100_v2_fallback.zip").resolve()
+    service.export_package_zip(
+        file_path=zip_path,
+        actor_id=admin_id,
+        card_id=created.id,
+        exported_by="admin",
+    )
+    service.delete_card(created.id, actor_id=admin_id)
+
+    fixed_now = datetime(2026, 4, 9, 10, 15, tzinfo=UTC)
+    readonly_root = (tmp_path / "readonly_artifacts").resolve()
+    readonly_target = (readonly_root / fixed_now.strftime("%Y") / fixed_now.strftime("%m")).resolve()
+    readonly_target.mkdir(parents=True, exist_ok=True)
+    os.chmod(readonly_target, stat.S_IREAD | stat.S_IEXEC)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(form100_service_module, "FORM100_V2_ARTIFACT_DIR", readonly_root)
+    monkeypatch.setattr(form100_service_module, "_utc_now", lambda: fixed_now)
+
+    original_access = os.access
+    original_copy2 = cast(Callable[..., object], form100_service_module.shutil.copy2)
+
+    def _fake_access(path: object, mode: int) -> bool:
+        if Path(cast(str | Path, path)) == readonly_target:
+            return False
+        return original_access(cast(str | Path, path), mode)
+
+    def _fake_copy2(src: object, dst: object, *args: object, **kwargs: object) -> object:
+        destination = Path(cast(str | Path, dst))
+        if destination.parent == readonly_target:
+            raise PermissionError("readonly target directory")
+        return original_copy2(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(os, "access", _fake_access)
+    monkeypatch.setattr(form100_service_module.shutil, "copy2", _fake_copy2)
+
+    try:
+        import_result = service.import_package_zip(file_path=zip_path, actor_id=admin_id, mode="merge")
+        assert import_result["summary"]["added"] == 1
+
+        restored = service.get_card(created.id)
+        assert restored.artifact_path is not None
+        artifact_path = Path(restored.artifact_path)
+        assert artifact_path.exists()
+        assert artifact_path.is_relative_to(tmp_path / "tmp_run" / "form100_v2_artifacts")
+    finally:
+        os.chmod(readonly_target, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
 
 
 def test_form100_v2_list_cards_filters_by_patient(tmp_path: Path) -> None:

@@ -5,13 +5,20 @@ from collections.abc import Callable
 
 from sqlalchemy import select
 
+from app.application.exceptions import PermissionError as AppPermissionError
 from app.infrastructure.db import models_sqlalchemy as models
+from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.session import session_scope
 
 
 class SavedFilterService:
-    def __init__(self, session_factory: Callable = session_scope) -> None:
+    def __init__(
+        self,
+        session_factory: Callable = session_scope,
+        audit_repo: AuditLogRepository | None = None,
+    ) -> None:
         self.session_factory = session_factory
+        self.audit_repo = audit_repo or AuditLogRepository()
 
     def list_filters(self, filter_type: str) -> list[models.SavedFilter]:
         with self.session_factory() as session:
@@ -26,9 +33,11 @@ class SavedFilterService:
         self,
         filter_type: str,
         name: str,
-        payload: dict,
-        created_by: int | None,
+        payload: dict[str, object],
+        actor_id: int,
     ) -> models.SavedFilter:
+        if actor_id is None:
+            raise AppPermissionError("actor_id обязателен для операций записи")
         name = name.strip()
         if not name:
             raise ValueError("Название фильтра обязательно")
@@ -47,8 +56,22 @@ class SavedFilterService:
                 filter_type=filter_type,
                 name=name,
                 payload_json=json.dumps(payload, ensure_ascii=False),
-                created_by=created_by,
+                created_by=actor_id,
             )
             session.add(item)
             session.flush()
+            self.audit_repo.add_event(
+                session,
+                user_id=actor_id,
+                entity_type="saved_filter",
+                entity_id=str(item.id),
+                action="saved_filter_create",
+                payload_json=json.dumps(
+                    {
+                        "filter_type": filter_type,
+                        "name": name,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
             return item

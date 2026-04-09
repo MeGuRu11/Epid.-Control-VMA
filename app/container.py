@@ -135,7 +135,7 @@ def build_container() -> Container:
         user_repo=user_repo,
         audit_repo=audit_repo,
     )
-    saved_filter_service = SavedFilterService(session_factory=app_session_scope)
+    saved_filter_service = SavedFilterService(session_factory=app_session_scope, audit_repo=audit_repo)
     reporting_service = ReportingService(
         analytics_service=analytics_service,
         form100_v2_service=form100_v2_service,

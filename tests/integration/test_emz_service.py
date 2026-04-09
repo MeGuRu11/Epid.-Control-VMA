@@ -8,7 +8,8 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.dto.emz_dto import EmzCreateRequest, EmzVersionPayload
+from app.application.dto.emz_dto import EmzCreateRequest, EmzUpdateRequest, EmzVersionPayload
+from app.application.exceptions import PermissionError as AppPermissionError
 from app.application.services.emz_service import EmzService
 from app.domain.constants import MilitaryCategory
 from app.infrastructure.db import models_sqlalchemy as models
@@ -156,7 +157,7 @@ def test_delete_emz_requires_admin_and_writes_audit(tmp_path: Path) -> None:
     )
     created = service.create_emr(req, actor_id=admin_id)
 
-    with pytest.raises(ValueError, match="администратору"):
+    with pytest.raises(AppPermissionError, match="администратору"):
         service.delete_emr(created.id, actor_id=operator_id)
 
     with session_factory() as session:
@@ -177,4 +178,73 @@ def test_delete_emz_requires_admin_and_writes_audit(tmp_path: Path) -> None:
         )
         assert event is not None
         assert cast(int, event.user_id) == admin_id
+
+
+def test_update_emr_requires_actor_id(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "emr_update_requires_actor.db")
+    actor_id = seed_admin(session_factory)
+    service = EmzService(session_factory=session_factory)
+
+    payload = EmzVersionPayload(
+        admission_date=datetime(2025, 12, 15, 10, 0, tzinfo=UTC),
+        injury_date=datetime(2025, 12, 10, 9, 0, tzinfo=UTC),
+        outcome_date=None,
+        severity="moderate",
+        diagnoses=[],
+        interventions=[],
+        antibiotic_courses=[],
+    )
+    req = EmzCreateRequest(
+        patient_full_name="Тест Тестов",
+        patient_dob=date(1992, 2, 2),
+        patient_sex="M",
+        patient_category=MilitaryCategory.OTHER.value,
+        patient_military_unit=None,
+        patient_military_district=None,
+        hospital_case_no="CASE-UPDATE-001",
+        department_id=None,
+        payload=payload,
+    )
+    created = service.create_emr(req, actor_id=actor_id)
+
+    update_request = EmzUpdateRequest(emr_case_id=created.id, payload=payload)
+
+    with pytest.raises(AppPermissionError, match="actor_id"):
+        service.update_emr(update_request, actor_id=cast(int, None))
+
+
+def test_update_case_meta_requires_actor_id(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "emr_update_meta_requires_actor.db")
+    actor_id = seed_admin(session_factory)
+    service = EmzService(session_factory=session_factory)
+
+    payload = EmzVersionPayload(
+        admission_date=datetime(2025, 12, 15, 10, 0, tzinfo=UTC),
+        injury_date=datetime(2025, 12, 10, 9, 0, tzinfo=UTC),
+        outcome_date=None,
+        severity="moderate",
+        diagnoses=[],
+        interventions=[],
+        antibiotic_courses=[],
+    )
+    req = EmzCreateRequest(
+        patient_full_name="Тест Тестов",
+        patient_dob=date(1992, 2, 2),
+        patient_sex="M",
+        patient_category=MilitaryCategory.OTHER.value,
+        patient_military_unit=None,
+        patient_military_district=None,
+        hospital_case_no="CASE-META-001",
+        department_id=None,
+        payload=payload,
+    )
+    created = service.create_emr(req, actor_id=actor_id)
+
+    with pytest.raises(AppPermissionError, match="actor_id"):
+        service.update_case_meta(
+            created.id,
+            hospital_case_no="CASE-META-002",
+            department_id=None,
+            actor_id=cast(int, None),
+        )
 

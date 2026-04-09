@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.form100_v2_dto import Form100CreateV2Request, Form100DataV2Dto
+from app.application.exceptions import PermissionError as AppPermissionError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.infrastructure.db.models_sqlalchemy import Base
 from app.infrastructure.db.repositories.user_repo import UserRepository
@@ -83,7 +84,7 @@ def test_form100_v2_delete_requires_admin_role(tmp_path: Path) -> None:
 
     created = service.create_card(make_create_request(), actor_id=operator_id)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(AppPermissionError):
         service.delete_card(created.id, actor_id=operator_id)
 
     still_exists = service.get_card(created.id)
@@ -92,3 +93,27 @@ def test_form100_v2_delete_requires_admin_role(tmp_path: Path) -> None:
     service.delete_card(created.id, actor_id=admin_id)
     with pytest.raises(ValueError):
         service.get_card(created.id)
+
+
+def test_form100_v2_create_requires_actor_id(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "form100_v2_actor_required.db")
+    _admin_id, _operator_id = seed_users(session_factory)
+    service = Form100ServiceV2(session_factory=session_factory)
+
+    with pytest.raises(AppPermissionError, match="actor_id"):
+        service.create_card(make_create_request(), actor_id=cast(int, None))
+
+
+def test_form100_v2_export_package_requires_actor_id(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "form100_v2_export_actor_required.db")
+    _admin_id, operator_id = seed_users(session_factory)
+    service = Form100ServiceV2(session_factory=session_factory)
+    created = service.create_card(make_create_request(), actor_id=operator_id)
+
+    with pytest.raises(AppPermissionError, match="actor_id"):
+        service.export_package_zip(
+            file_path=tmp_path / "form100_v2_export.zip",
+            actor_id=cast(int, None),
+            card_id=created.id,
+            exported_by="operator",
+        )

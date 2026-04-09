@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import importlib
 import json
+import logging
+import os
 import shutil
 import tempfile
 import zipfile
@@ -30,6 +32,7 @@ from app.application.dto.form100_v2_dto import (
     Form100UpdateV2Request,
     Form100V2Filters,
 )
+from app.application.exceptions import PermissionError as AppPermissionError
 from app.config import DATA_DIR
 from app.domain.models.form100_v2 import FORM100_V2_STATUS_DRAFT, FORM100_V2_STATUS_SIGNED
 from app.domain.rules.form100_rules_v2 import (
@@ -48,6 +51,7 @@ from app.infrastructure.reporting.form100_pdf_report_v2 import export_form100_pd
 from app.infrastructure.security.sha256 import sha256_file
 
 FORM100_V2_ARTIFACT_DIR = DATA_DIR / "artifacts" / "form100_v2"
+logger = logging.getLogger(__name__)
 
 
 def _utc_now() -> datetime:
@@ -157,7 +161,7 @@ class Form100ServiceV2:
             payload = self.repo.to_card_dict(row, data_row)
             return Form100CardV2Dto.model_validate(payload)
 
-    def create_card(self, request: Form100CreateV2Request, actor_id: int | None) -> Form100CardV2Dto:
+    def create_card(self, request: Form100CreateV2Request, actor_id: int) -> Form100CardV2Dto:
         actor_login, actor_role = self._resolve_actor(actor_id)
         data_payload = cast(JSONDict, request.data.model_dump())
         _inject_denormalized_fields(
@@ -208,7 +212,7 @@ class Form100ServiceV2:
         self,
         card_id: str,
         request: Form100UpdateV2Request,
-        actor_id: int | None,
+        actor_id: int,
         expected_version: int,
     ) -> Form100CardV2Dto:
         actor_login, actor_role = self._resolve_actor(actor_id)
@@ -279,7 +283,7 @@ class Form100ServiceV2:
         self,
         card_id: str,
         request: Form100SignV2Request,
-        actor_id: int | None,
+        actor_id: int,
         expected_version: int,
     ) -> Form100CardV2Dto:
         actor_login, actor_role = self._resolve_actor(actor_id)
@@ -326,7 +330,7 @@ class Form100ServiceV2:
             )
             return Form100CardV2Dto.model_validate(after_payload)
 
-    def archive_card(self, card_id: str, actor_id: int | None, expected_version: int) -> Form100CardV2Dto:
+    def archive_card(self, card_id: str, actor_id: int, expected_version: int) -> Form100CardV2Dto:
         actor_login, actor_role = self._resolve_actor(actor_id)
         with self.session_factory() as session:
             row = self.repo.get_card(session, card_id)
@@ -361,7 +365,7 @@ class Form100ServiceV2:
             )
             return Form100CardV2Dto.model_validate(after_payload)
 
-    def delete_card(self, card_id: str, actor_id: int | None) -> None:
+    def delete_card(self, card_id: str, actor_id: int) -> None:
         with self.session_factory() as session:
             self._require_admin(session, actor_id)
             deleted = self.repo.delete_card(session, card_id)
@@ -376,7 +380,7 @@ class Form100ServiceV2:
                 payload_json=json.dumps({"schema": "form100.audit.v2"}, ensure_ascii=False),
             )
 
-    def export_pdf(self, card_id: str, file_path: str | Path, actor_id: int | None) -> Form100PdfExportResult:
+    def export_pdf(self, card_id: str, file_path: str | Path, actor_id: int) -> Form100PdfExportResult:
         actor_login, actor_role = self._resolve_actor(actor_id)
         file_path = Path(file_path)
         with self.session_factory() as session:
@@ -417,11 +421,13 @@ class Form100ServiceV2:
         self,
         *,
         file_path: str | Path,
-        actor_id: int | None,
+        actor_id: int,
         card_id: str | None = None,
         filters: Form100V2Filters | None = None,
         exported_by: str | None = None,
     ) -> Form100PackageExportResult:
+        if actor_id is None:
+            raise AppPermissionError("actor_id обязателен для операций записи")
         filter_payload = filters.model_dump(exclude_none=True) if filters else {}
         with self.session_factory() as session:
             rows = self.repo.find_cards_for_export(session, card_id=card_id, filters=filter_payload)
@@ -484,8 +490,9 @@ class Form100ServiceV2:
         file_path: str | Path,
         actor_id: int | None,
         mode: str = "merge",
+        system: bool = False,
     ) -> Form100PackageImportResult:
-        actor_login, actor_role = self._resolve_actor(actor_id)
+        actor_login, actor_role = self._resolve_actor(actor_id, system=system)
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir:
             with zipfile.ZipFile(file_path, "r") as zf:
@@ -564,14 +571,15 @@ class Form100ServiceV2:
                     pdf_path = tmp_dir / "form100" / f"{incoming_id}.pdf"
                     if pdf_path.exists():
                         artifact_path = self._store_imported_pdf(card_id=incoming_id, source_pdf=pdf_path)
-                        artifact_hash = sha256_file(artifact_path)
-                        self.repo.set_pdf_artifact(
-                            session,
-                            card_id=incoming_id,
-                            artifact_path=str(artifact_path),
-                            artifact_sha256=artifact_hash,
-                            actor_login=actor_login,
-                        )
+                        if artifact_path is not None:
+                            artifact_hash = sha256_file(artifact_path)
+                            self.repo.set_pdf_artifact(
+                                session,
+                                card_id=incoming_id,
+                                artifact_path=str(artifact_path),
+                                artifact_sha256=artifact_hash,
+                                actor_login=actor_login,
+                            )
 
                 package_hash = sha256_file(file_path)
                 session.add(
@@ -622,17 +630,27 @@ class Form100ServiceV2:
             "errors": errors_list,
         }
 
-    def _store_imported_pdf(self, *, card_id: str, source_pdf: Path) -> Path:
+    def _store_imported_pdf(self, *, card_id: str, source_pdf: Path) -> Path | None:
         now = _utc_now()
-        target_dir = FORM100_V2_ARTIFACT_DIR / now.strftime("%Y") / now.strftime("%m")
-        try:
-            target_dir.mkdir(parents=True, exist_ok=True)
-        except OSError:
-            target_dir = Path.cwd() / "tmp_run" / "form100_v2_artifacts" / now.strftime("%Y") / now.strftime("%m")
-            target_dir.mkdir(parents=True, exist_ok=True)
-        target_path = target_dir / f"{card_id}_{now.strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:6]}.pdf"
-        shutil.copy2(source_pdf, target_path)
-        return target_path
+        relative_dir = Path(now.strftime("%Y")) / now.strftime("%m")
+        filename = f"{card_id}_{now.strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:6]}.pdf"
+        target_roots = [
+            FORM100_V2_ARTIFACT_DIR / relative_dir,
+            Path.cwd() / "tmp_run" / "form100_v2_artifacts" / relative_dir,
+        ]
+
+        for target_dir in target_roots:
+            try:
+                target_dir.mkdir(parents=True, exist_ok=True)
+                if not os.access(target_dir, os.W_OK):
+                    logger.warning("Каталог артефактов %s недоступен для записи", target_dir)
+                    continue
+                target_path = target_dir / filename
+                shutil.copy2(source_pdf, target_path)
+                return target_path
+            except OSError as exc:
+                logger.warning("Не удалось сохранить PDF-артефакт в %s: %s", target_dir, exc)
+        return None
 
     def _write_audit(
         self,
@@ -682,22 +700,24 @@ class Form100ServiceV2:
             payload_json=payload_json,
         )
 
-    def _resolve_actor(self, actor_id: int | None) -> tuple[str, str]:
-        if actor_id is not None:
-            with self.session_factory() as session:
-                actor = self.user_repo.get_by_id(session, actor_id)
-                if actor is None:
-                    return f"user_{actor_id}", "unknown"
-                return str(actor.login), str(actor.role)
-        return "system", "system"
+    def _resolve_actor(self, actor_id: int | None, *, system: bool = False) -> tuple[str, str]:
+        if actor_id is None:
+            if not system:
+                raise AppPermissionError("actor_id обязателен для операций записи")
+            return "system", "system"
+        with self.session_factory() as session:
+            actor = self.user_repo.get_by_id(session, actor_id)
+            if actor is None:
+                return f"user_{actor_id}", "unknown"
+            return str(actor.login), str(actor.role)
 
     def _require_admin(self, session, actor_id: int | None) -> None:
-        if actor_id is None:  # raise on missing actor_id
-            raise ValueError("actor_id обязателен для операций записи")
+        if actor_id is None:
+            raise AppPermissionError("actor_id обязателен для операций записи")
         actor = self.user_repo.get_by_id(session, actor_id)
         if actor is not None and str(actor.role) == "admin":
             return
-        raise ValueError("Operation is available to administrators only")
+        raise AppPermissionError("Операция доступна только администраторам")
 
 
 def _inject_denormalized_fields(

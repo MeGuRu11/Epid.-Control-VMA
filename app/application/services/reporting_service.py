@@ -336,6 +336,8 @@ class ReportingService:
     ) -> dict[str, Any]:
         if self.form100_v2_service is None:
             raise ValueError("Form100 service is not configured")
+        if actor_id is None:
+            raise ValueError("actor_id обязателен для экспорта Form100 PDF")
         file_path = Path(file_path)
         render_result = self.form100_v2_service.export_pdf(card_id=card_id, file_path=file_path, actor_id=actor_id)
         report_type = "form100"

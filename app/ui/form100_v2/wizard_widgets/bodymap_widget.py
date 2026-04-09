@@ -1,10 +1,10 @@
-"""BodyMapWidget вЂ” РёРЅС‚РµСЂР°РєС‚РёРІРЅР°СЏ СЃС…РµРјР° С‚РµР»Р° (2 СЃРёР»СѓСЌС‚Р°).
+"""BodyMapWidget — интерактивная схема тела (2 силуэта).
 
-Р•РґРёРЅС‹Р№ РЅР°Р±РѕСЂ СЃРёР»СѓСЌС‚РѕРІ: РІРёРґ СЃРїРµСЂРµРґРё Рё РІРёРґ СЃР·Р°РґРё.
-РљР»РёРє РІРЅСѓС‚СЂРё СЃРёР»СѓСЌС‚Р° СЂР°Р·РјРµС‰Р°РµС‚ Р°РЅРЅРѕС‚Р°С†РёСЋ.
-РџРљРњ вЂ” СѓРґР°Р»СЏРµС‚ Р±Р»РёР¶Р°Р№С€СѓСЋ Р°РЅРЅРѕС‚Р°С†РёСЋ РІ СЂР°РґРёСѓСЃРµ 15 px.
-Р¤РѕРЅРѕРІРѕРµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ Р·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ РёР· app/image/main/form_100_bd.png (fallback: form_100_body.png).
-NOTE_PIN: РїСЂРё РЅР°РІРµРґРµРЅРёРё РїРѕРєР°Р·С‹РІР°РµС‚СЃСЏ РІСЃРїР»С‹РІР°СЋС‰Р°СЏ РєР°СЂС‚РѕС‡РєР° Р·Р°РјРµС‚РєРё.
+Единый набор силуэтов: вид спереди и вид сзади.
+Клик внутри силуэта размещает аннотацию.
+ПКМ — удаляет ближайшую аннотацию в радиусе 15 px.
+Фоновое изображение загружается из app/image/main/form_100_bd.png (fallback: form_100_body.png).
+NOTE_PIN: при наведении показывается всплывающая карточка заметки.
 """
 from __future__ import annotations
 
@@ -25,12 +25,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-# в”Ђв”Ђ РљРѕРЅСЃС‚Р°РЅС‚С‹ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+# ── Константы ────────────────────────────────────────────────────────────────
 
 SILHOUETTE_ORDER = ("male_front", "male_back")
 SILHOUETTE_LABELS = {
-    "male_front": "Р’РёРґ СЃРїРµСЂРµРґРё",
-    "male_back": "Р’РёРґ СЃР·Р°РґРё",
+    "male_front": "Вид спереди",
+    "male_back": "Вид сзади",
 }
 GENDER_ACTIVE: dict[str, set[str]] = {
     "M": {"male_front", "male_back"},
@@ -39,11 +39,11 @@ GENDER_ACTIVE: dict[str, set[str]] = {
 
 ANNOTATION_TYPES = ("WOUND_X", "BURN_HATCH", "AMPUTATION", "TOURNIQUET", "NOTE_PIN")
 ANNOTATION_LABELS = {
-    "WOUND_X":    "Р Р°РЅР° вњ•",
-    "BURN_HATCH":  "РћР¶РѕРі в—‹",
-    "AMPUTATION":  "РђРјРїСѓС‚Р°С†РёСЏ в–І",
-    "TOURNIQUET":  "Р–РіСѓС‚ в”Ђ",
-    "NOTE_PIN":    "Р—Р°РјРµС‚РєР° в—Ћ",
+    "WOUND_X":    "Рана ✕",
+    "BURN_HATCH":  "Ожог ○",
+    "AMPUTATION":  "Ампутация ▲",
+    "TOURNIQUET":  "Жгут ─",
+    "NOTE_PIN":    "Заметка ◎",
 }
 ANNOTATION_COLORS: dict[str, QColor] = {
     "WOUND_X":    QColor("#E74C3C"),
@@ -85,7 +85,7 @@ def _normalize_silhouette_pixmap(pixmap: QPixmap) -> QPixmap:
             if luminance > 220:
                 image.setPixelColor(x, y, QColor(0, 0, 0, 0))
             else:
-                # Map luminance to alpha: darker pixels в†’ more opaque
+                # Map luminance to alpha: darker pixels → more opaque
                 alpha = max(20, min(255, 255 - luminance))
                 image.setPixelColor(x, y, QColor(60, 60, 60, alpha))
     return QPixmap.fromImage(image)
@@ -121,18 +121,18 @@ def _split_bodymap_template(template: QPixmap) -> dict[str, QPixmap]:
     return dict.fromkeys(SILHOUETTE_ORDER, normalized)
 
 
-# в”Ђв”Ђ Domain dataclass в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+# ── Domain dataclass ──────────────────────────────────────────────────────────
 
 @dataclass
 class AnnotationData:
     annotation_type: str
-    x: float          # 0.0вЂ“1.0 РІРЅСѓС‚СЂРё СЃРёР»СѓСЌС‚РЅРѕРіРѕ РїСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРєР°
+    x: float          # 0.0–1.0 внутри силуэтного прямоугольника
     y: float
     silhouette: str   # one of SILHOUETTE_ORDER
     note: str = ""
 
 
-# в”Ђв”Ђ РҐРѕР»СЃС‚: СЂРёСЃРѕРІР°РЅРёРµ СЃРёР»СѓСЌС‚РѕРІ Рё Р°РЅРЅРѕС‚Р°С†РёР№ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+# ── Холст: рисование силуэтов и аннотаций ───────────────────────────────────
 
 class _BodyCanvas(QWidget):
     markersChanged = Signal()  # noqa: N815
@@ -155,7 +155,7 @@ class _BodyCanvas(QWidget):
             template = _load_bodymap_template()
             _BodyCanvas._shared_pixmaps = _split_bodymap_template(template) if template is not None else {}
 
-    # в”Ђв”Ђ Р“РµРѕРјРµС‚СЂРёСЏ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    # ── Геометрия ─────────────────────────────────────────────────────────
 
     def _canvas_h(self) -> float:
         return float(self.height()) - 22
@@ -213,7 +213,7 @@ class _BodyCanvas(QWidget):
                 return sil, nx, ny
         return None
 
-    # в”Ђв”Ђ РћС‚СЂРёСЃРѕРІРєР° в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    # ── Отрисовка ────────────────────────────────────────────────────────
 
     def paintEvent(self, event) -> None:  # noqa: ARG002, N802
         p = QPainter(self)
@@ -323,7 +323,7 @@ class _BodyCanvas(QWidget):
         p.setFont(font)
         fm = p.fontMetrics()
         max_w = 220
-        display = text if len(text) <= 35 else text[:33] + "вЂ¦"
+        display = text if len(text) <= 35 else text[:33] + "…"
         tw = min(fm.horizontalAdvance(display), max_w)
         th = fm.height()
         pad = 7
@@ -349,7 +349,7 @@ class _BodyCanvas(QWidget):
         )
         p.restore()
 
-    # в”Ђв”Ђ РњС‹С€СЊ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+    # ── Мышь ─────────────────────────────────────────────────────────────
 
     def mousePressEvent(self, event) -> None:  # noqa: N802
         if not self._markers_enabled:
@@ -364,7 +364,7 @@ class _BodyCanvas(QWidget):
                 sil, nx, ny = spot
                 note = ""
                 if self._kind == "NOTE_PIN":
-                    text, ok = QInputDialog.getText(self, "Р—Р°РјРµС‚РєР°", "РўРµРєСЃС‚ Р·Р°РјРµС‚РєРё:")
+                    text, ok = QInputDialog.getText(self, "Заметка", "Текст заметки:")
                     if not ok:
                         return
                     note = text.strip()
@@ -432,7 +432,7 @@ class _BodyCanvas(QWidget):
         if ann.annotation_type != "NOTE_PIN":
             return
         text, ok = QInputDialog.getText(
-            self, "Р—Р°РјРµС‚РєР°", "РўРµРєСЃС‚ Р·Р°РјРµС‚РєРё:", text=ann.note
+            self, "Заметка", "Текст заметки:", text=ann.note
         )
         if ok:
             ann.note = text.strip()
@@ -440,10 +440,10 @@ class _BodyCanvas(QWidget):
             self.markersChanged.emit()
 
 
-# в”Ђв”Ђ РџСѓР±Р»РёС‡РЅС‹Р№ РІРёРґР¶РµС‚ в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+# ── Публичный виджет ─────────────────────────────────────────────────────────
 
 class BodyMapWidget(QWidget):
-    """2-СЃРёР»СѓСЌС‚РЅР°СЏ РёРЅС‚РµСЂР°РєС‚РёРІРЅР°СЏ СЃС…РµРјР° С‚РµР»Р° Р¤РѕСЂРјС‹ 100."""
+    """2-силуэтная интерактивная схема тела Формы 100."""
 
     markersChanged = Signal()  # noqa: N815
     annotations_changed = Signal(list)
@@ -459,7 +459,7 @@ class BodyMapWidget(QWidget):
         toolbar.setContentsMargins(0, 0, 0, 0)
         toolbar.setSpacing(6)
 
-        toolbar.addWidget(QLabel("РњРµС‚РєР°:"))
+        toolbar.addWidget(QLabel("Метка:"))
         self._kind_group = QButtonGroup(self)
         self._kind_group.setExclusive(True)
         for idx, ann_type in enumerate(ANNOTATION_TYPES):
@@ -475,12 +475,12 @@ class BodyMapWidget(QWidget):
             self._sync_toggle_button_state(first_btn, True)
         self._kind_group.idClicked.connect(self._on_kind_changed)
 
-        btn_pop = QPushButton("РЈРґР°Р»РёС‚СЊ РїРѕСЃР».")
+        btn_pop = QPushButton("Удалить посл.")
         btn_pop.setObjectName("secondary")
         btn_pop.clicked.connect(self.pop_marker)
         toolbar.addWidget(btn_pop)
 
-        btn_clear = QPushButton("РћС‡РёСЃС‚РёС‚СЊ")
+        btn_clear = QPushButton("Очистить")
         btn_clear.setObjectName("ghost")
         btn_clear.clicked.connect(self.clear_markers)
         toolbar.addWidget(btn_clear)
