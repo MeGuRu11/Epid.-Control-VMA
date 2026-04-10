@@ -75,3 +75,29 @@ class SavedFilterService:
                 ),
             )
             return item
+
+    def delete_filter(self, filter_id: int, actor_id: int) -> None:
+        if actor_id is None:
+            raise AppPermissionError("actor_id обязателен для операций записи")
+
+        with self.session_factory() as session:
+            item = session.get(models.SavedFilter, filter_id)
+            if item is None:
+                raise ValueError("Фильтр не найден")
+            filter_type = str(item.filter_type)
+            name = str(item.name)
+            session.delete(item)
+            self.audit_repo.add_event(
+                session,
+                user_id=actor_id,
+                entity_type="saved_filter",
+                entity_id=str(filter_id),
+                action="saved_filter_delete",
+                payload_json=json.dumps(
+                    {
+                        "filter_type": filter_type,
+                        "name": name,
+                    },
+                    ensure_ascii=False,
+                ),
+            )

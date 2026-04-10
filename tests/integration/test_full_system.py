@@ -680,19 +680,33 @@ def test_block_8_reference_crud_permissions(session_factory: SessionFactory) -> 
     service.delete_antibiotic(cast(int, antibiotic.id), actor_id=admin_id)
     assert service.list_antibiotics() == []
 
+    service.add_microorganism("MIC", "Microbe", taxon_group="group", actor_id=admin_id)
+    microbe = service.list_microorganisms()[0]
+    assert microbe.code == "MIC"
+    service.update_microorganism(cast(int, microbe.id), "MIC2", "Microbe 2", "group2", actor_id=admin_id)
+    assert service.list_microorganisms()[0].code == "MIC2"
+    service.delete_microorganism(cast(int, microbe.id), actor_id=admin_id)
+    assert service.list_microorganisms() == []
+
     with pytest.raises(ValueError):
         service.add_antibiotic("DENIED", "Denied", group_id=group_id, actor_id=operator_id)
     with pytest.raises(ValueError):
         service.add_antibiotic("NOACTOR", "No Actor", group_id=group_id, actor_id=cast(int, None))
-    assert "access_denied" in _audit_actions(session_factory, entity_type="reference")
+    actions = set(_audit_actions(session_factory, entity_type="reference"))
+    assert "reference_create_antibiotic" in actions
+    assert "reference_update_antibiotic" in actions
+    assert "reference_delete_antibiotic" in actions
+    assert "reference_create_microorganism" in actions
+    assert "reference_update_microorganism" in actions
+    assert "reference_delete_microorganism" in actions
+    assert "access_denied" in actions
 
 
-@pytest.mark.xfail(reason="ReferenceService пока не пишет аудит успешных CRUD-операций справочников.", strict=False)
-def test_block_8_reference_success_audit_todo(session_factory: SessionFactory) -> None:
+def test_block_8_reference_success_audit(session_factory: SessionFactory) -> None:
     admin_id = _create_admin(session_factory)
     service = ReferenceService(session_factory=session_factory)
     service.add_department("Audit Department", actor_id=admin_id)
-    assert any(action.startswith("reference_") for action in _audit_actions(session_factory, entity_type="reference"))
+    assert "reference_create_department" in _audit_actions(session_factory, entity_type="reference")
 
 
 def test_block_9_exchange_json_and_backup_permissions(
@@ -782,9 +796,19 @@ def test_block_11_saved_filter_create_list_actor(session_factory: SessionFactory
     assert "saved_filter_create" in _audit_actions(session_factory, entity_type="saved_filter")
 
 
-@pytest.mark.skip(reason="SavedFilterService пока не предоставляет публичный метод удаления фильтра.")
-def test_block_11_saved_filter_delete_todo() -> None:
-    pytest.fail("Добавить после появления delete_filter() в SavedFilterService.")
+def test_block_11_saved_filter_delete(session_factory: SessionFactory) -> None:
+    admin_id = _create_admin(session_factory)
+    service = SavedFilterService(session_factory=session_factory)
+    item = service.save_filter("analytics", "Temporary filter", {"patient_name": "Secret"}, actor_id=admin_id)
+
+    service.delete_filter(cast(int, item.id), actor_id=admin_id)
+
+    assert service.list_filters("analytics") == []
+    assert "saved_filter_delete" in _audit_actions(session_factory, entity_type="saved_filter")
+    with pytest.raises(AppPermissionError):
+        service.delete_filter(cast(int, item.id), actor_id=cast(int, None))
+    with pytest.raises(ValueError):
+        service.delete_filter(cast(int, item.id), actor_id=admin_id)
 
 
 def test_block_12_startup_fts_and_async_task(
