@@ -804,3 +804,32 @@
 - `app/ui/widgets/async_task.py`
 - `tests/unit/test_async_task.py`
 - `tests/unit/test_analytics_chart_data.py`
+
+---
+
+## Дополнение (полное функциональное тестирование сервисов, 2026-04-10)
+
+### Что сделано
+
+- Добавлен `tests/integration/test_full_system.py` — интеграционный full-system набор на реальной SQLite `:memory:` через `StaticPool` без моков SQLAlchemy.
+- Проверены реальные CRUD/flow-сценарии сервисов: Setup/Auth/UserAdmin, Patient, Emz, Lab, Sanitary, Form100, Analytics/Dashboard, Reference, Exchange, Backup, Reporting, SavedFilter, Startup/FTS, AsyncTask.
+- Файловые сценарии изолированы через `tmp_path`; backup использует временный SQLite-файл, а не рабочую БД пользователя.
+- В тестах явно отмечены два текущих функциональных пробела: успешные CRUD-операции `ReferenceService` не пишут аудит (`xfail`), у `SavedFilterService` нет публичного удаления фильтра (`skip`).
+
+### Проверки
+
+- `pytest tests/integration/test_full_system.py -v` — pass: `12 passed, 1 skipped, 1 xfailed`.
+- `ruff check app tests` — pass.
+- `mypy app tests` — pass: `267 source files`.
+- `pytest -q` — pass: `286 passed, 1 skipped, 1 xfailed, 2 warnings`.
+- `python -m compileall -q app tests scripts` — pass.
+
+### Открытые вопросы / риски
+
+1. `ReferenceService` не аудирует успешные CRUD-операции справочников. Это зафиксировано как `xfail` и требует отдельного security/refactor шага, если политика аудита должна покрывать эти операции.
+2. `SavedFilterService` не имеет публичного `delete_filter()`. Удаление сохраненных фильтров отмечено как `skip` до появления метода.
+3. В `LabService.update_sample` сценарий обновления должен передавать `material_type_id`; иначе репозиторий пытается записать `NULL` в обязательное поле. Full-system тест использует безопасный актуальный путь с явным `material_type_id`.
+
+### Ключевые файлы
+
+- `tests/integration/test_full_system.py`
