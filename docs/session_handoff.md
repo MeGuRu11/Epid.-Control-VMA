@@ -901,3 +901,14 @@
 - `docs/tech_guide.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
+
+### Дополнение — вторичный комплект документации
+
+- Обновлены активные эксплуатационные документы: `docs/context.md`, `docs/build_release.md`, `docs/manual_regression_scenarios.md`.
+- Исправлена битая внутренняя ссылка в `docs/final_audit_report.md`.
+- Исторические audit-отчёты не переписывались по содержанию: они сохранены как снимки состояния проекта на момент конкретных ревью.
+
+### Следующие шаги по документации
+
+1. Если потребуется единый стиль для всех исторических audit-документов, делать это отдельной задачей без изменения фактических выводов.
+2. Поддерживать синхронность уже семи опорных документов: `README.md`, `docs/user_guide.md`, `docs/tech_guide.md`, `docs/context.md`, `docs/build_release.md`, `docs/manual_regression_scenarios.md`, `docs/session_handoff.md`.
