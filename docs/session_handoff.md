@@ -934,3 +934,33 @@
 - `docs/manual_regression_scenarios.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
+
+### Дополнение — фиксация установленных скиллов в репозитории
+
+- В Git добавлены ранее установленные каталоги `.agents/skills`, которые до этого оставались локальными и незакоммиченными.
+- Зафиксированы проектные и вспомогательные скиллы для `python-testing`, `python-pro`, `sqlalchemy`, `sql`, `backend-migration-standards`, `security-review`, `architecture-patterns`, `spec-first`, `code-review`.
+- Локальный каталог `.npm-cache` осознанно оставлен вне коммита.
+
+### Что не закончено
+
+- После коммита со скиллами в рабочем дереве останется только `.npm-cache`, если его не чистить отдельно.
+
+### Следующие шаги
+
+1. Если нужно полностью очистить рабочее дерево, отдельно решить судьбу `.npm-cache`: добавить в `.gitignore` или удалить локально.
+2. При установке новых скиллов сразу коммитить их вместе с обновлением `skills-lock`, если этот lock-файл будет снова использоваться в проекте.
+
+### Ключевые файлы этого дополнения
+
+- `.agents/skills/affaan-m-everything-claude-code-python-testing/**`
+- `.agents/skills/awesome-skills-code-review-skill/**`
+- `.agents/skills/jeffallan-claude-skills-python-pro/**`
+- `.agents/skills/jeremylongshore-claude-code-plugins-plus-skills-database-test-manager/**`
+- `.agents/skills/manutej-luxor-claude-marketplace-sqlalchemy/**`
+- `.agents/skills/maragudk-skills-sql/**`
+- `.agents/skills/microck-ordinary-claude-skills-backend-migration-standards/**`
+- `.agents/skills/security-review/**`
+- `.agents/skills/sickn33-antigravity-awesome-skills-architecture-patterns/**`
+- `.agents/skills/spec-first/**`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
