@@ -44,6 +44,7 @@ SetCompress auto
 !endif
 
 Name "${APP_NAME} ${APP_VERSION}"
+Caption "${APP_NAME} ${APP_VERSION} - установщик"
 OutFile "${__FILEDIR__}\..\dist\EpidControlSetup_NSIS.exe"
 InstallDir "$LOCALAPPDATA\Programs\${APP_DIR_NAME}"
 InstallDirRegKey HKCU "Software\${APP_NAME}" "InstallDir"
@@ -57,9 +58,11 @@ BrandingText "${APP_NAME} ${APP_VERSION}"
 !define MUI_ICON "${__FILEDIR__}\..\resources\icons\app.ico"
 !define MUI_UNICON "${__FILEDIR__}\..\resources\icons\app.ico"
 !define MUI_WELCOMEPAGE_TITLE "Установка ${APP_NAME}"
-!define MUI_WELCOMEPAGE_TEXT "Мастер установки поможет установить ${APP_NAME}."
+!define MUI_WELCOMEPAGE_TEXT "Мастер установит ${APP_NAME} версии ${APP_VERSION}.$\r$\n$\r$\nБудут установлены приложение, миграции базы данных и деинсталлятор. Дополнительные ярлыки можно выбрать на следующих шагах."
+!define MUI_FINISHPAGE_TITLE "Всё готово"
+!define MUI_FINISHPAGE_TEXT "${APP_NAME} успешно установлен.$\r$\n$\r$\nМожно закрыть мастер или сразу запустить приложение."
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
-!define MUI_FINISHPAGE_RUN_TEXT "Запустить ${APP_NAME}"
+!define MUI_FINISHPAGE_RUN_TEXT "Запустить ${APP_NAME} сейчас"
 !define MUI_FINISHPAGE_LINK "Страница проекта"
 !define MUI_FINISHPAGE_LINK_LOCATION "${APP_URL}"
 
@@ -113,9 +116,9 @@ Section "Ярлыки в меню Пуск" SEC_STARTMENU
 SectionEnd
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Основные файлы приложения, миграции БД и деинсталлятор."
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Создать ярлык на рабочем столе текущего пользователя."
-  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_STARTMENU} "Создать ярлыки в меню Пуск."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_APP} "Основные файлы Epid Control, миграции базы данных и деинсталлятор. Этот компонент обязателен."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DESKTOP} "Создать ярлык на рабочем столе текущего пользователя для быстрого запуска приложения."
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_STARTMENU} "Создать папку и ярлыки в меню Пуск."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 Section "un.Uninstall"

@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Version = "",
     [string]$Publisher = "MeGuRu11",
     [string]$AppName = ""
@@ -6,83 +6,105 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$ProgressPreference = "SilentlyContinue"
 
-function Write-Step {
-    param([string]$Message)
-    Write-Host "[build-nsis] $Message" -ForegroundColor Cyan
-}
-
-function Get-ProjectVersion {
-    param([string]$Root)
-
-    $pyproject = Join-Path $Root "pyproject.toml"
-    if (-not (Test-Path $pyproject)) {
-        return "0.1.0"
-    }
-
-    $line = Select-String -Path $pyproject -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
-    if (-not $line) {
-        return "0.1.0"
-    }
-
-    return $line.Matches[0].Groups[1].Value
-}
+. (Join-Path $PSScriptRoot "build_ui.ps1")
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
-if ([string]::IsNullOrWhiteSpace($Version)) {
-    $Version = Get-ProjectVersion -Root $root
-}
-
-$distExe = Join-Path $root "dist\EpidControl.exe"
-$nsiPath = Join-Path $root "scripts\installer.nsi"
-$outputInstaller = Join-Path $root "dist\EpidControlSetup_NSIS.exe"
-
-if (-not (Test-Path $distExe)) {
-    throw "Required file not found: $distExe. Build executable first (scripts\\build_exe.bat)."
-}
-
-if (-not (Test-Path $nsiPath)) {
-    throw "NSIS script not found: $nsiPath"
-}
-
-$makensis = Get-Command "makensis.exe" -ErrorAction SilentlyContinue
-if (-not $makensis) {
-    $default = "C:\Program Files (x86)\NSIS\makensis.exe"
-    if (Test-Path $default) {
-        $makensis = Get-Item $default
-    }
-}
-
-if (-not $makensis) {
-    throw "makensis.exe was not found. Install NSIS and add it to PATH."
-}
-
-Write-Step "Using makensis: $($makensis.FullName)"
-Write-Step "Version: $Version"
-
-$arguments = @(
-    "/INPUTCHARSET",
-    "UTF8",
-    "/DAPP_VERSION=$Version",
-    "/DAPP_PUBLISHER=$Publisher",
-    $nsiPath
+$steps = @(
+    "Определение версии приложения",
+    "Проверка входных файлов",
+    "Поиск компилятора NSIS",
+    "Сборка NSIS установщика",
+    "Проверка артефакта и финальная сводка"
 )
 
-if (-not [string]::IsNullOrWhiteSpace($AppName)) {
-    $arguments = @("/DAPP_NAME=$AppName") + $arguments
+Initialize-BuildUi -Activity "Сборка NSIS установщика" -Prefix "build-nsis" -Steps $steps
+
+try {
+    Start-BuildStep -Message "Определение версии приложения" -Emoji "[VERSION]"
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        $Version = Get-ProjectVersion -Root $root -DefaultVersion "0.1.0"
+        Write-BuildInfo ("Версия взята из pyproject.toml: {0}" -f $Version)
+    } else {
+        Write-BuildInfo ("Версия передана параметром: {0}" -f $Version)
+    }
+
+    $distExe = Join-Path $root "dist\EpidControl.exe"
+    $nsiPath = Join-Path $root "scripts\installer.nsi"
+    $outputInstaller = Join-Path $root "dist\EpidControlSetup_NSIS.exe"
+
+    Start-BuildStep -Message "Проверка входных файлов" -Emoji "[CHECK]"
+    if (-not (Test-Path $distExe)) {
+        throw "Не найден входной файл $distExe. Сначала выполните scripts\\build_exe.bat."
+    }
+    if (-not (Test-Path $nsiPath)) {
+        throw "Не найден NSIS-сценарий: $nsiPath"
+    }
+    Write-BuildInfo ("EXE для упаковки: {0}" -f (Resolve-DisplayPath -Path $distExe))
+    Write-BuildInfo ("Сценарий NSIS: {0}" -f (Resolve-DisplayPath -Path $nsiPath))
+
+    Start-BuildStep -Message "Поиск компилятора NSIS" -Emoji "[DEPEND]"
+    $makensis = Get-Command "makensis.exe" -ErrorAction SilentlyContinue
+    $makensisPath = Resolve-ToolPath -CommandInfo $makensis
+    if ([string]::IsNullOrWhiteSpace($makensisPath)) {
+        $default = "C:\Program Files (x86)\NSIS\makensis.exe"
+        if (Test-Path $default) {
+            $makensisPath = $default
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($makensisPath)) {
+        throw "makensis.exe не найден. Установите NSIS и добавьте его в PATH."
+    }
+
+    Write-BuildSuccess ("Используется makensis: {0}" -f $makensisPath)
+    if (-not [string]::IsNullOrWhiteSpace($AppName)) {
+        Write-BuildInfo ("Переопределённое имя приложения: {0}" -f $AppName)
+    }
+
+    Start-BuildStep -Message "Сборка NSIS установщика" -Emoji "[BUILD]"
+    $arguments = @(
+        "/INPUTCHARSET",
+        "UTF8",
+        "/DAPP_VERSION=$Version",
+        "/DAPP_PUBLISHER=$Publisher",
+        $nsiPath
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($AppName)) {
+        $arguments = @("/DAPP_NAME=$AppName") + $arguments
+    }
+
+    & $makensisPath @arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "Компиляция NSIS завершилась с ошибкой."
+    }
+
+    Start-BuildStep -Message "Проверка артефакта и финальная сводка" -Emoji "[VERIFY]"
+    if (-not (Test-Path $outputInstaller)) {
+        throw "Ожидаемый NSIS-установщик не найден: $outputInstaller"
+    }
+
+    Complete-BuildUi `
+        -Message "NSIS установщик собран. Всё готово." `
+        -Artifacts @(
+            @{ Label = "NSIS installer"; Path = $outputInstaller },
+            @{ Label = "Source EXE"; Path = $distExe }
+        ) `
+        -NextSteps @(
+            "Запустите установщик и проверьте приветственную и финальную страницы.",
+            "После установки убедитесь, что приложение можно запустить с финальной страницы мастера."
+        )
+    exit 0
+} catch {
+    Fail-BuildUi `
+        -Message $_.Exception.Message `
+        -Hints @(
+            "Сначала соберите dist\\EpidControl.exe через scripts\\build_exe.bat.",
+            "Проверьте установку NSIS и наличие makensis.exe в PATH.",
+            "Если установщик не появился в dist, проверьте сообщения компилятора выше."
+        )
+    exit 1
 }
-
-& $makensis.FullName @arguments
-
-if ($LASTEXITCODE -ne 0) {
-    throw "NSIS compilation failed."
-}
-
-if (-not (Test-Path $outputInstaller)) {
-    throw "Installer output not found: $outputInstaller"
-}
-
-Write-Step "Installer created: $outputInstaller"

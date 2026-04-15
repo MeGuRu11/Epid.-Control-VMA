@@ -1025,3 +1025,66 @@
 - `scripts/rebuild_reference_seed.py`
 - `tests/unit/test_reference_seed_resource.py`
 - `tests/integration/test_reference_service_seed_sync.py`
+
+## 2026-04-15 — UX сборки и установщиков
+
+### Что сделано
+
+- Добавлен новый общий helper `scripts/build_ui.ps1` для пошагового консольного UX сборки.
+- Переписаны сборочные PowerShell-сценарии:
+  - `scripts/build_windows.ps1`
+  - `scripts/build_installer.ps1`
+  - `scripts/build_installer_nsis.ps1`
+- Во всех этих сценариях теперь есть:
+  - пошаговый прогресс;
+  - статусы `INFO`, `OK`, `WARN`, `ERROR`, `DONE`;
+  - финальная сводка по артефактам;
+  - явное финальное сообщение `Всё готово`.
+- Обновлены batch-обёртки:
+  - `scripts/build_exe.bat`
+  - `scripts/build_nsis.bat`
+  Обёртки переведены на безопасные ASCII-сообщения, чтобы не ловить проблемы кодировки в `cmd.exe`, при этом основная информативность осталась в PowerShell-сценариях.
+- Обновлены GUI-установщики:
+  - `scripts/installer.iss`
+  - `scripts/installer.nsi`
+  Для них улучшены приветственные тексты, описания компонент и финальные страницы мастера установки.
+- Обновлён `docs/build_release.md` под новый UX и новый порядок сборки/приёмки.
+
+### Что проверено
+
+- Реальный запуск `cmd /c scripts\build_exe.bat -SkipClean -SkipVerify` завершился успешно.
+- Подтверждено, что batch-обёртка корректно вызывает актуальный PowerShell-сценарий и выводит понятный старт/финиш.
+- Подтверждено, что `build_windows.ps1` собирает:
+  - `dist\EpidControl.exe`
+  - `dist\RELEASE_INFO.txt`
+- Полная сборка `NSIS` и `Inno Setup` в этой сессии не прогонялась, потому что на машине ранее были недоступны `makensis.exe` и `ISCC.exe`; логика сценариев при этом обновлена и проверена структурно.
+
+### Что не закончено
+
+- Нет живого smoke-прогона GUI-установщиков на этой машине без локально установленных `NSIS` и `Inno Setup`.
+
+### Открытые проблемы / блокеры
+
+- Блокеров по коду нет.
+- Для полного end-to-end smoke установщиков нужен хост, где установлены `NSIS` и/или `Inno Setup 6`.
+
+### Следующие шаги
+
+1. Прогнать `scripts\build_nsis.bat` на машине с установленным NSIS.
+2. Прогнать `powershell -ExecutionPolicy Bypass -File scripts\build_installer.ps1` на машине с установленным Inno Setup 6.
+3. Проверить приветственную страницу, progress bar и финальное сообщение `Всё готово` у обоих мастеров установки.
+4. При успешной проверке использовать обновлённый `docs/build_release.md` как основной релизный чек-лист.
+
+### Ключевые файлы этой сессии
+
+- `scripts/build_ui.ps1`
+- `scripts/build_windows.ps1`
+- `scripts/build_installer.ps1`
+- `scripts/build_installer_nsis.ps1`
+- `scripts/build_exe.bat`
+- `scripts/build_nsis.bat`
+- `scripts/installer.iss`
+- `scripts/installer.nsi`
+- `docs/build_release.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
