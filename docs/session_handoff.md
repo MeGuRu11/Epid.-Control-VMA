@@ -964,3 +964,25 @@
 - `.agents/skills/spec-first/**`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
+
+### Дополнение — справочник антибиотиков и микроорганизмов
+
+- Создан `docs/reference_antibiotics_microorganisms.md` на основе `resources/reference_seed.json`.
+- В документ выгружены все группы антибиотиков, все антибиотики и все микроорганизмы в том виде, в котором они записаны в seed-файле программы.
+- Антибиотики сгруппированы по `group_code`, микроорганизмы — по `taxon_group`, чтобы документ был пригоден и как справочник, и как контрольная выгрузка текущих значений.
+
+### Что не закончено
+
+- Если позже состав `reference_seed.json` изменится, документ нужно будет перегенерировать, иначе он устареет.
+
+### Следующие шаги
+
+1. При необходимости добавить ссылку на `docs/reference_antibiotics_microorganisms.md` в `README.md` или `docs/user_guide.md` как на отдельный справочный каталог.
+2. Если пользователь захочет отдельные выгрузки по справочникам, сделать аналогичные markdown-файлы для фагов, ИСМП-сокращений и других референсов.
+
+### Ключевые файлы этого дополнения
+
+- `resources/reference_seed.json`
+- `docs/reference_antibiotics_microorganisms.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
