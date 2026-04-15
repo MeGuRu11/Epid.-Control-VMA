@@ -986,3 +986,42 @@
 - `docs/reference_antibiotics_microorganisms.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
+
+## 2026-04-15 — Актуализация seed-справочников по corrected-файлу
+
+### Что сделано
+
+- `resources/reference_seed.json` синхронизирован с `docs/reference_antibiotics_microorganisms_corrected.md`.
+- Состав справочников приведён к исправленному эталону: 18 групп антибиотиков, 47 антибиотиков, 840 микроорганизмов.
+- Добавлен воспроизводимый генератор `scripts/rebuild_reference_seed.py` для пересборки seed-файла и экспортного markdown-справочника.
+- `docs/reference_antibiotics_microorganisms.md` пересобран уже из нового seed-файла.
+- `ReferenceService.seed_defaults()` теперь безопасно удаляет устаревшие автогенерируемые записи (`ABG-*`, `ABX-*`, `MIC-*`), если их больше нет в seed и на них нет ссылок из исторических данных.
+- Кастомные записи со своими кодами не удаляются.
+- Добавлены тесты на canonical seed и на безопасную синхронизацию справочников при старте.
+- Полный quality gate пройден: `ruff check app tests`, `mypy app tests`, `pytest -q`, `python -m compileall -q app tests scripts`.
+
+### Что не закончено
+
+- Новые значения попадут в уже существующие пользовательские БД после штатного вызова `seed_defaults()` при старте приложения; отдельную миграцию для массового удаления старых используемых справочников не делали, чтобы не ломать исторические связи.
+- Если в дальнейшем пользователь снова откорректирует эталонный markdown, нужно повторно прогнать `python scripts/rebuild_reference_seed.py` и закоммитить изменения seed/доков.
+
+### Открытые вопросы / блокеры
+
+- Блокеров нет.
+- Вне git по-прежнему остаётся только локальный каталог `.npm-cache/`.
+
+### Следующие шаги
+
+1. При необходимости запустить приложение и проверить, что существующая БД подтянула новые справочники после штатного startup-seed.
+2. Если нужно, можно отдельно сделать одноразовую административную команду для принудительной пересинхронизации справочников в уже развёрнутых БД.
+3. Если corrected-файл станет официальным эталоном, можно сослаться на него из `README.md` или `docs/user_guide.md`.
+
+### Ключевые файлы
+
+- `app/application/services/reference_service.py`
+- `resources/reference_seed.json`
+- `docs/reference_antibiotics_microorganisms.md`
+- `docs/reference_antibiotics_microorganisms_corrected.md`
+- `scripts/rebuild_reference_seed.py`
+- `tests/unit/test_reference_seed_resource.py`
+- `tests/integration/test_reference_service_seed_sync.py`

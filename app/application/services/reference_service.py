@@ -7,6 +7,7 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, cast
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.infrastructure.db import models_sqlalchemy as models
@@ -123,6 +124,24 @@ class ReferenceService:
                 payload.get("microorganisms", []),
                 identity_field="code",
             )
+            self._cleanup_obsolete_seed_rows(
+                session,
+                valid_group_codes={
+                    str(item["code"])
+                    for item in payload.get("antibiotic_groups", [])
+                    if isinstance(item, dict) and item.get("code")
+                },
+                valid_antibiotic_codes={
+                    str(item["code"])
+                    for item in abx_payload
+                    if isinstance(item, dict) and item.get("code")
+                },
+                valid_microorganism_codes={
+                    str(item["code"])
+                    for item in payload.get("microorganisms", [])
+                    if isinstance(item, dict) and item.get("code")
+                },
+            )
             ismp_payload = payload.get("ismp_abbreviations", [])
             if ismp_payload:
                 session.query(models.RefIsmpAbbreviation).delete()
@@ -133,6 +152,81 @@ class ReferenceService:
                     identity_field="code",
                 )
         self._logger.info("Reference seed applied")
+
+    def _cleanup_obsolete_seed_rows(
+        self,
+        session: Session,
+        *,
+        valid_group_codes: set[str],
+        valid_antibiotic_codes: set[str],
+        valid_microorganism_codes: set[str],
+    ) -> None:
+        for antibiotic in session.scalars(
+            select(models.RefAntibiotic).where(models.RefAntibiotic.code.like("ABX-%"))
+        ):
+            antibiotic_code = str(antibiotic.code or "")
+            antibiotic_id = cast(int | None, antibiotic.id)
+            if antibiotic_code in valid_antibiotic_codes or antibiotic_id is None:
+                continue
+            if self._is_antibiotic_referenced(session, antibiotic_id):
+                continue
+            session.delete(antibiotic)
+
+        for microorganism in session.scalars(
+            select(models.RefMicroorganism).where(models.RefMicroorganism.code.like("MIC-%"))
+        ):
+            microorganism_code = str(microorganism.code or "")
+            microorganism_id = cast(int | None, microorganism.id)
+            if microorganism_code in valid_microorganism_codes or microorganism_id is None:
+                continue
+            if self._is_microorganism_referenced(session, microorganism_id):
+                continue
+            session.delete(microorganism)
+
+        session.flush()
+
+        for group in session.scalars(
+            select(models.RefAntibioticGroup).where(models.RefAntibioticGroup.code.like("ABG-%"))
+        ):
+            group_code = str(group.code or "")
+            group_id = cast(int | None, group.id)
+            if group_code in valid_group_codes or group_id is None:
+                continue
+            has_antibiotics = session.scalar(
+                select(models.RefAntibiotic.id).where(models.RefAntibiotic.group_id == group_id).limit(1)
+            )
+            if has_antibiotics is not None:
+                continue
+            session.delete(group)
+
+    def _is_antibiotic_referenced(self, session: Session, antibiotic_id: int) -> bool:
+        return any(
+            session.scalar(query) is not None
+            for query in (
+                select(models.EmrAntibioticCourse.id).where(
+                    models.EmrAntibioticCourse.antibiotic_id == antibiotic_id
+                ).limit(1),
+                select(models.LabAbxSusceptibility.id).where(
+                    models.LabAbxSusceptibility.antibiotic_id == antibiotic_id
+                ).limit(1),
+                select(models.SanAbxSusceptibility.id).where(
+                    models.SanAbxSusceptibility.antibiotic_id == antibiotic_id
+                ).limit(1),
+            )
+        )
+
+    def _is_microorganism_referenced(self, session: Session, microorganism_id: int) -> bool:
+        return any(
+            session.scalar(query) is not None
+            for query in (
+                select(models.LabMicrobeIsolation.id).where(
+                    models.LabMicrobeIsolation.microorganism_id == microorganism_id
+                ).limit(1),
+                select(models.SanMicrobeIsolation.id).where(
+                    models.SanMicrobeIsolation.microorganism_id == microorganism_id
+                ).limit(1),
+            )
+        )
 
     def seed_defaults_if_empty(self) -> None:
         with self.session_factory() as session:
