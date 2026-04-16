@@ -24,6 +24,7 @@ from app.application.services.setup_service import SetupService
 from app.config import settings
 from app.ui.runtime_ui import resolve_ui_runtime
 from app.ui.widgets.animated_background import MedicalBackground
+from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, set_status
 
 
@@ -134,6 +135,7 @@ class FirstRunDialog(QDialog):
         card_layout.addWidget(self.error_label)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        localize_button_box(buttons)
         ok_btn = buttons.button(QDialogButtonBox.StandardButton.Ok)
         cancel_btn = buttons.button(QDialogButtonBox.StandardButton.Cancel)
         if ok_btn:

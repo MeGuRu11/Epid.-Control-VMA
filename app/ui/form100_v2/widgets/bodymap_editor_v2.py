@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import sys
 from collections import Counter
-from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QMouseEvent, QPainter, QPainterPath, QPen, QPixmap
@@ -21,9 +19,13 @@ from PySide6.QtWidgets import (
 )
 
 from app.application.dto.form100_v2_dto import Form100AnnotationDto
+from app.ui.form100_v2.bodymap_assets import (
+    SILHOUETTE_ORDER as _SILHOUETTE_ORDER,
+    load_bodymap_template_pixmap,
+    split_bodymap_template,
+)
+from app.ui.widgets.dialog_utils import localize_button_box
 
-_TEMPLATE_IMAGES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
-_SILHOUETTE_ORDER = ("male_front", "male_back")
 _TOOL_ITEMS: tuple[tuple[str, str], ...] = (
     ("Рана (X)", "WOUND_X"),
     ("Ожог (область)", "BURN_HATCH"),
@@ -52,25 +54,6 @@ def _active_silhouettes(gender: str) -> set[str]:
     return {"male_front", "male_back"}
 
 
-def _get_image_root() -> Path:
-    meipass = cast(object, getattr(sys, "_MEIPASS", None))
-    if getattr(sys, "frozen", False) and isinstance(meipass, str):
-        return Path(meipass) / "app" / "image" / "main"
-    return Path(__file__).resolve().parents[4] / "app" / "image" / "main"
-
-
-def _load_template_pixmap() -> QPixmap | None:
-    image_root = _get_image_root()
-    for file_name in _TEMPLATE_IMAGES:
-        image_path = image_root / file_name
-        if not image_path.exists():
-            continue
-        pixmap = QPixmap(str(image_path))
-        if not pixmap.isNull():
-            return pixmap
-    return None
-
-
 def _normalize_silhouette_pixmap(pixmap: QPixmap) -> QPixmap:
     image = pixmap.toImage().convertToFormat(QImage.Format.Format_ARGB32)
     for y in range(image.height()):
@@ -86,41 +69,6 @@ def _normalize_silhouette_pixmap(pixmap: QPixmap) -> QPixmap:
             else:
                 image.setPixelColor(x, y, QColor(0, 0, 0, 255))
     return QPixmap.fromImage(image)
-
-
-def _load_silhouette_pixmaps() -> dict[str, QPixmap]:
-    src = _load_template_pixmap()
-    if src is None:
-        return {}
-    width = src.width()
-    height = src.height()
-    if width <= 0 or height <= 0:
-        return {}
-    # Legacy template was a 4-segment horizontal sprite (front/back + M/F).
-    if width >= int(height * 2.2):
-        segment = max(1, width // 4)
-        front = src.copy(0, 0, segment, height)
-        back = src.copy(segment, 0, segment, height)
-        if not front.isNull() and not back.isNull():
-            return {
-                "male_front": _normalize_silhouette_pixmap(front),
-                "male_back": _normalize_silhouette_pixmap(back),
-            }
-
-    # New unified template may contain two silhouettes: front (left) and back (right).
-    if width >= int(height * 0.6):
-        split = max(1, width // 2)
-        front = src.copy(0, 0, split, height)
-        back = src.copy(split, 0, max(1, width - split), height)
-        if not front.isNull() and not back.isNull():
-            return {
-                "male_front": _normalize_silhouette_pixmap(front),
-                "male_back": _normalize_silhouette_pixmap(back),
-            }
-
-    # New template can be a single body image; mirror it to all silhouettes.
-    normalized = _normalize_silhouette_pixmap(src.copy(0, 0, width, height))
-    return dict.fromkeys(_SILHOUETTE_ORDER, normalized)
 
 
 def _marks_stats(marks: list[dict[str, Any]]) -> str:
@@ -241,12 +189,14 @@ class _BodymapDialogV2(QDialog):
 
         if read_only:
             buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+            localize_button_box(buttons)
             close_btn = buttons.button(QDialogButtonBox.StandardButton.Close)
             if close_btn:
                 close_btn.setText("Закрыть")
             buttons.rejected.connect(self.reject)
         else:
             buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+            localize_button_box(buttons)
             save_btn = buttons.button(QDialogButtonBox.StandardButton.Save)
             cancel_btn = buttons.button(QDialogButtonBox.StandardButton.Cancel)
             if save_btn:
@@ -309,7 +259,12 @@ class _BodymapCanvasV2(QWidget):
         self._drag_silhouette: str | None = None
         self._hover_point: QPointF | None = None
         self._hover_silhouette: str | None = None
-        self._silhouette_pixmaps = _load_silhouette_pixmaps()
+        template = load_bodymap_template_pixmap()
+        self._silhouette_pixmaps = (
+            split_bodymap_template(template, _normalize_silhouette_pixmap)
+            if template is not None
+            else {}
+        )
         self._silhouette_rects: dict[str, QRectF] = {}
         self._body_rects: dict[str, QRectF] = {}
         self._body_paths: dict[str, QPainterPath] = {}
@@ -727,4 +682,3 @@ class _BodymapCanvasV2(QWidget):
             )
             path = path.united(back)
         return path
-

@@ -28,6 +28,7 @@ from app.application.security import can_manage_exchange
 from app.application.services.exchange_service import ExchangeService
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import show_error, show_info, show_warning
 from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
 
@@ -57,6 +58,11 @@ class ImportExportWizard(QWizard):
         self.addPage(self._path_page)
         self.addPage(self._preview_page)
 
+    @property
+    def operation_host(self) -> QWidget:
+        parent = self.parentWidget()
+        return parent if parent is not None else self
+
     def _ensure_permissions(self) -> None:
         if not can_manage_exchange(self.session.role):
             raise ValueError("Недостаточно прав для операций импорта/экспорта")
@@ -73,7 +79,7 @@ class ImportExportWizard(QWizard):
             show_warning(self, "Укажите путь к файлу")
             return
         if direction == "export":
-            reply = QMessageBox.warning(
+            reply = exec_message_box(
                 self,
                 "Внимание: персональные данные",
                 (
@@ -81,8 +87,9 @@ class ImportExportWizard(QWizard):
                     "Обеспечьте безопасное хранение и передачу файла.\n\n"
                     "Продолжить экспорт?"
                 ),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
+                icon=QMessageBox.Icon.Warning,
+                buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                default_button=QMessageBox.StandardButton.No,
             )
             if reply != QMessageBox.StandardButton.Yes:
                 return
@@ -95,12 +102,12 @@ class ImportExportWizard(QWizard):
         def _on_success(result: tuple[str, bool]) -> None:
             message, has_errors = result
             if direction == "export":
-                show_info(self, f"Экспорт завершён: {message}")
+                show_info(self.operation_host, f"Экспорт завершён: {message}")
             else:
                 if has_errors:
-                    show_warning(self, f"Импорт завершён с ошибками: {message}")
+                    show_warning(self.operation_host, f"Импорт завершён с ошибками: {message}")
                 else:
-                    show_info(self, f"Импорт завершён: {message}")
+                    show_info(self.operation_host, f"Импорт завершён: {message}")
             self._accept_success()
 
         def _on_error(exc: Exception) -> None:
@@ -272,6 +279,8 @@ class DirectionPage(QWizardPage):
 
     def _build_ui(self) -> None:
         layout = QFormLayout(self)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setVerticalSpacing(10)
         self.direction = QComboBox()
         self.direction.addItem("Экспорт", "export")
         self.direction.addItem("Импорт", "import")
@@ -302,6 +311,12 @@ class DirectionPage(QWizardPage):
         layout.addRow("Формат", self.format)
         layout.addRow("Таблица (для CSV/PDF)", self.table_select)
         layout.addRow("Режим импорта", self.import_mode)
+        self._table_label = layout.labelForField(self.table_select)
+        self._import_mode_label = layout.labelForField(self.import_mode)
+        self._context_hint = QLabel("")
+        self._context_hint.setWordWrap(True)
+        self._context_hint.setObjectName("muted")
+        layout.addRow("", self._context_hint)
         self._sync_state()
 
     def _sync_state(self) -> None:
@@ -310,8 +325,36 @@ class DirectionPage(QWizardPage):
         if is_import and fmt == "pdf":
             self.format.setCurrentIndex(0)
             fmt = self.format.currentData()
-        self.table_select.setEnabled(fmt in {"csv", "pdf"})
-        self.import_mode.setEnabled(is_import)
+        table_visible = fmt in {"csv", "pdf"}
+        import_mode_visible = is_import
+        if self._table_label is not None:
+            self._table_label.setVisible(table_visible)
+        self.table_select.setVisible(table_visible)
+        self.table_select.setEnabled(table_visible)
+        if self._import_mode_label is not None:
+            self._import_mode_label.setVisible(import_mode_visible)
+        self.import_mode.setVisible(import_mode_visible)
+        self.import_mode.setEnabled(import_mode_visible)
+        self._context_hint.setText(self._build_context_hint(is_import, str(fmt)))
+
+    def _build_context_hint(self, is_import: bool, fmt: str) -> str:
+        if fmt == "csv":
+            if is_import:
+                return "CSV импортируется по одной таблице. Выберите таблицу и режим загрузки."
+            return "CSV экспортируется по одной таблице. Выберите раздел, который нужно выгрузить."
+        if fmt == "pdf":
+            return "PDF выгружается по одной таблице. Выберите раздел для печатного отчёта."
+        if fmt == "excel":
+            if is_import:
+                return "Excel импортирует весь пакет данных. Режим определяет, обновлять ли существующие записи."
+            return "Excel экспортирует полный набор листов с русскими названиями и понятными заголовками."
+        if fmt == "zip":
+            if is_import:
+                return "ZIP импортирует полный пакет обмена. Можно обновлять записи или только добавлять новые."
+            return "ZIP экспортирует полный пакет обмена со служебным manifest и Excel-файлом."
+        if fmt == "form100_zip":
+            return "Form100 ZIP работает как архив специализированного обмена карточками Формы 100."
+        return ""
 
 
 class PathPage(QWizardPage):
@@ -374,6 +417,7 @@ class PreviewPage(QWizardPage):
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
         self.summary_label = QLabel("Проверьте параметры и файл перед запуском.")
+        self.summary_label.setWordWrap(True)
         layout.addWidget(self.summary_label)
         self.preview_table = QTableWidget(0, 0)
         self.preview_table.horizontalHeader().setStretchLastSection(True)
@@ -415,7 +459,7 @@ class PreviewPage(QWizardPage):
             self._preview_excel(path)
 
     def _preview_csv(self, path: Path) -> None:
-        with path.open("r", encoding="utf-8", newline="") as f:
+        with path.open("r", encoding="utf-8-sig", newline="") as f:
             reader = csv.reader(f)
             rows = []
             for _ in range(20):
@@ -435,7 +479,7 @@ class PreviewPage(QWizardPage):
 
     def _preview_excel(self, path: Path) -> None:
         wb = load_workbook(path, read_only=True)
-        ws = wb.active
+        ws = next((wb[name] for name in wb.sheetnames if name != "meta"), wb.active)
         if ws is None:
             return
         rows = list(ws.iter_rows(values_only=True))[:20]

@@ -40,6 +40,7 @@ from app.ui.form100_v2.wizard_widgets.wizard_steps.step_bodymap import StepBodym
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_evacuation import StepEvacuation
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_identification import StepIdentification
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_medical import StepMedical
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import error_text
 
 _HANDLED_FORM100_WIZARD_ERRORS = (
@@ -608,10 +609,11 @@ class Form100Wizard(QDialog):
         try:
             self._do_save(payload, markers)
         except _HANDLED_FORM100_WIZARD_ERRORS as exc:
-            QMessageBox.critical(
+            exec_message_box(
                 self,
                 "Ошибка сохранения",
                 error_text(exc, "Не удалось сохранить карточку"),
+                icon=QMessageBox.Icon.Critical,
             )
             return
         self.accept()
@@ -666,10 +668,11 @@ class Form100Wizard(QDialog):
         try:
             saved = self._do_save(payload, markers)
         except _HANDLED_FORM100_WIZARD_ERRORS as exc:
-            QMessageBox.critical(
+            exec_message_box(
                 self,
                 "Ошибка сохранения",
                 error_text(exc, "Не удалось сохранить карточку"),
+                icon=QMessageBox.Icon.Critical,
             )
             return
 
@@ -684,10 +687,11 @@ class Form100Wizard(QDialog):
             self._card = signed
             self._step4.set_card_status(signed.status)
         except _HANDLED_FORM100_WIZARD_ERRORS as exc:
-            QMessageBox.critical(
+            exec_message_box(
                 self,
                 "Ошибка подписи",
                 error_text(exc, "Не удалось подписать карточку"),
+                icon=QMessageBox.Icon.Critical,
             )
             return
         self.accept()

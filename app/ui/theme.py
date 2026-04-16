@@ -341,18 +341,46 @@ def _build_qss(settings: Settings) -> str:
         font-size: 12px;
         padding: 2px 0;
         spacing: 6px;
+        color: {COL["text"]};
     }}
     QGroupBox#form100Tissue QCheckBox#form100TissueCheck::indicator {{
         width: 14px;
         height: 14px;
-        border: 1px solid #1E1E1E;
+        border: 1px solid {COL["accent_border"]};
         border-radius: 3px;
-        background: #FFFFFF;
+        background: {COL["surface"]};
+    }}
+    QGroupBox#form100Tissue QCheckBox#form100TissueCheck::indicator:hover {{
+        background: #F2FBF9;
+        border: 1px solid #58A99A;
     }}
     QGroupBox#form100Tissue QCheckBox#form100TissueCheck::indicator:checked {{
-        border: 1px solid #111111;
+        border: 1px solid #4EAF9F;
         border-radius: 3px;
-        background: #1E1E1E;
+        background: #8FDCCF;
+    }}
+    QPushButton#iconSelectToggle {{
+        background: #8FDCCF;
+        border: 1px solid #6FB9AD;
+        border-radius: 10px;
+        color: {COL["text_primary"]};
+        font-weight: 700;
+        padding: 6px 12px;
+        min-height: 34px;
+    }}
+    QPushButton#iconSelectToggle:hover {{
+        background: #A7E8DD;
+    }}
+    QPushButton#iconSelectToggle:checked,
+    QPushButton#iconSelectToggle[active="true"] {{
+        background: #4EAF9F;
+        border: 1px solid #2F7F73;
+        color: #FFFFFF;
+        font-weight: 800;
+    }}
+    QPushButton#iconSelectToggle:checked:hover,
+    QPushButton#iconSelectToggle[active="true"]:hover {{
+        background: #429A8C;
     }}
     QPushButton#lesionToggle {{
         background: #8FDCCF;
@@ -427,17 +455,18 @@ def _build_qss(settings: Settings) -> str:
         border: none;
     }}
     QFrame#form100ReviewNameCard {{
-        background: {COL["text_primary"]};
-        border: none;
+        background: {COL["surface"]};
+        border: 1px solid rgba(111, 185, 173, 0.28);
         border-radius: 8px;
+        border-left: 5px solid {COL["accent_border"]};
     }}
     QLabel#form100ReviewName {{
-        color: {COL["surface2"]};
+        color: {COL["text_primary"]};
         font-size: 16px;
         font-weight: 800;
     }}
     QLabel#form100ReviewSub {{
-        color: {COL["accent"]};
+        color: {COL["text_muted"]};
         font-size: 12px;
     }}
     QFrame#form100ReviewCard {{

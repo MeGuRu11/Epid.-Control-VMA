@@ -45,6 +45,7 @@ from app.ui.patient.emk_utils import (
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.table_utils import resize_columns_to_content
 
@@ -777,14 +778,15 @@ class PatientEmkView(QWidget):
             if detail.id == self._current_case_id:
                 case_no = detail.hospital_case_no or "—"
                 break
-        confirm = QMessageBox.question(
+        confirm = exec_message_box(
             self,
             "Удалить ЭМЗ",
             f"Удалить ЭМЗ пациента {self._current_patient.full_name}\n"
             f"(госпитализация №{case_no})?\n"
             "Данные будут удалены без возможности восстановления.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            icon=QMessageBox.Icon.Warning,
+            buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            default_button=QMessageBox.StandardButton.No,
         )
         if confirm != QMessageBox.StandardButton.Yes:
             return
@@ -809,13 +811,14 @@ class PatientEmkView(QWidget):
         if not self._current_patient:
             self._set_status("Выберите пациента.", "warning")
             return
-        confirm = QMessageBox.question(
+        confirm = exec_message_box(
             self,
             "Удалить пациента",
             f"Удалить пациента {self._current_patient.full_name}?\n"
             "Все данные будут удалены без возможности восстановления.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            icon=QMessageBox.Icon.Warning,
+            buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            default_button=QMessageBox.StandardButton.No,
         )
         if confirm != QMessageBox.StandardButton.Yes:
             return

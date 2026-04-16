@@ -28,6 +28,7 @@ from app.application.dto.form100_v2_dto import (
 from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.ui.form100_v2.form100_wizard import Form100Wizard
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import error_text
 
 _STATUS_LABELS: dict[str, str] = {
@@ -272,11 +273,12 @@ class Form100ListPanel(QDialog):
         try:
             self._cards = self._service.list_cards(filters, limit=200)
         except _HANDLED_FORM100_ERRORS as exc:
-            QMessageBox.warning(
+            exec_message_box(
                 self,
                 "Ошибка",
                 "Не удалось загрузить карточки:\n"
                 f"{error_text(exc, 'Операция не выполнена')}",
+                icon=QMessageBox.Icon.Warning,
             )
             self._cards = []
         self._rebuild_table()
@@ -337,10 +339,11 @@ class Form100ListPanel(QDialog):
         from app.application.dto.form100_v2_dto import Form100CardV2Dto
 
         if card_id is None and self._emr_case_id is None:
-            QMessageBox.warning(
+            exec_message_box(
                 self,
                 "Форма 100",
                 "Для создания карточки выберите госпитализацию.",
+                icon=QMessageBox.Icon.Warning,
             )
             return
 
@@ -349,11 +352,12 @@ class Form100ListPanel(QDialog):
             try:
                 card = self._service.get_card(card_id)
             except _HANDLED_FORM100_ERRORS as exc:
-                QMessageBox.critical(
+                exec_message_box(
                     self,
                     "Ошибка",
                     "Не удалось загрузить карточку:\n"
                     f"{error_text(exc, 'Операция не выполнена')}",
+                    icon=QMessageBox.Icon.Critical,
                 )
                 return
 

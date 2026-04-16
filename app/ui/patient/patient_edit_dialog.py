@@ -22,6 +22,7 @@ from app.application.exceptions import AppError
 from app.application.services.patient_service import PatientService
 from app.domain.constants import MilitaryCategory
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import clear_status, set_status
 
 
@@ -152,9 +153,9 @@ class PatientEditDialog(QDialog):
                 military_district=self.military_district.text().strip() or None,
             )
         except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
-            QMessageBox.critical(self, "Ошибка", str(exc))
+            exec_message_box(self, "Ошибка", str(exc), icon=QMessageBox.Icon.Critical)
             return
-        QMessageBox.information(self, "Готово", "Данные пациента обновлены.")
+        exec_message_box(self, "Готово", "Данные пациента обновлены.", icon=QMessageBox.Icon.Information)
         self.accept()
 
 

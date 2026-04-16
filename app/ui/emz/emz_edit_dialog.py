@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
 
 from app.container import Container
 from app.ui.emz.emz_form import EmzForm
+from app.ui.widgets.dialog_utils import localize_button_box
 
 
 class EmzEditDialog(QDialog):
@@ -51,6 +52,7 @@ class EmzEditDialog(QDialog):
         layout.addWidget(self.form)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        localize_button_box(buttons)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 

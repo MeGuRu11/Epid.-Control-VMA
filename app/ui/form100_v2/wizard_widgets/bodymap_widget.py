@@ -8,10 +8,8 @@ NOTE_PIN: при наведении показывается всплывающ�
 """
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPen, QPixmap, QPolygonF
@@ -25,9 +23,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.bodymap_assets import (
+    SILHOUETTE_ORDER,
+    load_bodymap_template_pixmap,
+    split_bodymap_template,
+)
+
 # ── Константы ────────────────────────────────────────────────────────────────
 
-SILHOUETTE_ORDER = ("male_front", "male_back")
 SILHOUETTE_LABELS = {
     "male_front": "Вид спереди",
     "male_back": "Вид сзади",
@@ -53,26 +56,6 @@ ANNOTATION_COLORS: dict[str, QColor] = {
     "NOTE_PIN":    QColor("#3498DB"),
 }
 
-_IMG_FILES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
-
-def _get_image_root() -> Path:
-    meipass = cast(object, getattr(sys, "_MEIPASS", None))
-    if getattr(sys, "frozen", False) and isinstance(meipass, str):
-        return Path(meipass) / "app" / "image" / "main"
-    return Path(__file__).parent.parent.parent.parent / "image" / "main"
-
-
-def _load_bodymap_template() -> QPixmap | None:
-    img_root = _get_image_root()
-    for file_name in _IMG_FILES:
-        img_path = img_root / file_name
-        if not img_path.exists():
-            continue
-        pixmap = QPixmap(str(img_path))
-        if not pixmap.isNull():
-            return pixmap
-    return None
-
 
 def _normalize_silhouette_pixmap(pixmap: QPixmap) -> QPixmap:
     image = pixmap.toImage().convertToFormat(QImage.Format.Format_ARGB32)
@@ -89,36 +72,6 @@ def _normalize_silhouette_pixmap(pixmap: QPixmap) -> QPixmap:
                 alpha = max(20, min(255, 255 - luminance))
                 image.setPixelColor(x, y, QColor(60, 60, 60, alpha))
     return QPixmap.fromImage(image)
-
-
-def _split_bodymap_template(template: QPixmap) -> dict[str, QPixmap]:
-    width = template.width()
-    height = template.height()
-    if width <= 0 or height <= 0:
-        return {}
-
-    if width >= int(height * 2.2):
-        segment = max(1, width // 4)
-        front = template.copy(0, 0, segment, height)
-        back = template.copy(segment, 0, segment, height)
-        if not front.isNull() and not back.isNull():
-            return {
-                "male_front": _normalize_silhouette_pixmap(front),
-                "male_back": _normalize_silhouette_pixmap(back),
-            }
-
-    if width >= int(height * 0.6):
-        split = max(1, width // 2)
-        front = template.copy(0, 0, split, height)
-        back = template.copy(split, 0, max(1, width - split), height)
-        if not front.isNull() and not back.isNull():
-            return {
-                "male_front": _normalize_silhouette_pixmap(front),
-                "male_back": _normalize_silhouette_pixmap(back),
-            }
-
-    normalized = _normalize_silhouette_pixmap(template.copy(0, 0, width, height))
-    return dict.fromkeys(SILHOUETTE_ORDER, normalized)
 
 
 # ── Domain dataclass ──────────────────────────────────────────────────────────
@@ -152,8 +105,12 @@ class _BodyCanvas(QWidget):
         self.setMouseTracking(True)
 
         if _BodyCanvas._shared_pixmaps is None:
-            template = _load_bodymap_template()
-            _BodyCanvas._shared_pixmaps = _split_bodymap_template(template) if template is not None else {}
+            template = load_bodymap_template_pixmap()
+            _BodyCanvas._shared_pixmaps = (
+                split_bodymap_template(template, _normalize_silhouette_pixmap)
+                if template is not None
+                else {}
+            )
 
     # ── Геометрия ─────────────────────────────────────────────────────────
 
@@ -604,4 +561,3 @@ class BodyMapWidget(QWidget):
 
     def set_payload_read_only(self, read_only: bool) -> None:  # noqa: ARG002
         pass
-

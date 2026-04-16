@@ -37,6 +37,7 @@ from app.ui.runtime_ui import apply_density_property, resolve_ui_runtime
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.context_bar import ContextBar
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.transition_stack import TransitionStack
 
 
@@ -463,10 +464,11 @@ class MainWindow(QMainWindow):
         self._clear_context()
         self.hide()
         if show_timeout_message:
-            QMessageBox.information(
+            exec_message_box(
                 self,
                 "Сессия завершена",
                 "Сессия завершена по таймауту бездействия. Выполните вход повторно.",
+                icon=QMessageBox.Icon.Information,
             )
         dlg = LoginDialog(auth_service=self.container.auth_service, parent=None)
         if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.session:

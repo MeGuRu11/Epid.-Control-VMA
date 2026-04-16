@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.infrastructure.db.engine import get_engine
 from app.infrastructure.db.fts_manager import FtsManager
 from app.infrastructure.db.models_sqlalchemy import User
+from app.ui.widgets.dialog_utils import exec_message_box
 
 if TYPE_CHECKING:
     from app.container import Container
@@ -49,11 +50,11 @@ def _message_parent() -> QWidget:
 
 
 def _show_critical(title: str, text: str) -> None:
-    QMessageBox.critical(_message_parent(), title, text)
+    exec_message_box(_message_parent(), title, text, icon=QMessageBox.Icon.Critical)
 
 
 def _show_warning(title: str, text: str) -> None:
-    QMessageBox.warning(_message_parent(), title, text)
+    exec_message_box(_message_parent(), title, text, icon=QMessageBox.Icon.Warning)
 
 
 def _is_multiple_heads_error(exc: BaseException) -> bool:
@@ -270,4 +271,3 @@ def warn_missing_plot_dependencies() -> None:
             "Библиотеки не найдены",
             "Не установлены библиотеки для графиков: " + ", ".join(missing),
         )
-

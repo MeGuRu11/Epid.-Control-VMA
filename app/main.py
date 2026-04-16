@@ -34,6 +34,7 @@ from app.ui.login_dialog import LoginDialog  # noqa: E402
 from app.ui.main_window import MainWindow  # noqa: E402
 from app.ui.theme import apply_theme  # noqa: E402
 from app.ui.widgets.date_input_flow import DateInputAutoFlow  # noqa: E402
+from app.ui.widgets.dialog_utils import exec_message_box  # noqa: E402
 
 _stderr_tee: TextIO | None = None
 
@@ -129,10 +130,11 @@ def _install_exception_hook(log_path: Path) -> None:
             return
         logging.getLogger(__name__).error("Unhandled exception", exc_info=(exc_type, exc, tb))
         if QApplication.instance() is not None:
-            QMessageBox.critical(
+            exec_message_box(
                 cast(QWidget, QApplication.activeWindow()),
                 "Ошибка",
                 f"Произошла непредвиденная ошибка.\nОтчет: {log_path}",
+                icon=QMessageBox.Icon.Critical,
             )
         sys.__excepthook__(exc_type, exc, tb)
 

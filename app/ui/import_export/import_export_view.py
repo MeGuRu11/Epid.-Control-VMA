@@ -8,6 +8,7 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
+    QDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -32,6 +33,13 @@ from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_t
 
 _HANDLED_IMPORT_EXPORT_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError, OSError)
 _ALLOWED_ARTIFACT_DIRS = [DATA_DIR / "artifacts", DATA_DIR / "backups", DATA_DIR / "reports"]
+_PACKAGE_FORMAT_LABELS = {
+    "excel": "Excel",
+    "csv": "CSV",
+    "pdf": "PDF",
+    "zip+excel": "ZIP + Excel",
+    "form100+zip": "Form100 ZIP",
+}
 
 
 def _is_safe_path(path: Path) -> bool:
@@ -198,7 +206,8 @@ class ImportExportView(QWidget):
             table_labels=self._table_labels,
             parent=self,
         )
-        wizard.exec()
+        if wizard.exec() == QDialog.DialogCode.Accepted:
+            self._load_history()
 
     def _sync_permissions(self) -> None:
         can_manage = can_manage_exchange(self.session.role)
@@ -220,8 +229,10 @@ class ImportExportView(QWidget):
         for i, r in enumerate(rows):
             direction_key = str(r.direction or "")
             direction = {"export": "Экспорт", "import": "Импорт"}.get(direction_key, "")
+            format_key = str(r.package_format or "")
+            format_label = _PACKAGE_FORMAT_LABELS.get(format_key, format_key)
             self.history_table.setItem(i, 0, QTableWidgetItem(direction))
-            self.history_table.setItem(i, 1, QTableWidgetItem(str(r.package_format or "")))
+            self.history_table.setItem(i, 1, QTableWidgetItem(format_label))
             created_raw = r.created_at
             created_text = (
                 created_raw.strftime("%d.%m.%Y %H:%M") if isinstance(created_raw, datetime) else ""

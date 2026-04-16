@@ -138,6 +138,173 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
     },
 }
 
+EXCEL_SHEET_TITLES: dict[str, str] = {
+    "departments": "Отделения",
+    "ref_icd10": "МКБ-10",
+    "ref_microorganisms": "Микроорганизмы",
+    "ref_antibiotic_groups": "Группы антибиотиков",
+    "ref_antibiotics": "Антибиотики",
+    "ref_phages": "Бактериофаги",
+    "ref_material_types": "Типы материала",
+    "patients": "Пациенты",
+    "emr_case": "Госпитализации",
+    "emr_case_version": "Версии ЭМЗ",
+    "emr_diagnosis": "Диагнозы ЭМЗ",
+    "emr_intervention": "Вмешательства ЭМЗ",
+    "emr_antibiotic_course": "Курсы антибиотиков",
+    "lab_sample": "Лабораторные пробы",
+    "lab_microbe_isolation": "Лаб. выделения",
+    "lab_abx_susceptibility": "Лаб. чувствительность",
+    "lab_phage_panel_result": "Лаб. фаги",
+    "sanitary_sample": "Санитарные пробы",
+    "san_microbe_isolation": "Сан. выделения",
+    "san_abx_susceptibility": "Сан. чувствительность",
+    "san_phage_panel_result": "Сан. фаги",
+}
+
+EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
+    "departments": {
+        "id": "ID отделения",
+        "name": "Наименование отделения",
+    },
+    "ref_icd10": {
+        "code": "Код МКБ-10",
+        "title": "Наименование диагноза",
+        "is_active": "Активна",
+    },
+    "ref_microorganisms": {
+        "id": "ID микроорганизма",
+        "code": "Код",
+        "name": "Микроорганизм",
+        "taxon_group": "Таксономическая группа",
+        "is_active": "Активен",
+    },
+    "ref_antibiotic_groups": {
+        "id": "ID группы",
+        "code": "Код группы",
+        "name": "Группа антибиотиков",
+    },
+    "ref_antibiotics": {
+        "id": "ID антибиотика",
+        "code": "Код антибиотика",
+        "name": "Антибиотик",
+        "group_id": "ID группы антибиотиков",
+    },
+    "ref_phages": {
+        "id": "ID фага",
+        "code": "Код фага",
+        "name": "Бактериофаг",
+        "is_active": "Активен",
+    },
+    "ref_material_types": {
+        "id": "ID типа материала",
+        "code": "Код типа материала",
+        "name": "Тип материала",
+    },
+    "patients": CSV_HEADERS["patients"],
+    "emr_case": CSV_HEADERS["emr_case"],
+    "emr_case_version": {
+        "id": "ID версии ЭМЗ",
+        "emr_case_id": "ID госпитализации",
+        "version_no": "Версия",
+        "valid_from": "Действует с",
+        "valid_to": "Действует по",
+        "is_current": "Текущая версия",
+        "entered_by": "Кто внёс",
+        "admission_date": "Дата поступления",
+        "injury_date": "Дата травмы",
+        "outcome_date": "Дата исхода",
+        "outcome_type": "Тип исхода",
+        "severity": "Тяжесть",
+        "vph_sp_score": "ВПХ-СП",
+        "vph_p_or_score": "ВПХ-П/ОР",
+        "sofa_score": "SOFA",
+        "days_to_admission": "Дней до поступления",
+        "length_of_stay_days": "Длительность пребывания, дней",
+    },
+    "emr_diagnosis": {
+        "id": "ID диагноза",
+        "emr_case_version_id": "ID версии ЭМЗ",
+        "kind": "Тип диагноза",
+        "icd10_code": "Код МКБ-10",
+        "free_text": "Свободное описание",
+    },
+    "emr_intervention": {
+        "id": "ID вмешательства",
+        "emr_case_version_id": "ID версии ЭМЗ",
+        "type": "Тип вмешательства",
+        "start_dt": "Начало",
+        "end_dt": "Окончание",
+        "duration_minutes": "Длительность, мин",
+        "performed_by": "Исполнитель",
+        "notes": "Примечания",
+    },
+    "emr_antibiotic_course": {
+        "id": "ID курса",
+        "emr_case_version_id": "ID версии ЭМЗ",
+        "start_dt": "Начало курса",
+        "end_dt": "Окончание курса",
+        "antibiotic_id": "ID антибиотика",
+        "drug_name_free": "Антибиотик (свободно)",
+        "route": "Путь введения",
+        "dose": "Доза",
+    },
+    "lab_sample": CSV_HEADERS["lab_sample"]
+    | {
+        "qc_due_at": "Срок QC",
+        "qc_status": "Статус QC",
+    },
+    "lab_microbe_isolation": {
+        "id": "ID выделения",
+        "lab_sample_id": "ID лабораторной пробы",
+        "microorganism_id": "ID микроорганизма",
+        "microorganism_free": "Микроорганизм (свободно)",
+        "notes": "Примечания",
+    },
+    "lab_abx_susceptibility": {
+        "id": "ID результата чувствительности",
+        "lab_sample_id": "ID лабораторной пробы",
+        "antibiotic_id": "ID антибиотика",
+        "group_id": "ID группы антибиотиков",
+        "ris": "RIS",
+        "mic_mg_l": "MIC, мг/л",
+        "method": "Метод",
+    },
+    "lab_phage_panel_result": {
+        "id": "ID результата фагов",
+        "lab_sample_id": "ID лабораторной пробы",
+        "phage_id": "ID фага",
+        "phage_free": "Фаг (свободно)",
+        "lysis_diameter_mm": "Диаметр лизиса, мм",
+    },
+    "sanitary_sample": CSV_HEADERS["sanitary_sample"],
+    "san_microbe_isolation": {
+        "id": "ID выделения",
+        "sanitary_sample_id": "ID санитарной пробы",
+        "microorganism_id": "ID микроорганизма",
+        "microorganism_free": "Микроорганизм (свободно)",
+        "notes": "Примечания",
+    },
+    "san_abx_susceptibility": {
+        "id": "ID результата чувствительности",
+        "sanitary_sample_id": "ID санитарной пробы",
+        "antibiotic_id": "ID антибиотика",
+        "group_id": "ID группы антибиотиков",
+        "ris": "RIS",
+        "mic_mg_l": "MIC, мг/л",
+        "method": "Метод",
+    },
+    "san_phage_panel_result": {
+        "id": "ID результата фагов",
+        "sanitary_sample_id": "ID санитарной пробы",
+        "phage_id": "ID фага",
+        "phage_free": "Фаг (свободно)",
+        "lysis_diameter_mm": "Диаметр лизиса, мм",
+    },
+}
+
+_EXCEL_TITLE_TO_TABLE = {title: table_name for table_name, title in EXCEL_SHEET_TITLES.items()}
+
 _HANDLED_IMPORT_ERRORS = (
     ValueError,
     TypeError,
@@ -176,6 +343,33 @@ def _map_csv_row(table_name: str, row: dict[str, object]) -> dict[str, object]:
     header_map = CSV_HEADERS.get(table_name, {})
     reverse_map = {label: key for key, label in header_map.items()}
     return {reverse_map.get(key, key): value for key, value in row.items()}
+
+
+def _get_excel_sheet_title(table_name: str) -> str:
+    return EXCEL_SHEET_TITLES.get(table_name, table_name)
+
+
+def _resolve_excel_table_name(sheet_name: str) -> str | None:
+    if sheet_name == "meta":
+        return None
+    if sheet_name in TABLE_MODELS:
+        return sheet_name
+    return _EXCEL_TITLE_TO_TABLE.get(sheet_name)
+
+
+def _get_excel_headers(table_name: str, columns: list[str]) -> list[str]:
+    header_map = EXCEL_COLUMN_HEADERS.get(table_name, {})
+    return [header_map.get(column, column) for column in columns]
+
+
+def _map_excel_row(table_name: str, row: dict[str, object]) -> dict[str, object]:
+    return {_map_excel_header_name(table_name, str(key)): value for key, value in row.items()}
+
+
+def _map_excel_header_name(table_name: str, header_name: str) -> str:
+    header_map = EXCEL_COLUMN_HEADERS.get(table_name, {})
+    reverse_map = {label: key for key, label in header_map.items()}
+    return reverse_map.get(header_name, header_name)
 
 
 def _parse_value(value: object, column: object) -> object:
@@ -384,8 +578,24 @@ class ExchangeService:
                 )
             )
 
+    def _record_package(
+        self,
+        direction: str,
+        package_format: str,
+        file_path: Path,
+        created_by: int | None,
+    ) -> str:
+        package_hash = sha256_file(file_path)
+        self._log_package(direction, package_format, file_path, package_hash, created_by)
+        return package_hash
+
     def export_excel(
-        self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int
+        self,
+        file_path: str | Path,
+        *,
+        exported_by: str | None = None,
+        actor_id: int,
+        log_package: bool = True,
     ) -> ExcelExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
@@ -394,6 +604,7 @@ class ExchangeService:
         if meta is None:
             raise RuntimeError("Не удалось создать лист meta для экспорта")
         meta.title = "meta"
+        meta.sheet_state = "hidden"
         meta.append(["schema_version", "1.0"])
         meta.append(["exported_at", datetime.now(UTC).isoformat()])
         meta.append(["exported_by", exported_by or ""])
@@ -401,18 +612,22 @@ class ExchangeService:
         counts: dict[str, int] = {}
         with self.session_factory() as session:
             for name, model_cls in TABLE_MODELS.items():
-                ws = wb.create_sheet(title=name)
+                ws = wb.create_sheet(title=_get_excel_sheet_title(name))
                 columns = [c.name for c in model_cls.__table__.columns]
-                ws.append(columns)
+                ws.append(_get_excel_headers(name, columns))
                 rows = session.query(model_cls).all()
                 for row in rows:
                     data = _model_to_dict(row)
                     ws.append([data.get(col) for col in columns])
                 counts[name] = len(rows)
+        if len(wb.worksheets) > 1:
+            wb.active = 1
 
         # TODO SECURITY: добавить шифрование бэкапов/экспортов (AES-GCM)
         self._prepare_output_dir(file_path.parent)
         wb.save(file_path)
+        if log_package:
+            self._record_package("export", "excel", file_path, actor_id)
         return {"path": str(file_path), "counts": counts}
 
     def export_zip(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> ZipExportResult:
@@ -420,7 +635,12 @@ class ExchangeService:
         file_path = Path(file_path)
         with _working_temp_dir() as tmp_dir_path:
             excel_path = tmp_dir_path / "export.xlsx"
-            result = self.export_excel(excel_path, exported_by=exported_by, actor_id=actor_id)
+            result = self.export_excel(
+                excel_path,
+                exported_by=exported_by,
+                actor_id=actor_id,
+                log_package=False,
+            )
             files: list[Path] = [excel_path]
             manifest_files: list[ExchangeManifestFileEntry] = []
             manifest: ExchangeManifest = {
@@ -456,6 +676,7 @@ class ExchangeService:
         actor_id: int,
         mode: str = "merge",
         write_error_log: bool = True,
+        log_package: bool = True,
     ) -> ExcelImportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
@@ -465,22 +686,25 @@ class ExchangeService:
         errors: list[ExchangeImportErrorEntry] = []
         with self.session_factory() as session:
             for sheet_name in wb.sheetnames:
-                if sheet_name == "meta":
+                table_name = _resolve_excel_table_name(sheet_name)
+                if table_name is None:
                     continue
-                if sheet_name not in TABLE_MODELS:
-                    continue
-                model_cls = TABLE_MODELS[sheet_name]
+                model_cls = TABLE_MODELS[table_name]
                 ws = wb[sheet_name]
                 row_iter = ws.iter_rows(values_only=True)
                 header_row = next(row_iter, None)
                 if header_row is None:
-                    counts[sheet_name] = 0
-                    details[sheet_name] = {"rows": 0, "added": 0, "updated": 0, "skipped": 0, "errors": 0}
+                    counts[table_name] = 0
+                    details[table_name] = {"rows": 0, "added": 0, "updated": 0, "skipped": 0, "errors": 0}
                     continue
-                header_positions = [(idx, str(val)) for idx, val in enumerate(header_row) if val is not None]
+                header_positions = [
+                    (idx, _map_excel_header_name(table_name, str(val)))
+                    for idx, val in enumerate(header_row)
+                    if val is not None
+                ]
                 if not header_positions:
-                    counts[sheet_name] = 0
-                    details[sheet_name] = {"rows": 0, "added": 0, "updated": 0, "skipped": 0, "errors": 0}
+                    counts[table_name] = 0
+                    details[table_name] = {"rows": 0, "added": 0, "updated": 0, "skipped": 0, "errors": 0}
                     continue
                 rows_total = 0
                 added = 0
@@ -509,13 +733,13 @@ class ExchangeService:
                         sheet_errors += 1
                         errors.append(
                             {
-                                "scope": sheet_name,
+                                "scope": table_name,
                                 "row": row_idx,
                                 "message": _format_import_error(exc),
                             }
                         )
-                counts[sheet_name] = rows_total
-                details[sheet_name] = {
+                counts[table_name] = rows_total
+                details[table_name] = {
                     "rows": rows_total,
                     "added": added,
                     "updated": updated,
@@ -533,6 +757,8 @@ class ExchangeService:
         }
         if write_error_log:
             result["error_log_path"] = _write_import_error_log(file_path, errors)
+        if log_package:
+            self._record_package("import", "excel", file_path, actor_id)
         return result
 
     def import_zip(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> ZipImportResult:
@@ -560,7 +786,13 @@ class ExchangeService:
             excel_path = tmp_dir_path / "export.xlsx"
             if not excel_path.exists():
                 raise ValueError("В архиве отсутствует export.xlsx")
-            result = self.import_excel(excel_path, actor_id=actor_id, mode=mode, write_error_log=False)
+            result = self.import_excel(
+                excel_path,
+                actor_id=actor_id,
+                mode=mode,
+                write_error_log=False,
+                log_package=False,
+            )
 
         package_hash = sha256_file(file_path)
         self._log_package("import", "zip+excel", file_path, package_hash, actor_id)
@@ -647,6 +879,7 @@ class ExchangeService:
                 for row in rows:
                     data = _model_to_dict(row)
                     writer.writerow([data.get(col) for col in columns])
+        self._record_package("export", "csv", file_path, actor_id)
         return {"path": str(file_path), "count": len(rows)}
 
     def import_csv(
@@ -697,7 +930,7 @@ class ExchangeService:
             }
         }
         summary = _build_import_summary(details, errors_count=len(errors))
-        return {
+        result: CsvImportResult = {
             "path": str(file_path),
             "count": count,
             "counts": {table_name: rows_total},
@@ -707,6 +940,8 @@ class ExchangeService:
             "error_log_path": _write_import_error_log(file_path, errors),
             "summary": summary,
         }
+        self._record_package("import", "csv", file_path, actor_id)
+        return result
 
     def export_pdf(self, file_path: str | Path, table_name: str, *, actor_id: int) -> CsvExportResult:
         self._require_permission(actor_id, "manage_exchange")
@@ -770,6 +1005,7 @@ class ExchangeService:
             )
         )
         doc.build([table])
+        self._record_package("export", "pdf", file_path, actor_id)
         return {"path": str(file_path), "count": len(data) - 1}
 
     # Legacy JSON support (not used in UI)

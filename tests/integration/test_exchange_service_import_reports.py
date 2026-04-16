@@ -5,9 +5,10 @@ import json
 import zipfile
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
+from datetime import date
 from pathlib import Path
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -150,3 +151,110 @@ def test_import_zip_returns_nested_import_error_report(tmp_path: Path) -> None:
     payload = json.loads(error_log_path.read_text(encoding="utf-8"))
     assert payload["source_file"] == str(zip_path)
     assert payload["errors_count"] == 1
+
+
+def test_export_excel_uses_russian_titles_and_logs_package(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "exchange_excel_export.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    xlsx_path = tmp_path / "export.xlsx"
+
+    with session_factory() as session:
+        session.add(
+            models.Patient(
+                full_name="Иванов Иван Иванович",
+                dob=date(1997, 1, 24),
+                sex="M",
+                category="офицер",
+                military_unit="1 рота",
+                military_district="ЦВО",
+            )
+        )
+
+    result = service.export_excel(xlsx_path, exported_by="exchange_admin", actor_id=actor_id)
+
+    assert Path(result["path"]).exists()
+    workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
+    assert "Пациенты" in workbook.sheetnames
+    assert "patients" not in workbook.sheetnames
+    patient_sheet = workbook["Пациенты"]
+    headers = next(patient_sheet.iter_rows(values_only=True))
+    assert headers is not None
+    assert list(headers[:4]) == ["ID пациента", "ФИО", "Дата рождения", "Пол"]
+
+    with session_factory() as session:
+        packages = session.query(models.DataExchangePackage).all()
+    assert len(packages) == 1
+    assert packages[0].direction == "export"
+    assert packages[0].package_format == "excel"
+
+
+def test_import_excel_accepts_russian_headers_and_logs_package(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "exchange_excel_russian_import.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    xlsx_path = tmp_path / "import_russian.xlsx"
+
+    wb = Workbook()
+    meta = wb.active
+    assert meta is not None
+    meta.title = "meta"
+    ws = wb.create_sheet("Пациенты")
+    ws.append(
+        [
+            "ID пациента",
+            "ФИО",
+            "Дата рождения",
+            "Пол",
+            "Категория",
+            "Воинская часть",
+            "Военный округ",
+            "Создано",
+        ]
+    )
+    ws.append([1, "Сидоров Сидор", "24.01.1997", "M", "офицер", "2 рота", "ЮВО", "02.03.2026 13:12"])
+    wb.save(xlsx_path)
+
+    result = service.import_excel(xlsx_path, actor_id=actor_id, mode="merge")
+
+    assert result["summary"]["added"] == 1
+    assert result["summary"]["errors"] == 0
+    with session_factory() as session:
+        patients = session.query(models.Patient).all()
+        packages = session.query(models.DataExchangePackage).all()
+    assert len(patients) == 1
+    assert str(patients[0].full_name) == "Сидоров Сидор"
+    assert len(packages) == 1
+    assert packages[0].direction == "import"
+    assert packages[0].package_format == "excel"
+
+
+def test_export_csv_and_pdf_log_packages(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "exchange_flat_exports.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    csv_path = tmp_path / "patients.csv"
+    pdf_path = tmp_path / "patients.pdf"
+
+    with session_factory() as session:
+        session.add(
+            models.Patient(
+                full_name="Петров Пётр Петрович",
+                dob=date(1990, 5, 12),
+                sex="M",
+                category="сержант",
+                military_unit="3 батальон",
+                military_district="ЗВО",
+            )
+        )
+
+    service.export_csv(csv_path, "patients", actor_id=actor_id)
+    service.export_pdf(pdf_path, "patients", actor_id=actor_id)
+
+    with session_factory() as session:
+        packages = (
+            session.query(models.DataExchangePackage)
+            .order_by(models.DataExchangePackage.created_at.asc())
+            .all()
+        )
+    assert [pkg.package_format for pkg in packages] == ["csv", "pdf"]

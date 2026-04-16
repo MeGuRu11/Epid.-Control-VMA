@@ -16,6 +16,8 @@ def test_toast_manager_adds_and_positions_toast(qapp) -> None:
     assert toast in manager.toasts
     assert toast.x() >= 0
     assert toast.y() >= 0
+    assert toast.y() < 80
+    assert toast.x() + toast.width() <= parent.width() - 8
 
 
 def test_toast_manager_repositions_on_parent_resize(qapp) -> None:
@@ -27,8 +29,10 @@ def test_toast_manager_repositions_on_parent_resize(qapp) -> None:
     toast = manager.show("resize", level="success", timeout_ms=5000)
     qapp.processEvents()
     before_x = toast.x()
+    before_y = toast.y()
     parent.resize(900, 500)
     manager._layout_toasts()
     qapp.processEvents()
 
     assert toast.x() > before_x
+    assert toast.y() == before_y

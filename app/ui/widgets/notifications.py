@@ -4,6 +4,7 @@ import logging
 
 from PySide6.QtWidgets import QLabel, QMessageBox, QSizePolicy, QWidget
 
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.toast import show_toast as _show_toast
 
 STATUS_COLORS = {
@@ -87,11 +88,12 @@ def show_message(parent: QWidget | None, title: str, message: str, level: str = 
         "error": QMessageBox.Icon.Critical,
         "info": QMessageBox.Icon.Information,
     }
-    box = QMessageBox(parent)
-    box.setWindowTitle(title)
-    box.setText(message)
-    box.setIcon(icon_map.get(level, QMessageBox.Icon.Information))
-    box.exec()
+    exec_message_box(
+        parent,
+        title,
+        message,
+        icon=icon_map.get(level, QMessageBox.Icon.Information),
+    )
 
 
 def show_error(parent: QWidget | None, message: str, title: str = "Ошибка") -> None:

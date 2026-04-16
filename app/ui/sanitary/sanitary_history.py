@@ -49,6 +49,7 @@ from app.ui.sanitary.history_view_helpers import (
     summarize_history,
 )
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import (
@@ -500,6 +501,7 @@ class SanitarySampleDetailDialog(QDialog):
         content_layout.addWidget(self.error_label)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        localize_button_box(buttons)
         save_btn = buttons.button(QDialogButtonBox.StandardButton.Save)
         if save_btn:
             save_btn.setText("Сохранить")

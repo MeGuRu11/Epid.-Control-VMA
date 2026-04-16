@@ -88,15 +88,14 @@ class ToastManager(QObject):
             return
         margin = 16
         spacing = 8
+        top_offset = 24
         parent_width = self.parent_widget.width()
-        parent_height = self.parent_widget.height()
-        y = parent_height - margin
-        for toast in reversed(self.toasts):
+        y = margin + top_offset
+        for toast in self.toasts:
             toast.adjustSize()
             x = max(margin, parent_width - toast.width() - margin)
-            y -= toast.height()
             toast.move(x, y)
-            y -= spacing
+            y += toast.height() + spacing
 
 
 _MANAGERS: WeakKeyDictionary[QWidget, ToastManager] = WeakKeyDictionary()

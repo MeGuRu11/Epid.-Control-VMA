@@ -24,7 +24,7 @@ def test_check_startup_prerequisites_handles_write_error(
     db_file.parent.mkdir(parents=True, exist_ok=True)
 
     critical_calls: list[tuple] = []
-    monkeypatch.setattr(startup.QMessageBox, "critical", lambda *args, **kwargs: critical_calls.append(args))
+    monkeypatch.setattr(startup, "_show_critical", lambda *args: critical_calls.append(args))
 
     original_write_text = Path.write_text
 
@@ -56,7 +56,7 @@ def test_has_users_handles_sqlalchemy_error() -> None:
 
 def test_warn_missing_plot_dependencies_reports_missing(monkeypatch) -> None:
     warning_calls: list[tuple] = []
-    monkeypatch.setattr(startup.QMessageBox, "warning", lambda *args, **kwargs: warning_calls.append(args))
+    monkeypatch.setattr(startup, "_show_warning", lambda *args: warning_calls.append(args))
 
     original_import = builtins.__import__
 
@@ -107,7 +107,7 @@ def test_run_migrations_writes_error_log_when_upgrade_fails(
     log_dir.mkdir(parents=True, exist_ok=True)
 
     critical_calls: list[tuple] = []
-    monkeypatch.setattr(startup.QMessageBox, "critical", lambda *args, **kwargs: critical_calls.append(args))
+    monkeypatch.setattr(startup, "_show_critical", lambda *args: critical_calls.append(args))
 
     def _raise_upgrade(_cfg, _target: str) -> None:  # noqa: ANN001
         raise CommandError("boom")
@@ -140,7 +140,7 @@ def test_check_startup_prerequisites_uses_frozen_exe_fallback(
     db_file.parent.mkdir(parents=True, exist_ok=True)
 
     critical_calls: list[tuple] = []
-    monkeypatch.setattr(startup.QMessageBox, "critical", lambda *args, **kwargs: critical_calls.append(args))
+    monkeypatch.setattr(startup, "_show_critical", lambda *args: critical_calls.append(args))
     monkeypatch.setattr(startup.sys, "frozen", True, raising=False)
     monkeypatch.setattr(startup.sys, "executable", str(install_root / "EpidControl.exe"), raising=False)
 
