@@ -237,7 +237,7 @@ class ImportExportView(QWidget):
         self.history_table.setRowCount(len(rows))
         for i, package in enumerate(rows):
             direction_key = str(package.direction or "")
-            direction = {"export": "???????", "import": "??????"}.get(direction_key, "??????????")
+            direction = {"export": "Экспорт", "import": "Импорт"}.get(direction_key, "Неизвестно")
             format_key = str(package.package_format or "")
             format_label = _PACKAGE_FORMAT_LABELS.get(format_key, format_key or "??????????")
             created_raw = package.created_at
@@ -249,8 +249,8 @@ class ImportExportView(QWidget):
             self.history_table.setItem(i, 1, make_readonly_item(format_label))
             self.history_table.setItem(i, 2, make_readonly_item(created_text))
             self.history_table.setItem(i, 3, make_readonly_item(actor_label))
-            self.history_table.setItem(i, 4, make_readonly_item(str(package.sha256 or "?")))
-            self.history_table.setItem(i, 5, make_readonly_item(str(package.file_path or "?")))
+            self.history_table.setItem(i, 4, make_readonly_item(str(package.sha256 or "—")))
+            self.history_table.setItem(i, 5, make_readonly_item(str(package.file_path or "—")))
         resize_columns_to_content(self.history_table)
         self.history_table.setColumnWidth(0, 170)
 

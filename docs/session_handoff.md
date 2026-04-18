@@ -14,6 +14,7 @@
 - Полностью переработан `PatientSearchDialog`: один основной список выбора, загрузка полного списка при открытии, фильтр по ФИО/ID, исправленный сценарий выбора по кнопке и двойному клику.
 - Обновлены unit/integration тесты под новые требования.
 - Для аналитических кнопок `Экспорт XLSX` и `Экспорт PDF` в теме добавлены отдельные состояния `hover/pressed/disabled`, чтобы они не выглядели неактивными при наведении.
+- В `ImportExportView` исправлена локализация значения колонки `Направление` в истории пакетов: строки `export/import` снова отображаются как `Экспорт/Импорт`, а неизвестные legacy-значения как `Неизвестно`.
 
 ## Что не закончено / в процессе
 
@@ -53,10 +54,11 @@
 - `tests/unit/test_patient_widgets_error_handling.py`
 - `tests/unit/test_toast_manager.py`
 - `tests/unit/test_ui_theme_tokens.py`
+- `tests/unit/test_import_export_wizard.py`
 
 ## Проверки
 
 - `ruff check app tests` — pass
 - `mypy app tests` — pass (`274 source files`)
-- `pytest -q` — pass (`308 passed, 2 warnings`)
+- `pytest -q` — pass (`309 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
