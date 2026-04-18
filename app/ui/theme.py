@@ -794,6 +794,22 @@ def _build_qss(settings: Settings) -> str:
     QPushButton#secondaryButton {{
         background: {COL["surface"]};
         color: {COL["muted"]};
+        border: 1px solid {COL["border"]};
+    }}
+    QPushButton#secondaryButton:hover {{
+        background: {COL["surface2"]};
+        color: {COL["text"]};
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QPushButton#secondaryButton:pressed {{
+        background: {COL["accent2"]};
+        color: {COL["text_primary"]};
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QPushButton#secondaryButton:disabled {{
+        background: {COL["surface"]};
+        color: {COL["muted"]};
+        border: 1px solid {COL["border_soft"]};
     }}
     QWidget#sectionActionBar QPushButton#primaryButton {{
         background: {COL["accent"]};

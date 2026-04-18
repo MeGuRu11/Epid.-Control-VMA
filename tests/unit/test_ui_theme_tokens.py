@@ -29,3 +29,12 @@ def test_apply_theme_runs_with_default_settings(qapp) -> None:
     assert "QPushButton#iconSelectToggle" in stylesheet
     assert "QGroupBox#form100Tissue QCheckBox#form100TissueCheck::indicator:checked" in stylesheet
     assert "QFrame#form100ReviewNameCard" in stylesheet
+
+
+def test_theme_defines_interactive_states_for_secondary_buttons(qapp) -> None:
+    settings = Settings()
+    apply_theme(qapp, settings)
+    stylesheet = qapp.styleSheet()
+
+    assert "QPushButton#secondaryButton:hover" in stylesheet
+    assert "QPushButton#secondaryButton:pressed" in stylesheet
