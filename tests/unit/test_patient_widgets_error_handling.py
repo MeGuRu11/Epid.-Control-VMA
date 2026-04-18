@@ -3,6 +3,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QListWidgetItem
+
 from app.ui.widgets.patient_search_dialog import PatientSearchDialog
 from app.ui.widgets.patient_selector import PatientSelector
 
@@ -88,14 +91,35 @@ def test_patient_search_dialog_load_recent_sets_error_status(monkeypatch) -> Non
 
     monkeypatch.setattr("app.ui.widgets.patient_search_dialog.run_async", _fake_run_async)
 
+    result_table = _FakeList()
     dialog = SimpleNamespace(
-        recent_list=_FakeList(),
-        _recent_token=0,
-        patient_service=SimpleNamespace(list_recent=lambda limit=10: []),
+        result_table=result_table,
+        _picker_token=0,
+        patient_service=SimpleNamespace(list_for_picker=lambda limit=200: []),
         status=_FakeStatus(),
+        _clear_results=result_table.clear,
     )
 
-    PatientSearchDialog._load_recent(cast(PatientSearchDialog, dialog))
+    PatientSearchDialog._load_picker_rows(cast(PatientSearchDialog, dialog))
 
-    assert dialog.recent_list.cleared == 1
-    assert dialog.status.text == "Не удалось загрузить последних пациентов: recent failed"
+    assert dialog.result_table.cleared == 1
+    assert dialog.status.text == "Не удалось загрузить список пациентов: recent failed"
+
+
+def test_patient_search_dialog_accept_selected_reads_from_result_table() -> None:
+    item = QListWidgetItem("1: Иванов Иван")
+    item.setData(Qt.ItemDataRole.UserRole, (1, "Иванов Иван"))
+    accepted = {"count": 0}
+
+    dialog = SimpleNamespace(
+        result_table=SimpleNamespace(currentItem=lambda: item),
+        selected_patient_id=None,
+        selected_name="",
+        accept=lambda: accepted.__setitem__("count", accepted["count"] + 1),
+    )
+
+    PatientSearchDialog._accept_selected(cast(PatientSearchDialog, dialog))
+
+    assert dialog.selected_patient_id == 1
+    assert dialog.selected_name == "Иванов Иван"
+    assert accepted["count"] == 1

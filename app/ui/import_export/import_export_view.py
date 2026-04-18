@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QBoxLayout,
     QComboBox,
     QDialog,
@@ -15,7 +17,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -29,7 +30,12 @@ from app.ui.import_export.import_export_wizard import ImportExportWizard
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import error_text, show_error
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
+from app.ui.widgets.table_utils import (
+    connect_combo_autowidth,
+    make_readonly_item,
+    resize_columns_to_content,
+    set_table_read_only,
+)
 
 _HANDLED_IMPORT_EXPORT_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError, OSError)
 _ALLOWED_ARTIFACT_DIRS = [DATA_DIR / "artifacts", DATA_DIR / "backups", DATA_DIR / "reports"]
@@ -165,7 +171,10 @@ class ImportExportView(QWidget):
         self.history_table.verticalHeader().setVisible(False)
         self.history_table.setAlternatingRowColors(True)
         self.history_table.setSortingEnabled(True)
+        self.history_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.history_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.history_table.setMinimumHeight(260)
+        set_table_read_only(self.history_table)
         self.history_table.itemDoubleClicked.connect(self._open_history_file)
         history_layout.addWidget(self.history_table)
         self.history_table.setColumnWidth(0, 170)
@@ -222,26 +231,26 @@ class ImportExportView(QWidget):
                 query=self.query_filter.text().strip() or None,
             )
         except _HANDLED_IMPORT_EXPORT_ERRORS as exc:
-            show_error(self, error_text(exc, "Не удалось загрузить историю пакетов"))
+            show_error(self, error_text(exc, "?? ??????? ????????? ??????? ???????"))
             return
         self.history_table.clearContents()
         self.history_table.setRowCount(len(rows))
-        for i, r in enumerate(rows):
-            direction_key = str(r.direction or "")
-            direction = {"export": "Экспорт", "import": "Импорт"}.get(direction_key, "")
-            format_key = str(r.package_format or "")
-            format_label = _PACKAGE_FORMAT_LABELS.get(format_key, format_key)
-            self.history_table.setItem(i, 0, QTableWidgetItem(direction))
-            self.history_table.setItem(i, 1, QTableWidgetItem(format_label))
-            created_raw = r.created_at
+        for i, package in enumerate(rows):
+            direction_key = str(package.direction or "")
+            direction = {"export": "???????", "import": "??????"}.get(direction_key, "??????????")
+            format_key = str(package.package_format or "")
+            format_label = _PACKAGE_FORMAT_LABELS.get(format_key, format_key or "??????????")
+            created_raw = package.created_at
             created_text = (
-                created_raw.strftime("%d.%m.%Y %H:%M") if isinstance(created_raw, datetime) else ""
+                created_raw.strftime("%d.%m.%Y %H:%M") if isinstance(created_raw, datetime) else "??????????"
             )
-            self.history_table.setItem(i, 2, QTableWidgetItem(created_text))
-            self.history_table.setItem(i, 3, QTableWidgetItem(str(r.created_by or "")))
-            self.history_table.setItem(i, 4, QTableWidgetItem(str(r.sha256 or "")))
-            self.history_table.setItem(i, 5, QTableWidgetItem(str(r.file_path or "")))
-        resize_columns_to_content(self.history_table)
+            actor_label = self.exchange_service.get_actor_label(cast(int | None, package.created_by))
+            self.history_table.setItem(i, 0, make_readonly_item(direction))
+            self.history_table.setItem(i, 1, make_readonly_item(format_label))
+            self.history_table.setItem(i, 2, make_readonly_item(created_text))
+            self.history_table.setItem(i, 3, make_readonly_item(actor_label))
+            self.history_table.setItem(i, 4, make_readonly_item(str(package.sha256 or "?")))
+            self.history_table.setItem(i, 5, make_readonly_item(str(package.file_path or "?")))
         resize_columns_to_content(self.history_table)
         self.history_table.setColumnWidth(0, 170)
 

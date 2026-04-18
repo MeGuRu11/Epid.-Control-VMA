@@ -5,7 +5,7 @@ import json
 import zipfile
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
@@ -258,3 +258,94 @@ def test_export_csv_and_pdf_log_packages(tmp_path: Path) -> None:
             .all()
         )
     assert [pkg.package_format for pkg in packages] == ["csv", "pdf"]
+
+
+def test_export_excel_to_same_path_creates_complete_history_rows(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "exchange_excel_same_path.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    xlsx_path = tmp_path / "export.xlsx"
+
+    with session_factory() as session:
+        session.add(
+            models.Patient(
+                full_name="Иванов Иван Иванович",
+                dob=date(1997, 1, 24),
+                sex="M",
+                category="офицер",
+                military_unit="1 рота",
+                military_district="ЦВО",
+            )
+        )
+
+    service.export_excel(xlsx_path, exported_by="exchange_admin", actor_id=actor_id)
+    service.export_excel(xlsx_path, exported_by="exchange_admin", actor_id=actor_id)
+
+    with session_factory() as session:
+        packages = (
+            session.query(models.DataExchangePackage)
+            .order_by(models.DataExchangePackage.id.asc())
+            .all()
+        )
+
+    assert len(packages) == 2
+    for package in packages:
+        assert package.direction == "export"
+        assert package.package_format == "excel"
+        assert package.file_path == str(xlsx_path)
+        assert package.sha256
+        assert package.created_by == actor_id
+        assert package.created_at is not None
+
+
+def test_export_excel_formats_columns_and_bool_values_for_medical_reading(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "exchange_excel_formatting.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    xlsx_path = tmp_path / "formatted_export.xlsx"
+
+    with session_factory() as session:
+        patient = models.Patient(
+            full_name="Очень длинное имя пациента для проверки автоподбора ширины столбца",
+            dob=date(1997, 1, 24),
+            sex="M",
+            category="офицер",
+            military_unit="Очень длинное подразделение для проверки переноса текста",
+            military_district="ЦВО",
+        )
+        session.add(patient)
+        session.flush()
+
+        emr_case = models.EmrCase(
+            patient_id=int(patient.id),
+            hospital_case_no="EMR-001",
+            created_by=actor_id,
+        )
+        session.add(emr_case)
+        session.flush()
+
+        session.add(
+            models.EmrCaseVersion(
+                emr_case_id=int(emr_case.id),
+                version_no=1,
+                valid_from=datetime(2026, 4, 16, 10, 0, tzinfo=UTC),
+                is_current=True,
+                entered_by=actor_id,
+            )
+        )
+
+    service.export_excel(xlsx_path, exported_by="exchange_admin", actor_id=actor_id)
+
+    workbook = load_workbook(xlsx_path)
+    patient_sheet = workbook["Пациенты"]
+    version_sheet = workbook["Версии ЭМЗ"]
+
+    assert patient_sheet.column_dimensions["B"].width is not None
+    assert patient_sheet.column_dimensions["B"].width > 13
+    assert patient_sheet["B2"].alignment.wrap_text is True
+    assert patient_sheet["B2"].alignment.vertical == "top"
+
+    headers = next(version_sheet.iter_rows(min_row=1, max_row=1, values_only=True))
+    assert headers is not None
+    current_column_index = list(headers).index("Текущая версия") + 1
+    assert version_sheet.cell(row=2, column=current_column_index).value == "Да"

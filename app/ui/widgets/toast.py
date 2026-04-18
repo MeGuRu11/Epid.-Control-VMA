@@ -3,7 +3,8 @@ from __future__ import annotations
 from weakref import WeakKeyDictionary
 
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt, QTimer
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QWidget
 
 _VALID_LEVELS = {"success", "warning", "error", "info"}
 
@@ -19,13 +20,23 @@ class Toast(QWidget):
     ) -> None:
         super().__init__(parent)
         self._manager: ToastManager | None = None
+        self._toast_text = text
+        self._toast_level = level if level in _VALID_LEVELS else "info"
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setWindowFlags(Qt.WindowType.SubWindow | Qt.WindowType.FramelessWindowHint)
         self.setObjectName("toast")
-        self.setProperty("toastLevel", level if level in _VALID_LEVELS else "info")
+        self.setProperty("toastLevel", self._toast_level)
+        self.setMaximumWidth(460)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(28)
+        shadow.setOffset(0, 8)
+        shadow.setColor(QColor(54, 46, 38, 55))
+        self.setGraphicsEffect(shadow)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 9, 12, 9)
+        layout.setContentsMargins(16, 12, 16, 12)
         label = QLabel(text)
         label.setWordWrap(True)
         label.setMaximumWidth(420)
@@ -48,6 +59,10 @@ class Toast(QWidget):
         self._anim_in.start()
         QTimer.singleShot(timeout_ms, self._anim_out.start)
 
+    def matches(self, *, text: str, level: str) -> bool:
+        normalized_level = level if level in _VALID_LEVELS else "info"
+        return self._toast_text == text and self._toast_level == normalized_level
+
     def _finalize_close(self) -> None:
         manager = self._manager
         if manager:
@@ -63,11 +78,18 @@ class ToastManager(QObject):
         self.parent_widget.installEventFilter(self)
 
     def show(self, text: str, *, level: str = "info", timeout_ms: int = 2400) -> Toast:
+        for existing in list(self.toasts):
+            if existing.matches(text=text, level=level):
+                existing._manager = None
+                self.toasts.remove(existing)
+                existing.hide()
+                existing.deleteLater()
         toast = Toast(self.parent_widget, text=text, level=level, timeout_ms=timeout_ms)
         toast._manager = self
         self.toasts.append(toast)
         self._layout_toasts()
         toast.show()
+        toast.raise_()
         return toast
 
     def detach(self, toast: Toast) -> None:
@@ -86,15 +108,16 @@ class ToastManager(QObject):
     def _layout_toasts(self) -> None:
         if not hasattr(self, "parent_widget"):
             return
-        margin = 16
-        spacing = 8
-        top_offset = 24
+        margin = 20
+        spacing = 10
+        top_offset = 44
         parent_width = self.parent_widget.width()
         y = margin + top_offset
         for toast in self.toasts:
             toast.adjustSize()
             x = max(margin, parent_width - toast.width() - margin)
             toast.move(x, y)
+            toast.raise_()
             y += toast.height() + spacing
 
 

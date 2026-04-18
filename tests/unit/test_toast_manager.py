@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
 from app.ui.widgets.toast import ToastManager
@@ -36,3 +37,19 @@ def test_toast_manager_repositions_on_parent_resize(qapp) -> None:
 
     assert toast.x() > before_x
     assert toast.y() == before_y
+
+
+def test_toast_manager_marks_toast_as_styled_and_deduplicates_same_message(qapp) -> None:
+    parent = QWidget()
+    parent.resize(800, 600)
+    parent.show()
+    manager = ToastManager(parent)
+
+    first = manager.show("same warning", level="warning", timeout_ms=5000)
+    qapp.processEvents()
+    second = manager.show("same warning", level="warning", timeout_ms=5000)
+    qapp.processEvents()
+
+    assert first.testAttribute(Qt.WidgetAttribute.WA_StyledBackground)
+    assert len(manager.toasts) == 1
+    assert manager.toasts[0] is second

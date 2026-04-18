@@ -260,6 +260,31 @@ class PatientService:
                 )
             return results
 
+    def list_for_picker(self, limit: int | None = None) -> list[PatientResponse]:
+        with self.session_factory() as session:
+            patients = self.patient_repo.list_for_picker(session, limit=limit)
+            results: list[PatientResponse] = []
+            for patient in patients:
+                patient_id_value = cast(int, patient.id)
+                full_name = cast(str, patient.full_name)
+                dob = cast("date | None", patient.dob)
+                sex = cast(str, patient.sex)
+                category = cast(str | None, patient.category)
+                military_unit = cast(str | None, patient.military_unit)
+                military_district = cast(str | None, patient.military_district)
+                results.append(
+                    PatientResponse(
+                        id=patient_id_value,
+                        full_name=full_name,
+                        dob=dob,
+                        sex=sex,
+                        category=category,
+                        military_unit=military_unit,
+                        military_district=military_district,
+                    )
+                )
+            return results
+
     def update_category(self, patient_id: int, category: str, actor_id: int) -> None:
         with self.session_factory() as session:
             self._require_write_access(session, actor_id)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 import pytest
-from PySide6.QtWidgets import QDialog
+from PySide6.QtWidgets import QAbstractItemView, QDialog
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.services.exchange_service import ExchangeService
@@ -78,3 +78,9 @@ def test_import_export_view_reloads_history_after_successful_wizard(
     view._open_wizard()
 
     assert calls == ["loaded"]
+
+
+def test_import_export_view_history_table_is_read_only() -> None:
+    view = ImportExportView(exchange_service=cast(ExchangeService, _ExchangeServiceStub()), session=_session())
+
+    assert view.history_table.editTriggers() == QAbstractItemView.EditTrigger.NoEditTriggers

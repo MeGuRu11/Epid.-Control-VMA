@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QComboBox, QTableWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QAbstractItemView, QComboBox, QTableWidget, QTableWidgetItem
 
 
 def resize_columns_to_content(
@@ -68,4 +69,25 @@ def connect_combo_resize_on_content(
         resize_columns_to_content(table)
 
     combo.currentIndexChanged.connect(_on_change)
+
+
+def make_readonly_item(text: str) -> QTableWidgetItem:
+    item = QTableWidgetItem(text)
+    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+    return item
+
+
+def make_readonly_item_with_data(
+    text: str,
+    *,
+    role: Qt.ItemDataRole,
+    data: object,
+) -> QTableWidgetItem:
+    item = make_readonly_item(text)
+    item.setData(role, data)
+    return item
+
+
+def set_table_read_only(table: QTableWidget) -> None:
+    table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
 

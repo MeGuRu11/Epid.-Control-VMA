@@ -50,17 +50,21 @@ def to_report_history_view_row(item: dict[str, Any]) -> ReportHistoryViewRow:
     summary = item.get("summary", {})
     verification = item.get("verification", {})
     created_at = item.get("created_at")
-    created_text = _format_created_text(created_at)
-    total_text = str(summary.get("total", "")) if isinstance(summary, dict) else ""
+    created_text = _format_created_text(created_at) or "Неизвестно"
+    total_text = str(summary.get("total", "—")) if isinstance(summary, dict) else "—"
+    created_by = str(item.get("created_by") or "—")
+    report_type = str(item.get("report_type") or "Неизвестно")
+    artifact_sha256 = str(item.get("artifact_sha256") or "—")
+    artifact_path = str(item.get("artifact_path") or "—")
     return ReportHistoryViewRow(
         report_run_id=row_id,
-        report_type=str(item.get("report_type") or ""),
+        report_type=report_type,
         created_text=created_text,
-        created_by=str(item.get("created_by") or ""),
+        created_by=created_by,
         total_text=total_text,
         verification_text=format_report_verification(verification if isinstance(verification, dict) else {}),
-        artifact_sha256=str(item.get("artifact_sha256") or ""),
-        artifact_path=str(item.get("artifact_path") or ""),
+        artifact_sha256=artifact_sha256,
+        artifact_path=artifact_path,
     )
 
 
@@ -70,4 +74,4 @@ def _format_created_text(value: object) -> str:
     if isinstance(value, date):
         return value.strftime("%d.%m.%Y")
     return ""
-
+

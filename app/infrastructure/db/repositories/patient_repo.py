@@ -92,6 +92,12 @@ class PatientRepository:
         )
         return list(session.execute(stmt).scalars())
 
+    def list_for_picker(self, session: Session, limit: int | None = None) -> list[Patient]:
+        stmt = select(Patient).order_by(Patient.full_name.asc(), Patient.id.asc())
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        return list(session.execute(stmt).scalars())
+
     def update_category(self, session: Session, patient_id: int, category: str) -> None:
         patient = session.get(Patient, patient_id)
         if patient:

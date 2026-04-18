@@ -143,3 +143,34 @@ def test_update_details_respects_none_policy_for_fields(tmp_path: Path) -> None:
     assert updated.category == MilitaryCategory.CIVILIAN_STAFF.value
     assert updated.military_unit is None
     assert updated.military_district is None
+
+
+def test_list_for_picker_returns_patients_sorted_by_name_then_id(tmp_path: Path) -> None:
+    service, actor_id = _make_service(tmp_path / "patient_picker_list.db")
+    created_late = service.create_or_get(
+        PatientCreateRequest(
+            full_name="Борис Андреев",
+            dob=date(2001, 4, 4),
+            sex="M",
+            category=MilitaryCategory.CIVILIAN_STAFF.value,
+            military_unit="unit-1",
+            military_district="district-1",
+        ),
+        actor_id=actor_id,
+    )
+    created_early = service.create_or_get(
+        PatientCreateRequest(
+            full_name="Алексей Борисов",
+            dob=date(2001, 5, 5),
+            sex="M",
+            category=MilitaryCategory.CIVILIAN_STAFF.value,
+            military_unit="unit-2",
+            military_district="district-2",
+        ),
+        actor_id=actor_id,
+    )
+
+    rows = service.list_for_picker()
+
+    assert [row.id for row in rows] == [created_early.id, created_late.id]
+    assert [row.full_name for row in rows] == ["Алексей Борисов", "Борис Андреев"]

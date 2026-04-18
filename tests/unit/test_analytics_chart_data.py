@@ -5,6 +5,8 @@ from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
+from PySide6.QtWidgets import QAbstractItemView
+
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
 from app.ui.analytics.analytics_view import AnalyticsSearchView
@@ -192,6 +194,13 @@ def test_apply_trend_sends_real_dates_and_daily_percentage_to_chart(qapp) -> Non
         ("02.04.2026", 0.0),
         ("03.04.2026", 25.0),
     ]
+    view.close()
+
+
+def test_report_history_table_is_read_only() -> None:
+    view = _build_view()
+
+    assert view.report_history_table.editTriggers() == QAbstractItemView.EditTrigger.NoEditTriggers
     view.close()
 
 

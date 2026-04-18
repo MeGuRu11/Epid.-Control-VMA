@@ -894,7 +894,9 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["border"]};
     }}
     QWidget#toast {{
+        background-clip: padding;
         border-radius: 12px;
+        padding: 0px;
     }}
     QWidget#toast[toastLevel="success"] {{
         background: {COL["success_bg"]};
@@ -915,6 +917,7 @@ def _build_qss(settings: Settings) -> str:
     QWidget#toast QLabel {{
         background: transparent;
         color: {COL["text"]};
+        font-weight: 600;
     }}
     QDialog#loginDialog QLabel {{
         background: transparent;

@@ -8,6 +8,7 @@ from typing import cast
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QBoxLayout,
     QComboBox,
     QCompleter,
@@ -52,7 +53,13 @@ from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error, show_info, show_warning
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
+from app.ui.widgets.table_utils import (
+    connect_combo_autowidth,
+    make_readonly_item,
+    make_readonly_item_with_data,
+    resize_columns_to_content,
+    set_table_read_only,
+)
 
 _HANDLED_ANALYTICS_UI_ERRORS = (LookupError, RuntimeError, ValueError, AppError, TypeError)
 _ALLOWED_ARTIFACT_DIRS = [DATA_DIR / "artifacts", DATA_DIR / "backups", DATA_DIR / "reports"]
@@ -456,7 +463,10 @@ class AnalyticsSearchView(QWidget):
         self.report_history_table.verticalHeader().setVisible(False)
         self.report_history_table.setAlternatingRowColors(True)
         self.report_history_table.setSortingEnabled(True)
+        self.report_history_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.report_history_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.report_history_table.setMinimumHeight(260)
+        set_table_read_only(self.report_history_table)
         self.report_history_table.itemDoubleClicked.connect(self._open_report_artifact)
         history_layout.addWidget(self.report_history_table)
         self._apply_report_history_column_widths()
@@ -1075,16 +1085,19 @@ class AnalyticsSearchView(QWidget):
         self.report_history_table.setRowCount(len(rows))
         for i, item in enumerate(rows):
             row_data = to_report_history_view_row(item)
-            id_item = QTableWidgetItem(str(row_data.report_run_id))
-            id_item.setData(Qt.ItemDataRole.UserRole, row_data.report_run_id)
+            id_item = make_readonly_item_with_data(
+                str(row_data.report_run_id),
+                role=Qt.ItemDataRole.UserRole,
+                data=row_data.report_run_id,
+            )
             self.report_history_table.setItem(i, 0, id_item)
-            self.report_history_table.setItem(i, 1, QTableWidgetItem(row_data.report_type))
-            self.report_history_table.setItem(i, 2, QTableWidgetItem(row_data.created_text))
-            self.report_history_table.setItem(i, 3, QTableWidgetItem(row_data.created_by))
-            self.report_history_table.setItem(i, 4, QTableWidgetItem(row_data.total_text))
-            self.report_history_table.setItem(i, 5, QTableWidgetItem(row_data.verification_text))
-            self.report_history_table.setItem(i, 6, QTableWidgetItem(row_data.artifact_sha256))
-            path_item = QTableWidgetItem(row_data.artifact_path)
+            self.report_history_table.setItem(i, 1, make_readonly_item(row_data.report_type))
+            self.report_history_table.setItem(i, 2, make_readonly_item(row_data.created_text))
+            self.report_history_table.setItem(i, 3, make_readonly_item(row_data.created_by))
+            self.report_history_table.setItem(i, 4, make_readonly_item(row_data.total_text))
+            self.report_history_table.setItem(i, 5, make_readonly_item(row_data.verification_text))
+            self.report_history_table.setItem(i, 6, make_readonly_item(row_data.artifact_sha256))
+            path_item = make_readonly_item(row_data.artifact_path)
             path_item.setToolTip(row_data.artifact_path)
             self.report_history_table.setItem(i, 7, path_item)
         resize_columns_to_content(self.report_history_table)

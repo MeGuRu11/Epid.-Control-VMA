@@ -14,12 +14,14 @@ from typing import Literal, cast
 from uuid import uuid4
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
-from sqlalchemy import Date, DateTime
+from sqlalchemy import Boolean, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.exchange_dto import (
@@ -323,7 +325,13 @@ def _format_date_value(value: object) -> JSONValue | object:
     return value
 
 
+def _format_bool_value(value: bool) -> str:
+    return "Да" if value else "Нет"
+
+
 def _serialize_value(value: object) -> JSONValue | object:
+    if isinstance(value, bool):
+        return _format_bool_value(value)
     return _format_date_value(value)
 
 
@@ -393,7 +401,39 @@ def _parse_value(value: object, column: object) -> object:
                 return datetime.strptime(value_text, "%d.%m.%Y %H:%M").replace(tzinfo=UTC)
             except (TypeError, ValueError):
                 return datetime.strptime(value_text, "%d.%m.%Y %H:%M:%S").replace(tzinfo=UTC)
+    if isinstance(column_type, Boolean):
+        normalized = value_text.strip().lower()
+        if normalized in {"true", "1", "yes", "да", "y"}:
+            return True
+        if normalized in {"false", "0", "no", "нет", "n"}:
+            return False
     return value
+
+
+def _format_excel_worksheet(worksheet) -> None:
+    min_width = 12
+    max_width = 56
+    for row in worksheet.iter_rows():
+        for cell in row:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+    for column_cells in worksheet.iter_cols():
+        if not column_cells:
+            continue
+        max_length = 0
+        for cell in column_cells:
+            if cell.value is None:
+                continue
+            value_length = len(str(cell.value))
+            if value_length > max_length:
+                max_length = value_length
+        width = max(min_width, min(max_length + 4, max_width))
+        worksheet.column_dimensions[get_column_letter(column_cells[0].column)].width = width
+
+
+def _finalize_excel_workbook(workbook: Workbook) -> None:
+    for worksheet in workbook.worksheets:
+        _format_excel_worksheet(worksheet)
 
 
 def _dict_to_model(model_cls: type[models.Base], data: dict[str, object]) -> models.Base:
@@ -589,6 +629,16 @@ class ExchangeService:
         self._log_package(direction, package_format, file_path, package_hash, created_by)
         return package_hash
 
+    def get_actor_label(self, actor_id: int | None) -> str:
+        if actor_id is None:
+            return "—"
+        with self.session_factory() as session:
+            actor = self.user_repo.get_by_id(session, actor_id)
+            if actor is None:
+                return str(actor_id)
+            login = str(getattr(actor, "login", "") or "").strip()
+            return login or str(actor_id)
+
     def export_excel(
         self,
         file_path: str | Path,
@@ -622,6 +672,7 @@ class ExchangeService:
                 counts[name] = len(rows)
         if len(wb.worksheets) > 1:
             wb.active = 1
+        _finalize_excel_workbook(wb)
 
         # TODO SECURITY: добавить шифрование бэкапов/экспортов (AES-GCM)
         self._prepare_output_dir(file_path.parent)
