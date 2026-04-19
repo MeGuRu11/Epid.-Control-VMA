@@ -232,3 +232,44 @@
 - `mypy app tests` — pass (`276 source files`)
 - `pytest -q` — pass (`313 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## 2026-04-19 — Исправлена кнопка «Сбросить» в context bar
+
+## Что было сделано
+
+- Найдена причина UX-багa: `ContextBar._reset()` сбрасывал только внутренний контекст, но не очищал поля поиска пациента и госпитализации.
+- Из-за этого пользователю казалось, что кнопка `Сбросить` не работает, хотя `on_context_change(None, None)` действительно вызывался.
+- В `app/ui/widgets/context_bar.py` добавлена очистка:
+  - `patient_search`
+  - `case_search`
+  - `_completer_model`
+  - `_case_model`
+- Добавлен регрессионный тест `tests/unit/test_dropdown_indicators.py`, который проверяет полный сценарий кнопки `Сбросить`.
+
+## Что не закончено / в процессе
+
+- По этой задаче незавершённых пунктов нет.
+
+## Открытые проблемы / блокеры
+
+- Functional blocker снят, quality gates зелёные.
+- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущему багу не относятся.
+
+## Следующие шаги
+
+1. Пользовательский smoke: набрать текст в поля context bar, нажать `Сбросить`, убедиться, что и поля, и контекст очищаются.
+2. Если понадобится, отдельно можно сделать более явный визуальный reset-state для чипов и placeholder-текстов.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/widgets/context_bar.py`
+- `tests/unit/test_dropdown_indicators.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `ruff check app tests` — pass
+- `mypy app tests` — pass (`276 source files`)
+- `pytest -q` — pass (`314 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` — pass

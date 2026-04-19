@@ -133,6 +133,37 @@ def test_context_bar_uses_arrow_indicator_for_toggle(qapp, monkeypatch) -> None:
     bar.close()
 
 
+def test_context_bar_reset_clears_context_and_search_fields(qapp) -> None:
+    calls: list[tuple[int | None, int | None]] = []
+    bar = ContextBar(
+        emz_service=cast(Any, SimpleNamespace()),
+        patient_service=cast(Any, SimpleNamespace()),
+        on_context_change=lambda patient_id, case_id: calls.append((patient_id, case_id)),
+    )
+    bar.show()
+    qapp.processEvents()
+
+    bar.patient_search.setText("Иванов")
+    bar.case_search.setText("EMZ-123")
+    bar._completer_model.setStringList(["1: Иванов Иван"])
+    bar._case_model.setStringList(["10: EMZ-123"])
+    bar._set_context(1, 10, "Иванов Иван", emit=False)
+
+    bar._reset()
+
+    assert bar.patient_id is None
+    assert bar.case_id is None
+    assert bar.patient_search.text() == ""
+    assert bar.case_search.text() == ""
+    assert bar._completer_model.stringList() == []
+    assert bar._case_model.stringList() == []
+    assert bar.patient_label.text() == "Пациент: -"
+    assert bar.case_label.text() == "Госпитализация: -"
+    assert calls == [(None, None)]
+
+    bar.close()
+
+
 def test_analytics_saved_filters_toggle_uses_arrow_indicator(qapp) -> None:
     view = AnalyticsSearchView(
         analytics_service=cast(Any, _AnalyticsServiceStub()),

@@ -433,6 +433,10 @@ class ContextBar(QWidget):
             show_error(self, str(exc))
 
     def _reset(self) -> None:
+        self.patient_search.clear()
+        self.case_search.clear()
+        self._completer_model.setStringList([])
+        self._case_model.setStringList([])
         self._set_context(None, None, emit=True)
 
     def _clear_patient(self) -> None:
