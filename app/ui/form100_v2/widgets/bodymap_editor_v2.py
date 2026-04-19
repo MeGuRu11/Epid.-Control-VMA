@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -24,7 +23,7 @@ from app.ui.form100_v2.bodymap_assets import (
     load_bodymap_template_pixmap,
     split_bodymap_template,
 )
-from app.ui.widgets.dialog_utils import localize_button_box
+from app.ui.widgets.dialog_utils import exec_text_input_dialog, localize_button_box
 
 _TOOL_ITEMS: tuple[tuple[str, str], ...] = (
     ("Рана (X)", "WOUND_X"),
@@ -435,7 +434,7 @@ class _BodymapCanvasV2(QWidget):
     def _add_point_mark(self, *, silhouette: str, norm: QPointF) -> None:
         note = ""
         if self._active_tool == "NOTE_PIN":
-            text, ok = QInputDialog.getText(self, "Заметка", "Комментарий:")
+            text, ok = exec_text_input_dialog(self, "Заметка", "Комментарий:")
             if not ok:
                 return
             note = text.strip()

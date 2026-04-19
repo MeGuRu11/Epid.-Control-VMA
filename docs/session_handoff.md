@@ -188,3 +188,47 @@
 - `mypy app tests` — pass (`275 source files`)
 - `pytest -q` — pass (`312 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## 2026-04-19 — Локализация кнопок подписи Form100
+
+## Что было сделано
+
+- Найдена причина английских кнопок при подписи карточки `Form100`: использовался статический `QInputDialog.getText(...)`, который не проходил через общий helper локализации.
+- В `app/ui/widgets/dialog_utils.py` добавлен новый helper:
+  - `localize_input_dialog_buttons(...)`
+  - `exec_text_input_dialog(...)`
+- Мастер `Form100` переведён на новый helper, поэтому диалог подписи теперь показывает `ОК` и `Отмена` на русском.
+- На тот же helper переведены текстовые диалоги заметок в `bodymap`, чтобы поведение было единым во всём модуле.
+- Добавлен регрессионный unit-тест `tests/unit/test_dialog_utils.py`, который проверяет локализацию кнопок `QInputDialog`.
+
+## Что не закончено / в процессе
+
+- Пользователь просил после фикса пересобрать `EXE` и `Inno Setup`; это следующий шаг текущей сессии.
+
+## Открытые проблемы / блокеры
+
+- Functional blocker по этой задаче снят, quality gates зелёные.
+- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущему фиксу не относятся.
+
+## Следующие шаги
+
+1. Пересобрать `EXE`.
+2. Пересобрать `Inno Setup`.
+3. Пользовательский smoke-проход: открыть подпись `Form100` и убедиться, что кнопки ввода на русском.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/widgets/dialog_utils.py`
+- `app/ui/form100_v2/form100_wizard.py`
+- `app/ui/form100_v2/wizard_widgets/bodymap_widget.py`
+- `app/ui/form100_v2/widgets/bodymap_editor_v2.py`
+- `tests/unit/test_dialog_utils.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `ruff check app tests` — pass
+- `mypy app tests` — pass (`276 source files`)
+- `pytest -q` — pass (`313 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` — pass

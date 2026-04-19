@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QFrame,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -40,7 +39,7 @@ from app.ui.form100_v2.wizard_widgets.wizard_steps.step_bodymap import StepBodym
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_evacuation import StepEvacuation
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_identification import StepIdentification
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_medical import StepMedical
-from app.ui.widgets.dialog_utils import exec_message_box
+from app.ui.widgets.dialog_utils import exec_message_box, exec_text_input_dialog
 from app.ui.widgets.notifications import error_text
 
 _HANDLED_FORM100_WIZARD_ERRORS = (
@@ -660,7 +659,11 @@ class Form100Wizard(QDialog):
     # -- Подпись --------------------------------------------------------------
 
     def _sign(self) -> None:
-        signer, ok = QInputDialog.getText(self, "Подпись", "Подписант (разборчиво):")
+        signer, ok = exec_text_input_dialog(
+            self,
+            "Подпись",
+            "Подписант (разборчиво):",
+        )
         if not ok or not signer.strip():
             return
 

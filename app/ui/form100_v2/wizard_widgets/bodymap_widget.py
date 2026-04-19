@@ -16,7 +16,6 @@ from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPen, QPixmap, QPoly
 from PySide6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -28,6 +27,7 @@ from app.ui.form100_v2.bodymap_assets import (
     load_bodymap_template_pixmap,
     split_bodymap_template,
 )
+from app.ui.widgets.dialog_utils import exec_text_input_dialog
 
 # ── Константы ────────────────────────────────────────────────────────────────
 
@@ -321,7 +321,7 @@ class _BodyCanvas(QWidget):
                 sil, nx, ny = spot
                 note = ""
                 if self._kind == "NOTE_PIN":
-                    text, ok = QInputDialog.getText(self, "Заметка", "Текст заметки:")
+                    text, ok = exec_text_input_dialog(self, "Заметка", "Текст заметки:")
                     if not ok:
                         return
                     note = text.strip()
@@ -388,8 +388,11 @@ class _BodyCanvas(QWidget):
         ann = self._annotations[idx]
         if ann.annotation_type != "NOTE_PIN":
             return
-        text, ok = QInputDialog.getText(
-            self, "Заметка", "Текст заметки:", text=ann.note
+        text, ok = exec_text_input_dialog(
+            self,
+            "Заметка",
+            "Текст заметки:",
+            text=ann.note,
         )
         if ok:
             ann.note = text.strip()

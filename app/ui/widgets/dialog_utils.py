@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QAbstractButton, QDialogButtonBox, QMessageBox, QWidget
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QDialog,
+    QDialogButtonBox,
+    QInputDialog,
+    QLineEdit,
+    QMessageBox,
+    QWidget,
+)
 
 _MESSAGE_BUTTON_TEXTS: tuple[tuple[QMessageBox.StandardButton, str], ...] = (
     (QMessageBox.StandardButton.Yes, "Да"),
@@ -38,6 +47,38 @@ def localize_button_box(button_box: QDialogButtonBox) -> QDialogButtonBox:
     for standard_button, text in _BUTTON_BOX_TEXTS:
         _set_button_text(button_box.button(standard_button), text)
     return button_box
+
+
+def localize_input_dialog_buttons(dialog: QInputDialog) -> QInputDialog:
+    """Применить русские подписи к стандартным кнопкам QInputDialog."""
+
+    def _apply() -> None:
+        button_box = dialog.findChild(QDialogButtonBox)
+        if button_box is not None:
+            localize_button_box(button_box)
+
+    _apply()
+    QTimer.singleShot(0, _apply)
+    return dialog
+
+
+def exec_text_input_dialog(
+    parent: QWidget | None,
+    title: str,
+    label: str,
+    *,
+    text: str = "",
+    echo_mode: QLineEdit.EchoMode = QLineEdit.EchoMode.Normal,
+) -> tuple[str, bool]:
+    """Показать QInputDialog с русскими стандартными кнопками."""
+    dialog = QInputDialog(parent)
+    dialog.setWindowTitle(title)
+    dialog.setLabelText(label)
+    dialog.setTextValue(text)
+    dialog.setTextEchoMode(echo_mode)
+    localize_input_dialog_buttons(dialog)
+    accepted = dialog.exec() == QDialog.DialogCode.Accepted
+    return dialog.textValue(), accepted
 
 
 def exec_message_box(
