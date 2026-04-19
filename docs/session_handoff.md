@@ -151,3 +151,40 @@
 - `mypy app tests` — pass (`275 source files`)
 - `pytest -q` — pass (`310 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## 2026-04-19 — Фикс экспорта аналитики (date не сериализовался в JSON)
+
+## Что было сделано
+
+- Найдена и исправлена причина падения экспорта аналитики `XLSX` и `PDF`.
+- Проблема была не в генерации файлов, а в записи истории отчётов: `ReportRun.filters_json` сериализовался через `json.dumps()` без обработки `date`.
+- В `ReportingService` добавлен безопасный JSON dump для истории отчётов с поддержкой `date`, `datetime` и `Path`.
+- Добавлен интеграционный тест, который прогоняет экспорт аналитики с `date_from/date_to` для обоих форматов.
+
+## Что не закончено / в процессе
+
+- По этой задаче незавершённых пунктов нет.
+
+## Открытые проблемы / блокеры
+
+- Quality gates зелёные.
+- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущему багу отношения не имеют.
+
+## Следующие шаги
+
+1. Вручную повторить экспорт `XLSX` и `PDF` из раздела аналитики с заданным периодом.
+2. Если понадобится, пересобрать `EXE` и установщики уже на базе этого фикса.
+
+## Ключевые файлы, которые менялись
+
+- `app/application/services/reporting_service.py`
+- `tests/integration/test_reporting_service_artifacts.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `ruff check app tests` — pass
+- `mypy app tests` — pass (`275 source files`)
+- `pytest -q` — pass (`312 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` — pass

@@ -411,8 +411,8 @@ class ReportingService:
         with self.session_factory() as session:
             row = models.ReportRun(
                 report_type=report_type,
-                filters_json=json.dumps(safe_filters, ensure_ascii=False),
-                result_summary_json=json.dumps(summary, ensure_ascii=False),
+                filters_json=self._json_dumps(safe_filters),
+                result_summary_json=self._json_dumps(summary),
                 artifact_path=str(file_path),
                 artifact_sha256=sha256,
                 created_by=created_by,
@@ -429,6 +429,19 @@ class ReportingService:
                 continue
             sanitized[key] = value
         return sanitized
+
+    def _json_dumps(self, payload: dict[str, Any]) -> str:
+        return json.dumps(payload, ensure_ascii=False, default=self._json_default)
+
+    @staticmethod
+    def _json_default(value: Any) -> str:
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if isinstance(value, date):
+            return value.isoformat()
+        if isinstance(value, Path):
+            return str(value)
+        return str(value)
 
     def _build_report_history_row(
         self,

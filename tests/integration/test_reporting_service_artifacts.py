@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -120,3 +121,41 @@ def test_verify_report_run_detects_missing_artifact(tmp_path: Path, monkeypatch:
     verify = service.verify_report_run(int(rows[0]["id"]))
     assert verify["status"] == "missing"
     assert verify["verified"] is False
+
+
+@pytest.mark.parametrize(
+    ("export_method_name", "file_name"),
+    [
+        ("export_analytics_xlsx", "dated_analytics.xlsx"),
+        ("export_analytics_pdf", "dated_analytics.pdf"),
+    ],
+)
+def test_export_report_accepts_date_filters_in_history_payload(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    export_method_name: str,
+    file_name: str,
+) -> None:
+    session_factory = make_session_factory(tmp_path / f"{export_method_name}.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+    export_method = getattr(service, export_method_name)
+
+    result = export_method(
+        request=AnalyticsSearchRequest(
+            date_from=date(2026, 4, 1),
+            date_to=date(2026, 4, 19),
+            department_id=1,
+        ),
+        file_path=tmp_path / file_name,
+        actor_id=None,
+    )
+
+    assert Path(str(result["artifact_path"])).exists()
+
+    rows = service.list_report_runs(limit=10)
+    assert len(rows) == 1
+    assert rows[0]["filters"]["date_from"] == "2026-04-01"
+    assert rows[0]["filters"]["date_to"] == "2026-04-19"
