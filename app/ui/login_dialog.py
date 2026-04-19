@@ -194,19 +194,26 @@ class LoginDialog(QDialog):
     def _apply_initial_size(self) -> None:
         app = QApplication.instance()
         if app is None:
-            self.resize(1366, 768)
-            self.setMinimumSize(1366, 768)
+            self.resize(1080, 720)
+            self.setMinimumSize(860, 560)
             return
         assert isinstance(app, QApplication)
         screen = self.screen() or app.primaryScreen()
         if screen is None:
-            self.resize(1366, 768)
-            self.setMinimumSize(1366, 768)
+            self.resize(1080, 720)
+            self.setMinimumSize(860, 560)
             return
 
         geometry = screen.availableGeometry()
-        self.setMinimumSize(geometry.width(), geometry.height())
-        self.setGeometry(geometry)
+        min_width = min(920, max(760, geometry.width() - 80))
+        min_height = min(640, max(520, geometry.height() - 80))
+        max_width = max(min_width, geometry.width() - 32)
+        max_height = max(min_height, geometry.height() - 32)
+        target_width = max(min_width, min(1280, int(geometry.width() * 0.78), max_width))
+        target_height = max(min_height, min(860, int(geometry.height() * 0.82), max_height))
+
+        self.setMinimumSize(min_width, min_height)
+        self.resize(target_width, target_height)
 
     def _update_background(self) -> None:
         if self._animated_bg is not None:
@@ -254,7 +261,7 @@ class LoginDialog(QDialog):
         super().showEvent(event)
         if self._centered_once:
             return
-        self._apply_initial_size()
+        self._center_dialog_on_screen()
         self._centered_once = True
 
     def _init_animated_background(self) -> None:
