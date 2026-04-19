@@ -26,7 +26,7 @@ AppUpdatesURL={#MyAppURL}
 AppComments=Настольное приложение для эпидемиологического контроля и микробиологии
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputDir=dist
+OutputDir=..\dist
 OutputBaseFilename=EpidControlSetup
 Compression=lzma2
 SolidCompression=yes
@@ -35,7 +35,7 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
-SetupIconFile=resources\icons\app.ico
+SetupIconFile=..\resources\icons\app.ico
 DisableProgramGroupPage=yes
 SetupLogging=yes
 VersionInfoVersion={#MyAppVersion}
@@ -51,8 +51,8 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 Name: "desktopicon"; Description: "Создать ярлык на рабочем столе"; GroupDescription: "Дополнительные параметры:"; Flags: unchecked
 
 [Files]
-Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\RELEASE_INFO.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\RELEASE_INFO.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

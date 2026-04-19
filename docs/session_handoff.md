@@ -62,3 +62,56 @@
 - `mypy app tests` — pass (`274 source files`)
 - `pytest -q` — pass (`309 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## 2026-04-19 — Полноэкранный логин и полная пересборка Windows-артефактов
+
+## Что было сделано
+
+- `LoginDialog` переведён на размер всей доступной рабочей области экрана.
+- Добавлен тест `tests/unit/test_login_dialog.py`, который фиксирует полноэкранную геометрию логин-окна.
+- Для Inno Setup установлен `Inno Setup 6` и исправлены пути в `scripts/build_installer.ps1` и `scripts/installer.iss`.
+- После правок пересобраны все три артефакта:
+  - `dist/EpidControl.exe`
+  - `dist/EpidControlSetup_NSIS.exe`
+  - `dist/EpidControlSetup.exe`
+
+## Что не закончено / в процессе
+
+- Ничего незавершённого по этой задаче нет.
+- Осталась только ручная проверка поведения нового полноэкранного логина и обоих установщиков на пользовательской машине.
+
+## Открытые проблемы / блокеры
+
+- Quality gates зелёные, функциональных блокеров нет.
+- В `pytest` по-прежнему остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; на результат задачи не влияют.
+
+## Следующие шаги
+
+1. Открыть приложение и проверить, что окно авторизации теперь занимает всю рабочую область экрана.
+2. Проверить оба установщика вручную:
+   - `dist/EpidControlSetup_NSIS.exe`
+   - `dist/EpidControlSetup.exe`
+3. Если понадобится, отдельно донастроить композицию элементов внутри логин-экрана под новый большой размер.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/login_dialog.py`
+- `scripts/build_installer.ps1`
+- `scripts/installer.iss`
+- `tests/unit/test_login_dialog.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `ruff check app tests` — pass
+- `mypy app tests` — pass (`275 source files`)
+- `pytest -q` — pass (`310 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` — pass
+
+## Артефакты
+
+- `dist/EpidControl.exe` — `95 801 169` байт
+- `dist/EpidControlSetup_NSIS.exe` — `95 466 231` байт
+- `dist/EpidControlSetup.exe` — `96 666 880` байт
+- `dist/RELEASE_INFO.txt` — обновлён

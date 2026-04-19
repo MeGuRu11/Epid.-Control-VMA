@@ -50,9 +50,15 @@ try {
     $iscc = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
     $isccPath = Resolve-ToolPath -CommandInfo $iscc
     if ([string]::IsNullOrWhiteSpace($isccPath)) {
-        $default = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-        if (Test-Path $default) {
-            $isccPath = $default
+        $defaultCandidates = @(
+            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe")
+        )
+        foreach ($candidate in $defaultCandidates) {
+            if (Test-Path $candidate) {
+                $isccPath = $candidate
+                break
+            }
         }
     }
 
