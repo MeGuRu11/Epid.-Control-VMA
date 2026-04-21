@@ -6,12 +6,14 @@ from typing import Any, cast
 from PySide6.QtCore import QDate, QDateTime, QSignalBlocker, Qt, QTime, Signal
 from PySide6.QtWidgets import (
     QApplication,
+    QBoxLayout,
     QComboBox,
     QCompleter,
     QDateTimeEdit,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -41,9 +43,10 @@ from app.application.services.sanitary_sample_payload_service import (
 )
 from app.application.services.sanitary_service import SanitaryService
 from app.ui.sanitary.history_view_helpers import (
-    build_meta_line,
+    HistorySummary,
+    build_sample_context_line,
+    build_sample_details_line,
     filter_and_sort_samples,
-    growth_visuals,
     paginate_samples,
     resolve_micro_text,
     summarize_history,
@@ -83,6 +86,7 @@ class SanitaryHistoryDialog(QDialog):
         self._microbe_map: dict[int, str] = {}
         self._micro_search_updating: bool = False
         self._date_empty = QDate(2000, 1, 1)
+        self._last_empty_state: str | None = None
         self.page_index = 1
         self.page_size = 50
         self.setWindowTitle(f"Санитарные пробы - {department_name}")
@@ -93,34 +97,73 @@ class SanitaryHistoryDialog(QDialog):
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(12)
+        self.setMinimumSize(560, 620)
+        self.resize(1040, 760)
 
-        header_row = QHBoxLayout()
         title = QLabel("История санитарных проб")
         title.setObjectName("sectionTitle")
-        header_row.addWidget(title)
-        header_row.addStretch()
-        self.summary_label = QLabel("Проб: 0, положительных: 0, последняя: -")
-        self.summary_label.setObjectName("muted")
-        header_row.addWidget(self.summary_label)
-        layout.addLayout(header_row)
+        layout.addWidget(title)
 
-        dept_label = QLabel(f"Отделение: {self.department_name or self.department_id}")
-        dept_label.setObjectName("homeUserInfo")
-        layout.addWidget(dept_label)
+        self.department_label = QLabel(f"Отделение: {self.department_name or self.department_id}")
+        self.department_label.setObjectName("homeUserInfo")
+        layout.addWidget(self.department_label)
+
+        self.hint_label = QLabel("Double click по записи открывает карточку санитарной пробы.")
+        self.hint_label.setObjectName("sanitaryHistoryMeta")
+        self.hint_label.setWordWrap(True)
+        layout.addWidget(self.hint_label)
+
+        self._summary_card = QWidget()
+        self._summary_card.setObjectName("sanitaryHistorySummaryCard")
+        summary_layout = QGridLayout(self._summary_card)
+        summary_layout.setContentsMargins(12, 10, 12, 10)
+        summary_layout.setHorizontalSpacing(18)
+        summary_layout.setVerticalSpacing(10)
+        self._summary_total_value = self._build_summary_field(summary_layout, 0, 0, "Всего проб")
+        self._summary_positive_value = self._build_summary_field(summary_layout, 0, 1, "Положительные")
+        self._summary_last_value = self._build_summary_field(summary_layout, 1, 0, "Последняя проба")
+        self._summary_shown_value = self._build_summary_field(summary_layout, 1, 1, "Показано на странице")
+        layout.addWidget(self._summary_card)
 
         filter_box = QGroupBox("Фильтры")
-        filter_row = QHBoxLayout(filter_box)
+        filter_shell = QVBoxLayout(filter_box)
+        filter_shell.setContentsMargins(10, 8, 10, 10)
+        filter_shell.setSpacing(8)
+
+        self._filter_bar = QWidget()
+        self._filter_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._filter_bar)
+        self._filter_layout.setContentsMargins(0, 0, 0, 0)
+        self._filter_layout.setSpacing(10)
+
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Поиск по номеру пробы")
         self.search_input.textChanged.connect(self._on_filter_changed)
+        self._search_group = QWidget()
+        search_layout = QVBoxLayout(self._search_group)
+        search_layout.setContentsMargins(0, 0, 0, 0)
+        search_layout.setSpacing(4)
+        search_label = QLabel("Номер пробы")
+        search_label.setObjectName("sanitaryHistoryMeta")
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.search_input)
+
         self.growth_filter = QComboBox()
         self.growth_filter.addItem("Выбрать", None)
         self.growth_filter.addItem("Положительные", 1)
         self.growth_filter.addItem("Отрицательные", 0)
         connect_combo_autowidth(self.growth_filter)
         self.growth_filter.currentIndexChanged.connect(self._on_filter_changed)
+        self._growth_group = QWidget()
+        growth_layout = QVBoxLayout(self._growth_group)
+        growth_layout.setContentsMargins(0, 0, 0, 0)
+        growth_layout.setSpacing(4)
+        growth_label = QLabel("Рост")
+        growth_label.setObjectName("sanitaryHistoryMeta")
+        growth_layout.addWidget(growth_label)
+        growth_layout.addWidget(self.growth_filter)
+
         self.date_from = QDateTimeEdit()
         self.date_from.setCalendarPopup(True)
         self.date_from.setDisplayFormat("dd.MM.yyyy")
@@ -128,6 +171,7 @@ class SanitaryHistoryDialog(QDialog):
         self.date_from.setSpecialValueText("")
         self.date_from.setDate(self._date_empty)
         self.date_from.dateChanged.connect(self._on_filter_changed)
+
         self.date_to = QDateTimeEdit()
         self.date_to.setCalendarPopup(True)
         self.date_to.setDisplayFormat("dd.MM.yyyy")
@@ -135,29 +179,71 @@ class SanitaryHistoryDialog(QDialog):
         self.date_to.setSpecialValueText("")
         self.date_to.setDate(self._date_empty)
         self.date_to.dateChanged.connect(self._on_filter_changed)
+
+        self._date_group = QWidget()
+        date_layout = QGridLayout(self._date_group)
+        date_layout.setContentsMargins(0, 0, 0, 0)
+        date_layout.setHorizontalSpacing(8)
+        date_layout.setVerticalSpacing(4)
+        date_from_label = QLabel("Дата от")
+        date_from_label.setObjectName("sanitaryHistoryMeta")
+        date_to_label = QLabel("Дата до")
+        date_to_label.setObjectName("sanitaryHistoryMeta")
+        date_layout.addWidget(date_from_label, 0, 0)
+        date_layout.addWidget(self.date_from, 0, 1)
+        date_layout.addWidget(date_to_label, 1, 0)
+        date_layout.addWidget(self.date_to, 1, 1)
+
         clear_filters_btn = QPushButton("Сбросить")
         compact_button(clear_filters_btn)
         clear_filters_btn.clicked.connect(self._clear_filters)
-        filter_row.addWidget(QLabel("Номер пробы"))
-        filter_row.addWidget(self.search_input)
-        filter_row.addWidget(QLabel("Рост"))
-        filter_row.addWidget(self.growth_filter)
-        filter_row.addWidget(QLabel("Дата от"))
-        filter_row.addWidget(self.date_from)
-        filter_row.addWidget(QLabel("Дата до"))
-        filter_row.addWidget(self.date_to)
-        filter_row.addWidget(clear_filters_btn)
-        filter_row.addStretch()
+        self._filter_actions_group = QWidget()
+        filter_actions_layout = QVBoxLayout(self._filter_actions_group)
+        filter_actions_layout.setContentsMargins(0, 0, 0, 0)
+        filter_actions_layout.setSpacing(4)
+        actions_label = QLabel("Действия")
+        actions_label.setObjectName("sanitaryHistoryMeta")
+        filter_actions_layout.addWidget(actions_label)
+        filter_actions_layout.addWidget(clear_filters_btn)
+        filter_actions_layout.addStretch(1)
+
+        self._filter_layout.addWidget(self._search_group, 2)
+        self._filter_layout.addWidget(self._growth_group, 1)
+        self._filter_layout.addWidget(self._date_group, 2)
+        self._filter_layout.addWidget(self._filter_actions_group)
+        filter_shell.addWidget(self._filter_bar)
+
+        self.filter_summary_label = QLabel("Без фильтров")
+        self.filter_summary_label.setObjectName("sanitaryHistoryMeta")
+        self.filter_summary_label.setWordWrap(True)
+        filter_shell.addWidget(self.filter_summary_label)
         layout.addWidget(filter_box)
 
         list_box = QGroupBox("История проб")
         list_layout = QVBoxLayout(list_box)
-        self.list_widget = QListWidget()
-        self.list_widget.setSpacing(2)
-        self.list_widget.itemDoubleClicked.connect(self._edit_selected)
-        list_layout.addWidget(self.list_widget)
-        paging_row = QHBoxLayout()
+        list_layout.setContentsMargins(10, 8, 10, 10)
+        list_layout.setSpacing(8)
+
+        self._list_header_bar = QWidget()
+        self._list_header_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._list_header_bar)
+        self._list_header_layout.setContentsMargins(0, 0, 0, 0)
+        self._list_header_layout.setSpacing(10)
+
+        self._list_summary_group = QWidget()
+        list_summary_layout = QHBoxLayout(self._list_summary_group)
+        list_summary_layout.setContentsMargins(0, 0, 0, 0)
+        list_summary_layout.setSpacing(6)
+        self.list_summary_label = QLabel("Найдено 0 проб • показано 0")
+        self.list_summary_label.setObjectName("sanitaryHistoryMeta")
+        self.list_summary_label.setWordWrap(True)
+        list_summary_layout.addWidget(self.list_summary_label)
+
+        self._paging_group = QWidget()
+        paging_layout = QHBoxLayout(self._paging_group)
+        paging_layout.setContentsMargins(0, 0, 0, 0)
+        paging_layout.setSpacing(8)
         self.page_label = QLabel("Стр. 1 / 1")
+        self.page_label.setObjectName("sanitaryHistoryMeta")
         self.prev_btn = QPushButton("Назад")
         compact_button(self.prev_btn)
         self.prev_btn.clicked.connect(self._prev_page)
@@ -167,15 +253,25 @@ class SanitaryHistoryDialog(QDialog):
         self.page_size_combo = QComboBox()
         self.page_size_combo.addItems(["20", "50", "100"])
         self.page_size_combo.setCurrentText(str(self.page_size))
+        connect_combo_autowidth(self.page_size_combo)
         self.page_size_combo.currentIndexChanged.connect(self._on_page_size_changed)
-        paging_row.addWidget(QLabel("На странице"))
-        paging_row.addWidget(self.page_size_combo)
-        paging_row.addStretch()
-        paging_row.addWidget(self.prev_btn)
-        paging_row.addWidget(self.next_btn)
-        paging_row.addWidget(self.page_label)
-        list_layout.addLayout(paging_row)
-        layout.addWidget(list_box)
+        paging_layout.addWidget(QLabel("На странице"))
+        paging_layout.addWidget(self.page_size_combo)
+        paging_layout.addStretch()
+        paging_layout.addWidget(self.prev_btn)
+        paging_layout.addWidget(self.next_btn)
+        paging_layout.addWidget(self.page_label)
+
+        self._list_header_layout.addWidget(self._list_summary_group, 1)
+        self._list_header_layout.addWidget(self._paging_group)
+        list_layout.addWidget(self._list_header_bar)
+
+        self.list_widget = QListWidget()
+        self.list_widget.setSpacing(8)
+        self.list_widget.setMinimumHeight(260)
+        self.list_widget.itemDoubleClicked.connect(self._handle_item_double_clicked)
+        list_layout.addWidget(self.list_widget, 1)
+        layout.addWidget(list_box, 1)
 
         actions_box = QGroupBox("Действия")
         actions_layout = QVBoxLayout(actions_box)
@@ -190,17 +286,76 @@ class SanitaryHistoryDialog(QDialog):
         actions_layout.addWidget(self._actions_panel)
         layout.addWidget(actions_box)
 
+        self._update_filter_layout()
+        self._update_list_header_layout()
         self.refresh()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._update_filter_layout()
+        self._update_list_header_layout()
+
+    def _build_summary_field(self, layout: QGridLayout, row: int, column: int, title: str) -> QLabel:
+        field = QWidget()
+        field_layout = QVBoxLayout(field)
+        field_layout.setContentsMargins(0, 0, 0, 0)
+        field_layout.setSpacing(2)
+        title_label = QLabel(title)
+        title_label.setObjectName("patientFieldTitle")
+        value_label = QLabel("-")
+        value_label.setObjectName("patientFieldValue")
+        value_label.setWordWrap(True)
+        field_layout.addWidget(title_label)
+        field_layout.addWidget(value_label)
+        layout.addWidget(field, row, column)
+        return value_label
+
+    def _update_filter_layout(self) -> None:
+        spacing = max(0, self._filter_layout.spacing())
+        margins = self._filter_layout.contentsMargins()
+        required_width = (
+            self._search_group.minimumSizeHint().width()
+            + self._growth_group.minimumSizeHint().width()
+            + self._date_group.minimumSizeHint().width()
+            + self._filter_actions_group.minimumSizeHint().width()
+            + spacing * 3
+            + margins.left()
+            + margins.right()
+        )
+        direction = (
+            QBoxLayout.Direction.LeftToRight
+            if self.width() >= max(required_width + 80, 760)
+            else QBoxLayout.Direction.TopToBottom
+        )
+        self._filter_layout.setDirection(direction)
+
+    def _update_list_header_layout(self) -> None:
+        spacing = max(0, self._list_header_layout.spacing())
+        margins = self._list_header_layout.contentsMargins()
+        required_width = (
+            self._list_summary_group.minimumSizeHint().width()
+            + self._paging_group.minimumSizeHint().width()
+            + spacing
+            + margins.left()
+            + margins.right()
+        )
+        direction = (
+            QBoxLayout.Direction.LeftToRight
+            if self.width() >= required_width + 48
+            else QBoxLayout.Direction.TopToBottom
+        )
+        self._list_header_layout.setDirection(direction)
 
     def refresh(self) -> None:
         self.list_widget.clear()
         self._load_microbe_map()
+        samples = list(self.sanitary_service.list_samples_by_department(self.department_id))
         search = self.search_input.text().strip().lower()
         growth = self.growth_filter.currentData()
         date_from = self._date_value(self.date_from)
         date_to = self._date_value(self.date_to)
         filtered = filter_and_sort_samples(
-            self.sanitary_service.list_samples_by_department(self.department_id),
+            samples,
             search=search,
             growth=growth,
             date_from=date_from,
@@ -213,56 +368,126 @@ class SanitaryHistoryDialog(QDialog):
         )
         self.page_index = page_state.page_index
         summary = summarize_history(filtered)
-        self.summary_label.setText(
-            f"Проб: {summary.total}, положительных: {summary.positives}, последняя: {summary.last_taken_text}"
+        shown = len(page_state.page_items)
+        self._update_summary(summary, shown)
+        self._update_filter_summary(
+            search=search,
+            growth=growth,
+            date_from=date_from,
+            date_to=date_to,
         )
+        self.list_summary_label.setText(f"Найдено {summary.total} проб • показано {shown}")
+
         if not page_state.page_items:
-            self._add_empty_item("Проб пока нет.")
-            self._update_paging(0, 0)
+            if not samples:
+                self._add_empty_item(
+                    "no_data",
+                    "Проб пока нет",
+                    "Для этого отделения санитарные пробы ещё не зарегистрированы.",
+                )
+            else:
+                self._add_empty_item(
+                    "filtered_out",
+                    "По фильтрам ничего не найдено",
+                    "Попробуйте ослабить условия отбора или нажать «Сбросить».",
+                )
+            self._update_paging(summary.total)
             return
+
+        self._last_empty_state = None
         for sample in page_state.page_items:
             item = QListWidgetItem()
             item.setData(Qt.ItemDataRole.UserRole, sample.id)
             card = self._build_sample_item(sample)
-            item.setSizeHint(card.sizeHint())
+            item.setSizeHint(card.sizeHint().expandedTo(card.minimumSizeHint()))
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, card)
-        self._update_paging(summary.total, len(page_state.page_items))
+        self._update_paging(summary.total)
 
-    def _build_sample_item(self, sample) -> QWidget:
+    def _build_sample_item(self, sample: Any) -> QWidget:
         wrapper = QWidget()
-        wrapper.setObjectName("listCard")
+        wrapper.setObjectName("sanitaryHistoryListCard")
+        wrapper.setMinimumHeight(86)
+
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(6, 4, 6, 4)
-        layout.setSpacing(2)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(4)
+
         header = QHBoxLayout()
-        header.setSpacing(6)
-        status_dot = QLabel()
-        status_dot.setObjectName("cardStatusDot")
-        status_dot.setFixedSize(8, 8)
-        _status_color, growth_text = growth_visuals(sample.growth_flag)
-        status_tone = "unknown"
-        if sample.growth_flag == 1:
-            status_tone = "danger"
-        elif sample.growth_flag == 0:
-            status_tone = "ok"
-        status_dot.setProperty("tone", status_tone)
-        title = QLabel(f"{sample.lab_no} (id {sample.id})")
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(8)
+
+        title_group = QWidget()
+        title_group_layout = QHBoxLayout(title_group)
+        title_group_layout.setContentsMargins(0, 0, 0, 0)
+        title_group_layout.setSpacing(6)
+
+        title = QLabel(sample.lab_no or f"Проба #{sample.id}")
         title.setObjectName("cardTitle")
-        header.addWidget(status_dot)
-        header.addWidget(title)
+        sample_id = QLabel(f"id {sample.id}")
+        sample_id.setObjectName("sanitaryHistoryMeta")
+        title_group_layout.addWidget(title)
+        title_group_layout.addWidget(sample_id)
+        title_group_layout.addStretch()
+
+        if sample.growth_flag == 1:
+            badge_text = "Положительная"
+            badge_tone = "positive"
+        elif sample.growth_flag == 0:
+            badge_text = "Отрицательная"
+            badge_tone = "success"
+        else:
+            badge_text = "Без результата"
+            badge_tone = "warning"
+
+        badge = QLabel(badge_text)
+        badge.setObjectName("sanitaryHistoryBadge")
+        badge.setProperty("tone", badge_tone)
+
+        header.addWidget(title_group, 1)
         header.addStretch()
+        header.addWidget(badge)
         layout.addLayout(header)
+
         micro_text = resolve_micro_text(sample, microbe_map=self._microbe_map)
-        meta = QLabel(build_meta_line(sample, growth_text=growth_text, micro_text=micro_text))
-        meta.setObjectName("cardMeta")
-        layout.addWidget(meta)
+        details_line = QLabel(build_sample_details_line(sample, micro_text=micro_text))
+        details_line.setObjectName("sanitaryHistoryMeta")
+        details_line.setWordWrap(True)
+        layout.addWidget(details_line)
+
+        context_line = QLabel(build_sample_context_line(sample))
+        context_line.setObjectName("sanitaryHistoryMeta")
+        context_line.setWordWrap(True)
+        layout.addWidget(context_line)
         return wrapper
 
-    def _add_empty_item(self, text: str) -> None:
-        item = QListWidgetItem(text)
+    def _build_empty_card(self, title: str, detail: str) -> QWidget:
+        card = QWidget()
+        card.setObjectName("sanitaryHistoryEmptyCard")
+        card.setMinimumHeight(112)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(6)
+
+        title_label = QLabel(title)
+        title_label.setObjectName("cardTitle")
+        detail_label = QLabel(detail)
+        detail_label.setObjectName("sanitaryHistoryMeta")
+        detail_label.setWordWrap(True)
+        layout.addWidget(title_label)
+        layout.addWidget(detail_label)
+        layout.addStretch(1)
+        return card
+
+    def _add_empty_item(self, state: str, title: str, detail: str) -> None:
+        self._last_empty_state = state
+        item = QListWidgetItem()
         item.setFlags(Qt.ItemFlag.NoItemFlags)
+        card = self._build_empty_card(title, detail)
+        item.setSizeHint(card.sizeHint().expandedTo(card.minimumSizeHint()))
         self.list_widget.addItem(item)
+        self.list_widget.setItemWidget(item, card)
 
     def _on_filter_changed(self) -> None:
         self.page_index = 1
@@ -293,7 +518,34 @@ class SanitaryHistoryDialog(QDialog):
         self.page_index += 1
         self.refresh()
 
-    def _update_paging(self, total: int, shown: int) -> None:
+    def _update_summary(self, summary: HistorySummary, shown: int) -> None:
+        self._summary_total_value.setText(str(summary.total))
+        self._summary_positive_value.setText(str(summary.positives))
+        self._summary_last_value.setText(summary.last_taken_text)
+        self._summary_shown_value.setText(str(shown))
+
+    def _update_filter_summary(
+        self,
+        *,
+        search: str,
+        growth: int | None,
+        date_from: date | None,
+        date_to: date | None,
+    ) -> None:
+        parts: list[str] = []
+        if search:
+            parts.append(f"Номер: {search}")
+        if growth is not None:
+            parts.append(f"Рост: {self.growth_filter.currentText()}")
+        if date_from is not None and date_to is not None:
+            parts.append(f"Даты: {date_from.strftime('%d.%m.%Y')} — {date_to.strftime('%d.%m.%Y')}")
+        elif date_from is not None:
+            parts.append(f"Дата с: {date_from.strftime('%d.%m.%Y')}")
+        elif date_to is not None:
+            parts.append(f"Дата до: {date_to.strftime('%d.%m.%Y')}")
+        self.filter_summary_label.setText(" • ".join(parts) if parts else "Без фильтров")
+
+    def _update_paging(self, total: int) -> None:
         total_pages = max(1, (total + self.page_size - 1) // self.page_size)
         if self.page_index > total_pages:
             self.page_index = total_pages
@@ -317,6 +569,10 @@ class SanitaryHistoryDialog(QDialog):
             label = f"{micro.code or '-'} - {micro.name}"
             micro_id = cast(int, micro.id)
             self._microbe_map[micro_id] = label
+
+    def _handle_item_double_clicked(self, item: QListWidgetItem) -> None:
+        self.list_widget.setCurrentItem(item)
+        self._edit_selected()
 
     def _open_new_dialog(self) -> None:
         dlg = SanitarySampleDetailDialog(
@@ -402,7 +658,6 @@ class SanitarySampleDetailDialog(QDialog):
         content_layout.setSpacing(12)
         content_layout.addWidget(title)
 
-        # Основные данные
         self.sampling_point = QLineEdit()
         self.room = QLineEdit()
         self.medium = QLineEdit()
@@ -423,7 +678,6 @@ class SanitarySampleDetailDialog(QDialog):
         main_form.addRow("Дата доставки", self.delivered_at)
         content_layout.addWidget(main_box)
 
-        # Результаты роста
         self.growth_flag = QComboBox()
         self.growth_flag.addItem("Выбрать", None)
         self.growth_flag.addItem("Нет", 0)
@@ -444,7 +698,6 @@ class SanitarySampleDetailDialog(QDialog):
         result_form.addRow("КОЕ", self.cfu)
         content_layout.addWidget(result_box)
 
-        # Идентификация
         self.micro_combo = QComboBox()
         self.micro_combo.setEditable(True)
         self.micro_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
@@ -458,7 +711,6 @@ class SanitarySampleDetailDialog(QDialog):
         micro_form.addRow("Микроорганизм (свободно)", self.micro_free)
         content_layout.addWidget(micro_box)
 
-        # Панели
         self.susc_table = self._make_table(["Антибиотик", "RIS", "MIC", "Метод"], 1)
         self._increase_table_height(self.susc_table)
         self.phage_table = self._make_table(["Фаг", "Свободное имя", "Диаметр"], 1)
@@ -743,8 +995,6 @@ class SanitarySampleDetailDialog(QDialog):
                 self.micro_free.setText(iso[0].microorganism_free or "")
             self._fill_susceptibility(detail["susceptibility"])
             self._fill_phages(detail["phages"])
-
-            # Keep editable when editing existing sample.
         except _HANDLED_SANITARY_ERRORS as exc:
             set_status(self.error_label, error_text(exc, "Не удалось загрузить пробу"), "error")
 
@@ -890,7 +1140,9 @@ class SanitarySampleDetailDialog(QDialog):
             if combo:
                 combo.setCurrentIndex(combo.findData(r.phage_id))
             self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
-            self.phage_table.setItem(idx, 2, QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""))
+            self.phage_table.setItem(
+                idx,
+                2,
+                QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""),
+            )
         resize_columns_to_content(self.phage_table)
-
-

@@ -110,3 +110,20 @@ def build_meta_line(sample: Any, *, growth_text: str, micro_text: str) -> str:
     medium_part = f" · Среда: {sample.medium}" if sample.medium else ""
     return f"Взято: {taken_text} · Рост: {growth_text}{micro_part}{point_part}{room_part}{medium_part}"
 
+
+def build_sample_details_line(sample: Any, *, micro_text: str) -> str:
+    parts = [f"Взято: {sample.taken_at.strftime('%d.%m.%Y %H:%M')}" if sample.taken_at else "Взято: -"]
+    if micro_text:
+        parts.append(f"Микроорганизм: {micro_text}")
+    return " · ".join(parts)
+
+
+def build_sample_context_line(sample: Any) -> str:
+    parts: list[str] = []
+    if sample.sampling_point:
+        parts.append(f"Точка: {sample.sampling_point}")
+    if sample.room:
+        parts.append(f"Помещение: {sample.room}")
+    if sample.medium:
+        parts.append(f"Среда: {sample.medium}")
+    return " · ".join(parts) if parts else "Контекст не указан"

@@ -172,3 +172,49 @@
 - `mypy app tests` - pass (`280 source files`)
 - `pytest -q` - pass (`335 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` - pass
+
+## Дополнение 2026-04-21 - простой редизайн истории санитарных проб
+
+### Что сделано
+
+- Реализован простой системный редизайн `SanitaryHistoryDialog` в `app/ui/sanitary/sanitary_history.py` без hero-композиции и без изменения сценариев работы.
+- Верх диалога теперь состоит из заголовка, строки контекста отделения, компактной summary-панели (`Всего проб`, `Положительные`, `Последняя проба`, `Показано`) и подсказки про double click.
+- Фильтры сохранены по поведению, но собраны в более чистую responsive-компоновку; добавлена отдельная summary-строка активных фильтров.
+- Список истории проб остался на `QListWidget`, но карточки элементов стали плотнее и ровнее: `lab_no`, `id`, badge роста, затем дата/микроорганизм и контекст отбора.
+- Разделены empty states: `Проб пока нет` для пустого отделения и отдельное сообщение для пустого результата после фильтрации.
+- В `app/ui/sanitary/history_view_helpers.py` добавлены helper-функции для сборки строк карточек и summary-данных.
+- В `app/ui/theme.py` добавлены спокойные стили `sanitaryHistorySummaryCard`, `sanitaryHistoryListCard`, `sanitaryHistoryEmptyCard`, `sanitaryHistoryMeta`, `sanitaryHistoryBadge`.
+- Добавлен новый unit-набор `tests/unit/test_sanitary_history_dialog.py`; подтверждены layout, summary, reset фильтров, empty states и double click в детальную карточку.
+
+### Что не закончено / в процессе
+
+- Нужен ручной визуальный smoke `SanitaryHistoryDialog` в реальном приложении на широкой и узкой ширине окна, чтобы оценить плотность карточек и переносы текста.
+
+### Открытые проблемы / блокеры
+
+- Блокеров по quality gates нет.
+- В полном `pytest` сохраняются 2 исторических warning по sqlite datetime adapter в `tests/integration/test_form100_v2_migration.py`.
+- В рабочем дереве остаётся сторонний untracked-каталог `.npm-cache/`; в этой сессии не трогался.
+
+### Следующие шаги
+
+1. Открыть историю санитарных проб в приложении и визуально проверить wide/narrow layout, summary-блок и карточки списка.
+2. Если визуально всё стабильно, переходить к следующему UI-этапу по санитарии, например к отдельному редизайну `SanitarySampleDetailDialog`.
+3. При необходимости точечно подправить spacing или переносы строк в карточках истории по результатам ручного smoke.
+
+### Ключевые файлы, которые менялись
+
+- `app/ui/sanitary/sanitary_history.py`
+- `app/ui/sanitary/history_view_helpers.py`
+- `app/ui/theme.py`
+- `tests/unit/test_sanitary_history_dialog.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+### Проверки
+
+- `ruff check app tests` - pass
+- `python scripts/check_architecture.py` - pass
+- `mypy app tests` - pass (`281 source files`)
+- `pytest -q` - pass (`340 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` - pass
