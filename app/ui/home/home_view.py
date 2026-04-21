@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from PySide6.QtCore import (
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QLabel,
+    QLayout,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -28,6 +30,30 @@ from app.application.dto.auth_dto import SessionContext
 from app.application.exceptions import AppError
 from app.application.services.dashboard_service import DashboardService
 from app.ui.widgets.notifications import set_status
+
+
+@dataclass(frozen=True, slots=True)
+class SummaryCardSpec:
+    key: str
+    title: str
+    badge: str
+    detail: str
+
+
+@dataclass(slots=True)
+class SummaryCardWidgets:
+    value_label: QLabel
+    detail_label: QLabel
+
+
+SUMMARY_CARD_SPECS = (
+    SummaryCardSpec("patients", "Пациенты", "PT", "зарегистрировано в системе"),
+    SummaryCardSpec("emr_cases", "Истории болезни (ЭМЗ)", "EM", "оформлено историй болезни"),
+    SummaryCardSpec("lab_samples", "Лабораторные пробы", "LB", "лабораторных проб в базе"),
+    SummaryCardSpec("sanitary_samples", "Санитарные пробы", "SN", "санитарных проб в базе"),
+    SummaryCardSpec("new_patients", "Новые пациенты (30 дней)", "NP", "добавлено за последние 30 дней"),
+    SummaryCardSpec("top_department", "Топ-отделение (30 дней)", "TD", "Нет данных"),
+)
 
 
 class ClockCard(QWidget):
@@ -133,8 +159,10 @@ class HomeView(QWidget):
         super().__init__(parent)
         self.session = session
         self.dashboard_service = dashboard_service
-        self._stats_labels: dict[str, QLabel] = {}
-        self._stat_cards: list[QWidget] = []
+        self._meta_cards: list[QWidget] = []
+        self._summary_widgets: dict[str, SummaryCardWidgets] = {}
+        self._summary_cards: list[QWidget] = []
+        self._summary_columns = 1
         self._build_ui()
         self._load_stats()
 
@@ -143,6 +171,7 @@ class HomeView(QWidget):
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(14)
 
@@ -153,9 +182,8 @@ class HomeView(QWidget):
         self._hero_card = self._build_hero_card()
         self._hero_layout.addWidget(self._hero_card, 1)
 
-        self.clock_card = ClockCard()
-        self.clock_card.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self._hero_layout.addWidget(self.clock_card, 0)
+        self._utility_card = self._build_utility_card()
+        self._hero_layout.addWidget(self._utility_card, 0)
         self._hero_layout.setStretch(0, 1)
         self._hero_layout.setStretch(1, 0)
         layout.addLayout(self._hero_layout)
@@ -164,12 +192,8 @@ class HomeView(QWidget):
         self._stats_grid = QGridLayout(self._stats_box)
         self._stats_grid.setHorizontalSpacing(12)
         self._stats_grid.setVerticalSpacing(12)
-        self._add_stat("Пациенты", "patients")
-        self._add_stat("Истории болезни (ЭМЗ)", "emr_cases")
-        self._add_stat("Лабораторные пробы", "lab_samples")
-        self._add_stat("Санитарные пробы", "sanitary_samples")
-        self._add_stat("Новые пациенты (30 дней)", "new_patients")
-        self._add_stat("Топ-отделение (30 дней)", "top_department")
+        for spec in SUMMARY_CARD_SPECS:
+            self._add_summary_card(spec)
         layout.addWidget(self._stats_box)
 
         layout.addStretch()
@@ -187,27 +211,26 @@ class HomeView(QWidget):
         self._clock_timer.start(1000)
         self._update_clock()
         self._apply_hero_layout()
-        self._reflow_stat_cards()
+        self._reflow_hero_meta_cards()
+        self._reflow_summary_cards()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._apply_hero_layout()
-        self._reflow_stat_cards()
+        self._reflow_hero_meta_cards()
+        self._reflow_summary_cards()
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802
         hint = super().minimumSizeHint()
-        if not hasattr(self, "_hero_card") or not hasattr(self, "clock_card"):
+        if not hasattr(self, "_hero_card") or not hasattr(self, "_utility_card"):
             return hint
         layout = self.layout()
         if not isinstance(layout, QVBoxLayout):
             return hint
         margins = layout.contentsMargins()
-        hero_min = max(
-            self._hero_card.minimumSizeHint().width(),
-            self.clock_card.minimumSizeHint().width(),
-        )
-        stat_min = max((card.minimumSizeHint().width() for card in self._stat_cards), default=0)
-        min_width = max(hero_min, stat_min) + margins.left() + margins.right()
+        utility_min = self._utility_card.minimumSizeHint().width()
+        stat_min = max((card.minimumSizeHint().width() for card in self._summary_cards), default=0)
+        min_width = max(utility_min, stat_min) + margins.left() + margins.right()
         return QSize(min_width, hint.height())
 
     def set_session(self, session: SessionContext) -> None:
@@ -219,7 +242,7 @@ class HomeView(QWidget):
     def _build_hero_card(self) -> QWidget:
         card = QWidget()
         card.setObjectName("homeHeroCard")
-        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 18, 18, 18)
@@ -252,10 +275,8 @@ class HomeView(QWidget):
         meta_grid.setVerticalSpacing(12)
         last_login_card, self.last_login_label = self._build_meta_card("Последний вход")
         last_refresh_card, self.last_refresh_label = self._build_meta_card("Последнее обновление")
-        meta_grid.addWidget(last_login_card, 0, 0)
-        meta_grid.addWidget(last_refresh_card, 0, 1)
-        meta_grid.setColumnStretch(0, 1)
-        meta_grid.setColumnStretch(1, 1)
+        self._hero_meta_grid = meta_grid
+        self._meta_cards = [last_login_card, last_refresh_card]
         layout.addLayout(meta_grid)
 
         status_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
@@ -277,6 +298,26 @@ class HomeView(QWidget):
         layout.addWidget(self.status_label)
 
         self._set_hero_status(ok=True)
+        return card
+
+    def _build_utility_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("homeUtilityCard")
+        card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(12)
+
+        caption = QLabel("Локальное время")
+        caption.setObjectName("homeMetaCaption")
+        layout.addWidget(caption, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addStretch(1)
+
+        self.clock_card = ClockCard(card)
+        self.clock_card.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        layout.addWidget(self.clock_card, 0, Qt.AlignmentFlag.AlignHCenter)
+        layout.addStretch(1)
         return card
 
     def _build_meta_card(self, caption: str) -> tuple[QWidget, QLabel]:
@@ -304,28 +345,57 @@ class HomeView(QWidget):
         }
         return role_map.get(role, role)
 
+    def _calculate_meta_columns(self, available_width: int) -> int:
+        if not self._meta_cards:
+            return 1
+        card_min = max(card.minimumSizeHint().width() for card in self._meta_cards)
+        spacing = max(0, self._hero_meta_grid.horizontalSpacing())
+        margins = self._hero_meta_grid.contentsMargins()
+        two_col_needed = card_min * 2 + spacing + margins.left() + margins.right()
+        return 2 if available_width >= two_col_needed else 1
+
+    def _reflow_hero_meta_cards(self) -> None:
+        if not hasattr(self, "_hero_meta_grid"):
+            return
+        while self._hero_meta_grid.count():
+            item = self._hero_meta_grid.takeAt(0)
+            if item is None:
+                continue
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(self._hero_card)
+        if not self._meta_cards:
+            return
+        columns = self._calculate_meta_columns(self._hero_card.width())
+        for idx, card in enumerate(self._meta_cards):
+            row = idx // columns
+            col = idx % columns
+            self._hero_meta_grid.addWidget(card, row, col)
+        self._hero_meta_grid.setColumnStretch(0, 1)
+        self._hero_meta_grid.setColumnStretch(1, 1 if columns == 2 else 0)
+
     def _apply_hero_layout(self) -> None:
         if not hasattr(self, "_hero_layout"):
             return
         spacing = max(0, self._hero_layout.spacing())
         margins = self._hero_layout.contentsMargins()
-        hero_width = self._hero_card.sizeHint().width()
-        clock_width = self.clock_card.sizeHint().width()
-        horizontal_needed = hero_width + clock_width + spacing + margins.left() + margins.right()
+        hero_width = self._hero_card.minimumSizeHint().width()
+        utility_width = self._utility_card.minimumSizeHint().width()
+        horizontal_needed = hero_width + utility_width + spacing + margins.left() + margins.right()
         direction = (
             QBoxLayout.Direction.LeftToRight
             if self.width() >= horizontal_needed
             else QBoxLayout.Direction.TopToBottom
         )
         self._hero_layout.setDirection(direction)
-        self._hero_layout.setAlignment(self._hero_card, Qt.AlignmentFlag.AlignTop)
         if direction == QBoxLayout.Direction.LeftToRight:
-            self._hero_layout.setAlignment(self.clock_card, Qt.AlignmentFlag.AlignTop)
+            self._hero_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+            self._utility_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         else:
-            self._hero_layout.setAlignment(
-                self.clock_card,
-                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-            )
+            self._hero_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            self._utility_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._hero_card.updateGeometry()
+        self._utility_card.updateGeometry()
 
     def _set_hero_status(self, ok: bool, message: str = "") -> None:
         if ok:
@@ -343,42 +413,74 @@ class HomeView(QWidget):
         style.polish(self.status_chip)
         self.status_chip.update()
 
-    def _add_stat(self, label: str, key: str) -> None:
-        badge_map = {
-            "patients": "PT",
-            "emr_cases": "EM",
-            "lab_samples": "LB",
-            "sanitary_samples": "SN",
-            "new_patients": "NP",
-            "top_department": "TD",
-        }
-        badge_text = badge_map.get(key, "--")
+    def _add_summary_card(self, spec: SummaryCardSpec) -> None:
         card = QWidget()
-        card.setObjectName("statCard")
+        card.setObjectName("summaryCard")
+        card.setProperty("toneKey", spec.key)
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        card_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, card)
-        card_layout.setContentsMargins(10, 8, 10, 8)
-        card_layout.setSpacing(10)
-        badge = QLabel(badge_text)
-        badge.setObjectName("statBadge")
-        badge.setProperty("toneKey", key if key in badge_map else "default")
-        badge.setFixedSize(40, 24)
-        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_layout = QVBoxLayout()
-        info_layout.setSpacing(2)
-        name_label = QLabel(label)
-        name_label.setObjectName("muted")
-        value_label = QLabel("0")
-        value_label.setObjectName("metricValue")
-        value_label.setWordWrap(True)
-        info_layout.addWidget(name_label)
-        info_layout.addWidget(value_label)
-        card_layout.addWidget(badge)
-        card_layout.addLayout(info_layout)
-        self._stats_labels[key] = value_label
-        self._stat_cards.append(card)
+        card.setMinimumWidth(220)
 
-    def _reflow_stat_cards(self) -> None:
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(14, 14, 14, 14)
+        card_layout.setSpacing(10)
+
+        header_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(10)
+
+        badge = QLabel(spec.badge)
+        badge.setObjectName("summaryBadge")
+        badge.setProperty("toneKey", spec.key)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        title_label = QLabel(spec.title)
+        title_label.setObjectName("summaryTitle")
+        title_label.setWordWrap(True)
+
+        header_row.addWidget(badge, 0, Qt.AlignmentFlag.AlignTop)
+        header_row.addWidget(title_label, 1)
+        card_layout.addLayout(header_row)
+
+        value_label = QLabel(self._format_summary_value(spec.key, 0))
+        value_label.setObjectName("summaryValue")
+        value_label.setWordWrap(True)
+
+        detail_label = QLabel(spec.detail)
+        detail_label.setObjectName("summaryDetail")
+        detail_label.setWordWrap(True)
+
+        card_layout.addWidget(value_label)
+        card_layout.addWidget(detail_label)
+        card_layout.addStretch(1)
+
+        self._summary_widgets[spec.key] = SummaryCardWidgets(
+            value_label=value_label,
+            detail_label=detail_label,
+        )
+        self._summary_cards.append(card)
+
+    def _calculate_summary_columns(self, available_width: int) -> int:
+        if not self._summary_cards:
+            return 1
+        card_min = max(
+            max(card.minimumSizeHint().width(), card.minimumWidth())
+            for card in self._summary_cards
+        )
+        spacing = max(0, self._stats_grid.horizontalSpacing())
+        margins = self._stats_grid.contentsMargins()
+        max_columns = min(3, len(self._summary_cards))
+        for columns in range(max_columns, 0, -1):
+            needed_width = (
+                card_min * columns
+                + spacing * max(0, columns - 1)
+                + margins.left()
+                + margins.right()
+            )
+            if available_width >= needed_width:
+                return columns
+        return 1
+
+    def _reflow_summary_cards(self) -> None:
         if not hasattr(self, "_stats_grid"):
             return
         while self._stats_grid.count():
@@ -388,37 +490,69 @@ class HomeView(QWidget):
             widget = item.widget()
             if widget is not None:
                 widget.setParent(self._stats_box)
-        if not self._stat_cards:
+        if not self._summary_cards:
             return
-        card_min = max(card.minimumSizeHint().width() for card in self._stat_cards)
-        spacing = max(0, self._stats_grid.horizontalSpacing())
-        margins = self._stats_grid.contentsMargins()
-        two_col_needed = card_min * 2 + spacing + margins.left() + margins.right()
-        columns = 2 if self._stats_box.width() >= two_col_needed else 1
-        for idx, card in enumerate(self._stat_cards):
+        columns = self._calculate_summary_columns(self._stats_box.width())
+        self._summary_columns = columns
+        for idx, card in enumerate(self._summary_cards):
             row = idx // columns
             col = idx % columns
             self._stats_grid.addWidget(card, row, col)
-        self._stats_grid.setColumnStretch(0, 1)
-        self._stats_grid.setColumnStretch(1, 1 if columns == 2 else 0)
+        for col in range(3):
+            self._stats_grid.setColumnStretch(col, 1 if col < columns else 0)
+
+    def _format_summary_value(self, key: str, value: int | str | None) -> str:
+        if key == "top_department":
+            if isinstance(value, str) and value:
+                return value
+            return "Нет данных"
+        if isinstance(value, int):
+            return str(value)
+        if isinstance(value, str) and value:
+            return value
+        return "-"
+
+    def _format_summary_detail(self, key: str, *, count: int | None = None) -> str:
+        detail_map = {
+            "patients": "зарегистрировано в системе",
+            "emr_cases": "оформлено историй болезни",
+            "lab_samples": "лабораторных проб в базе",
+            "sanitary_samples": "санитарных проб в базе",
+            "new_patients": "добавлено за последние 30 дней",
+        }
+        if key == "top_department":
+            if count is None:
+                return "Нет данных"
+            return f"{count} санитарных проб за 30 дней"
+        return detail_map.get(key, "")
+
+    def _set_summary_metric(
+        self,
+        key: str,
+        value: int | str | None,
+        *,
+        count: int | None = None,
+    ) -> None:
+        summary_widgets = self._summary_widgets.get(key)
+        if summary_widgets is None:
+            return
+        summary_widgets.value_label.setText(self._format_summary_value(key, value))
+        summary_widgets.detail_label.setText(self._format_summary_detail(key, count=count))
 
     def _load_stats(self) -> None:
         try:
             counts = self.dashboard_service.get_counts()
-            for key, value in counts.items():
-                if key in self._stats_labels:
-                    self._stats_labels[key].setText(str(value))
+            for key in ("patients", "emr_cases", "lab_samples", "sanitary_samples"):
+                self._set_summary_metric(key, counts.get(key, 0))
             self._load_last_login()
             new_patients = self.dashboard_service.get_new_patients_count(30)
-            if "new_patients" in self._stats_labels:
-                self._stats_labels["new_patients"].setText(str(new_patients))
+            self._set_summary_metric("new_patients", new_patients)
             top_dep = self.dashboard_service.get_top_department_by_samples(30)
-            if "top_department" in self._stats_labels:
-                if top_dep:
-                    dep_name, count = top_dep
-                    self._stats_labels["top_department"].setText(f"{dep_name} · {count}")
-                else:
-                    self._stats_labels["top_department"].setText("-")
+            if top_dep:
+                dep_name, count = top_dep
+                self._set_summary_metric("top_department", dep_name, count=count)
+            else:
+                self._set_summary_metric("top_department", None)
             self.last_refresh_label.setText(QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm:ss"))
             self._set_hero_status(ok=True)
         except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:

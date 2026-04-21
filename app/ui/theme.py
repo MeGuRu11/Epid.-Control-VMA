@@ -156,6 +156,12 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["border"]};
         border-radius: 12px;
     }}
+    QWidget#homeUtilityCard {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 rgba(255, 253, 248, 0.95), stop:1 rgba(248, 243, 236, 0.9));
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
     QLabel#homeHeroSubtitle {{
         color: {COL["text_muted"]};
         font-size: 11px;
@@ -745,43 +751,57 @@ def _build_qss(settings: Settings) -> str:
         background-color: #FFF9F2;
         border-top: 1px solid #E0DAD3;
     }}
-    QLabel#statBadge {{
-        border-radius: 6px;
-        padding: 2px 6px;
-        font-weight: 700;
-        color: {COL["text_primary"]};
-    }}
-    QLabel#statBadge[toneKey="patients"] {{
-        background: {COL["accent2"]};
-    }}
-    QLabel#statBadge[toneKey="emr_cases"] {{
-        background: {COL["warn"]};
-    }}
-    QLabel#statBadge[toneKey="lab_samples"] {{
-        background: {COL["success"]};
-    }}
-    QLabel#statBadge[toneKey="sanitary_samples"] {{
-        background: {COL["accent"]};
-    }}
-    QLabel#statBadge[toneKey="new_patients"] {{
-        background: {COL["warn"]};
-    }}
-    QLabel#statBadge[toneKey="top_department"] {{
-        background: {COL["accent"]};
-    }}
-    QLabel#statBadge[toneKey="default"] {{
-        background: {COL["border"]};
-    }}
-    QWidget#statCard {{
-        background: rgba(255, 249, 242, 0.78);
+    QWidget#summaryCard {{
+        background: rgba(255, 249, 242, 0.9);
         border: 1px solid {COL["border"]};
-        border-radius: 10px;
-        min-height: 58px;
+        border-radius: 12px;
+        min-height: 126px;
     }}
-    QLabel#metricValue {{
-        font-size: 16px;
+    QLabel#summaryBadge {{
+        border-radius: 8px;
+        padding: 4px 10px;
+        min-width: 42px;
+        font-size: 11px;
         font-weight: 800;
         color: {COL["text_primary"]};
+    }}
+    QLabel#summaryBadge[toneKey="patients"] {{
+        background: {COL["accent2"]};
+    }}
+    QLabel#summaryBadge[toneKey="emr_cases"] {{
+        background: {COL["warn"]};
+    }}
+    QLabel#summaryBadge[toneKey="lab_samples"] {{
+        background: {COL["success"]};
+    }}
+    QLabel#summaryBadge[toneKey="sanitary_samples"] {{
+        background: {COL["accent"]};
+    }}
+    QLabel#summaryBadge[toneKey="new_patients"] {{
+        background: {COL["warn"]};
+    }}
+    QLabel#summaryBadge[toneKey="top_department"] {{
+        background: {COL["accent"]};
+    }}
+    QLabel#summaryBadge[toneKey="default"] {{
+        background: {COL["border"]};
+    }}
+    QLabel#summaryTitle {{
+        color: {COL["text_muted"]};
+        font-size: 12px;
+        font-weight: 700;
+    }}
+    QLabel#summaryValue {{
+        color: {COL["text_primary"]};
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.15;
+        color: {COL["text_primary"]};
+    }}
+    QLabel#summaryDetail {{
+        color: {COL["muted"]};
+        font-size: 11px;
+        font-weight: 600;
     }}
     QPushButton#chipClear {{
         min-width: 22px;

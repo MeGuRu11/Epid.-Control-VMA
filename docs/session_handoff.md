@@ -1,381 +1,42 @@
-﻿# Сессия 2026-04-18
+﻿# Сессия 2026-04-21
 
 ## Что сделано
 
-- Исправлены toast-уведомления: теперь они рендерят фон и рамку через styled background, поднимаются поверх интерфейса и не дублируются столбиком при одинаковом тексте.
-- Таблица истории пакетов в `Импорт/Экспорт` и таблица истории отчётов в `Аналитике` переведены в строго read-only режим.
-- Доработан `ExchangeService`:
-  - Excel-экспорт форматирует листы под ручное чтение;
-  - ширина колонок подбирается по содержимому;
-  - длинные значения переносятся;
-  - boolean-поля экспортируются как `Да/Нет`;
-  - повторный экспорт в тот же `.xlsx` корректно пишет полную запись в историю пакетов.
-- Добавлен `PatientService.list_for_picker()` и repository-метод под него.
-- Полностью переработан `PatientSearchDialog`: один основной список выбора, загрузка полного списка при открытии, фильтр по ФИО/ID, исправленный сценарий выбора по кнопке и двойному клику.
-- Обновлены unit/integration тесты под новые требования.
-- Для аналитических кнопок `Экспорт XLSX` и `Экспорт PDF` в теме добавлены отдельные состояния `hover/pressed/disabled`, чтобы они не выглядели неактивными при наведении.
-- В `ImportExportView` исправлена локализация значения колонки `Направление` в истории пакетов: строки `export/import` снова отображаются как `Экспорт/Импорт`, а неизвестные legacy-значения как `Неизвестно`.
+- На главной странице переработан правый верхний блок: часы вынесены во внешний `homeUtilityCard`, который на широкой ширине теперь выравнивается по внешней высоте с hero-карточкой.
+- `ClockCard` оставлен компактным custom-painted виджетом и центрируется уже внутренним layout utility-контейнера.
+- Блок `Сводные показатели` переведён на KPI-карточки с четырьмя зонами: badge, title, main value, secondary detail.
+- Сетка KPI стала адаптивной: 3 колонки на широкой ширине, 2 на средней, 1 на узкой.
+- Для `top_department` добавлен корректный fallback `Нет данных` при отсутствии результата сервиса.
+- Hero-композиция стабилизирована:
+  - переключение horizontal/vertical теперь считается от `minimumSizeHint()`;
+  - корневой layout `HomeView` переведён в `SetNoConstraint`, чтобы виджет реально входил в narrow-state;
+  - мета-плитки hero-блока (`Последний вход` / `Последнее обновление`) тоже адаптивно переукладываются.
+- Обновлены QSS-стили в `theme.py` под `homeUtilityCard` и KPI-карточки.
+- Расширен `tests/unit/test_home_view.py`:
+  - equal-height для hero/utility;
+  - 3/2/1 колонки KPI-grid;
+  - success/error состояния;
+  - fallback для `top_department`.
+- Перед реализацией выполнен локальный запрос через `Codex + Context7` по Qt for Python (`QBoxLayout`, `QSizePolicy`, `QWidget`) и использован рекомендованный паттерн с двумя внешними контейнерами без alignment во внешнем layout.
 
 ## Что не закончено / в процессе
 
-- Нужен ручной визуальный smoke-проход по живому UI:
-  - toast-уведомления;
-  - история пакетов после перезаписи Excel-файла;
-  - история отчётов в аналитике;
-  - новый диалог поиска пациента.
-
-## Открытые проблемы / блокеры
-
-- Функциональных блокеров по quality gates нет.
-- В `pytest` остаются 2 существующих `DeprecationWarning` от sqlite datetime adapter в миграционных тестах `Form100 V2`; поведение не ломают.
-
-## Следующие шаги
-
-1. Ручной прогон пользовательских сценариев: toast, экспорт Excel с перезаписью, история пакетов/отчётов, выбор пациента.
-2. Если визуально всё подтверждается — коммит и push в `main`.
-3. Если в ручном прогоне всплывут UX-детали, править уже точечно поверх текущей базы.
-
-## Ключевые файлы
-
-- `app/application/services/exchange_service.py`
-- `app/application/services/patient_service.py`
-- `app/infrastructure/db/repositories/patient_repo.py`
-- `app/ui/analytics/analytics_view.py`
-- `app/ui/analytics/report_history_helpers.py`
-- `app/ui/import_export/import_export_view.py`
-- `app/ui/theme.py`
-- `app/ui/widgets/patient_search_dialog.py`
-- `app/ui/widgets/table_utils.py`
-- `app/ui/widgets/toast.py`
-- `tests/integration/test_exchange_service_import_reports.py`
-- `tests/integration/test_patient_service_core.py`
-- `tests/unit/test_analytics_chart_data.py`
-- `tests/unit/test_import_export_wizard.py`
-- `tests/unit/test_patient_widgets_error_handling.py`
-- `tests/unit/test_toast_manager.py`
-- `tests/unit/test_ui_theme_tokens.py`
-- `tests/unit/test_import_export_wizard.py`
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `mypy app tests` — pass (`274 source files`)
-- `pytest -q` — pass (`309 passed, 2 warnings`)
-- `python -m compileall -q app tests scripts` — pass
-
-## 2026-04-19 — Полноэкранный логин и полная пересборка Windows-артефактов
-
-## Что было сделано
-
-- `LoginDialog` переведён на размер всей доступной рабочей области экрана.
-- Добавлен тест `tests/unit/test_login_dialog.py`, который фиксирует полноэкранную геометрию логин-окна.
-- Для Inno Setup установлен `Inno Setup 6` и исправлены пути в `scripts/build_installer.ps1` и `scripts/installer.iss`.
-- После правок пересобраны все три артефакта:
-  - `dist/EpidControl.exe`
-  - `dist/EpidControlSetup_NSIS.exe`
-  - `dist/EpidControlSetup.exe`
-
-## Что не закончено / в процессе
-
-- Ничего незавершённого по этой задаче нет.
-- Осталась только ручная проверка поведения нового полноэкранного логина и обоих установщиков на пользовательской машине.
-
-## Открытые проблемы / блокеры
-
-- Quality gates зелёные, функциональных блокеров нет.
-- В `pytest` по-прежнему остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; на результат задачи не влияют.
-
-## Следующие шаги
-
-1. Открыть приложение и проверить, что окно авторизации теперь занимает всю рабочую область экрана.
-2. Проверить оба установщика вручную:
-   - `dist/EpidControlSetup_NSIS.exe`
-   - `dist/EpidControlSetup.exe`
-3. Если понадобится, отдельно донастроить композицию элементов внутри логин-экрана под новый большой размер.
-
-## Ключевые файлы, которые менялись
-
-- `app/ui/login_dialog.py`
-- `scripts/build_installer.ps1`
-- `scripts/installer.iss`
-- `tests/unit/test_login_dialog.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `mypy app tests` — pass (`275 source files`)
-- `pytest -q` — pass (`310 passed, 2 warnings`)
-- `python -m compileall -q app tests scripts` — pass
-
-## Артефакты
-
-- `dist/EpidControl.exe` — `95 801 169` байт
-- `dist/EpidControlSetup_NSIS.exe` — `95 466 231` байт
-- `dist/EpidControlSetup.exe` — `96 666 880` байт
-- `dist/RELEASE_INFO.txt` — обновлён
-
-## 2026-04-19 — Регрессия логин-окна после полноэкранного режима
-
-## Что было сделано
-
-- Откачено изменение, которое делало `LoginDialog` полноэкранным по рабочей области.
-- Возвращено прежнее поведение размера и центрирования, чтобы снова были доступны стандартные кнопки окна Windows.
-- Переписан тест `tests/unit/test_login_dialog.py` под оконный сценарий вместо полноэкранного.
-
-## Что не закончено / в процессе
-
-- По этой задаче незавершённых пунктов нет.
-
-## Открытые проблемы / блокеры
-
-- Quality gates зелёные.
-- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущей правке не относятся.
-
-## Следующие шаги
-
-1. Вручную проверить логин-окно: закрытие, сворачивание, перемещение, восстановление размеров.
-2. Если снова понадобится увеличить логин, делать это только через увеличение стартового размера, без захвата всей рабочей области.
-
-## Ключевые файлы, которые менялись
-
-- `app/ui/login_dialog.py`
-- `tests/unit/test_login_dialog.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `mypy app tests` — pass (`275 source files`)
-- `pytest -q` — pass (`310 passed, 2 warnings`)
-- `python -m compileall -q app tests scripts` — pass
-
-## 2026-04-19 — Фикс экспорта аналитики (date не сериализовался в JSON)
-
-## Что было сделано
-
-- Найдена и исправлена причина падения экспорта аналитики `XLSX` и `PDF`.
-- Проблема была не в генерации файлов, а в записи истории отчётов: `ReportRun.filters_json` сериализовался через `json.dumps()` без обработки `date`.
-- В `ReportingService` добавлен безопасный JSON dump для истории отчётов с поддержкой `date`, `datetime` и `Path`.
-- Добавлен интеграционный тест, который прогоняет экспорт аналитики с `date_from/date_to` для обоих форматов.
-
-## Что не закончено / в процессе
-
-- По этой задаче незавершённых пунктов нет.
-
-## Открытые проблемы / блокеры
-
-- Quality gates зелёные.
-- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущему багу отношения не имеют.
-
-## Следующие шаги
-
-1. Вручную повторить экспорт `XLSX` и `PDF` из раздела аналитики с заданным периодом.
-2. Если понадобится, пересобрать `EXE` и установщики уже на базе этого фикса.
-
-## Ключевые файлы, которые менялись
-
-- `app/application/services/reporting_service.py`
-- `tests/integration/test_reporting_service_artifacts.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `mypy app tests` — pass (`275 source files`)
-- `pytest -q` — pass (`312 passed, 2 warnings`)
-- `python -m compileall -q app tests scripts` — pass
-
-## 2026-04-19 — Локализация кнопок подписи Form100
-
-## Что было сделано
-
-- Найдена причина английских кнопок при подписи карточки `Form100`: использовался статический `QInputDialog.getText(...)`, который не проходил через общий helper локализации.
-- В `app/ui/widgets/dialog_utils.py` добавлен новый helper:
-  - `localize_input_dialog_buttons(...)`
-  - `exec_text_input_dialog(...)`
-- Мастер `Form100` переведён на новый helper, поэтому диалог подписи теперь показывает `ОК` и `Отмена` на русском.
-- На тот же helper переведены текстовые диалоги заметок в `bodymap`, чтобы поведение было единым во всём модуле.
-- Добавлен регрессионный unit-тест `tests/unit/test_dialog_utils.py`, который проверяет локализацию кнопок `QInputDialog`.
-
-## Что не закончено / в процессе
-
-- Пользователь просил после фикса пересобрать `EXE` и `Inno Setup`; это следующий шаг текущей сессии.
-
-## Открытые проблемы / блокеры
-
-- Functional blocker по этой задаче снят, quality gates зелёные.
-- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущему фиксу не относятся.
-
-## Следующие шаги
-
-1. Пересобрать `EXE`.
-2. Пересобрать `Inno Setup`.
-3. Пользовательский smoke-проход: открыть подпись `Form100` и убедиться, что кнопки ввода на русском.
-
-## Ключевые файлы, которые менялись
-
-- `app/ui/widgets/dialog_utils.py`
-- `app/ui/form100_v2/form100_wizard.py`
-- `app/ui/form100_v2/wizard_widgets/bodymap_widget.py`
-- `app/ui/form100_v2/widgets/bodymap_editor_v2.py`
-- `tests/unit/test_dialog_utils.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `mypy app tests` — pass (`276 source files`)
-- `pytest -q` — pass (`313 passed, 2 warnings`)
-- `python -m compileall -q app tests scripts` — pass
-
-## 2026-04-19 — Исправлена кнопка «Сбросить» в context bar
-
-## Что было сделано
-
-- Найдена причина UX-багa: `ContextBar._reset()` сбрасывал только внутренний контекст, но не очищал поля поиска пациента и госпитализации.
-- Из-за этого пользователю казалось, что кнопка `Сбросить` не работает, хотя `on_context_change(None, None)` действительно вызывался.
-- В `app/ui/widgets/context_bar.py` добавлена очистка:
-  - `patient_search`
-  - `case_search`
-  - `_completer_model`
-  - `_case_model`
-- Добавлен регрессионный тест `tests/unit/test_dropdown_indicators.py`, который проверяет полный сценарий кнопки `Сбросить`.
-
-## Что не закончено / в процессе
-
-- По этой задаче незавершённых пунктов нет.
-
-## Открытые проблемы / блокеры
-
-- Functional blocker снят, quality gates зелёные.
-- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter; к текущему багу не относятся.
-
-## Следующие шаги
-
-1. Пользовательский smoke: набрать текст в поля context bar, нажать `Сбросить`, убедиться, что и поля, и контекст очищаются.
-2. Если понадобится, отдельно можно сделать более явный визуальный reset-state для чипов и placeholder-текстов.
-
-## Ключевые файлы, которые менялись
-
-- `app/ui/widgets/context_bar.py`
-- `tests/unit/test_dropdown_indicators.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `mypy app tests` — pass (`276 source files`)
-- `pytest -q` — pass (`314 passed, 2 warnings`)
-- `python -m compileall -q app tests scripts` — pass
-
-## 2026-04-21 — Нормализация EOF в UI-модулях и пересборка Windows-артефактов
-
-## Что было сделано
-
-- Найдена причина «грязного» дерева после актуализации репозитория: в ряде UI-helper файлов оставался хвостовой `CR` на последней строке, из-за чего Git на Windows постоянно показывал локальные изменения.
-- Нормализованы окончания файлов:
-  - `app/ui/analytics/report_history_helpers.py`
-  - `app/ui/emz/form_field_resolvers.py`
-  - `app/ui/emz/form_mode_presenters.py`
-  - `app/ui/emz/form_presenters.py`
-  - `app/ui/emz/form_reference_orchestrators.py`
-  - `app/ui/emz/form_utils.py`
-  - `app/ui/sanitary/history_view_helpers.py`
-- Во время `quality_gates.ps1` найден и исправлен реальный дефект `PatientSearchDialog`: метод `_accept_selected()` принимал только `tuple`, хотя `QTableWidgetItem.data(Qt.UserRole)` под PySide6 возвращает `list`.
-- Обновлён регрессионный тест `tests/unit/test_patient_widgets_error_handling.py`.
-- Успешно собраны:
-  - `dist/EpidControl.exe`
-  - `dist/EpidControlSetup.exe`
-  - `dist/RELEASE_INFO.txt`
-
-## Что не закончено / в процессе
-
-- Не выполнен ручной smoke собранного `EXE` и `Inno Setup`-установщика.
-- Для Inno Setup использовался найденный локальный `ISCC.exe` из каталога Antigravity, а не стандартная установка `Inno Setup 6`.
+- Ручной визуальный smoke новой главной страницы не выполнялся.
+- Не проверялось визуально поведение на реальных очень узких ширинах окна, только unit- и runtime-проверки через PySide6.
 
 ## Открытые проблемы / блокеры
 
 - Блокеров по quality gates нет.
-- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter.
-- Дополнительно есть 1 `PytestCacheWarning` из-за прав на `pytest_cache_local`.
+- В полном `pytest` сохраняются исторические предупреждения:
+  - `DeprecationWarning` по sqlite datetime adapter в миграционных тестах `Form100 V2`;
+  - `PytestCacheWarning` из-за отказа в доступе к `pytest_cache_local`.
+- Текущая встроенная агентная сессия не обязана автоматически подхватывать локальный `Context7`, даже несмотря на то, что локальный `codex.cmd mcp list/get` уже подтверждает его регистрацию.
 
 ## Следующие шаги
 
-1. Проверить вручную `dist/EpidControl.exe`.
-2. Проверить установку и запуск `dist/EpidControlSetup.exe` на чистом профиле Windows.
-3. При необходимости привести `ISCC.exe` к стандартной установке или системному `PATH`, чтобы сборка шла без временного расширения `PATH`.
-
-## Ключевые файлы, которые менялись
-
-- `app/ui/analytics/report_history_helpers.py`
-- `app/ui/emz/form_field_resolvers.py`
-- `app/ui/emz/form_mode_presenters.py`
-- `app/ui/emz/form_presenters.py`
-- `app/ui/emz/form_reference_orchestrators.py`
-- `app/ui/emz/form_utils.py`
-- `app/ui/sanitary/history_view_helpers.py`
-- `app/ui/widgets/patient_search_dialog.py`
-- `tests/unit/test_patient_widgets_error_handling.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` — pass
-- `pytest -q` — pass (`314 passed, 3 warnings`)
-- `cmd /c scripts\build_exe.bat` — pass
-- `powershell -ExecutionPolicy Bypass -File scripts\build_installer.ps1` — pass
-
-## Артефакты
-
-- `dist/EpidControl.exe` — `132 655 970` байт
-- `dist/EpidControlSetup.exe` — `132 784 568` байт
-- `dist/RELEASE_INFO.txt` — обновлён
-
-## 2026-04-21 — Редизайн hero-блока на главной странице
-
-## Что было сделано
-
-- Верхняя левая часть главной страницы в `HomeView` пересобрана в отдельную hero-карточку.
-- Внутри hero-карточки собраны:
-  - заголовок;
-  - подзаголовок;
-  - логин пользователя;
-  - локализованный бейдж роли;
-  - плитки `Последний вход` и `Последнее обновление`;
-  - статусный бейдж;
-  - подробный `status_label` для ошибок.
-- Часы оставлены отдельной карточкой и включены в общий responsive-контейнер верхней области.
-- Добавлена локальная локализация ролей `admin/operator` для hero-блока.
-- Добавлена responsive-переукладка верхней композиции между горизонтальным и вертикальным режимом.
-- Для `ClockCard` добавлены `sizeHint()` и `minimumSizeHint()`, чтобы окно реально могло перейти в узкий responsive-режим.
-- В `theme.py` добавлены стили `homeHeroCard`, `homeRoleBadge`, `homeMetaCard`, `homeStatusBadge` и связанные подписи/значения.
-- Добавлен `tests/unit/test_home_view.py` с покрытием hero-блока.
-
-## Что не закончено / в процессе
-
-- Ручной визуальный smoke hero-блока не выполнялся.
-- Не проверялось поведение на реальном очень длинном логине пользователя.
-
-## Открытые проблемы / блокеры
-
-- Блокеров по коду и quality gates нет.
-- В `pytest` сохраняются:
-  - 2 исторических `DeprecationWarning` от sqlite datetime adapter;
-  - 1 `PytestCacheWarning` по правам на `pytest_cache_local`.
-- Базовый `mypy app tests` в этой среде падал на битом кеше (`KeyError: setter_type`), поэтому проверка выполнялась через `mypy --cache-dir NUL app tests`.
-
-## Следующие шаги
-
-1. Вручную открыть главную страницу и проверить новый hero-блок на обычном и узком размере окна.
-2. Если визуально понадобится, точечно подправить плотность отступов или размеры шрифтов в hero-карточке.
-3. При желании отдельно локализовать сырой `session.role` в заголовке окна `main_window.py`, если это тоже нужно привести к единому виду.
+1. Открыть приложение и визуально проверить главную страницу на нескольких ширинах окна.
+2. Если понадобится, точечно подправить spacing и размеры шрифта KPI-карточек по живому UI.
+3. При необходимости отдельным шагом проверить, как новая композиция выглядит в собранном `EXE`.
 
 ## Ключевые файлы, которые менялись
 
@@ -388,6 +49,8 @@
 ## Проверки
 
 - `ruff check app tests` — pass
-- `mypy --cache-dir NUL app tests` — pass (`277 source files`)
-- `pytest -q` — pass (`319 passed, 3 warnings`)
+- `python scripts/check_architecture.py` — pass
+- `mypy app tests` — pass (`277 source files`)
+- `pytest -q tests/unit/test_home_view.py` — pass (`8 passed, 1 warning`)
+- `pytest -q` — pass (`322 passed, 3 warnings`)
 - `python -m compileall -q app tests scripts` — pass
