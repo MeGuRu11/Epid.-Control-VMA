@@ -162,6 +162,93 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["border"]};
         border-radius: 12px;
     }}
+    QWidget#labHeroCard {{
+        background: rgba(255, 249, 242, 0.9);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QWidget#labUtilityCard {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 rgba(255, 253, 248, 0.96), stop:1 rgba(248, 243, 236, 0.92));
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QWidget#labSelectorCard,
+    QWidget#labFilterCard,
+    QWidget#labListCard {{
+        background: rgba(255, 249, 242, 0.82);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QWidget#labContextCard {{
+        background: rgba(255, 253, 248, 0.96);
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QWidget#labKpiCard {{
+        background: rgba(255, 253, 248, 0.94);
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QWidget#labEmptyCard {{
+        background: rgba(255, 253, 248, 0.96);
+        border: 1px dashed {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QLabel#labContextTitle {{
+        color: {COL["text_muted"]};
+        font-size: 10px;
+        font-weight: 700;
+    }}
+    QLabel#labContextValue {{
+        color: {COL["text_primary"]};
+        font-size: 16px;
+        font-weight: 800;
+    }}
+    QLabel#labKpiTitle {{
+        color: {COL["text_muted"]};
+        font-size: 11px;
+        font-weight: 700;
+    }}
+    QLabel#labKpiValue {{
+        color: {COL["text_primary"]};
+        font-size: 24px;
+        font-weight: 800;
+    }}
+    QLabel#labListMeta {{
+        color: {COL["text_muted"]};
+        font-size: 11px;
+        font-weight: 600;
+    }}
+    QLabel#labStateBadge {{
+        border-radius: 9px;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 4px 10px;
+    }}
+    QLabel#labStateBadge[tone="context"] {{
+        color: {COL["text_primary"]};
+        background: rgba(161, 227, 216, 0.22);
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QLabel#labStateBadge[tone="success"],
+    QLabel#labStateBadge[tone="negative"] {{
+        color: #2D5A40;
+        background: {COL["success_bg"]};
+        border: 1px solid {COL["success"]};
+    }}
+    QLabel#labStateBadge[tone="warning"],
+    QLabel#labStateBadge[tone="pending"] {{
+        color: #6E5525;
+        background: #FFF4DB;
+        border: 1px solid {COL["warn"]};
+    }}
+    QLabel#labStateBadge[tone="error"],
+    QLabel#labStateBadge[tone="positive"] {{
+        color: #7F2F2A;
+        background: {COL["error_bg"]};
+        border: 1px solid {COL["error"]};
+    }}
     QLabel#homeHeroSubtitle {{
         color: {COL["text_muted"]};
         font-size: 11px;
