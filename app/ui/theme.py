@@ -510,6 +510,10 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["border_soft"]};
         border-radius: 10px;
     }}
+    QWidget#sanitaryHistorySummaryField {{
+        background: transparent;
+        border: none;
+    }}
     QWidget#sanitaryHistoryListCard {{
         background: {COL["surface"]};
         border: 1px solid {COL["border_soft"]};

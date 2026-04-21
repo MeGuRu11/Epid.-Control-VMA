@@ -218,3 +218,44 @@
 - `mypy app tests` - pass (`281 source files`)
 - `pytest -q` - pass (`340 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` - pass
+
+## Дополнение 2026-04-21 - визуальный фикс истории санитарных проб
+
+### Что сделано
+
+- В `SanitaryHistoryDialog` исправлена подсказка: вместо англоязычного `Double click` теперь отображается `Двойное нажатие по записи открывает карточку санитарной пробы`.
+- У summary-блока истории санитарных проб убрана лишняя серая подложка у внутренних полей; показатели теперь лежат на прозрачных контейнерах внутри общей summary-карточки.
+- Исправлен `ResponsiveActionsPanel`: при установке кнопок он сразу забирает их в свой контейнер, поэтому нижний блок `Действия` снова корректно показывает `Новая проба` и `Обновить`.
+- В `tests/unit/test_sanitary_history_dialog.py` добавлена регрессия на русскую подсказку и присутствие обеих action-кнопок.
+
+### Что не закончено / в процессе
+
+- Нужен ручной визуальный smoke `SanitaryHistoryDialog` после этого точечного фикса, чтобы подтвердить, что summary выглядит чище, а блок `Действия` корректно отображается на разных ширинах.
+
+### Открытые проблемы / блокеры
+
+- Блокеров по quality gates нет.
+- В полном `pytest` сохраняются 2 исторических warning по sqlite datetime adapter в `tests/integration/test_form100_v2_migration.py`.
+- В рабочем дереве остаётся сторонний untracked-каталог `.npm-cache/`; не трогался.
+
+### Следующие шаги
+
+1. Визуально проверить `SanitaryHistoryDialog` в приложении: summary-блок, русскую подсказку и нижний блок `Действия`.
+2. Если всё стабильно, переходить к следующему UI-этапу по санитарии без дополнительных правок истории.
+
+### Ключевые файлы, которые менялись
+
+- `app/ui/sanitary/sanitary_history.py`
+- `app/ui/widgets/responsive_actions.py`
+- `app/ui/theme.py`
+- `tests/unit/test_sanitary_history_dialog.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+### Проверки
+
+- `ruff check app tests` - pass
+- `python scripts/check_architecture.py` - pass
+- `mypy app tests` - pass (`281 source files`)
+- `pytest -q` - pass (`340 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` - pass

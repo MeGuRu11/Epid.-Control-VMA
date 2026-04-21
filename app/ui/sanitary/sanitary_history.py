@@ -110,7 +110,7 @@ class SanitaryHistoryDialog(QDialog):
         self.department_label.setObjectName("homeUserInfo")
         layout.addWidget(self.department_label)
 
-        self.hint_label = QLabel("Double click по записи открывает карточку санитарной пробы.")
+        self.hint_label = QLabel("Двойное нажатие по записи открывает карточку санитарной пробы.")
         self.hint_label.setObjectName("sanitaryHistoryMeta")
         self.hint_label.setWordWrap(True)
         layout.addWidget(self.hint_label)
@@ -297,6 +297,7 @@ class SanitaryHistoryDialog(QDialog):
 
     def _build_summary_field(self, layout: QGridLayout, row: int, column: int, title: str) -> QLabel:
         field = QWidget()
+        field.setObjectName("sanitaryHistorySummaryField")
         field_layout = QVBoxLayout(field)
         field_layout.setContentsMargins(0, 0, 0, 0)
         field_layout.setSpacing(2)

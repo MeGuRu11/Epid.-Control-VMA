@@ -87,6 +87,10 @@ def test_sanitary_history_dialog_uses_responsive_filter_and_header_layouts(qapp)
     dialog.show()
     qapp.processEvents()
 
+    action_buttons = [button for button in dialog._actions_panel.findChildren(type(dialog.prev_btn)) if button.text()]
+    assert {button.text() for button in action_buttons} == {"Новая проба", "Обновить"}
+    assert dialog.hint_label.text() == "Двойное нажатие по записи открывает карточку санитарной пробы."
+
     dialog.resize(1400, 800)
     qapp.processEvents()
     assert dialog._filter_layout.direction() == QBoxLayout.Direction.LeftToRight

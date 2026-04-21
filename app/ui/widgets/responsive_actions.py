@@ -31,11 +31,16 @@ class ResponsiveActionsPanel(QWidget):
         self._reflow()
 
     def add_button(self, button: QPushButton) -> None:
+        if button.parent() is not self:
+            button.setParent(self)
         self._buttons.append(button)
         self._reflow()
 
     def set_buttons(self, buttons: list[QPushButton]) -> None:
         self._buttons = list(buttons)
+        for button in self._buttons:
+            if button.parent() is not self:
+                button.setParent(self)
         self._reflow()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
@@ -96,7 +101,7 @@ class ResponsiveActionsPanel(QWidget):
                 widget.setParent(self)
 
     def _reflow(self) -> None:
-        visible_buttons = [button for button in self._buttons if button.isVisible()]
+        visible_buttons = [button for button in self._buttons if not button.isHidden()]
         compact = self._resolve_compact(len(visible_buttons))
         min_width, h_spacing, _v_spacing = self._apply_compact_mode(compact)
 
