@@ -167,6 +167,10 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["border"]};
         border-radius: 12px;
     }}
+    QScrollArea#labPageScrollArea {{
+        background: transparent;
+        border: none;
+    }}
     QWidget#labUtilityCard {{
         background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
             stop:0 rgba(255, 253, 248, 0.96), stop:1 rgba(248, 243, 236, 0.92));

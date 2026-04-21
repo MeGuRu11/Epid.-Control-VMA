@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QDialog,
+    QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -94,7 +96,22 @@ class LabSamplesView(QWidget):
         self._session = session
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+
+        self._scroll_area = QScrollArea(self)
+        self._scroll_area.setObjectName("labPageScrollArea")
+        self._scroll_area.setWidgetResizable(True)
+        self._scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        root_layout.addWidget(self._scroll_area)
+
+        self._scroll_content = QWidget()
+        self._scroll_area.setWidget(self._scroll_content)
+
+        layout = QVBoxLayout(self._scroll_content)
         layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(14)
@@ -378,8 +395,9 @@ class LabSamplesView(QWidget):
 
     def _build_list_card(self) -> QWidget:
         card = QWidget()
-        card.setObjectName("labSelectorCard")
+        card.setObjectName("labListCard")
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        card.setMinimumHeight(380)
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 16, 18, 16)
@@ -427,6 +445,7 @@ class LabSamplesView(QWidget):
 
         self.list_widget = QListWidget()
         self.list_widget.setSpacing(8)
+        self.list_widget.setMinimumHeight(240)
         self.list_widget.itemDoubleClicked.connect(self._edit_selected)
         self.list_widget.itemSelectionChanged.connect(self._sync_action_state)
         layout.addWidget(self.list_widget, 1)
@@ -604,11 +623,15 @@ class LabSamplesView(QWidget):
         self._quick_edit_button.setEnabled(self._selected_sample_id() is not None)
 
     def _update_quick_actions_layout(self) -> None:
+        available_width = max(0, self._scroll_area.viewport().width() - 48)
+        if self._quick_actions_bar.width() > 0:
+            available_width = min(available_width, self._quick_actions_bar.width())
         update_action_bar_direction(
             self._quick_actions_layout,
             self._quick_actions_bar,
             [self._quick_work_group, self._quick_create_group],
             extra_width=220,
+            available_width=available_width,
         )
 
     def _apply_hero_layout(self) -> None:
@@ -647,9 +670,10 @@ class LabSamplesView(QWidget):
             + margins.right()
             + 80
         )
+        available_width = max(0, self._scroll_area.viewport().width() - 32)
         direction = (
             QBoxLayout.Direction.LeftToRight
-            if self._filter_card.width() >= required_width
+            if available_width >= required_width
             else QBoxLayout.Direction.TopToBottom
         )
         self._filter_content_layout.setDirection(direction)

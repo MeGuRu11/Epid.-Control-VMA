@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtWidgets import QBoxLayout, QLabel, QWidget
+from PySide6.QtWidgets import QBoxLayout, QLabel, QScrollArea, QWidget
 
 from app.application.dto.lab_dto import LabSampleResponse
 from app.ui.lab.lab_samples_view import LabSamplesView
@@ -86,6 +86,10 @@ def test_lab_samples_view_uses_responsive_hero_and_filter_layouts(monkeypatch, q
     assert view._hero_layout.direction() == QBoxLayout.Direction.LeftToRight
     assert view._filter_content_layout.direction() == QBoxLayout.Direction.LeftToRight
     assert abs(view._hero_card.height() - view._utility_card.height()) <= 2
+    assert isinstance(view._scroll_area, QScrollArea)
+    assert view._scroll_area.widgetResizable()
+    assert view._list_card.minimumHeight() >= 380
+    assert view.list_widget.minimumHeight() >= 240
 
     view.resize(520, 900)
     qapp.processEvents()
