@@ -109,4 +109,4 @@ def build_meta_line(sample: Any, *, growth_text: str, micro_text: str) -> str:
     room_part = f" · Помещение: {sample.room}" if sample.room else ""
     medium_part = f" · Среда: {sample.medium}" if sample.medium else ""
     return f"Взято: {taken_text} · Рост: {growth_text}{micro_part}{point_part}{room_part}{medium_part}"
-
+

@@ -37,4 +37,4 @@ def split_date_or_datetime(value: date | datetime | None) -> tuple[datetime | No
     if isinstance(value, date):
         return None, value
     return None, None
-
+

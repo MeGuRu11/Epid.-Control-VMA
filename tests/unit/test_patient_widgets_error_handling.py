@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QListWidgetItem
+from PySide6.QtWidgets import QTableWidgetItem
 
 from app.ui.widgets.patient_search_dialog import PatientSearchDialog
 from app.ui.widgets.patient_selector import PatientSelector
@@ -107,7 +107,7 @@ def test_patient_search_dialog_load_recent_sets_error_status(monkeypatch) -> Non
 
 
 def test_patient_search_dialog_accept_selected_reads_from_result_table() -> None:
-    item = QListWidgetItem("1: Иванов Иван")
+    item = QTableWidgetItem("1: Иванов Иван")
     item.setData(Qt.ItemDataRole.UserRole, (1, "Иванов Иван"))
     accepted = {"count": 0}
 
@@ -115,6 +115,7 @@ def test_patient_search_dialog_accept_selected_reads_from_result_table() -> None
         result_table=SimpleNamespace(currentItem=lambda: item),
         selected_patient_id=None,
         selected_name="",
+        _set_status=lambda *_args: None,
         accept=lambda: accepted.__setitem__("count", accepted["count"] + 1),
     )
 

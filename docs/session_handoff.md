@@ -273,3 +273,67 @@
 - `mypy app tests` — pass (`276 source files`)
 - `pytest -q` — pass (`314 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## 2026-04-21 — Нормализация EOF в UI-модулях и пересборка Windows-артефактов
+
+## Что было сделано
+
+- Найдена причина «грязного» дерева после актуализации репозитория: в ряде UI-helper файлов оставался хвостовой `CR` на последней строке, из-за чего Git на Windows постоянно показывал локальные изменения.
+- Нормализованы окончания файлов:
+  - `app/ui/analytics/report_history_helpers.py`
+  - `app/ui/emz/form_field_resolvers.py`
+  - `app/ui/emz/form_mode_presenters.py`
+  - `app/ui/emz/form_presenters.py`
+  - `app/ui/emz/form_reference_orchestrators.py`
+  - `app/ui/emz/form_utils.py`
+  - `app/ui/sanitary/history_view_helpers.py`
+- Во время `quality_gates.ps1` найден и исправлен реальный дефект `PatientSearchDialog`: метод `_accept_selected()` принимал только `tuple`, хотя `QTableWidgetItem.data(Qt.UserRole)` под PySide6 возвращает `list`.
+- Обновлён регрессионный тест `tests/unit/test_patient_widgets_error_handling.py`.
+- Успешно собраны:
+  - `dist/EpidControl.exe`
+  - `dist/EpidControlSetup.exe`
+  - `dist/RELEASE_INFO.txt`
+
+## Что не закончено / в процессе
+
+- Не выполнен ручной smoke собранного `EXE` и `Inno Setup`-установщика.
+- Для Inno Setup использовался найденный локальный `ISCC.exe` из каталога Antigravity, а не стандартная установка `Inno Setup 6`.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по quality gates нет.
+- В `pytest` остаются 2 исторических `DeprecationWarning` от sqlite datetime adapter.
+- Дополнительно есть 1 `PytestCacheWarning` из-за прав на `pytest_cache_local`.
+
+## Следующие шаги
+
+1. Проверить вручную `dist/EpidControl.exe`.
+2. Проверить установку и запуск `dist/EpidControlSetup.exe` на чистом профиле Windows.
+3. При необходимости привести `ISCC.exe` к стандартной установке или системному `PATH`, чтобы сборка шла без временного расширения `PATH`.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/analytics/report_history_helpers.py`
+- `app/ui/emz/form_field_resolvers.py`
+- `app/ui/emz/form_mode_presenters.py`
+- `app/ui/emz/form_presenters.py`
+- `app/ui/emz/form_reference_orchestrators.py`
+- `app/ui/emz/form_utils.py`
+- `app/ui/sanitary/history_view_helpers.py`
+- `app/ui/widgets/patient_search_dialog.py`
+- `tests/unit/test_patient_widgets_error_handling.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` — pass
+- `pytest -q` — pass (`314 passed, 3 warnings`)
+- `cmd /c scripts\build_exe.bat` — pass
+- `powershell -ExecutionPolicy Bypass -File scripts\build_installer.ps1` — pass
+
+## Артефакты
+
+- `dist/EpidControl.exe` — `132 655 970` байт
+- `dist/EpidControlSetup.exe` — `132 784 568` байт
+- `dist/RELEASE_INFO.txt` — обновлён

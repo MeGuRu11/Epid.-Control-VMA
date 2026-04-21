@@ -234,7 +234,7 @@ class PatientSearchDialog(QDialog):
             self._set_status("Выберите пациента из списка", "warning")
             return
         data = item.data(Qt.ItemDataRole.UserRole)
-        if not isinstance(data, tuple) or len(data) != 2:
+        if not isinstance(data, (tuple, list)) or len(data) != 2:
             self._set_status("Не удалось прочитать выбранного пациента", "error")
             return
         patient_id, name = data

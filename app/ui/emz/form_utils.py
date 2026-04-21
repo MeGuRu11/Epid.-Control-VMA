@@ -54,4 +54,4 @@ def diagnosis_kind_to_dto(raw_kind: str) -> str:
 
 def diagnosis_kind_to_ui(kind: str) -> str:
     return _DIAGNOSIS_KIND_TO_UI.get(kind, "Поступление")
-
+
