@@ -16,8 +16,14 @@ ROOT_DIR = Path(_MEIPASS) if _MEIPASS else Path(__file__).resolve().parent.paren
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from PySide6.QtCore import QMessageLogContext, QtMsgType, qInstallMessageHandler  # noqa: E402
-from PySide6.QtGui import QIcon  # noqa: E402
+from PySide6.QtCore import (  # noqa: E402
+    QMessageLogContext,
+    QRect,
+    QSize,
+    QtMsgType,
+    qInstallMessageHandler,
+)
+from PySide6.QtGui import QCursor, QIcon  # noqa: E402
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QWidget  # noqa: E402
 
 from app.bootstrap.startup import (  # noqa: E402
@@ -213,18 +219,39 @@ def main() -> int:
         return 0
 
     window = MainWindow(session=login_dialog.session, container=container)
-    _apply_initial_window_size(window, app)
     window.show()
+    _apply_initial_window_size(window, app)
     return app.exec()
 
 
+def _resolve_initial_screen(window: QMainWindow, app: QApplication):
+    handle = window.windowHandle()
+    if handle is not None:
+        screen = handle.screen()
+        if screen is not None:
+            return screen
+
+    cursor_screen = app.screenAt(QCursor.pos())
+    if cursor_screen is not None:
+        return cursor_screen
+
+    return window.screen() or app.primaryScreen()
+
+
+def _compute_initial_window_size(available: QRect, minimum_size: QSize) -> tuple[int, int]:
+    target_width = max(900, int(available.width() * 0.92))
+    target_height = max(700, int(available.height() * 0.9))
+    width = min(available.width(), max(minimum_size.width(), target_width))
+    height = min(available.height(), max(minimum_size.height(), target_height))
+    return max(0, width), max(0, height)
+
+
 def _apply_initial_window_size(window: QMainWindow, app: QApplication) -> None:
-    screen = window.screen() or app.primaryScreen()
+    screen = _resolve_initial_screen(window, app)
     if not screen:
         return
     available = screen.availableGeometry()
-    width = max(900, int(available.width() * 0.92))
-    height = max(700, int(available.height() * 0.9))
+    width, height = _compute_initial_window_size(available, window.minimumSizeHint())
     window.resize(width, height)
     x = available.x() + max(0, (available.width() - width) // 2)
     y = available.y() + max(0, (available.height() - height) // 2)
