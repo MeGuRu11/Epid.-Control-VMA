@@ -129,3 +129,46 @@
 - `mypy app tests` — pass (`279 source files`)
 - `pytest -q` — pass (`330 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## Дополнение 2026-04-21 - редизайн санитарии
+
+### Что сделано
+
+- Реализован redesign `app/ui/sanitary/sanitary_dashboard.py` без изменений `SanitaryHistoryDialog` и санитарных диалогов редактирования.
+- Верх экрана перестроен в hero-композицию: слева контекст выбранного отделения, период и action-bar (`Открыть историю отделения`, `Обновить`), справа utility-card с KPI по текущей выборке.
+- Фильтры и список отделений перенесены в отдельные styled-card секции; список получил новые карточки элементов, empty states и summary-header.
+- В `app/ui/theme.py` добавлены все нужные `sanitary*` селекторы под новый экран.
+- Добавлены unit-тесты `tests/unit/test_sanitary_dashboard.py`; подтверждены responsive hero/filter layout, KPI, фильтры, reset, выбор отделения, empty states и double click в историю.
+
+### Что не закончено / в процессе
+
+- Нужен ручной визуальный smoke нового экрана `Санитария` в приложении на нескольких ширинах окна, чтобы оценить плотность карточек и переносы текста.
+- `SanitaryHistoryDialog` пока оставлен в старом визуальном виде; это отдельный возможный этап.
+
+### Открытые проблемы / блокеры
+
+- Блокеров по quality gates нет.
+- В полном `pytest` сохраняются 2 исторических warning по sqlite datetime adapter в миграционных тестах `Form100 V2`.
+- В рабочем дереве остаётся сторонний untracked каталог `.npm-cache/`; в этой сессии не трогался.
+
+### Следующие шаги
+
+1. Открыть приложение и визуально проверить новый экран `Санитария` на широкой и узкой ширине окна.
+2. Если визуально всё стабильно, переходить к следующему UI-этапу: redesign `SanitaryHistoryDialog` или другого приоритетного раздела.
+3. При необходимости точечно подправить тексты/spacing в карточках отделений по результатам ручного smoke.
+
+### Ключевые файлы, которые менялись
+
+- `app/ui/sanitary/sanitary_dashboard.py`
+- `app/ui/theme.py`
+- `tests/unit/test_sanitary_dashboard.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+### Проверки
+
+- `ruff check app tests` - pass
+- `python scripts/check_architecture.py` - pass
+- `mypy app tests` - pass (`280 source files`)
+- `pytest -q` - pass (`335 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` - pass
