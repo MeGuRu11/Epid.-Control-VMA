@@ -151,6 +151,61 @@ def _build_qss(settings: Settings) -> str:
     QLabel#adminStatus, QLabel#homeUserInfo {{
         color: {COL["text"]};
     }}
+    QWidget#homeHeroCard {{
+        background: rgba(255, 249, 242, 0.88);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QLabel#homeHeroSubtitle {{
+        color: {COL["text_muted"]};
+        font-size: 11px;
+        font-weight: 600;
+    }}
+    QLabel#homeUserName {{
+        color: {COL["text_primary"]};
+        font-size: 24px;
+        font-weight: 800;
+    }}
+    QLabel#homeRoleBadge {{
+        background: rgba(161, 227, 216, 0.24);
+        border: 1px solid {COL["accent_border"]};
+        border-radius: 10px;
+        color: {COL["text_primary"]};
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+    }}
+    QWidget#homeMetaCard {{
+        background: rgba(255, 253, 248, 0.96);
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QLabel#homeMetaCaption {{
+        color: {COL["text_muted"]};
+        font-size: 10px;
+        font-weight: 700;
+    }}
+    QLabel#homeMetaValue {{
+        color: {COL["text_primary"]};
+        font-size: 13px;
+        font-weight: 700;
+    }}
+    QLabel#homeStatusBadge {{
+        border-radius: 9px;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 4px 12px;
+    }}
+    QLabel#homeStatusBadge[tone="success"] {{
+        color: #2D5A40;
+        background: {COL["success_bg"]};
+        border: 1px solid {COL["success"]};
+    }}
+    QLabel#homeStatusBadge[tone="error"] {{
+        color: #7F2F2A;
+        background: {COL["error_bg"]};
+        border: 1px solid {COL["error"]};
+    }}
     QLabel#validationBanner {{
         background: #FDECEC;
         border: none;
@@ -1155,4 +1210,3 @@ def _build_qss(settings: Settings) -> str:
         font-weight: 700;
     }}
     """
-

@@ -2,13 +2,22 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtCore import QDateTime, QEasingCurve, QLocale, QPropertyAnimation, Qt, QTimer, Signal
+from PySide6.QtCore import (
+    QDateTime,
+    QEasingCurve,
+    QLocale,
+    QPropertyAnimation,
+    QSize,
+    Qt,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QGraphicsOpacityEffect,
     QGridLayout,
     QGroupBox,
-    QHBoxLayout,
     QLabel,
     QSizePolicy,
     QVBoxLayout,
@@ -33,16 +42,27 @@ class ClockCard(QWidget):
         self._border = QColor(227, 217, 207)
         self._text = QColor(58, 58, 56)
         self._accent = QColor(97, 201, 182)
-        self.setMinimumHeight(160)
-        self.setMinimumWidth(360)
 
-    def set_clock(self, time_text: str, seconds_text: str, date_prefix: str, date_month: str, date_suffix: str) -> None:
+    def set_clock(
+        self,
+        time_text: str,
+        seconds_text: str,
+        date_prefix: str,
+        date_month: str,
+        date_suffix: str,
+    ) -> None:
         self._time = time_text
         self._seconds = seconds_text
         self._date_prefix = date_prefix
         self._date_month = date_month
         self._date_suffix = date_suffix
         self.update()
+
+    def sizeHint(self) -> QSize:  # noqa: N802
+        return QSize(360, 160)
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802
+        return QSize(280, 160)
 
     def paintEvent(self, event) -> None:  # noqa: D401, N802
         painter = QPainter(self)
@@ -126,43 +146,19 @@ class HomeView(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(14)
 
-        clock_row = QHBoxLayout()
-        clock_row.addStretch()
+        self._hero_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        self._hero_layout.setContentsMargins(0, 0, 0, 0)
+        self._hero_layout.setSpacing(18)
+
+        self._hero_card = self._build_hero_card()
+        self._hero_layout.addWidget(self._hero_card, 1)
+
         self.clock_card = ClockCard()
-        clock_row.addWidget(self.clock_card)
-        clock_row.addStretch()
-        layout.addLayout(clock_row)
-
-        header_row = QHBoxLayout()
-        title = QLabel("Главная")
-        title.setObjectName("pageTitle")
-        header_row.addWidget(title)
-        header_row.addStretch()
-        layout.addLayout(header_row)
-
-        subtitle_row = QHBoxLayout()
-        self._user_info_label = QLabel(f"Пользователь: {self.session.login} ({self.session.role})")
-        self._user_info_label.setObjectName("homeUserInfo")
-        subtitle_row.addWidget(self._user_info_label)
-        subtitle_row.addStretch()
-        self.status_label = QLabel("")
-        set_status(self.status_label, "", "info")
-        self.status_label.setVisible(False)
-        subtitle_row.addWidget(self.status_label)
-        layout.addLayout(subtitle_row)
-
-        meta_row = QHBoxLayout()
-        self.last_login_label = QLabel("Последний вход: -")
-        self.last_login_label.setObjectName("chipLabel")
-        self.last_refresh_label = QLabel("Последнее обновление: -")
-        self.last_refresh_label.setObjectName("chipLabel")
-        self.status_chip = QLabel("Статус: готово")
-        self.status_chip.setObjectName("chipLabel")
-        meta_row.addWidget(self.last_login_label)
-        meta_row.addWidget(self.last_refresh_label)
-        meta_row.addWidget(self.status_chip)
-        meta_row.addStretch()
-        layout.addLayout(meta_row)
+        self.clock_card.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self._hero_layout.addWidget(self.clock_card, 0)
+        self._hero_layout.setStretch(0, 1)
+        self._hero_layout.setStretch(1, 0)
+        layout.addLayout(self._hero_layout)
 
         self._stats_box = QGroupBox("Сводные показатели")
         self._stats_grid = QGridLayout(self._stats_box)
@@ -190,16 +186,162 @@ class HomeView(QWidget):
         self._clock_timer.timeout.connect(self._update_clock)
         self._clock_timer.start(1000)
         self._update_clock()
+        self._apply_hero_layout()
         self._reflow_stat_cards()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
+        self._apply_hero_layout()
         self._reflow_stat_cards()
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802
+        hint = super().minimumSizeHint()
+        if not hasattr(self, "_hero_card") or not hasattr(self, "clock_card"):
+            return hint
+        layout = self.layout()
+        if not isinstance(layout, QVBoxLayout):
+            return hint
+        margins = layout.contentsMargins()
+        hero_min = max(
+            self._hero_card.minimumSizeHint().width(),
+            self.clock_card.minimumSizeHint().width(),
+        )
+        stat_min = max((card.minimumSizeHint().width() for card in self._stat_cards), default=0)
+        min_width = max(hero_min, stat_min) + margins.left() + margins.right()
+        return QSize(min_width, hint.height())
 
     def set_session(self, session: SessionContext) -> None:
         self.session = session
-        self._user_info_label.setText(f"Пользователь: {session.login} ({session.role})")
+        self._user_name_label.setText(session.login)
+        self._role_badge.setText(self._format_role_label(str(session.role)))
         self.refresh_stats()
+
+    def _build_hero_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("homeHeroCard")
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(14)
+
+        title = QLabel("Главная")
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+
+        subtitle = QLabel("Рабочая сводка текущей сессии")
+        subtitle.setObjectName("homeHeroSubtitle")
+        subtitle.setWordWrap(True)
+        layout.addWidget(subtitle)
+
+        user_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        user_row.setContentsMargins(0, 0, 0, 0)
+        user_row.setSpacing(10)
+        self._user_name_label = QLabel(self.session.login)
+        self._user_name_label.setObjectName("homeUserName")
+        self._role_badge = QLabel(self._format_role_label(str(self.session.role)))
+        self._role_badge.setObjectName("homeRoleBadge")
+        user_row.addWidget(self._user_name_label)
+        user_row.addWidget(self._role_badge, 0, Qt.AlignmentFlag.AlignVCenter)
+        user_row.addStretch()
+        layout.addLayout(user_row)
+
+        meta_grid = QGridLayout()
+        meta_grid.setContentsMargins(0, 0, 0, 0)
+        meta_grid.setHorizontalSpacing(12)
+        meta_grid.setVerticalSpacing(12)
+        last_login_card, self.last_login_label = self._build_meta_card("Последний вход")
+        last_refresh_card, self.last_refresh_label = self._build_meta_card("Последнее обновление")
+        meta_grid.addWidget(last_login_card, 0, 0)
+        meta_grid.addWidget(last_refresh_card, 0, 1)
+        meta_grid.setColumnStretch(0, 1)
+        meta_grid.setColumnStretch(1, 1)
+        layout.addLayout(meta_grid)
+
+        status_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        status_row.setContentsMargins(0, 0, 0, 0)
+        status_row.setSpacing(10)
+        status_caption = QLabel("Статус")
+        status_caption.setObjectName("homeMetaCaption")
+        self.status_chip = QLabel("")
+        self.status_chip.setObjectName("homeStatusBadge")
+        status_row.addWidget(status_caption)
+        status_row.addWidget(self.status_chip, 0, Qt.AlignmentFlag.AlignVCenter)
+        status_row.addStretch()
+        layout.addLayout(status_row)
+
+        self.status_label = QLabel("")
+        self.status_label.setWordWrap(True)
+        set_status(self.status_label, "", "info")
+        self.status_label.setVisible(False)
+        layout.addWidget(self.status_label)
+
+        self._set_hero_status(ok=True)
+        return card
+
+    def _build_meta_card(self, caption: str) -> tuple[QWidget, QLabel]:
+        card = QWidget()
+        card.setObjectName("homeMetaCard")
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(4)
+
+        caption_label = QLabel(caption)
+        caption_label.setObjectName("homeMetaCaption")
+        value_label = QLabel("-")
+        value_label.setObjectName("homeMetaValue")
+        value_label.setWordWrap(True)
+        layout.addWidget(caption_label)
+        layout.addWidget(value_label)
+        return card, value_label
+
+    def _format_role_label(self, role: str) -> str:
+        role_map = {
+            "admin": "Администратор",
+            "operator": "Оператор",
+        }
+        return role_map.get(role, role)
+
+    def _apply_hero_layout(self) -> None:
+        if not hasattr(self, "_hero_layout"):
+            return
+        spacing = max(0, self._hero_layout.spacing())
+        margins = self._hero_layout.contentsMargins()
+        hero_width = self._hero_card.sizeHint().width()
+        clock_width = self.clock_card.sizeHint().width()
+        horizontal_needed = hero_width + clock_width + spacing + margins.left() + margins.right()
+        direction = (
+            QBoxLayout.Direction.LeftToRight
+            if self.width() >= horizontal_needed
+            else QBoxLayout.Direction.TopToBottom
+        )
+        self._hero_layout.setDirection(direction)
+        self._hero_layout.setAlignment(self._hero_card, Qt.AlignmentFlag.AlignTop)
+        if direction == QBoxLayout.Direction.LeftToRight:
+            self._hero_layout.setAlignment(self.clock_card, Qt.AlignmentFlag.AlignTop)
+        else:
+            self._hero_layout.setAlignment(
+                self.clock_card,
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+            )
+
+    def _set_hero_status(self, ok: bool, message: str = "") -> None:
+        if ok:
+            self.status_chip.setText("Готово")
+            self.status_chip.setProperty("tone", "success")
+            set_status(self.status_label, "", "info")
+            self.status_label.setVisible(False)
+        else:
+            self.status_chip.setText("Ошибка загрузки")
+            self.status_chip.setProperty("tone", "error")
+            set_status(self.status_label, message, "error")
+            self.status_label.setVisible(True)
+        style = self.status_chip.style()
+        style.unpolish(self.status_chip)
+        style.polish(self.status_chip)
+        self.status_chip.update()
 
     def _add_stat(self, label: str, key: str) -> None:
         badge_map = {
@@ -214,7 +356,7 @@ class HomeView(QWidget):
         card = QWidget()
         card.setObjectName("statCard")
         card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        card_layout = QHBoxLayout(card)
+        card_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, card)
         card_layout.setContentsMargins(10, 8, 10, 8)
         card_layout.setSpacing(10)
         badge = QLabel(badge_text)
@@ -277,14 +419,10 @@ class HomeView(QWidget):
                     self._stats_labels["top_department"].setText(f"{dep_name} · {count}")
                 else:
                     self._stats_labels["top_department"].setText("-")
-            self.last_refresh_label.setText(
-                f"Последнее обновление: {QDateTime.currentDateTime().toString('dd.MM.yyyy HH:mm:ss')}"
-            )
-            set_status(self.status_label, "", "info")
-            self.status_label.setVisible(False)
+            self.last_refresh_label.setText(QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm:ss"))
+            self._set_hero_status(ok=True)
         except (LookupError, RuntimeError, ValueError, AppError, TypeError) as exc:
-            set_status(self.status_label, f"Ошибка: {exc}", "error")
-            self.status_label.setVisible(True)
+            self._set_hero_status(ok=False, message=f"Ошибка: {exc}")
             self._animate_status()
 
     def _update_clock(self) -> None:
@@ -304,11 +442,8 @@ class HomeView(QWidget):
         last_login = self.dashboard_service.get_last_login(self.session.user_id)
         last_login_dt = last_login if isinstance(last_login, datetime) else None
         text = last_login_dt.strftime("%d.%m.%Y %H:%M:%S") if last_login_dt else "-"
-        self.last_login_label.setText(f"Последний вход: {text}")
-
+        self.last_login_label.setText(text)
 
     def _animate_status(self) -> None:
         self._status_anim.stop()
         self._status_anim.start()
-
-

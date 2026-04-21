@@ -337,3 +337,57 @@
 - `dist/EpidControl.exe` — `132 655 970` байт
 - `dist/EpidControlSetup.exe` — `132 784 568` байт
 - `dist/RELEASE_INFO.txt` — обновлён
+
+## 2026-04-21 — Редизайн hero-блока на главной странице
+
+## Что было сделано
+
+- Верхняя левая часть главной страницы в `HomeView` пересобрана в отдельную hero-карточку.
+- Внутри hero-карточки собраны:
+  - заголовок;
+  - подзаголовок;
+  - логин пользователя;
+  - локализованный бейдж роли;
+  - плитки `Последний вход` и `Последнее обновление`;
+  - статусный бейдж;
+  - подробный `status_label` для ошибок.
+- Часы оставлены отдельной карточкой и включены в общий responsive-контейнер верхней области.
+- Добавлена локальная локализация ролей `admin/operator` для hero-блока.
+- Добавлена responsive-переукладка верхней композиции между горизонтальным и вертикальным режимом.
+- Для `ClockCard` добавлены `sizeHint()` и `minimumSizeHint()`, чтобы окно реально могло перейти в узкий responsive-режим.
+- В `theme.py` добавлены стили `homeHeroCard`, `homeRoleBadge`, `homeMetaCard`, `homeStatusBadge` и связанные подписи/значения.
+- Добавлен `tests/unit/test_home_view.py` с покрытием hero-блока.
+
+## Что не закончено / в процессе
+
+- Ручной визуальный smoke hero-блока не выполнялся.
+- Не проверялось поведение на реальном очень длинном логине пользователя.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по коду и quality gates нет.
+- В `pytest` сохраняются:
+  - 2 исторических `DeprecationWarning` от sqlite datetime adapter;
+  - 1 `PytestCacheWarning` по правам на `pytest_cache_local`.
+- Базовый `mypy app tests` в этой среде падал на битом кеше (`KeyError: setter_type`), поэтому проверка выполнялась через `mypy --cache-dir NUL app tests`.
+
+## Следующие шаги
+
+1. Вручную открыть главную страницу и проверить новый hero-блок на обычном и узком размере окна.
+2. Если визуально понадобится, точечно подправить плотность отступов или размеры шрифтов в hero-карточке.
+3. При желании отдельно локализовать сырой `session.role` в заголовке окна `main_window.py`, если это тоже нужно привести к единому виду.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/home/home_view.py`
+- `app/ui/theme.py`
+- `tests/unit/test_home_view.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `ruff check app tests` — pass
+- `mypy --cache-dir NUL app tests` — pass (`277 source files`)
+- `pytest -q` — pass (`319 passed, 3 warnings`)
+- `python -m compileall -q app tests scripts` — pass
