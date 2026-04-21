@@ -20,10 +20,11 @@ from PySide6.QtCore import (  # noqa: E402
     QMessageLogContext,
     QRect,
     QSize,
+    QTimer,
     QtMsgType,
     qInstallMessageHandler,
 )
-from PySide6.QtGui import QCursor, QIcon  # noqa: E402
+from PySide6.QtGui import QCursor, QIcon, QScreen  # noqa: E402
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QWidget  # noqa: E402
 
 from app.bootstrap.startup import (  # noqa: E402
@@ -220,16 +221,28 @@ def main() -> int:
 
     window = MainWindow(session=login_dialog.session, container=container)
     window.show()
-    _apply_initial_window_size(window, app)
+    _schedule_initial_window_size(window, app)
     return app.exec()
 
 
-def _resolve_initial_screen(window: QMainWindow, app: QApplication):
+def _resolve_window_handle_screen(window: QMainWindow) -> QScreen | None:
     handle = window.windowHandle()
-    if handle is not None:
-        screen = handle.screen()
-        if screen is not None:
-            return screen
+    if handle is None:
+        return None
+    return handle.screen()
+
+
+def _resolve_initial_screen(
+    window: QMainWindow,
+    app: QApplication,
+    *,
+    allow_fallback: bool = True,
+) -> QScreen | None:
+    screen = _resolve_window_handle_screen(window)
+    if screen is not None:
+        return screen
+    if not allow_fallback:
+        return None
 
     cursor_screen = app.screenAt(QCursor.pos())
     if cursor_screen is not None:
@@ -252,10 +265,22 @@ def _apply_initial_window_size(window: QMainWindow, app: QApplication) -> None:
         return
     available = screen.availableGeometry()
     width, height = _compute_initial_window_size(available, window.minimumSizeHint())
-    window.resize(width, height)
     x = available.x() + max(0, (available.width() - width) // 2)
     y = available.y() + max(0, (available.height() - height) // 2)
-    window.move(x, y)
+    # Windows applies monitor limits more predictably when size and position are set together.
+    window.setGeometry(x, y, width, height)
+
+
+def _schedule_initial_window_size(window: QMainWindow, app: QApplication, retries: int = 3) -> None:
+    def _apply_when_ready(remaining_retries: int) -> None:
+        if not window.isVisible():
+            return
+        if _resolve_initial_screen(window, app, allow_fallback=False) is None and remaining_retries > 0:
+            QTimer.singleShot(0, lambda: _apply_when_ready(remaining_retries - 1))
+            return
+        _apply_initial_window_size(window, app)
+
+    QTimer.singleShot(0, lambda: _apply_when_ready(retries))
 
 if __name__ == "__main__":
     try:

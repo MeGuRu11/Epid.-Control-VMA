@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# mypy: disable-error-code=var-annotated
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
@@ -149,9 +150,9 @@ def test_lab_samples_view_updates_context_kpis_and_item_card(monkeypatch, qapp) 
     first_card = view.list_widget.itemWidget(first_item)
     assert first_card is not None
 
-    title_labels = first_card.findChildren(QLabel, "cardTitle")
-    badge_labels = first_card.findChildren(QLabel, "labStateBadge")
-    meta_labels = first_card.findChildren(QLabel, "labListMeta")
+    title_labels: list[QLabel] = list(first_card.findChildren(QLabel, "cardTitle"))
+    badge_labels: list[QLabel] = list(first_card.findChildren(QLabel, "labStateBadge"))
+    meta_labels: list[QLabel] = list(first_card.findChildren(QLabel, "labListMeta"))
 
     assert title_labels[0].text() == "BLD-0003"
     assert any("QC" in label.text() for label in badge_labels)
@@ -190,6 +191,8 @@ def test_lab_samples_view_clear_context_returns_to_no_context_state(monkeypatch,
     empty_card = view.list_widget.itemWidget(empty_item)
     assert empty_card is not None
     assert empty_item.sizeHint().height() >= 112
+    empty_labels: list[QLabel] = list(empty_card.findChildren(QLabel))
+    assert empty_labels
     assert any("Выберите пациента" in label.text() for label in empty_card.findChildren(QLabel))
 
 

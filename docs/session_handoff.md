@@ -90,3 +90,42 @@
 - `mypy app tests` — pass (`278 source files`)
 - `pytest -q` — pass (`326 passed, 3 warnings`)
 - `python -m compileall -q app tests scripts` — pass
+
+## Дополнение 2026-04-21 — warning `QWindowsWindow::setGeometry`
+
+### Что сделано
+
+- В `app/main.py` дожат фикс стартовой геометрии `MainWindow`: применение начального размера отложено до следующего тика event loop, а размер и позиция теперь задаются одним `setGeometry(...)`.
+- Добавлена регрессия на сценарий, когда `windowHandle().screen()` на старте ещё недоступен, но появляется через один тик.
+- Попутно закрыты падения quality gates в `app/ui/widgets/patient_search_dialog.py` и `tests/unit/test_lab_samples_view.py`.
+
+### Что не закончено / в процессе
+
+- Нужна ручная проверка на реальной multi-monitor Windows-машине, что warning больше не появляется при старте.
+
+### Открытые проблемы / блокеры
+
+- Блокеров нет; quality gates зелёные.
+- В `pytest` остаются 2 исторических warning по sqlite datetime adapter в `tests/integration/test_form100_v2_migration.py`.
+
+### Следующие шаги
+
+1. Запустить приложение на реальной multi-monitor Windows-конфигурации и подтвердить, что warning `QWindowsWindow::setGeometry` больше не появляется.
+2. Если повтора нет, перейти к следующему UI-этапу по разделу `Санитария`.
+
+### Ключевые файлы, которые менялись
+
+- `app/main.py`
+- `app/ui/widgets/patient_search_dialog.py`
+- `tests/unit/test_main_window_initial_size.py`
+- `tests/unit/test_lab_samples_view.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+### Проверки
+
+- `ruff check app tests` — pass
+- `python scripts/check_architecture.py` — pass
+- `mypy app tests` — pass (`279 source files`)
+- `pytest -q` — pass (`330 passed, 2 warnings`)
+- `python -m compileall -q app tests scripts` — pass
