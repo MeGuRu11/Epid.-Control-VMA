@@ -185,6 +185,7 @@ def test_lab_samples_view_clear_context_returns_to_no_context_state(monkeypatch,
     empty_item = view.list_widget.item(0)
     empty_card = view.list_widget.itemWidget(empty_item)
     assert empty_card is not None
+    assert empty_item.sizeHint().height() >= 112
     assert any("Выберите пациента" in label.text() for label in empty_card.findChildren(QLabel))
 
 

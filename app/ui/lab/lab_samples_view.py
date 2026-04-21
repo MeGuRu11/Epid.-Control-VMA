@@ -550,6 +550,8 @@ class LabSamplesView(QWidget):
     def _build_empty_card(self, title: str, detail: str) -> QWidget:
         card = QWidget()
         card.setObjectName("labEmptyCard")
+        card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        card.setMinimumHeight(112)
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(18, 18, 18, 18)
@@ -562,6 +564,7 @@ class LabSamplesView(QWidget):
         detail_label.setWordWrap(True)
         layout.addWidget(title_label)
         layout.addWidget(detail_label)
+        layout.addStretch(1)
         return card
 
     def _microbe_label(self, sample: LabSampleResponse) -> str:
@@ -944,9 +947,11 @@ class LabSamplesView(QWidget):
         item = QListWidgetItem()
         item.setFlags(Qt.ItemFlag.NoItemFlags)
         card = self._build_empty_card(title, detail)
-        item.setSizeHint(card.sizeHint())
         self.list_widget.addItem(item)
         self.list_widget.setItemWidget(item, card)
+        hint = card.sizeHint().expandedTo(card.minimumSizeHint())
+        hint.setHeight(max(hint.height(), card.minimumHeight()))
+        item.setSizeHint(hint)
 
     def _on_filter_changed(self) -> None:
         self.page_index = 1
