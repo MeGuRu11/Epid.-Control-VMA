@@ -64,6 +64,12 @@ python -m app.main
 7. окно логина;
 8. создание `MainWindow` после успешной аутентификации.
 
+Дополнительно при старте:
+
+- начальная геометрия `MainWindow` применяется отложенно после `show()`, а не до показа окна;
+- экран для стартовой геометрии выбирается через `windowHandle().screen()` с fallback на экран под курсором и `primaryScreen()`;
+- размер стартового окна ограничивается рамками `availableGeometry()`, чтобы избежать предупреждений `QWindowsWindow::setGeometry` на multi-monitor Windows-конфигурациях.
+
 ## 5. Конфигурация и каталоги данных
 
 Ключевые переменные окружения:
@@ -116,10 +122,10 @@ python -m app.main
 - `app/ui/home/home_view.py` — главная сводка.
 - `app/ui/patient/patient_emk_view.py` — поиск и карточка пациента.
 - `app/ui/emz/emz_form.py` — форма ЭМЗ и госпитализации.
-- `app/ui/lab/lab_samples_view.py` — список лабораторных проб.
+- `app/ui/lab/lab_samples_view.py` — основной экран лаборатории: hero-контекст пациента/госпитализации, KPI-сводка, selector-card, filter-card и карточная рабочая лента проб.
 - `app/ui/lab/lab_sample_detail.py` — карточка лабораторной пробы.
-- `app/ui/sanitary/sanitary_dashboard.py` — сводка по отделениям.
-- `app/ui/sanitary/sanitary_history.py` — история и карточка санитарных проб.
+- `app/ui/sanitary/sanitary_dashboard.py` — основной экран санитарии: hero-контекст по отделениям, KPI по текущей выборке, filter-card и карточный список отделений.
+- `app/ui/sanitary/sanitary_history.py` — диалог истории санитарных проб с summary-блоком, responsive-фильтрами, карточным списком и доступом к карточке санитарной пробы.
 - `app/ui/analytics/analytics_view.py` — поиск, графики, отчёты, история артефактов.
 - `app/ui/form100_v2/form100_view.py` — список карточек `Form100 V2`.
 - `app/ui/form100_v2/form100_editor.py` — редактор карточки `Form100 V2`.
