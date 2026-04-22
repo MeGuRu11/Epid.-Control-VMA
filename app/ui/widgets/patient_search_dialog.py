@@ -227,8 +227,8 @@ class PatientSearchDialog(QDialog):
             self.result_table.selectRow(0)
         self.count_label.setText(f"Пациентов: {len(patients)}")
 
-    def _accept_selected(self, item: QTableWidgetItem | None = None) -> None:
-        if item is None:
+    def _accept_selected(self, item: QTableWidgetItem | bool | None = None) -> None:
+        if item is None or isinstance(item, bool):
             item = self.result_table.currentItem()
         if not item:
             self._set_status("Выберите пациента из списка", "warning")

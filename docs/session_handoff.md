@@ -219,6 +219,42 @@
 - `pytest -q` - pass (`340 passed, 2 warnings`)
 - `python -m compileall -q app tests scripts` - pass
 
+## Дополнение 2026-04-22 - исправлена кнопка выбора пациента в лаборатории
+
+### Что было сделано в этой сессии
+
+- В `app/ui/widgets/patient_search_dialog.py` исправлен `_accept_selected`: при вызове от кнопки `Выбрать` метод больше не воспринимает `False` из `clicked(bool)` как отсутствие выбора и корректно использует `currentItem()` таблицы.
+- В `tests/unit/test_patient_widgets_error_handling.py` добавлен регрессионный тест на сценарий обычного выделения строки и подтверждения через кнопку `Выбрать`.
+
+### Что не закончено / в процессе
+
+- Ручной smoke самого диалога поиска пациента в `Лаборатории` после фикса ещё не выполнялся в приложении.
+
+### Открытые проблемы / блокеры
+
+- Блокеров по багфиксу нет.
+- В полном `pytest` сохраняются исторические warnings: `DeprecationWarning` по sqlite datetime adapter и `PytestCacheWarning` из-за отказа в доступе к `pytest_cache_local`.
+
+### Следующие шаги
+
+1. Открыть `Лабораторию` и проверить сценарий: одинарно выделить пациента в поиске, нажать `Выбрать`, убедиться, что пациент подставляется без двойного клика.
+2. Если визуально всё стабильно, продолжить ручной smoke обновлённых экранов перед релизом.
+
+### Ключевые файлы, которые менялись
+
+- `app/ui/widgets/patient_search_dialog.py`
+- `tests/unit/test_patient_widgets_error_handling.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+### Проверки
+
+- `ruff check app tests` - pass
+- `python scripts/check_architecture.py` - pass
+- `mypy app tests` - pass (`281 source files`)
+- `pytest -q` - pass (`341 passed, 3 warnings`)
+- `python -m compileall -q app tests scripts` - pass
+
 ## Дополнение 2026-04-22 — синхронизация документации и ручного чек-листа
 
 ### Что сделано

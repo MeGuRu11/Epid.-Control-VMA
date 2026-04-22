@@ -124,3 +124,23 @@ def test_patient_search_dialog_accept_selected_reads_from_result_table() -> None
     assert dialog.selected_patient_id == 1
     assert dialog.selected_name == "Иванов Иван"
     assert accepted["count"] == 1
+
+
+def test_patient_search_dialog_accept_selected_uses_current_item_for_button_click() -> None:
+    item = QTableWidgetItem("1: test")
+    item.setData(Qt.ItemDataRole.UserRole, (1, "Иванов Иван"))
+    accepted = {"count": 0}
+
+    dialog = SimpleNamespace(
+        result_table=SimpleNamespace(currentItem=lambda: item),
+        selected_patient_id=None,
+        selected_name="",
+        _set_status=lambda *_args: None,
+        accept=lambda: accepted.__setitem__("count", accepted["count"] + 1),
+    )
+
+    PatientSearchDialog._accept_selected(cast(PatientSearchDialog, dialog), False)
+
+    assert dialog.selected_patient_id == 1
+    assert dialog.selected_name == "Иванов Иван"
+    assert accepted["count"] == 1
