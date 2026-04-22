@@ -1,3 +1,48 @@
+# Сессия 2026-04-22
+
+## Что сделано
+
+- Проанализирован текущий Codex workflow репозитория: `AGENTS.md`, `.agents`, `docs/context.md`, `docs/progress_report.md`, `docs/session_handoff.md`, `pyproject.toml`, `scripts/quality_gates.ps1`, `.github/workflows/quality-gates.yml`.
+- Сопоставлены идеи `oh-my-codex` с текущим репозиторием и отобраны только минимальные, не дублирующие текущую систему.
+- Добавлен лёгкий repo-local контур для долгих задач:
+  - `scripts/codex_task.py` для создания и просмотра task-файлов;
+  - `docs/codex/templates/task.md` как единый шаблон long-task состояния;
+  - `docs/codex_workflow.md` как короткий runbook поверх текущих `AGENTS.md` и `.agents`.
+- В `AGENTS.md` добавлен короткий entrypoint для длинных и сложных Codex-задач.
+- Добавлен `tests/unit/test_codex_task_script.py`; полный quality gate пройден.
+
+## Что не закончено / в процессе
+
+- Новый workflow добавлен, но ещё не обкатан на реальной многошаговой задаче с паузой/resume через несколько сессий.
+- Hook-автоматизация Codex сознательно не внедрялась: для Windows и текущего Codex CLI она выглядит спорной и требует отдельной проверки перед любым включением в проектный стандарт.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по новой workflow-обвязке нет.
+- В полном `pytest` сохраняются исторические warnings:
+  - `DeprecationWarning` по sqlite datetime adapter в `tests/integration/test_form100_v2_migration.py`;
+  - `PytestCacheWarning` из-за отказа в доступе к `pytest_cache_local`.
+
+## Следующие шаги
+
+1. Использовать `scripts/codex_task.py` на следующей длинной задаче и проверить, достаточно ли одного markdown task-state без отдельной `.omx`-памяти.
+2. Если workflow окажется полезным, добавить только точечные улучшения в тот же минимальный контур, без hooks/runtime и без второй агентной системы.
+3. Не трогать Codex hooks, пока не будет уверенности в их стабильной поддержке на Windows.
+
+## Ключевые файлы, которые менялись
+
+- `AGENTS.md`
+- `docs/codex_workflow.md`
+- `docs/codex/templates/task.md`
+- `scripts/codex_task.py`
+- `tests/unit/test_codex_task_script.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`344 passed, 3 warnings`)
+
 # Сессия 2026-04-21
 
 ## Что сделано
