@@ -3,8 +3,17 @@ from __future__ import annotations
 import sys
 
 from pydantic import ValidationError
-from PySide6.QtCore import QDateTime, QEasingCurve, QPropertyAnimation, Qt, QTimer
-from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPalette, QPen, QPixmap
+from PySide6.QtCore import QDateTime, QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt, QTimer
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QKeyEvent,
+    QLinearGradient,
+    QPainter,
+    QPalette,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -133,7 +142,8 @@ class LoginDialog(QDialog):
         self.password_edit.setMinimumHeight(42)
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setPlaceholderText("Введите пароль")
-        self.password_edit.returnPressed.connect(self._on_login)
+        self.login_edit.installEventFilter(self)
+        self.password_edit.installEventFilter(self)
         login_label = QLabel("Логин")
         login_label.setObjectName("loginFieldLabel")
         password_label = QLabel("Пароль")
@@ -264,6 +274,14 @@ class LoginDialog(QDialog):
         self._center_dialog_on_screen()
         self._centered_once = True
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if watched in (self.login_edit, self.password_edit) and event.type() == QEvent.Type.KeyPress:
+            key_event = event if isinstance(event, QKeyEvent) else None
+            if key_event is not None and key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                self._on_login()
+                return True
+        return super().eventFilter(watched, event)
+
     def _init_animated_background(self) -> None:
         if not self._ui_runtime.enable_background:
             return
@@ -339,7 +357,3 @@ if __name__ == "__main__":
     dlg = LoginDialog(auth_service=AuthService())
     dlg.show()
     sys.exit(app.exec())
-
-
-
-
