@@ -1,3 +1,59 @@
+# Сессия 2026-04-23
+
+## Что сделано
+
+- Разобрано падение упакованного `EpidControl.exe` после авторизации: пользовательский `app.log` изучен, подтверждено отсутствие Python traceback и обрыв процесса сразу после `Reference seed applied`.
+- Локально проверен обычный Python-запуск `MainWindow` на чистой БД и на пользовательской БД в `offscreen`-режиме; падение не воспроизвелось вне packaged-сборки.
+- Проанализированы артефакты `PyInstaller` (`build/EpidControl/warn-EpidControl.txt`, `xref-EpidControl.html`); основной рабочей гипотезой стал сбой инициализации `pyqtgraph`-графиков при открытии главного окна после логина.
+- В `app/ui/analytics/charts.py` добавлен защитный fallback для аналитических графиков:
+  - ошибки создания `PlotWidget` больше не валят всё приложение;
+  - вместо краша показывается текстовый placeholder;
+  - ошибки `update_data()` только логируются.
+- В `EpidControl.spec` усилена packaged-конфигурация:
+  - добавлен `collect_submodules("pyqtgraph")`;
+  - отключён `UPX` (`upx=False`).
+- Добавлены регрессионные тесты `tests/unit/test_analytics_charts.py` и `tests/unit/test_build_spec_configuration.py`.
+- Прогнаны targeted tests, полный quality gate и пересборка `exe`; новый `dist/EpidControl.exe` успешно собран.
+
+## Что не закончено / в процессе
+
+- Не выполнен финальный ручной smoke именно упакованного `exe` по сценарию `логин -> открытие главного окна -> переход в Аналитику`.
+- Корневая причина подтверждена практическим фикс-путём и косвенными артефактами сборки, но не поймана прямым traceback, потому что packaged runtime завершался без Python-исключения в логе.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по коду, quality gates или сборке нет.
+- Для релизной уверенности нужен ручной прогон свежесобранного `dist/EpidControl.exe` на целевой машине/сборке.
+- В полном `pytest` сохраняются исторические warnings:
+  - `DeprecationWarning` по sqlite datetime adapter;
+  - `PytestCacheWarning` из-за локального cache-каталога.
+
+## Следующие шаги
+
+1. Запустить свежесобранный `dist/EpidControl.exe`.
+2. Пройти сценарий `логин -> главное окно` и убедиться, что процесс больше не закрывается.
+3. Открыть `Аналитику` и проверить:
+   - графики отображаются штатно, либо
+   - вместо падения появляется fallback-текст, а приложение продолжает работать.
+4. Проверить `%LOCALAPPDATA%\\epid-control\\epid-control\\logs\\app.log` после smoke и убедиться, что нет внезапного обрыва процесса сразу после `Reference seed applied`.
+5. Если smoke успешен, можно переходить к сборке инсталлятора/релизному прогону.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/analytics/charts.py`
+- `EpidControl.spec`
+- `tests/unit/test_analytics_charts.py`
+- `tests/unit/test_build_spec_configuration.py`
+- `docs/codex/tasks/2026-04-23-падение-exe-после-авторизации.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `pytest -q tests/unit/test_analytics_charts.py tests/unit/test_build_spec_configuration.py` - pass (`6 passed, 1 warning`)
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`350 passed, 3 warnings`)
+- `cmd /c scripts\build_exe.bat` - pass
+
 # Сессия 2026-04-22
 
 ## Что сделано
