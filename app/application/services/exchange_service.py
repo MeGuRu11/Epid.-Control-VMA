@@ -23,6 +23,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
 from sqlalchemy import Boolean, Date, DateTime
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.application.dto.exchange_dto import (
     CsvExportResult,
@@ -316,6 +317,8 @@ _HANDLED_IMPORT_ERRORS = (
     SQLAlchemyError,
 )
 
+_EXPORT_BATCH_SIZE = 500
+
 
 def _format_date_value(value: object) -> JSONValue | object:
     if isinstance(value, datetime):
@@ -443,6 +446,11 @@ def _dict_to_model(model_cls: type[models.Base], data: dict[str, object]) -> mod
         if name in data:
             setattr(obj, name, _parse_value(data[name], column))
     return obj
+
+
+def _iter_model_rows(session: Session, model_cls: type[models.Base]) -> Iterator[models.Base]:
+    for row in session.query(model_cls).yield_per(_EXPORT_BATCH_SIZE):
+        yield cast(models.Base, row)
 
 
 def _safe_extract_zip(zip_file: zipfile.ZipFile, destination: Path) -> list[Path]:
@@ -665,11 +673,12 @@ class ExchangeService:
                 ws = wb.create_sheet(title=_get_excel_sheet_title(name))
                 columns = [c.name for c in model_cls.__table__.columns]
                 ws.append(_get_excel_headers(name, columns))
-                rows = session.query(model_cls).all()
-                for row in rows:
+                row_count = 0
+                for row in _iter_model_rows(session, model_cls):
                     data = _model_to_dict(row)
                     ws.append([data.get(col) for col in columns])
-                counts[name] = len(rows)
+                    row_count += 1
+                counts[name] = row_count
         if len(wb.worksheets) > 1:
             wb.active = 1
         _finalize_excel_workbook(wb)
@@ -921,17 +930,18 @@ class ExchangeService:
             raise ValueError("Неизвестная таблица CSV")
         model_cls = CSV_TABLES[table_name]
         with self.session_factory() as session:
-            rows = session.query(model_cls).all()
             columns = [c.name for c in model_cls.__table__.columns]
             self._prepare_output_dir(file_path.parent)
+            count = 0
             with file_path.open("w", encoding="utf-8-sig", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(_get_csv_headers(table_name, columns))
-                for row in rows:
+                for row in _iter_model_rows(session, model_cls):
                     data = _model_to_dict(row)
                     writer.writerow([data.get(col) for col in columns])
+                    count += 1
         self._record_package("export", "csv", file_path, actor_id)
-        return {"path": str(file_path), "count": len(rows)}
+        return {"path": str(file_path), "count": count}
 
     def import_csv(
         self, file_path: str | Path, table_name: str, *, actor_id: int, mode: str = "merge"
@@ -1013,16 +1023,17 @@ class ExchangeService:
             wordWrap="CJK",
         )
 
+        count = 0
         with self.session_factory() as session:
-            rows = session.query(model_cls).all()
             columns = [c.name for c in model_cls.__table__.columns]
             headers = _get_csv_headers(table_name, columns)
             data = [[Paragraph(h, cell_style) for h in headers]]
-            for row in rows:
+            for row in _iter_model_rows(session, model_cls):
                 record = _model_to_dict(row)
                 data.append(
                     [Paragraph("" if record.get(col) is None else str(record.get(col)), cell_style) for col in columns]
                 )
+                count += 1
 
         self._prepare_output_dir(file_path.parent)
         doc = SimpleDocTemplate(
@@ -1057,7 +1068,7 @@ class ExchangeService:
         )
         doc.build([table])
         self._record_package("export", "pdf", file_path, actor_id)
-        return {"path": str(file_path), "count": len(data) - 1}
+        return {"path": str(file_path), "count": count}
 
     # Legacy JSON support (not used in UI)
     def export_json(
@@ -1075,7 +1086,7 @@ class ExchangeService:
         with self.session_factory() as session:
             for name, model_cls in TABLE_MODELS.items():
                 data_payload = cast(JSONDict, payload["data"])
-                data_payload[name] = cast(JSONValue, [_model_to_dict(x) for x in session.query(model_cls).all()])
+                data_payload[name] = cast(JSONValue, [_model_to_dict(x) for x in _iter_model_rows(session, model_cls)])
 
         self._prepare_output_dir(file_path.parent)
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

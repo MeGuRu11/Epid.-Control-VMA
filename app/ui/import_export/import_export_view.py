@@ -231,7 +231,7 @@ class ImportExportView(QWidget):
                 query=self.query_filter.text().strip() or None,
             )
         except _HANDLED_IMPORT_EXPORT_ERRORS as exc:
-            show_error(self, error_text(exc, "?? ??????? ????????? ??????? ???????"))
+            show_error(self, error_text(exc, "Не удалось загрузить историю пакетов"))
             return
         self.history_table.clearContents()
         self.history_table.setRowCount(len(rows))
@@ -239,10 +239,10 @@ class ImportExportView(QWidget):
             direction_key = str(package.direction or "")
             direction = {"export": "Экспорт", "import": "Импорт"}.get(direction_key, "Неизвестно")
             format_key = str(package.package_format or "")
-            format_label = _PACKAGE_FORMAT_LABELS.get(format_key, format_key or "??????????")
+            format_label = _PACKAGE_FORMAT_LABELS.get(format_key, format_key or "Неизвестно")
             created_raw = package.created_at
             created_text = (
-                created_raw.strftime("%d.%m.%Y %H:%M") if isinstance(created_raw, datetime) else "??????????"
+                created_raw.strftime("%d.%m.%Y %H:%M") if isinstance(created_raw, datetime) else "Неизвестно"
             )
             actor_label = self.exchange_service.get_actor_label(cast(int | None, package.created_by))
             self.history_table.setItem(i, 0, make_readonly_item(direction))

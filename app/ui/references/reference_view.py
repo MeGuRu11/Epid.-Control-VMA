@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -26,6 +27,7 @@ from app.application.security import can_manage_references
 from app.application.services.reference_service import ReferenceService
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import error_text, show_error
 
 _HANDLED_REFERENCE_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
@@ -462,6 +464,28 @@ class ReferenceView(QWidget):
             elif isinstance(widget, QComboBox):
                 widget.setCurrentIndex(0)
 
+    def _current_item_label(self) -> str:
+        data = self._collect_form()
+        for key in ("name", "title", "code"):
+            value = str(data.get(key) or "").strip()
+            if value:
+                return value
+        return str(self._current_id)
+
+    def _confirm_delete_item(self) -> bool:
+        type_label = self.type_selector.currentText() or self._current_type
+        item_label = self._current_item_label()
+        confirm = exec_message_box(
+            self,
+            "Удалить запись",
+            f"Удалить запись справочника «{type_label}»: {item_label}?\n"
+            "Действие нельзя отменить. Связанные данные могут зависеть от этой записи.",
+            icon=QMessageBox.Icon.Warning,
+            buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            default_button=QMessageBox.StandardButton.No,
+        )
+        return confirm == QMessageBox.StandardButton.Yes
+
     def _add_item(self) -> None:
         try:
             data = self._collect_form()
@@ -583,6 +607,8 @@ class ReferenceView(QWidget):
         if self._current_id is None:
             show_error(self, "Выберите запись для удаления.")
             return
+        if not self._confirm_delete_item():
+            return
         try:
             if self._current_type == "departments":
                 self.reference_service.delete_department(self._current_id, actor_id=self.session.user_id)
@@ -604,5 +630,3 @@ class ReferenceView(QWidget):
             self.refresh()
         except _HANDLED_REFERENCE_ERRORS as exc:
             show_error(self, error_text(exc, "Не удалось удалить запись"))
-
-

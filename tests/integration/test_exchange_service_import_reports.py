@@ -12,7 +12,11 @@ from openpyxl import Workbook, load_workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.services.exchange_service import ExchangeService
+from app.application.services.exchange_service import (
+    _EXPORT_BATCH_SIZE,
+    EXCEL_SHEET_TITLES,
+    ExchangeService,
+)
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.models_sqlalchemy import Base, User
 from app.infrastructure.security.sha256 import sha256_file
@@ -258,6 +262,51 @@ def test_export_csv_and_pdf_log_packages(tmp_path: Path) -> None:
             .all()
         )
     assert [pkg.package_format for pkg in packages] == ["csv", "pdf"]
+
+
+def test_exports_include_rows_beyond_single_batch(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "exchange_chunked_exports.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    total_patients = _EXPORT_BATCH_SIZE + 3
+
+    with session_factory() as session:
+        for index in range(total_patients):
+            session.add(
+                models.Patient(
+                    full_name=f"Пациент {index:04d}",
+                    dob=date(1990, 1, 1),
+                    sex="M",
+                    category="контроль",
+                    military_unit="1 рота",
+                    military_district="ЦВО",
+                )
+            )
+
+    csv_path = tmp_path / "patients.csv"
+    xlsx_path = tmp_path / "patients.xlsx"
+    pdf_path = tmp_path / "patients.pdf"
+    json_path = tmp_path / "patients.json"
+
+    csv_result = service.export_csv(csv_path, "patients", actor_id=actor_id)
+    excel_result = service.export_excel(xlsx_path, exported_by="exchange_admin", actor_id=actor_id)
+    pdf_result = service.export_pdf(pdf_path, "patients", actor_id=actor_id)
+    json_result = service.export_json(json_path, exported_by="exchange_admin", actor_id=actor_id)
+
+    assert csv_result["count"] == total_patients
+    assert excel_result["counts"]["patients"] == total_patients
+    assert pdf_result["count"] == total_patients
+    assert json_result["counts"]["patients"] == total_patients
+
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+        assert sum(1 for _row in csv.reader(f)) == total_patients + 1
+
+    workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
+    patient_sheet = workbook[EXCEL_SHEET_TITLES["patients"]]
+    assert patient_sheet.max_row == total_patients + 1
+
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert len(payload["data"]["patients"]) == total_patients
 
 
 def test_export_excel_to_same_path_creates_complete_history_rows(tmp_path: Path) -> None:

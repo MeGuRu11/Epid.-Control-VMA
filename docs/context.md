@@ -81,6 +81,7 @@
 ## 5. Ключевые правила проекта
 
 - UI не импортирует `infrastructure` и не работает напрямую с SQLAlchemy.
+- Application-слой может использовать SQLAlchemy/infrastructure в read-model, reporting и query-сценариях; новые write/use-case потоки следует вести через репозитории и сервисные границы.
 - Каждая мутирующая операция проверяет права и знает `actor_id`.
 - Все операции с БД идут через `session_scope()` или явно внедрённую session factory.
 - DML SQL не строится через string interpolation.
@@ -109,6 +110,8 @@
 - Миграции — `Alembic`.
 - Для локальной проверки схемы используется writable-каталог `tmp_run/epid-data`.
 - Полнотекстовые FTS-объекты обслуживаются отдельно и не должны ломать обычный `alembic check`.
+- Фактический путь Alembic-миграций: `app/infrastructure/db/migrations`.
+- Текущие SQLAlchemy-модели используют `Column(...)`; переход на `Mapped[]` является отдельной плановой миграцией.
 
 Полезные команды:
 

@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Sequence
 
 TASKS_DIR_RELATIVE = Path("docs/codex/tasks")
 TEMPLATE_PATH_RELATIVE = Path("docs/codex/templates/task.md")

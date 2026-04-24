@@ -1,3 +1,115 @@
+# Сессия 2026-04-24 — внедрение non-security исправлений после аудита
+
+## Что сделано
+
+- Реализован согласованный пакет исправлений по итогам `docs/full_system_audit.md` без блока безопасности: шифрование backup/export, защита от кражи данных и encrypted artifacts намеренно не затрагивались.
+- Исправлен `ruff check app tests scripts`: `scripts/codex_task.py` переведён на `collections.abc.Sequence`, `scripts/test_form100_pdf.py` очищен от `E402`, лишних импортов и trailing whitespace.
+- В `ImportExportView` исправлены повреждённые fallback-строки: история пакетов теперь показывает корректные русские сообщения и `Неизвестно` вместо mojibake.
+- В `ReferenceView` добавлено подтверждение удаления справочников через `exec_message_box` с `Yes/No` и default `No`; при отказе delete-service и `refresh()` не вызываются.
+- В `ExchangeService` экспорт CSV/Excel/PDF/legacy JSON переведён с `session.query(...).all()` на chunked-итерацию через `yield_per(500)` без изменения форматов файлов и import paths.
+- Добавлены regression/UI tests для fallback labels import/export, подтверждения удаления справочников, first-run, admin user management, patient EMK destructive confirmation, lab sample validation и Form100 wizard smoke mapping.
+- Документация синхронизирована с текущей архитектурной политикой: read-model/reporting query services во временном порядке могут использовать SQLAlchemy в application layer; новые write/use-case потоки вести через repositories/service boundaries. Также уточнены текущий не-strict mypy режим, `Column(...)` ORM-стиль и фактический путь миграций `app/infrastructure/db/migrations`.
+
+## Что не закончено / в процессе
+
+- Security finding `AUD-001` не реализовывался по решению пользователя; к шифрованию backup/export и отдельной модели защиты данных нужно вернуться позже отдельной задачей.
+- Большой архитектурный рефакторинг Application -> Infrastructure не выполнялся: текущая политика зафиксирована документально, вынос query logic оставлен для отдельного этапа.
+- Схема БД и Alembic migrations не менялись.
+
+## Открытые проблемы / блокеры
+
+- В рабочем дереве остаётся сторонний untracked каталог `.npm-cache/`; он не относится к этой задаче и не трогался.
+- `docs/full_system_audit.md` остаётся audit-снимком на момент проверки: часть findings в нём исторически описывает проблемы, которые теперь частично закрыты этой итерацией.
+- PowerShell/git продолжает выводить предупреждение `unable to access 'C:\Users\user/.config/git/ignore': Permission denied`; на проверки проекта это не повлияло.
+
+## Следующие шаги
+
+1. Отдельно решить, как фиксировать статус закрытых findings в `docs/full_system_audit.md`: оставить как исторический отчёт или добавить раздел статусов внедрения.
+2. Вернуться к `AUD-001` только после отдельного разрешения пользователя на security/encryption работу.
+3. Если потребуется, постепенно выносить read-model/query SQLAlchemy logic из application layer без массового рефакторинга.
+
+## Ключевые файлы, которые менялись
+
+- `app/application/services/exchange_service.py`
+- `app/ui/import_export/import_export_view.py`
+- `app/ui/references/reference_view.py`
+- `scripts/codex_task.py`
+- `scripts/test_form100_pdf.py`
+- `tests/integration/test_exchange_service_import_reports.py`
+- `tests/unit/test_audit_ui_regressions.py`
+- `tests/unit/test_import_export_history_labels.py`
+- `tests/unit/test_reference_view_delete_confirmation.py`
+- `tests/unit/test_scripts_imports.py`
+- `AGENTS.md`
+- `docs/context.md`
+- `docs/tech_guide.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `ruff check app tests scripts` — pass.
+- `python -m mypy app tests` — pass (`289 source files`).
+- `python -m pytest -q tests/unit/test_import_export_history_labels.py tests/unit/test_reference_view_delete_confirmation.py tests/unit/test_audit_ui_regressions.py tests/unit/test_scripts_imports.py` — pass (`10 passed`).
+- `python -m pytest -q tests/integration/test_exchange_service_import_reports.py::test_exports_include_rows_beyond_single_batch` — pass.
+- `python -m pytest -q tests/integration/test_exchange_service_import_reports.py tests/integration/test_exchange_service_import_zip.py` — pass (`12 passed`).
+- `python -m pytest -q` — pass (`370 passed`).
+- `python -m pytest --cov=app --cov-report=term-missing` — pass (`370 passed`, `TOTAL 65%`).
+- `python -m compileall -q app tests scripts` — pass.
+- `rg -n "mypy \(strict\)|Mapped\[\]|migrations/" AGENTS.md docs README.md` — pass для актуальных правок; оставшиеся совпадения относятся к историческим audit/report/spec записям или к уточнённой политике.
+
+# Сессия 2026-04-24 — полный audit-only аудит системы
+
+## Что сделано
+
+- Выполнен полный локальный audit-only аудит Epid Control по архитектуре, доменной/медицинской логике, БД/миграциям, тестам, UI, security/privacy, зависимостям, запуску, производительности и документации.
+- Создан отчёт: `docs/full_system_audit.md`.
+- Работа велась только в локальной директории `C:\Users\user\Desktop\Program\Epid_System_Codex`; GitHub, remote/main и удалённые версии проекта не использовались как источник истины.
+- Код приложения, БД, миграции, UI и бизнес-логика не менялись.
+
+## Что не закончено / в процессе
+
+- Интерактивный GUI smoke через `python -m app.main` не выполнялся: для него нужно отдельное разрешение и безопасная временная БД, чтобы не затронуть рабочие данные.
+- Сборка `EXE`/инсталляторов не выполнялась: audit-only задача не должна менять `build/`/`dist/`.
+- Исправления найденных рисков не применялись, только зафиксированы в отчёте.
+
+## Открытые проблемы / блокеры
+
+- High: backup/export артефакты не шифруются (`app/application/services/backup_service.py:96`, `app/application/services/exchange_service.py:677`).
+- Medium: `ruff check app tests scripts` падает на scripts lint (`scripts/codex_task.py`, `scripts/test_form100_pdf.py`).
+- Medium: низкое покрытие нескольких критичных UI-файлов при общем coverage `62%`.
+- Medium: повреждённые user-facing строки с `?` в `app/ui/import_export/import_export_view.py`.
+- Medium: удаление справочников в `ReferenceView` выполняется без подтверждения.
+
+## Следующие шаги
+
+1. Закрыть High-риск: шифрование backup/export и тесты на encrypted artifacts.
+2. Исправить `ruff check app tests scripts`.
+3. Исправить строки `?` в Import/Export UI и добавить regression check.
+4. Добавить подтверждение удаления справочников.
+5. Запланировать UI coverage для first-run/admin/patient/lab/Form100/reference flows.
+
+## Ключевые файлы, которые менялись
+
+- `docs/full_system_audit.md`
+- `docs/session_handoff.md`
+- `docs/progress_report.md`
+
+## Проверки
+
+- `python scripts/check_architecture.py` — pass.
+- `python -m alembic current`, `heads`, `history`, `upgrade head`, `check` на `tmp_run\audit-data` — pass.
+- `pytest -q` — pass (`359 passed`).
+- `pytest -q -ra` — pass (`359 passed`).
+- `pytest --collect-only -q` — pass (`359 tests collected`).
+- `pytest --cov=app --cov-report=term-missing` — pass (`TOTAL 62%`).
+- `ruff check app tests` — pass.
+- `ruff check app tests scripts` — fail (`4` lint errors in scripts).
+- `mypy app tests` — pass (`285 source files`).
+- `python -m compileall -q app tests scripts` — pass.
+- `python -m pip check` — pass.
+- `python scripts/check_mojibake.py` — pass.
+
 # Сессия 2026-04-24 — обновление Codex-скиллов под GPT-5.5
 
 ## Что сделано

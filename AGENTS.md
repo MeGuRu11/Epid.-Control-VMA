@@ -106,11 +106,11 @@
 |-----------|-----------|
 | Язык | Python 3.11+ (рекомендуется 3.12) |
 | UI | PySide6 (виджеты, НЕ QML) |
-| ORM | SQLAlchemy 2 (Mapped[] стиль) |
+| ORM | SQLAlchemy 2 (текущие модели на `Column(...)`; переход на `Mapped[]` — отдельная миграционная задача) |
 | БД | SQLite (файловая) |
 | Миграции | Alembic |
 | Линтер | ruff |
-| Типы | mypy (strict) |
+| Типы | mypy (текущий режим `strict = false`; строгость повышать постепенно) |
 | Тесты | pytest |
 | CI | GitHub Actions |
 | Сборка | PyInstaller |
@@ -133,7 +133,7 @@ Infrastructure Layer (SQLAlchemy модели, репозитории, I/O)
 - UI → Domain ❌ (только через Application)
 - UI → Infrastructure ❌ (никогда напрямую)
 - Application → Domain ✅
-- Application → Infrastructure ✅ (через интерфейсы)
+- Application → Infrastructure ✅ (через сервисные границы; read-model/query services могут использовать SQLAlchemy, новые write/use-case потоки веди через репозитории)
 - Domain → ничего ✅ (чистый слой, без внешних зависимостей)
 - Infrastructure → Domain ✅ (реализует интерфейсы)
 
@@ -239,7 +239,8 @@ Epid.-Control-VMA/
 - Для показа данных из БД используй QTableView + QAbstractTableModel.
 
 ### SQLAlchemy 2
-- Mapped[] аннотации (новый стиль, не Column()).
+- Текущие модели используют классический `Column(...)`; не смешивай стили в одном модуле без отдельной миграционной задачи.
+- `Mapped[]` / `mapped_column()` — целевой SQLAlchemy 2 стиль для будущей плановой миграции, а не требование для текущих точечных изменений.
 - DeclarativeBase для базового класса.
 - relationship() с явным back_populates.
 - Session через dependency injection — НЕ глобальные переменные.
