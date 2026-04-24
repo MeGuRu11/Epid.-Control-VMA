@@ -38,12 +38,12 @@ Use codex to analyze this repository and suggest improvements for my claude code
 
 **Claude Code response:**
 Claude will activate the Codex skill and:
-1. Ask which model to use (`gpt-5` or `gpt-5-codex`) unless already specified in your prompt.
-2. Ask which reasoning effort level (`low`, `medium`, or `high`) unless already specified in your prompt.
+1. Use `gpt-5.5` by default for Codex tasks. Use `gpt-5.4` only as a temporary fallback if `gpt-5.5` is not available in the account, CLI, IDE extension, or model picker.
+2. Ask which reasoning effort level (`low`, `medium`, `high`, or `xhigh`) unless already specified in your prompt.
 3. Select appropriate sandbox mode (defaults to `read-only` for analysis)
 4. Run a command like:
 ```bash
-codex exec -m gpt-5-codex \
+codex exec -m gpt-5.5 \
   --config model_reasoning_effort="high" \
   --sandbox read-only \
   --full-auto \

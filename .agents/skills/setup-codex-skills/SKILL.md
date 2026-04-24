@@ -140,8 +140,21 @@ ln -sf ~/.codex/superpowers/skills ~/.agents/skills/superpowers
 cat ~/.codex/config.toml 2>/dev/null || echo "ФАЙЛ НЕ СУЩЕСТВУЕТ"
 ```
 
-Если файл существует — **НЕ перезаписывай**, а ДОБАВЬ в конец:
+Если файл существует — **НЕ перезаписывай целиком**. Проверь текущие значения:
+- если `model = "..."`
+  уже есть, замени значение на `model = "gpt-5.5"`;
+- если `model` отсутствует, добавь `model = "gpt-5.5"` в корень TOML;
+- если `[model_config]` уже есть, выставь `reasoning_effort = "high"`;
+- если `[experimental]` уже есть, выставь `collab = true`;
+- отсутствующие секции добавь в конец.
+
+Целевый фрагмент:
 ```toml
+model = "gpt-5.5"
+
+[model_config]
+reasoning_effort = "high"
+
 [experimental]
 collab = true
 ```
@@ -150,7 +163,7 @@ collab = true
 ```bash
 mkdir -p ~/.codex
 cat > ~/.codex/config.toml << 'EOF'
-model = "gpt-5.3-codex"
+model = "gpt-5.5"
 
 [model_config]
 reasoning_effort = "high"
@@ -158,6 +171,27 @@ reasoning_effort = "high"
 [experimental]
 collab = true
 EOF
+```
+
+### Fallback по модели
+
+- Основной default для Codex-задач: `gpt-5.5`.
+- Если `gpt-5.5` не отображается в аккаунте, Codex CLI, приложении, IDE extension или model picker, сначала обнови Codex CLI / приложение / IDE extension.
+- До обновления можно временно использовать `gpt-5.4` как fallback.
+- Не фиксируй benchmark, pricing, лимиты или capabilities моделей в проектной документации; актуальные значения см. в официальной документации OpenAI/Codex.
+
+CLI-примеры:
+
+```bash
+codex -m gpt-5.5
+```
+
+```bash
+codex exec -m gpt-5.5 \
+  --config model_reasoning_effort="high" \
+  --sandbox read-only \
+  --skip-git-repo-check \
+  "Проверь локальный проект" 2>/dev/null
 ```
 
 ---

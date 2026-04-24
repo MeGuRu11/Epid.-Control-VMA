@@ -1,66 +1,131 @@
 ---
 name: codex
-description: Use when the user asks to run Codex CLI (codex exec, codex resume) or references OpenAI Codex for code analysis, refactoring, or automated editing. Uses GPT-5.2 by default for state-of-the-art software engineering.
+description: >-
+  Используй, когда пользователь просит запустить Codex CLI (`codex`, `codex exec`,
+  `codex resume`) или поручить Codex локальный анализ, рефакторинг либо правки.
+  Основная рекомендуемая модель для Codex-задач: GPT-5.5.
 ---
 
 # Codex Skill Guide
 
+## Основная политика моделей
+
+- По умолчанию используй `gpt-5.5` для Codex-задач.
+- `gpt-5.5` считается основным рекомендуемым вариантом для анализа кода, рефакторинга, локальных правок и длинных agentic coding workflows.
+- `gpt-5.4` допускается только как временный fallback, если `gpt-5.5` ещё не доступен в аккаунте, Codex CLI, IDE extension или model picker.
+- Если `gpt-5.5` не отображается, сначала предложи обновить Codex CLI / приложение / IDE extension, затем временно используй `gpt-5.4`.
+- Не указывай неподтверждённые benchmark, pricing, лимиты или capabilities моделей; актуальные значения см. в официальной документации OpenAI/Codex.
+
 ## Running a Task
-1. Default to `gpt-5.2` model. Ask the user (via `AskUserQuestion`) which reasoning effort to use (`xhigh`,`high`, `medium`, or `low`). User can override model if needed (see Model Options below).
-2. Select the sandbox mode required for the task; default to `--sandbox read-only` unless edits or network access are necessary.
-3. Assemble the command with the appropriate options:
+
+1. Выбери модель:
+   - default: `gpt-5.5`;
+   - fallback: `gpt-5.4`, только если `gpt-5.5` недоступен.
+2. Уточни или выбери `reasoning_effort` по сложности задачи:
+   - `xhigh` — особо сложная архитектура, безопасность, глубокое расследование;
+   - `high` — сложный рефакторинг, диагностика, performance/security analysis;
+   - `medium` — обычные фичи, багфиксы, организация кода;
+   - `low` — простые точечные правки, форматирование, документация.
+3. Выбери sandbox:
+   - по умолчанию `--sandbox read-only`;
+   - для локальных правок `--sandbox workspace-write`;
+   - для сетевого или широкого доступа только после явного разрешения пользователя.
+4. Собери команду с нужными флагами:
    - `-m, --model <MODEL>`
-   - `--config model_reasoning_effort="<high|medium|low>"`
+   - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
    - `--sandbox <read-only|workspace-write|danger-full-access>`
    - `--full-auto`
    - `-C, --cd <DIR>`
    - `--skip-git-repo-check`
-3. Always use --skip-git-repo-check.
-4. When continuing a previous session, use `codex exec --skip-git-repo-check resume --last` via stdin. When resuming don't use any configuration flags unless explicitly requested by the user e.g. if he species the model or the reasoning effort when requesting to resume a session. Resume syntax: `echo "your prompt here" | codex exec --skip-git-repo-check resume --last 2>/dev/null`. All flags have to be inserted between exec and resume.
-5. **IMPORTANT**: By default, append `2>/dev/null` to all `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests to see thinking tokens or if debugging is needed.
-6. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
-7. **After Codex completes**, inform the user: "You can resume this Codex session at any time by saying 'codex resume' or asking me to continue with additional analysis or changes."
+5. Всегда используй `--skip-git-repo-check`.
+6. По умолчанию добавляй `2>/dev/null` ко всем `codex exec` командам, чтобы скрыть thinking tokens из stderr. Показывай stderr только если пользователь явно просит или если идёт отладка.
+7. После завершения Codex кратко перескажи результат и сообщи пользователю: `Эту Codex-сессию можно продолжить позже через codex resume или отдельную просьбу продолжить анализ/правки.`
 
-### Quick Reference
+## Примеры команд
+
+Интерактивный запуск с актуальной моделью:
+
+```bash
+codex -m gpt-5.5
+```
+
+Локальный read-only анализ:
+
+```bash
+codex exec -m gpt-5.5 \
+  --config model_reasoning_effort="high" \
+  --sandbox read-only \
+  --skip-git-repo-check \
+  "Проанализируй локальный проект и найди риски" 2>/dev/null
+```
+
+Локальные правки в рабочей директории:
+
+```bash
+codex exec -m gpt-5.5 \
+  --config model_reasoning_effort="medium" \
+  --sandbox workspace-write \
+  --full-auto \
+  --skip-git-repo-check \
+  "Внеси локальную правку и проверь diff" 2>/dev/null
+```
+
+Fallback, если `gpt-5.5` недоступен:
+
+```bash
+codex exec -m gpt-5.4 \
+  --config model_reasoning_effort="high" \
+  --sandbox read-only \
+  --skip-git-repo-check \
+  "Выполни анализ с временным fallback на gpt-5.4" 2>/dev/null
+```
+
+## Resume
+
+- Продолжай предыдущую сессию через stdin:
+
+```bash
+echo "Продолжи с учётом новых вводных" | codex exec --skip-git-repo-check resume --last 2>/dev/null
+```
+
+- При resume не добавляй model/sandbox/reasoning flags, если пользователь явно не попросил изменить модель или `reasoning_effort`.
+- Если flags всё же нужны, вставляй их между `exec` и `resume`.
+
+Пример с явной сменой модели при resume:
+
+```bash
+echo "Продолжи с GPT-5.5" | codex exec -m gpt-5.5 --skip-git-repo-check resume --last 2>/dev/null
+```
+
+## Quick Reference
+
 | Use case | Sandbox mode | Key flags |
 | --- | --- | --- |
-| Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
-| Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/dev/null` |
-| Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/dev/null` |
-| Resume recent session | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume --last 2>/dev/null` (no flags allowed) |
-| Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
-
-## Model Options
-
-| Model | Best for | Context window | Key features |
-| --- | --- | --- | --- |
-| `gpt-5.2-max` | **Max model**: Ultra-complex reasoning, deep problem analysis | 400K input / 128K output | 76.3% SWE-bench, adaptive reasoning, $1.25/$10.00 |
-| `gpt-5.2` ⭐ | **Flagship model**: Software engineering, agentic coding workflows | 400K input / 128K output | 76.3% SWE-bench, adaptive reasoning, $1.25/$10.00 |
-| `gpt-5.2-mini` | Cost-efficient coding (4x more usage allowance) | 400K input / 128K output | Near SOTA performance, $0.25/$2.00 |
-| `gpt-5.1-thinking` | Ultra-complex reasoning, deep problem analysis | 400K input / 128K output | Adaptive thinking depth, runs 2x slower on hardest tasks |
-
-**GPT-5.2 Advantages**: 76.3% SWE-bench (vs 72.8% GPT-5), 30% faster on average tasks, better tool handling, reduced hallucinations, improved code quality. Knowledge cutoff: September 30, 2024.
-
-**Reasoning Effort Levels**:
-- `xhigh` - Ultra-complex tasks (deep problem analysis, complex reasoning, deep understanding of the problem)
-- `high` - Complex tasks (refactoring, architecture, security analysis, performance optimization)
-- `medium` - Standard tasks (refactoring, code organization, feature additions, bug fixes)
-- `low` - Simple tasks (quick fixes, simple changes, code formatting, documentation)
-
-**Cached Input Discount**: 90% off ($0.125/M tokens) for repeated context, cache lasts up to 24 hours.
-
-## Following Up
-- After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec resume --last 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
-- Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
+| Read-only review or analysis | `read-only` | `-m gpt-5.5 --sandbox read-only --skip-git-repo-check 2>/dev/null` |
+| Apply local edits | `workspace-write` | `-m gpt-5.5 --sandbox workspace-write --full-auto --skip-git-repo-check 2>/dev/null` |
+| Permit network or broad access | `danger-full-access` | Только после явного разрешения пользователя |
+| Resume recent session | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume --last 2>/dev/null` |
+| Run from another directory | Match task needs | `-C <DIR>` плюс остальные нужные flags |
 
 ## Error Handling
-- Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
-- Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
-- When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.
+
+- Если `codex --version` или `codex exec` завершается с non-zero exit code, остановись, перескажи ошибку и запроси направление перед повтором.
+- Перед high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) получи разрешение пользователя, если оно ещё не было дано правилами проекта или текущей задачей.
+- Если `gpt-5.5` не найден в CLI/model picker, не подменяй silently: сообщи, что нужен update Codex CLI / приложения / IDE extension, и только затем используй `gpt-5.4` как временный fallback.
+- Когда вывод содержит предупреждения или частичные результаты, кратко суммируй их и предложи следующий безопасный шаг.
 
 ## CLI Version
 
-Requires Codex CLI v0.57.0 or later for GPT-5.2 model support. The CLI defaults to `gpt-5.2` on macOS/Linux and `gpt-5.2` on Windows. Check version: `codex --version`
+Используй версию Codex CLI / приложения / IDE extension, которая поддерживает `gpt-5.5`. Актуальные требования по версиям, лимитам и доступности моделей см. в официальной документации OpenAI/Codex.
 
-Use `/model` slash command within a Codex session to switch models, or configure default in `~/.codex/config.toml`.
+Для проверки:
+
+```bash
+codex --version
+```
+
+Модель можно переключить через slash-command `/model` внутри Codex-сессии или задать default в `~/.codex/config.toml`:
+
+```toml
+model = "gpt-5.5"
+```

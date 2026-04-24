@@ -1,3 +1,47 @@
+# Сессия 2026-04-24 — обновление Codex-скиллов под GPT-5.5
+
+## Что сделано
+
+- Проведён локальный аудит упоминаний GPT/Codex 5.x без использования GitHub или удалённых репозиториев как источника истины.
+- `.agents/skills/codex/SKILL.md` переписан под актуальную политику: основная рекомендуемая модель для Codex-задач — `gpt-5.5`.
+- В `codex` skill сохранены локальные operational-правила: sandbox, `--skip-git-repo-check`, resume через stdin, stderr handling через `2>/dev/null`, разрешения для high-impact flags.
+- Устаревшие default-инструкции по старым GPT-5.x моделям и неподтверждённые benchmark/pricing-значения удалены; добавлена нейтральная формулировка про официальную документацию OpenAI/Codex.
+- `.agents/skills/codex/README.md` обновлён с `gpt-5-codex` на `gpt-5.5` в CLI-примере.
+- `.agents/skills/setup-codex-skills/SKILL.md` обновлён: `model = "gpt-5.5"`, CLI-примеры `codex -m gpt-5.5` и `codex exec -m gpt-5.5 ...`, fallback-логика через временный `gpt-5.4`.
+- `skills-lock.json` обновлён для локального `setup-codex-skills` по воспроизводимому SHA256 от `SKILL.md`.
+- `docs/progress_report.md` дополнен записью о docs/skills-only изменениях.
+
+## Что не закончено / в процессе
+
+- Код приложения, БД, миграции, UI и бизнес-логика не менялись.
+- Полный quality gate не запускался, потому что задача была только про документацию и agent skills.
+
+## Открытые проблемы / блокеры
+
+- Для `.agents/skills/codex` запись в `skills-lock.json` имеет `sourceType: github`; текущий `computedHash` уже не совпадал с локальным `SKILL.md` до правок. Без обращения к удалённому источнику алгоритм hash неочевиден, поэтому hash для `codex` не подменялся догадкой и требует ручной проверки при следующей ревизии lock-файла.
+- В рабочем дереве остаётся сторонний untracked-каталог `.npm-cache/`; в рамках этой docs/skills-задачи он не трогался.
+
+## Следующие шаги
+
+1. При следующей ревизии skill-lock политики решить, должен ли github-source `codex` skill фиксировать локально изменённый hash или hash upstream-источника.
+2. Если `gpt-5.5` не отображается в конкретном окружении пользователя, обновить Codex CLI / приложение / IDE extension и временно использовать `gpt-5.4` только как fallback.
+3. Перед следующими кодовыми изменениями вернуться к обычному quality gate циклу проекта.
+
+## Ключевые файлы, которые менялись
+
+- `.agents/skills/codex/SKILL.md`
+- `.agents/skills/codex/README.md`
+- `.agents/skills/setup-codex-skills/SKILL.md`
+- `skills-lock.json`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `rg --hidden --glob "!.git/*" -n -e "gpt-5\\.2" -e "gpt-5\\.3-codex" -e "gpt-5\\.3" -e "gpt-5\\.4" -e "GPT-5\\.2" -e "GPT-5\\.3" -e "GPT-5\\.4" .` — pass; оставшиеся старые упоминания являются fallback или историческими.
+- `rg --hidden --glob "!.git/*" -n -e "gpt-5\\.5" -e "GPT-5\\.5" .agents docs AGENTS.md README.md DESIGN.md` — pass.
+- `python -m json.tool skills-lock.json` — pass.
+
 # Сессия 2026-04-24 — safe UI token alignment и SQLite migration warning fix
 
 ## Что сделано
