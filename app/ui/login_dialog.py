@@ -3,8 +3,17 @@ from __future__ import annotations
 import sys
 
 from pydantic import ValidationError
-from PySide6.QtCore import QDateTime, QEasingCurve, QPropertyAnimation, Qt, QTimer
-from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPalette, QPen, QPixmap
+from PySide6.QtCore import QDateTime, QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt, QTimer
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QKeyEvent,
+    QLinearGradient,
+    QPainter,
+    QPalette,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -25,7 +34,6 @@ from app.application.services.auth_service import AuthService
 from app.config import settings
 from app.ui.runtime_ui import resolve_ui_runtime
 from app.ui.widgets.animated_background import MedicalBackground
-from app.ui.widgets.notifications import clear_status, set_status
 
 
 class LoginDialog(QDialog):
@@ -133,7 +141,8 @@ class LoginDialog(QDialog):
         self.password_edit.setMinimumHeight(42)
         self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_edit.setPlaceholderText("Введите пароль")
-        self.password_edit.returnPressed.connect(self._on_login)
+        self.login_edit.installEventFilter(self)
+        self.password_edit.installEventFilter(self)
         login_label = QLabel("Логин")
         login_label.setObjectName("loginFieldLabel")
         password_label = QLabel("Пароль")
@@ -141,10 +150,21 @@ class LoginDialog(QDialog):
         form.addRow(login_label, self.login_edit)
         form.addRow(password_label, self.password_edit)
 
-        self.error_label = QLabel("")
-        self.error_label.setObjectName("statusLabel")
-        self.error_label.setWordWrap(True)
-        self.error_label.setVisible(False)
+        self.error_banner = QFrame()
+        self.error_banner.setObjectName("loginErrorBanner")
+        self.error_banner.setVisible(False)
+        error_layout = QHBoxLayout(self.error_banner)
+        error_layout.setContentsMargins(12, 10, 14, 10)
+        error_layout.setSpacing(10)
+        self.error_icon = QLabel("!")
+        self.error_icon.setObjectName("loginErrorIcon")
+        self.error_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.error_icon.setFixedSize(24, 24)
+        self.error_message = QLabel("")
+        self.error_message.setObjectName("loginErrorMessage")
+        self.error_message.setWordWrap(True)
+        error_layout.addWidget(self.error_icon, 0, Qt.AlignmentFlag.AlignTop)
+        error_layout.addWidget(self.error_message, 1)
 
         self._login_btn = QPushButton("Войти")
         self._login_btn.setObjectName("loginPrimaryButton")
@@ -170,7 +190,7 @@ class LoginDialog(QDialog):
         card_meta.setWordWrap(True)
 
         card_layout.addLayout(form)
-        card_layout.addWidget(self.error_label)
+        card_layout.addWidget(self.error_banner)
         card_layout.addWidget(card_meta)
         card_layout.addLayout(btn_row)
 
@@ -264,6 +284,14 @@ class LoginDialog(QDialog):
         self._center_dialog_on_screen()
         self._centered_once = True
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if watched in (self.login_edit, self.password_edit) and event.type() == QEvent.Type.KeyPress:
+            key_event = event if isinstance(event, QKeyEvent) else None
+            if key_event is not None and key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                self._on_login()
+                return True
+        return super().eventFilter(watched, event)
+
     def _init_animated_background(self) -> None:
         if not self._ui_runtime.enable_background:
             return
@@ -304,27 +332,31 @@ class LoginDialog(QDialog):
         frame.moveCenter(screen.availableGeometry().center())
         self.move(frame.topLeft())
 
+    def _hide_error_banner(self) -> None:
+        self.error_message.clear()
+        self.error_banner.setVisible(False)
+
+    def _show_error_banner(self, message: str) -> None:
+        self.error_message.setText(message)
+        self.error_banner.setVisible(True)
+
     def _on_login(self) -> None:
-        clear_status(self.error_label)
-        self.error_label.setVisible(False)
+        self._hide_error_banner()
         login = self.login_edit.text().strip()
         password = self.password_edit.text()
         if not login or not password:
-            set_status(self.error_label, "Введите логин и пароль.", "error")
-            self.error_label.setVisible(True)
+            self._show_error_banner("Введите логин и пароль.")
             return
         try:
             request = LoginRequest(login=login, password=password)
         except ValidationError as exc:
             msg = exc.errors()[0].get("msg", "Проверьте логин и пароль.")
-            set_status(self.error_label, msg, "error")
-            self.error_label.setVisible(True)
+            self._show_error_banner(msg)
             return
         try:
             session_ctx = self.auth_service.login(request)
         except (ValueError, AppError, RuntimeError, TypeError) as exc:
-            set_status(self.error_label, str(exc), "error")
-            self.error_label.setVisible(True)
+            self._show_error_banner(str(exc))
             return
 
         self.session = session_ctx
@@ -339,7 +371,3 @@ if __name__ == "__main__":
     dlg = LoginDialog(auth_service=AuthService())
     dlg.show()
     sys.exit(app.exec())
-
-
-
-

@@ -21,6 +21,7 @@ hiddenimports = [
     "sqlalchemy.dialects.sqlite",
 ]
 hiddenimports += collect_submodules("alembic")
+hiddenimports += collect_submodules("pyqtgraph")
 
 
 a = Analysis(
@@ -48,7 +49,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     icon=str(project_root / "resources" / "icons" / "app.ico"),
 )

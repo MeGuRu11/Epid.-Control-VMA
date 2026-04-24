@@ -1315,6 +1315,30 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid rgba(111, 185, 173, 0.95);
         background: rgba(255, 255, 255, 0.98);
     }}
+    QDialog#loginDialog QFrame#loginErrorBanner {{
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+            stop:0 rgba(255, 241, 239, 0.96), stop:1 rgba(250, 228, 224, 0.9));
+        border: 1px solid rgba(221, 154, 145, 0.72);
+        border-radius: 12px;
+    }}
+    QDialog#loginDialog QLabel#loginErrorIcon {{
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+            stop:0 #D9887F, stop:1 #C96D63);
+        color: #FFF8F6;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 900;
+        padding: 0;
+    }}
+    QDialog#loginDialog QLabel#loginErrorMessage {{
+        color: #7A2F2A;
+        background: transparent;
+        border: none;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 0;
+    }}
     QDialog#loginDialog QLabel#loginCardMeta {{
         color: #76726A;
         font-size: 11px;

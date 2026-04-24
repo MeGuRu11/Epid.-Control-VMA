@@ -1,3 +1,199 @@
+# Сессия 2026-04-23 — редизайн баннера ошибки LoginDialog
+
+## Что сделано
+
+- В `LoginDialog` переделано визуальное уведомление об ошибке авторизации: старый общий `statusLabel` заменён на локальный inline-баннер внутри карточки логина.
+- Новый баннер теперь:
+  - расположен сразу под полями ввода;
+  - имеет мягкий красно-розовый фон и аккуратную рамку;
+  - содержит компактный акцентный блок `!` слева и отдельный текст ошибки справа.
+- В `app/ui/login_dialog.py` добавлены локальные helper-методы `_hide_error_banner()` и `_show_error_banner(...)`; на них переведены все error-сценарии окна входа.
+- В `app/ui/theme.py` добавлены login-scoped стили `loginErrorBanner`, `loginErrorIcon`, `loginErrorMessage` без изменений глобального `statusLabel`.
+- В `tests/unit/test_login_dialog.py` добавлены и обновлены проверки на:
+  - ошибку по `Enter`;
+  - ошибку по кнопке `Войти`;
+  - пустые поля;
+  - скрытие баннера после успешного входа.
+- Полный quality gate пройден после редизайна.
+
+## Что не закончено / в процессе
+
+- Функционально работа завершена.
+- Нужна только ручная визуальная проверка нового баннера в реальном окне логина, чтобы оценить плотность, контраст и отступы.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по коду и тестам нет.
+- В полном `pytest` сохраняются исторические warnings:
+  - `DeprecationWarning` по sqlite datetime adapter;
+  - `PytestCacheWarning` из-за локального cache-каталога.
+
+## Следующие шаги
+
+1. Открыть окно логина и визуально проверить новый баннер ошибки на неверном пароле.
+2. Если внешний вид устраивает, при следующей необходимости пересобрать `exe` и прогнать быстрый smoke `неверный пароль -> показ баннера`.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/login_dialog.py`
+- `app/ui/theme.py`
+- `tests/unit/test_login_dialog.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `pytest -q tests/unit/test_login_dialog.py` - pass (`5 passed, 1 warning`)
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`354 passed, 3 warnings`)
+
+# Сессия 2026-04-23 — fix: LoginDialog не закрывается на Enter при неверном пароле
+
+## Что сделано
+
+- Воспроизведён отдельный дефект логина: если ввести несуществующие учётные данные и нажать `Enter` в поле пароля, `LoginDialog` закрывался вместо показа ошибки.
+- Подтверждено, что проблема воспроизводится только по клавиатурному пути `Enter`; клик по кнопке `Войти` уже работал корректно.
+- В `tests/unit/test_login_dialog.py` добавлен регрессионный тест на сценарий `Enter` при ошибке `ValueError` из `auth_service.login(...)`.
+- В `app/ui/login_dialog.py` добавлен `eventFilter` на `login_edit` и `password_edit`, который перехватывает `Enter`/`Numpad Enter`, вызывает `_on_login()` и не позволяет стандартной обработке `QDialog` закрыть окно.
+- Полный quality gate пройден после фикса.
+
+## Что не закончено / в процессе
+
+- Отдельных незавершённых работ по этому дефекту нет.
+- Полезно вручную проверить оба пути в собранном приложении:
+  - неверный логин/пароль + `Enter`;
+  - неверный логин/пароль + клик по `Войти`.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по фиксу логина нет.
+- В полном `pytest` остаются исторические warnings:
+  - `DeprecationWarning` по sqlite datetime adapter;
+  - `PytestCacheWarning` из-за локального cache-каталога.
+
+## Следующие шаги
+
+1. Вручную проверить в приложении, что при неверном логине `LoginDialog` остаётся открыт и показывает ошибку.
+2. При проверке packaged `exe` прогнать оба сценария входа:
+  - корректный логин;
+  - некорректный логин по `Enter` и по кнопке.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/login_dialog.py`
+- `tests/unit/test_login_dialog.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `pytest -q tests/unit/test_login_dialog.py` - pass (`2 passed, 1 warning`)
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`351 passed, 3 warnings`)
+
+# Сессия 2026-04-23 — fix: packaged analytics после логина
+
+## Что сделано
+
+- Разобрано падение упакованного `EpidControl.exe` после авторизации: пользовательский `app.log` изучен, подтверждено отсутствие Python traceback и обрыв процесса сразу после `Reference seed applied`.
+- Локально проверен обычный Python-запуск `MainWindow` на чистой БД и на пользовательской БД в `offscreen`-режиме; падение не воспроизвелось вне packaged-сборки.
+- Проанализированы артефакты `PyInstaller` (`build/EpidControl/warn-EpidControl.txt`, `xref-EpidControl.html`); основной рабочей гипотезой стал сбой инициализации `pyqtgraph`-графиков при открытии главного окна после логина.
+- В `app/ui/analytics/charts.py` добавлен защитный fallback для аналитических графиков:
+  - ошибки создания `PlotWidget` больше не валят всё приложение;
+  - вместо краша показывается текстовый placeholder;
+  - ошибки `update_data()` только логируются.
+- В `EpidControl.spec` усилена packaged-конфигурация:
+  - добавлен `collect_submodules("pyqtgraph")`;
+  - отключён `UPX` (`upx=False`).
+- Добавлены регрессионные тесты `tests/unit/test_analytics_charts.py` и `tests/unit/test_build_spec_configuration.py`.
+- Прогнаны targeted tests, полный quality gate и пересборка `exe`; новый `dist\EpidControl.exe` успешно собран.
+
+## Что не закончено / в процессе
+
+- Не выполнен финальный ручной smoke именно упакованного `exe` по сценарию `логин -> открытие главного окна -> переход в Аналитику`.
+- Корневая причина подтверждена практическим фикс-путём и косвенными артефактами сборки, но не поймана прямым traceback, потому что packaged runtime завершался без Python-исключения в логе.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по коду, quality gates или сборке нет.
+- Для релизной уверенности нужен ручной прогон свежесобранного `dist\EpidControl.exe` на целевой машине или сборке.
+- В полном `pytest` сохраняются исторические warnings:
+  - `DeprecationWarning` по sqlite datetime adapter;
+  - `PytestCacheWarning` из-за локального cache-каталога.
+
+## Следующие шаги
+
+1. Запустить свежесобранный `dist\EpidControl.exe`.
+2. Пройти сценарий `логин -> главное окно` и убедиться, что процесс больше не закрывается.
+3. Открыть `Аналитику` и проверить:
+  - графики отображаются штатно, либо
+  - вместо падения появляется fallback-текст, а приложение продолжает работать.
+4. Проверить `%LOCALAPPDATA%\epid-control\epid-control\logs\app.log` после smoke и убедиться, что нет внезапного обрыва процесса сразу после `Reference seed applied`.
+5. Если smoke успешен, можно переходить к сборке инсталлятора или релизному прогону.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/analytics/charts.py`
+- `EpidControl.spec`
+- `tests/unit/test_analytics_charts.py`
+- `tests/unit/test_build_spec_configuration.py`
+- `docs/codex/tasks/2026-04-23-падение-exe-после-авторизации.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `pytest -q tests/unit/test_analytics_charts.py tests/unit/test_build_spec_configuration.py` - pass (`6 passed, 1 warning`)
+- `powershell -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`350 passed, 3 warnings`)
+- `cmd /c scripts\build_exe.bat` - pass
+
+# Сессия 2026-04-23 — Релизный прогон сборки EXE и Inno Setup
+
+## Что сделано
+
+- Прочитаны `AGENTS.md`, `.agents/skills/epid-control/SKILL.md`, `docs/context.md`, `docs/progress_report.md`, `docs/session_handoff.md` и `docs/build_release.md` перед релизным прогоном.
+- Проверено состояние рабочего дерева и доступность сборочных инструментов; подтверждено, что в репозитории остаётся сторонний untracked-каталог `.npm-cache/`, который в этой сессии не трогался.
+- Выполнен полный обязательный релизный прогон `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gates.ps1`:
+  - `ruff check app tests` — pass;
+  - `python scripts/check_architecture.py` — pass;
+  - `mypy app tests` — pass (`282 source files`);
+  - `pytest -q` — pass (`344 passed, 2 warnings`);
+  - `python -m compileall -q app tests scripts` — pass;
+  - `python -m alembic upgrade head` и `python -m alembic check` — pass;
+  - `python scripts/check_mojibake.py` — pass.
+- Собран и проверен Windows-артефакт `EXE` через `scripts\build_exe.bat`:
+  - получен `dist\EpidControl.exe`;
+  - создан `dist\RELEASE_INFO.txt`;
+  - `scripts\verify_exe.ps1` завершился успешно.
+- Найден компилятор Inno Setup `C:\Users\user\AppData\Local\Programs\Inno Setup 6\ISCC.exe` и успешно выполнена сборка `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1`.
+- Получен установщик `dist\EpidControlSetup.exe`.
+
+## Что не закончено / в процессе
+
+- После сборки не выполнялся ручной smoke собранного инсталлятора на чистом профиле Windows.
+- NSIS-установщик в этой сессии не собирался, так как запрос касался `exe` и `Inno Setup`.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по сборке `EXE` и `Inno Setup` нет.
+- В полном `pytest` сохраняется исторический `DeprecationWarning` по sqlite datetime adapter в `tests/integration/test_form100_v2_migration.py`.
+- В рабочем дереве остаётся сторонний untracked-каталог `.npm-cache/`; он не связан с результатом сборки и в этой сессии не изменялся.
+
+## Следующие шаги
+
+1. Проверить `dist\EpidControlSetup.exe` на чистом профиле Windows: установка, первый запуск, логин и базовые разделы.
+2. При необходимости отдельно собрать `NSIS`-установщик для сравнения релизных каналов.
+3. После ручного smoke принять решение о выкладке или релизе текущих артефактов.
+
+## Ключевые файлы, которые менялись
+
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`344 passed, 2 warnings`)
+- `cmd /c scripts\build_exe.bat` - pass
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1` - pass
+
 # Сессия 2026-04-23 — DESIGN.md для UI-системы
 
 ## Что сделано
@@ -42,55 +238,6 @@
 ## Проверки
 
 - Quality gates не запускались: в этой сессии изменялась только документация и агентские инструкции.
-
-# Сессия 2026-04-23
-
-## Что сделано
-
-- Прочитаны `AGENTS.md`, `.agents/skills/epid-control/SKILL.md`, `docs/context.md`, `docs/progress_report.md`, `docs/session_handoff.md` и `docs/build_release.md` перед релизным прогоном.
-- Проверено состояние рабочего дерева и доступность сборочных инструментов; подтверждено, что в репозитории остаётся сторонний untracked-каталог `.npm-cache/`, который в этой сессии не трогался.
-- Выполнен полный обязательный релизный прогон `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gates.ps1`:
-  - `ruff check app tests` — pass;
-  - `python scripts/check_architecture.py` — pass;
-  - `mypy app tests` — pass (`282 source files`);
-  - `pytest -q` — pass (`344 passed, 2 warnings`);
-  - `python -m compileall -q app tests scripts` — pass;
-  - `python -m alembic upgrade head` и `python -m alembic check` — pass;
-  - `python scripts/check_mojibake.py` — pass.
-- Собран и проверен Windows-артефакт `EXE` через `scripts\build_exe.bat`:
-  - получен `dist\EpidControl.exe`;
-  - создан `dist\RELEASE_INFO.txt`;
-  - `scripts\verify_exe.ps1` завершился успешно.
-- Найден компилятор Inno Setup `C:\Users\user\AppData\Local\Programs\Inno Setup 6\ISCC.exe` и успешно выполнена сборка `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1`.
-- Получен установщик `dist\EpidControlSetup.exe`.
-
-## Что не закончено / в процессе
-
-- После сборки не выполнялся ручной smoke собранного инсталлятора на чистом профиле Windows.
-- NSIS-установщик в этой сессии не собирался, так как запрос касался `exe` и `Inno Setup`.
-
-## Открытые проблемы / блокеры
-
-- Блокеров по сборке `EXE` и `Inno Setup` нет.
-- В полном `pytest` сохраняется исторический `DeprecationWarning` по sqlite datetime adapter в `tests/integration/test_form100_v2_migration.py`.
-- В рабочем дереве остаётся сторонний untracked-каталог `.npm-cache/`; он не связан с результатом сборки и в этой сессии не изменялся.
-
-## Следующие шаги
-
-1. Проверить `dist\EpidControlSetup.exe` на чистом профиле Windows: установка, первый запуск, логин и базовые разделы.
-2. При необходимости отдельно собрать `NSIS`-установщик для сравнения релизных каналов.
-3. После ручного smoke принять решение о выкладке/релизе текущих артефактов.
-
-## Ключевые файлы, которые менялись
-
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
-
-## Проверки
-
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gates.ps1` - pass (`344 passed, 2 warnings`)
-- `cmd /c scripts\build_exe.bat` - pass
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1` - pass
 
 # Сессия 2026-04-22
 
