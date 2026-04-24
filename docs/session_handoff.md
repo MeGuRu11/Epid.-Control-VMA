@@ -1,3 +1,54 @@
+# Сессия 2026-04-24 — очистка устаревших docs-файлов
+
+## Что сделано
+
+- По запросу пользователя выполнена локальная очистка Markdown-документации в `docs/` без изменений кода приложения, БД, миграций, UI и бизнес-логики.
+- Удалены явные устаревшие кандидаты:
+  - `docs/final_audit_report.md`;
+  - `docs/full_audit_report.md`;
+  - `docs/code_review_gpt54.md`;
+  - `docs/code_review_report.md`;
+  - `docs/code_audit_findings.md`;
+  - `docs/MASTER_TZ_CODEX.md`.
+- Создан каталог `docs/archive/`.
+- В архив перенесены документы, которые лучше сохранить как исторический контекст:
+  - `docs/archive/security_review_2026-04-07.md`;
+  - `docs/archive/forma_100_section.md`;
+  - `docs/archive/TTZ_Form100_Module_Adapted_v2_2.md`;
+  - `docs/archive/full_system_audit.md`.
+- `.npm-cache/` не трогался.
+
+## Что не закончено / в процессе
+
+- Решение по архивированию task-файлов в `docs/codex/tasks/` не принималось; они оставлены на месте.
+- Security-тема и `AUD-001` по-прежнему отложены до отдельного разрешения пользователя.
+
+## Открытые проблемы / блокеры
+
+- В исторических записях `docs/progress_report.md` и старых handoff-блоках остаются ссылки на удалённые/перенесённые файлы как часть истории проекта. Они не переписывались.
+- Git по-прежнему выводит предупреждение `unable to access 'C:\Users\user/.config/git/ignore': Permission denied`; на файловые операции это не повлияло.
+
+## Следующие шаги
+
+1. Проверить, нужно ли архивировать завершённые `docs/codex/tasks/*.md`.
+2. При необходимости добавить короткий `README` в `docs/archive/`, если архив будет расти.
+3. После подтверждения пользователя можно сделать отдельный docs-коммит.
+
+## Ключевые файлы, которые менялись
+
+- `docs/archive/security_review_2026-04-07.md`
+- `docs/archive/forma_100_section.md`
+- `docs/archive/TTZ_Form100_Module_Adapted_v2_2.md`
+- `docs/archive/full_system_audit.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `rg --files docs -g "*.md"` — pass; архивные файлы видны в `docs/archive/`, удалённые файлы отсутствуют в корне `docs/`.
+- `git status --short` — pass; показывает удаления, новый `docs/archive/` и сторонний `.npm-cache/`.
+- `rg` по старым путям — pass; оставшиеся совпадения находятся в исторических записях или внутри архивного `full_system_audit.md`.
+
 # Сессия 2026-04-24 — внедрение non-security исправлений после аудита
 
 ## Что сделано
