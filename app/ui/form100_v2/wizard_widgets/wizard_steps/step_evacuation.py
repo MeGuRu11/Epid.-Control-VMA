@@ -342,7 +342,7 @@ class StepEvacuation(QWidget):
         root.addWidget(self._mid_wrap, 1)
 
         self.btn_sign = QPushButton("Подписать карточку")
-        self.btn_sign.setObjectName("secondary")
+        self.btn_sign.setObjectName("secondaryButton")
         self.btn_sign.setVisible(False)
         root.addWidget(self.btn_sign)
         self._apply_responsive_layout()
@@ -385,4 +385,3 @@ class StepEvacuation(QWidget):
 
     def set_card_status(self, status: str) -> None:
         self.btn_sign.setVisible(status == "DRAFT")
-

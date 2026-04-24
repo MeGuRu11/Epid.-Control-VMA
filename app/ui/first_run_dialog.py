@@ -23,6 +23,7 @@ from app.application.exceptions import AppError
 from app.application.services.setup_service import SetupService
 from app.config import settings
 from app.ui.runtime_ui import resolve_ui_runtime
+from app.ui.theme import theme_qcolor
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, set_status
@@ -232,10 +233,10 @@ class FirstRunDialog(QDialog):
         pixmap.fill(QColor(0, 0, 0, 0))
         painter = QPainter(pixmap)
         gradient = QLinearGradient(0, 0, size.width(), size.height())
-        gradient.setColorAt(0, QColor(247, 242, 236))
-        gradient.setColorAt(1, QColor(239, 230, 218))
+        gradient.setColorAt(0, theme_qcolor("bg"))
+        gradient.setColorAt(1, theme_qcolor("menubar"))
         painter.fillRect(self.rect(), gradient)
-        pen = QPen(QColor(58, 58, 56, 14))
+        pen = QPen(theme_qcolor("text", alpha=14))
         pen.setWidth(1)
         painter.setPen(pen)
         step = 40

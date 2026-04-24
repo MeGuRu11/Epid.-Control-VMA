@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.config import Settings
-from app.ui.theme import COL, apply_theme
+from app.ui.theme import COL, apply_theme, theme_qcolor
 
 
 def test_theme_contains_required_semantic_tokens() -> None:
@@ -38,3 +38,13 @@ def test_theme_defines_interactive_states_for_secondary_buttons(qapp) -> None:
 
     assert "QPushButton#secondaryButton:hover" in stylesheet
     assert "QPushButton#secondaryButton:pressed" in stylesheet
+
+
+def test_theme_qcolor_reads_token_and_applies_alpha() -> None:
+    accent = theme_qcolor("accent2")
+    faded = theme_qcolor("accent2", alpha=140)
+
+    assert accent.name().upper() == COL["accent2"]
+    assert accent.alpha() == 255
+    assert faded.name().upper() == COL["accent2"]
+    assert faded.alpha() == 140

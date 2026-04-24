@@ -73,6 +73,18 @@ class _FailingPgUpdate:
         raise RuntimeError("bar graph failed")
 
 
+class _CapturingPg:
+    def __init__(self) -> None:
+        self.bar_kwargs: dict[str, object] | None = None
+
+    def PlotWidget(self) -> _FakePlotWidget:  # noqa: N802
+        return _FakePlotWidget()
+
+    def BarGraphItem(self, **kwargs: object) -> object:  # noqa: N802
+        self.bar_kwargs = kwargs
+        return object()
+
+
 @pytest.mark.parametrize("chart_class", [charts.TopMicrobesChart, charts.TrendChart])
 def test_chart_falls_back_when_plot_widget_init_fails(monkeypatch, chart_class, qapp) -> None:
     monkeypatch.setattr(charts, "pg", _FailingPgConstructor())
@@ -104,4 +116,25 @@ def test_chart_update_data_ignores_runtime_plot_errors(monkeypatch, chart_class,
 
     assert widget._items == items
     assert widget._plot is not None
+    widget.close()
+
+
+@pytest.mark.parametrize(
+    ("chart_class", "items"),
+    [
+        (charts.TopMicrobesChart, [("ECO - E. coli", 75.0)]),
+        (charts.TrendChart, [("01.04.2026", 50.0)]),
+    ],
+)
+def test_chart_uses_theme_bar_brush(monkeypatch, chart_class, items, qapp) -> None:
+    fake_pg = _CapturingPg()
+    monkeypatch.setattr(charts, "pg", fake_pg)
+
+    widget = chart_class()
+    qapp.processEvents()
+
+    widget.update_data(items)
+
+    assert fake_pg.bar_kwargs is not None
+    assert fake_pg.bar_kwargs["brush"] == charts._BAR_BRUSH
     widget.close()

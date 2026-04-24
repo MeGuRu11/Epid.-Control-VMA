@@ -8,6 +8,8 @@ from PySide6.QtCore import QPointF, Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsScene, QGraphicsView, QWidget
 
+from app.ui.theme import theme_qcolor
+
 
 @dataclass
 class _Particle:
@@ -53,11 +55,12 @@ class MedicalBackground(QGraphicsView):
             radius = random.uniform(min_r, max_r)
             item = QGraphicsEllipseItem(0, 0, radius, radius)
             item.setPos(random.uniform(0, 1200), random.uniform(0, 800))
-            fill = QColor("#A1E3D8")
-            fill.setAlpha(random.randint(26, 58) if not showcase else random.randint(35, 82))
+            fill = theme_qcolor(
+                "accent",
+                alpha=random.randint(26, 58) if not showcase else random.randint(35, 82),
+            )
             item.setBrush(QBrush(fill))
-            pen_color = QColor("#6FB9AD")
-            pen_color.setAlpha(54 if not showcase else 86)
+            pen_color = theme_qcolor("accent_border", alpha=54 if not showcase else 86)
             item.setPen(QPen(pen_color, 1))
             self._scene.addItem(item)
             self._particles.append(
@@ -72,7 +75,7 @@ class MedicalBackground(QGraphicsView):
         pulse = 220 if not showcase else 300
         self._pulse = QGraphicsEllipseItem(0, 0, pulse, pulse)
         self._pulse.setBrush(QBrush(QColor(0, 0, 0, 0)))
-        self._pulse.setPen(QPen(QColor("#61C9B6"), 1 if not showcase else 2))
+        self._pulse.setPen(QPen(theme_qcolor("link"), 1 if not showcase else 2))
         self._pulse.setZValue(-1)
         self._scene.addItem(self._pulse)
 
@@ -99,8 +102,10 @@ class MedicalBackground(QGraphicsView):
         self._pulse.setRect(0, 0, radius * 2, radius * 2)
         self._pulse.setPos(width * 0.52 - radius, height * 0.36 - radius)
         pulse_pen = self._pulse.pen()
-        color = QColor("#61C9B6")
-        color.setAlpha(int((26 if not showcase else 38) + (32 if not showcase else 72) * (0.5 + 0.5 * math.sin(self._t))))
+        color = theme_qcolor(
+            "link",
+            alpha=int((26 if not showcase else 38) + (32 if not showcase else 72) * (0.5 + 0.5 * math.sin(self._t))),
+        )
         pulse_pen.setColor(color)
         self._pulse.setPen(pulse_pen)
 

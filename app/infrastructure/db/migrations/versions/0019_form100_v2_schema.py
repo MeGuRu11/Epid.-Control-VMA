@@ -55,6 +55,23 @@ def _safe_text(value: object) -> str:
     return str(value).strip()
 
 
+def _normalize_sqlite_datetime_value(value: object) -> object:
+    if isinstance(value, datetime):
+        normalized = value.astimezone(UTC) if value.tzinfo is not None else value
+        return normalized.isoformat(sep=" ")
+    if isinstance(value, date):
+        return value.isoformat()
+    return value
+
+
+def _normalize_sqlite_date_value(value: object) -> object:
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    return value
+
+
 def upgrade() -> None:
     op.create_table(
         "form100",
@@ -289,9 +306,11 @@ def upgrade() -> None:
                 "id": card_id,
                 "legacy_card_id": _safe_text(row.get("id")) or None,
                 "emr_case_id": None,
-                "created_at": row.get("created_at") or now,
+                "created_at": _normalize_sqlite_datetime_value(row.get("created_at") or now),
                 "created_by": _safe_text(row.get("created_by")) or "migration",
-                "updated_at": row.get("updated_at") or row.get("created_at") or now,
+                "updated_at": _normalize_sqlite_datetime_value(
+                    row.get("updated_at") or row.get("created_at") or now
+                ),
                 "updated_by": _safe_text(row.get("updated_by")) or _safe_text(row.get("created_by")) or "migration",
                 "status": _safe_text(row.get("status")) or "DRAFT",
                 "version": int(row.get("version") or 1),
@@ -302,9 +321,9 @@ def upgrade() -> None:
                 "main_unit": _safe_text(row.get("unit")) or None,
                 "main_id_tag": _safe_text(row.get("dog_tag_number") or row.get("id_doc_number")) or None,
                 "main_diagnosis": _safe_text(row.get("diagnosis_text")) or None,
-                "birth_date": row.get("birth_date"),
+                "birth_date": _normalize_sqlite_date_value(row.get("birth_date")),
                 "signed_by": _safe_text(row.get("signed_by")) or None,
-                "signed_at": row.get("signed_at"),
+                "signed_at": _normalize_sqlite_datetime_value(row.get("signed_at")),
             },
         )
 

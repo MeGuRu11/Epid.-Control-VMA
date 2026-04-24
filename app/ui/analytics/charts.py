@@ -6,6 +6,8 @@ from typing import Any, cast
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from app.ui.theme import COL
+
 try:
     import pyqtgraph as pg
 except Exception:  # pragma: no cover
@@ -17,6 +19,7 @@ TREND_LEFT_LABEL = "\u0414\u043e\u043b\u044f \u043f\u043e\u043b\u043e\u0436\u043
 TREND_BOTTOM_LABEL = "\u0414\u0430\u0442\u0430"
 _CHART_FALLBACK_TEXT = "\u0413\u0440\u0430\u0444\u0438\u043a \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0441\u0431\u043e\u0440\u043a\u0435"
 _PYQTGRAPH_MISSING_TEXT = "pyqtgraph \u043d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d"
+_BAR_BRUSH = COL["accent2"]
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +61,7 @@ class TopMicrobesChart(QWidget):
                 self._plot.setXRange(-0.5, 0.5, padding=0.02)
                 return
             x = list(range(len(values)))
-            bar = pg.BarGraphItem(x=x, height=values, width=0.6, brush="#4C78A8")
+            bar = pg.BarGraphItem(x=x, height=values, width=0.6, brush=_BAR_BRUSH)
             self._plot.addItem(bar)
             ax.setTicks([list(zip(x, labels, strict=False))])
             self._plot.setXRange(-0.5, max(len(values) - 0.5, 0.5), padding=0.02)
@@ -119,7 +122,7 @@ class TrendChart(QWidget):
                 self._plot.setXRange(-0.5, 0.5, padding=0.02)
                 return
             x = list(range(len(values)))
-            bar = pg.BarGraphItem(x=x, height=values, width=0.75, brush="#4C78A8")
+            bar = pg.BarGraphItem(x=x, height=values, width=0.75, brush=_BAR_BRUSH)
             self._plot.addItem(bar)
             ax.setTicks([list(zip(x, labels, strict=False))])
             self._plot.setXRange(-0.5, max(len(values) - 0.5, 0.5), padding=0.02)

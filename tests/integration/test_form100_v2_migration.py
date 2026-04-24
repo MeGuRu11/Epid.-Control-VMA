@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import warnings
 from pathlib import Path
 from typing import Any, cast
 
@@ -40,7 +41,18 @@ def test_form100_v2_migration_creates_tables_and_migrates_legacy_rows(tmp_path: 
         connection.execute(text("CREATE TABLE form100_stage (card_id TEXT, received_at TEXT)"))
         connection.execute(text("INSERT INTO form100_card (id) VALUES ('legacy-card-1')"))
 
-        _run_migration(connection, fn_name="upgrade")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            _run_migration(connection, fn_name="upgrade")
+
+        sqlite_datetime_warnings = [
+            warning
+            for warning in caught
+            if issubclass(warning.category, DeprecationWarning)
+            and "sqlite" in str(warning.message).lower()
+            and "adapter" in str(warning.message).lower()
+        ]
+        assert sqlite_datetime_warnings == []
 
         tables_after_upgrade = _table_names(connection)
         assert "form100" in tables_after_upgrade

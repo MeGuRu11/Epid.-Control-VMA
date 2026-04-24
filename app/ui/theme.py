@@ -33,6 +33,13 @@ COL = {
 }
 
 
+def theme_qcolor(token: str, alpha: int | None = None) -> QColor:
+    color = QColor(COL[token])
+    if alpha is not None:
+        color.setAlpha(max(0, min(255, int(alpha))))
+    return color
+
+
 def apply_theme(app: QApplication, settings: Settings) -> None:
     app.setStyle("Fusion")
     palette = QPalette()

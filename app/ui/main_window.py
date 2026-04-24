@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QColor, QPainter, QPen
+from PySide6.QtGui import QAction, QActionGroup, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -35,6 +35,7 @@ from app.ui.patient.patient_emk_view import PatientEmkView
 from app.ui.references.reference_view import ReferenceView
 from app.ui.runtime_ui import apply_density_property, resolve_ui_runtime
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
+from app.ui.theme import theme_qcolor
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.context_bar import ContextBar
 from app.ui.widgets.dialog_utils import exec_message_box
@@ -91,8 +92,8 @@ class NavMenuBar(QMenuBar):
         rect = rect.adjusted(2, 2, -2, -2)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(QColor("#6FB9AD"), 1))
-        painter.setBrush(QColor(143, 220, 207, 140))
+        painter.setPen(QPen(theme_qcolor("accent_border"), 1))
+        painter.setBrush(theme_qcolor("accent2", alpha=140))
         painter.drawRoundedRect(rect, 8, 8)
 
 

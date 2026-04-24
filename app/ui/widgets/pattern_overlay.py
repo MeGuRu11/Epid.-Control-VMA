@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtGui import QPainter, QPen
 from PySide6.QtWidgets import QWidget
+
+from app.ui.theme import theme_qcolor
 
 
 class PatternOverlay(QWidget):
@@ -11,7 +13,7 @@ class PatternOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self._dot_color = QColor(58, 58, 56, 18)
+        self._dot_color = theme_qcolor("text", alpha=18)
         self._dot_step = 40
         self._dot_radius = 1
 

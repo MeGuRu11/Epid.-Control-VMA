@@ -13,7 +13,7 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
 )
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
+from PySide6.QtGui import QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (
     QBoxLayout,
     QGraphicsOpacityEffect,
@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 from app.application.dto.auth_dto import SessionContext
 from app.application.exceptions import AppError
 from app.application.services.dashboard_service import DashboardService
+from app.ui.theme import theme_qcolor
 from app.ui.widgets.notifications import set_status
 
 
@@ -64,10 +65,10 @@ class ClockCard(QWidget):
         self._date_prefix = "--, -- "
         self._date_month = "--"
         self._date_suffix = " ----"
-        self._bg = QColor(255, 249, 242)
-        self._border = QColor(227, 217, 207)
-        self._text = QColor(58, 58, 56)
-        self._accent = QColor(97, 201, 182)
+        self._bg = theme_qcolor("surface")
+        self._border = theme_qcolor("border")
+        self._text = theme_qcolor("text")
+        self._accent = theme_qcolor("link")
 
     def set_clock(
         self,
