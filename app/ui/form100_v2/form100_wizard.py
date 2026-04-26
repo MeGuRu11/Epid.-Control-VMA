@@ -100,6 +100,7 @@ _MP_BOOL_KEYS = {
     "mp_transfusion_substitute",
     "mp_immobilization",
     "mp_bandage",
+    "mp_surgical_intervention",
 }
 _FLAG_BOOL_KEYS = {"flag_emergency", "flag_radiation", "flag_sanitation"}
 _BOTTOM_KEYS = {

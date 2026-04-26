@@ -19,6 +19,15 @@ def _truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _payload_text(payload: dict[str, str], key: str, fallback_key: str | None = None) -> str:
+    value = str(payload.get(key) or "").strip()
+    if value:
+        return value
+    if fallback_key is None:
+        return ""
+    return str(payload.get(fallback_key) or "").strip()
+
+
 class StepMedical(QWidget):
     """Шаг 3 мастера: поля медицинской помощи."""
 
@@ -37,12 +46,14 @@ class StepMedical(QWidget):
 
         self.mp_antibiotic = QCheckBox("Антибиотик")
         self.mp_antibiotic_dose = QLineEdit()
-        self.mp_antibiotic_dose.setPlaceholderText("доза")
+        self.mp_antibiotic_dose.setPlaceholderText("антибиотик, доза / путь")
 
         self.mp_serum_pss = QCheckBox("Сыворотка ПСС")
+        self.mp_serum_pss_details = QLineEdit()
+        self.mp_serum_pss_details.setPlaceholderText("ПСС: доза / серия")
         self.mp_serum_pgs = QCheckBox("Сыворотка ПГС")
-        self.mp_serum_dose = QLineEdit()
-        self.mp_serum_dose.setPlaceholderText("доза")
+        self.mp_serum_pgs_details = QLineEdit()
+        self.mp_serum_pgs_details.setPlaceholderText("ПГС: доза / серия")
 
         self.mp_toxoid = QLineEdit()
         self.mp_toxoid.setPlaceholderText("анатоксин (какой)")
@@ -52,23 +63,35 @@ class StepMedical(QWidget):
 
         self.mp_analgesic = QCheckBox("Обезболивающее")
         self.mp_analgesic_dose = QLineEdit()
-        self.mp_analgesic_dose.setPlaceholderText("доза")
+        self.mp_analgesic_dose.setPlaceholderText("обезболивающее, доза / путь")
 
         self.mp_transfusion_blood = QCheckBox("Переливание крови")
+        self.mp_transfusion_blood_details = QLineEdit()
+        self.mp_transfusion_blood_details.setPlaceholderText("что перелито / объём")
         self.mp_transfusion_substitute = QCheckBox("Кровезаменители")
+        self.mp_transfusion_substitute_details = QLineEdit()
+        self.mp_transfusion_substitute_details.setPlaceholderText("кровезаменитель / объём")
         self.mp_immobilization = QCheckBox("Иммобилизация")
+        self.mp_immobilization_details = QLineEdit()
+        self.mp_immobilization_details.setPlaceholderText("вид иммобилизации")
         self.mp_bandage = QCheckBox("Перевязка")
+        self.mp_bandage_details = QLineEdit()
+        self.mp_bandage_details.setPlaceholderText("тип перевязки")
+        self.mp_surgical_intervention = QCheckBox("Оперативное вмешательство")
+        self.mp_surgical_intervention_details = QLineEdit()
+        self.mp_surgical_intervention_details.setPlaceholderText("какое оперативное вмешательство")
 
         mp_lay.addRow(self.mp_antibiotic, self.mp_antibiotic_dose)
-        mp_lay.addRow(self.mp_serum_pss)
-        mp_lay.addRow(self.mp_serum_pgs, self.mp_serum_dose)
+        mp_lay.addRow(self.mp_serum_pss, self.mp_serum_pss_details)
+        mp_lay.addRow(self.mp_serum_pgs, self.mp_serum_pgs_details)
         mp_lay.addRow("Анатоксин:", self.mp_toxoid)
         mp_lay.addRow("Антидот:", self.mp_antidote)
         mp_lay.addRow(self.mp_analgesic, self.mp_analgesic_dose)
-        mp_lay.addRow(self.mp_transfusion_blood)
-        mp_lay.addRow(self.mp_transfusion_substitute)
-        mp_lay.addRow(self.mp_immobilization)
-        mp_lay.addRow(self.mp_bandage)
+        mp_lay.addRow(self.mp_transfusion_blood, self.mp_transfusion_blood_details)
+        mp_lay.addRow(self.mp_transfusion_substitute, self.mp_transfusion_substitute_details)
+        mp_lay.addRow(self.mp_immobilization, self.mp_immobilization_details)
+        mp_lay.addRow(self.mp_bandage, self.mp_bandage_details)
+        mp_lay.addRow(self.mp_surgical_intervention, self.mp_surgical_intervention_details)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -81,7 +104,8 @@ class StepMedical(QWidget):
         self.mp_antibiotic_dose.setText(str(payload.get("mp_antibiotic_dose") or ""))
         self.mp_serum_pss.setChecked(_truthy(payload.get("mp_serum_pss")))
         self.mp_serum_pgs.setChecked(_truthy(payload.get("mp_serum_pgs")))
-        self.mp_serum_dose.setText(str(payload.get("mp_serum_dose") or ""))
+        self.mp_serum_pss_details.setText(_payload_text(payload, "mp_serum_pss_details", "mp_serum_dose"))
+        self.mp_serum_pgs_details.setText(_payload_text(payload, "mp_serum_pgs_details", "mp_serum_dose"))
         self.mp_toxoid.setText(str(payload.get("mp_toxoid") or ""))
         self.mp_antidote.setText(str(payload.get("mp_antidote") or ""))
         self.mp_analgesic.setChecked(_truthy(payload.get("mp_analgesic")))
@@ -90,22 +114,42 @@ class StepMedical(QWidget):
         self.mp_transfusion_substitute.setChecked(_truthy(payload.get("mp_transfusion_substitute")))
         self.mp_immobilization.setChecked(_truthy(payload.get("mp_immobilization")))
         self.mp_bandage.setChecked(_truthy(payload.get("mp_bandage")))
+        self.mp_transfusion_blood_details.setText(str(payload.get("mp_transfusion_blood_details") or ""))
+        self.mp_transfusion_substitute_details.setText(
+            str(payload.get("mp_transfusion_substitute_details") or "")
+        )
+        self.mp_immobilization_details.setText(str(payload.get("mp_immobilization_details") or ""))
+        self.mp_bandage_details.setText(str(payload.get("mp_bandage_details") or ""))
+        self.mp_surgical_intervention.setChecked(_truthy(payload.get("mp_surgical_intervention")))
+        self.mp_surgical_intervention_details.setText(
+            str(payload.get("mp_surgical_intervention_details") or "")
+        )
 
     def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
+        serum_pss_details = self.mp_serum_pss_details.text().strip()
+        serum_pgs_details = self.mp_serum_pgs_details.text().strip()
         return {
             "mp_antibiotic":             "1" if self.mp_antibiotic.isChecked() else "0",
             "mp_antibiotic_dose":        self.mp_antibiotic_dose.text().strip(),
             "mp_serum_pss":              "1" if self.mp_serum_pss.isChecked() else "0",
             "mp_serum_pgs":              "1" if self.mp_serum_pgs.isChecked() else "0",
-            "mp_serum_dose":             self.mp_serum_dose.text().strip(),
+            "mp_serum_dose":             serum_pss_details or serum_pgs_details,
+            "mp_serum_pss_details":      serum_pss_details,
+            "mp_serum_pgs_details":      serum_pgs_details,
             "mp_toxoid":                 self.mp_toxoid.text().strip(),
             "mp_antidote":               self.mp_antidote.text().strip(),
             "mp_analgesic":              "1" if self.mp_analgesic.isChecked() else "0",
             "mp_analgesic_dose":         self.mp_analgesic_dose.text().strip(),
             "mp_transfusion_blood":      "1" if self.mp_transfusion_blood.isChecked() else "0",
+            "mp_transfusion_blood_details": self.mp_transfusion_blood_details.text().strip(),
             "mp_transfusion_substitute": "1" if self.mp_transfusion_substitute.isChecked() else "0",
+            "mp_transfusion_substitute_details": self.mp_transfusion_substitute_details.text().strip(),
             "mp_immobilization":         "1" if self.mp_immobilization.isChecked() else "0",
+            "mp_immobilization_details": self.mp_immobilization_details.text().strip(),
             "mp_bandage":                "1" if self.mp_bandage.isChecked() else "0",
+            "mp_bandage_details":        self.mp_bandage_details.text().strip(),
+            "mp_surgical_intervention":  "1" if self.mp_surgical_intervention.isChecked() else "0",
+            "mp_surgical_intervention_details": self.mp_surgical_intervention_details.text().strip(),
         }, []
 
     def set_locked(self, locked: bool) -> None:
@@ -115,15 +159,21 @@ class StepMedical(QWidget):
             self.mp_antibiotic_dose,
             self.mp_serum_pss,
             self.mp_serum_pgs,
-            self.mp_serum_dose,
+            self.mp_serum_pss_details,
+            self.mp_serum_pgs_details,
             self.mp_toxoid,
             self.mp_antidote,
             self.mp_analgesic,
             self.mp_analgesic_dose,
             self.mp_transfusion_blood,
+            self.mp_transfusion_blood_details,
             self.mp_transfusion_substitute,
+            self.mp_transfusion_substitute_details,
             self.mp_immobilization,
+            self.mp_immobilization_details,
             self.mp_bandage,
+            self.mp_bandage_details,
+            self.mp_surgical_intervention,
+            self.mp_surgical_intervention_details,
         ):
             w.setEnabled(enabled)
-

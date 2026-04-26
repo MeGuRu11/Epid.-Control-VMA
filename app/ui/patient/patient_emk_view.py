@@ -61,7 +61,7 @@ class PatientEmkView(QWidget):
         session: SessionContext | None,
         on_open_emz: Callable[[int | None, int | None], None],
         on_open_lab: Callable[[int | None, int | None], None],
-        on_edit_patient: Callable[[int], None] | None = None,
+        on_edit_patient: Callable[[int, int | None], None] | None = None,
         on_data_changed: Callable[[], None] | None = None,
         on_open_form100: Callable[[int | None, int | None], None] | None = None,
         parent: QWidget | None = None,
@@ -344,7 +344,7 @@ class PatientEmkView(QWidget):
 
         edit_row = QHBoxLayout()
         edit_row.addStretch()
-        self.edit_patient_btn = QPushButton("Редактировать пациента")
+        self.edit_patient_btn = QPushButton("Редактировать ЭМЗ")
         self.edit_patient_btn.setObjectName("primaryButton")
         compact_button(self.edit_patient_btn)
         self.edit_patient_btn.clicked.connect(self._open_edit_patient)
@@ -434,7 +434,13 @@ class PatientEmkView(QWidget):
             self._set_status("Сначала выберите пациента.", "warning")
             return
         if self.on_edit_patient:
-            self.on_edit_patient(self._current_patient.id)
+            case_id = self._current_case_id
+            if case_id is None:
+                case_id = self._choose_latest_case_id()
+            if case_id is None:
+                self._set_status("Нет госпитализаций для редактирования ЭМЗ.", "warning")
+                return
+            self.on_edit_patient(self._current_patient.id, case_id)
 
     def _reset_search(self) -> None:
         self._search_token += 1

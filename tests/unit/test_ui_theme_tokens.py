@@ -40,6 +40,31 @@ def test_theme_defines_interactive_states_for_secondary_buttons(qapp) -> None:
     assert "QPushButton#secondaryButton:pressed" in stylesheet
 
 
+def test_theme_defines_logout_dialog_and_button_styles(qapp) -> None:
+    settings = Settings()
+    apply_theme(qapp, settings)
+    stylesheet = qapp.styleSheet()
+
+    assert "QDialog#logoutConfirmDialog" in stylesheet
+    assert "QLabel#logoutDialogIcon" in stylesheet
+    assert "QPushButton#logoutConfirmButton:hover" in stylesheet
+    assert "QPushButton#logoutCancelButton:hover" in stylesheet
+    assert "QWidget#logoutCorner" in stylesheet
+    assert f"QPushButton#logoutButton {{\n        background: transparent;\n        border: 1px solid {COL['danger_pressed']}" in stylesheet
+    assert f"QPushButton#logoutButton:hover {{\n        background: {COL['error_bg']};\n        border: 1px solid {COL['danger_pressed']}" in stylesheet
+    assert "QPushButton#logoutButton:pressed" in stylesheet
+
+
+def test_theme_defines_antibiotic_popup_styles(qapp) -> None:
+    settings = Settings()
+    apply_theme(qapp, settings)
+    stylesheet = qapp.styleSheet()
+
+    assert "QFrame#abxComboPopup" in stylesheet
+    assert "QListView#abxComboPopupView" in stylesheet
+    assert "QListView#abxComboPopupView::item:selected" in stylesheet
+
+
 def test_theme_qcolor_reads_token_and_applies_alpha() -> None:
     accent = theme_qcolor("accent2")
     faded = theme_qcolor("accent2", alpha=140)

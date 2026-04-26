@@ -3,9 +3,10 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import cast
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QDialog, QWidget
 
 from app.application.dto.auth_dto import SessionContext
+from app.ui import main_window as main_window_module
 from app.ui.main_window import MainWindow
 
 
@@ -182,6 +183,54 @@ def test_after_patient_edit_saved_skips_context_update_for_non_current_patient()
     assert window._emr_form.refreshed == [7]
     assert window._context_bar.calls == []
     assert changed["count"] == 1
+
+
+def test_open_patient_edit_dialog_uses_full_dialog_and_refreshes(monkeypatch) -> None:
+    created: dict[str, object] = {}
+    refreshed: list[int] = []
+
+    class _Dialog:
+        def __init__(self, **kwargs: object) -> None:
+            created.update(kwargs)
+
+        def exec(self) -> QDialog.DialogCode:
+            return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(main_window_module, "PatientFullEditDialog", _Dialog)
+    window = SimpleNamespace()
+    window.container = SimpleNamespace()
+    window.session = SessionContext(user_id=1, login="admin", role="admin")
+    window._current_patient_id = 7
+    window._current_case_id = 9
+    window._after_patient_edit_saved = refreshed.append
+
+    MainWindow._open_patient_edit_dialog(cast(MainWindow, window), 7)
+
+    assert created["container"] is window.container
+    assert created["session"] is window.session
+    assert created["patient_id"] == 7
+    assert created["emr_case_id"] == 9
+    assert refreshed == [7]
+
+
+def test_logout_uses_redesigned_confirmation_and_cancels(monkeypatch) -> None:
+    called: list[dict[str, object]] = []
+    monkeypatch.setattr(main_window_module, "confirm_logout", lambda _parent: False)
+    window = SimpleNamespace(_relogin_or_close=lambda **kwargs: called.append(kwargs))
+
+    MainWindow._logout(cast(MainWindow, window))
+
+    assert called == []
+
+
+def test_logout_uses_redesigned_confirmation_and_relogs(monkeypatch) -> None:
+    called: list[dict[str, object]] = []
+    monkeypatch.setattr(main_window_module, "confirm_logout", lambda _parent: True)
+    window = SimpleNamespace(_relogin_or_close=lambda **kwargs: called.append(kwargs))
+
+    MainWindow._logout(cast(MainWindow, window))
+
+    assert called == [{"show_timeout_message": False}]
 
 
 def test_set_active_view_activates_analytics_page(qapp) -> None:

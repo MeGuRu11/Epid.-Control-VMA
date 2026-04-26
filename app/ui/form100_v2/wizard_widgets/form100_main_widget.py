@@ -58,6 +58,15 @@ def _truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _payload_text(payload: dict[str, str], key: str, fallback_key: str | None = None) -> str:
+    value = str(payload.get(key) or "").strip()
+    if value:
+        return value
+    if fallback_key is None:
+        return ""
+    return str(payload.get(fallback_key) or "").strip()
+
+
 class Form100MainWidget(QWidget):
     """Основной бланк Формы 100: поражения + схема тела + медицинская помощь + идентификация."""
 
@@ -137,33 +146,47 @@ class Form100MainWidget(QWidget):
 
         self.mp_antibiotic = QCheckBox("Антибиотик")
         self.mp_antibiotic_dose = QLineEdit()
-        self.mp_antibiotic_dose.setPlaceholderText("доза")
+        self.mp_antibiotic_dose.setPlaceholderText("антибиотик, доза / путь")
         self.mp_serum_pss = QCheckBox("Сыворотка ПСС")
+        self.mp_serum_pss_details = QLineEdit()
+        self.mp_serum_pss_details.setPlaceholderText("ПСС: доза / серия")
         self.mp_serum_pgs = QCheckBox("Сыворотка ПГС")
-        self.mp_serum_dose = QLineEdit()
-        self.mp_serum_dose.setPlaceholderText("доза")
+        self.mp_serum_pgs_details = QLineEdit()
+        self.mp_serum_pgs_details.setPlaceholderText("ПГС: доза / серия")
         self.mp_toxoid = QLineEdit()
         self.mp_toxoid.setPlaceholderText("анатоксин (какой)")
         self.mp_antidote = QLineEdit()
         self.mp_antidote.setPlaceholderText("антидот (какой)")
         self.mp_analgesic = QCheckBox("Обезболивающее")
         self.mp_analgesic_dose = QLineEdit()
-        self.mp_analgesic_dose.setPlaceholderText("доза")
+        self.mp_analgesic_dose.setPlaceholderText("обезболивающее, доза / путь")
         self.mp_transfusion_blood = QCheckBox("Переливание крови")
+        self.mp_transfusion_blood_details = QLineEdit()
+        self.mp_transfusion_blood_details.setPlaceholderText("что перелито / объём")
         self.mp_transfusion_substitute = QCheckBox("Кровезаменители")
+        self.mp_transfusion_substitute_details = QLineEdit()
+        self.mp_transfusion_substitute_details.setPlaceholderText("кровезаменитель / объём")
         self.mp_immobilization = QCheckBox("Иммобилизация")
+        self.mp_immobilization_details = QLineEdit()
+        self.mp_immobilization_details.setPlaceholderText("вид иммобилизации")
         self.mp_bandage = QCheckBox("Перевязка")
+        self.mp_bandage_details = QLineEdit()
+        self.mp_bandage_details.setPlaceholderText("тип перевязки")
+        self.mp_surgical_intervention = QCheckBox("Оперативное вмешательство")
+        self.mp_surgical_intervention_details = QLineEdit()
+        self.mp_surgical_intervention_details.setPlaceholderText("какое оперативное вмешательство")
 
         mp_lay.addRow(self.mp_antibiotic, self.mp_antibiotic_dose)
-        mp_lay.addRow(self.mp_serum_pss)
-        mp_lay.addRow(self.mp_serum_pgs, self.mp_serum_dose)
+        mp_lay.addRow(self.mp_serum_pss, self.mp_serum_pss_details)
+        mp_lay.addRow(self.mp_serum_pgs, self.mp_serum_pgs_details)
         mp_lay.addRow("Анатоксин:", self.mp_toxoid)
         mp_lay.addRow("Антидот:", self.mp_antidote)
         mp_lay.addRow(self.mp_analgesic, self.mp_analgesic_dose)
-        mp_lay.addRow(self.mp_transfusion_blood)
-        mp_lay.addRow(self.mp_transfusion_substitute)
-        mp_lay.addRow(self.mp_immobilization)
-        mp_lay.addRow(self.mp_bandage)
+        mp_lay.addRow(self.mp_transfusion_blood, self.mp_transfusion_blood_details)
+        mp_lay.addRow(self.mp_transfusion_substitute, self.mp_transfusion_substitute_details)
+        mp_lay.addRow(self.mp_immobilization, self.mp_immobilization_details)
+        mp_lay.addRow(self.mp_bandage, self.mp_bandage_details)
+        mp_lay.addRow(self.mp_surgical_intervention, self.mp_surgical_intervention_details)
 
         top_row.addWidget(mp_box)
 
@@ -262,7 +285,8 @@ class Form100MainWidget(QWidget):
         self.mp_antibiotic_dose.setText(str(payload.get("mp_antibiotic_dose") or ""))
         self.mp_serum_pss.setChecked(_truthy(payload.get("mp_serum_pss")))
         self.mp_serum_pgs.setChecked(_truthy(payload.get("mp_serum_pgs")))
-        self.mp_serum_dose.setText(str(payload.get("mp_serum_dose") or ""))
+        self.mp_serum_pss_details.setText(_payload_text(payload, "mp_serum_pss_details", "mp_serum_dose"))
+        self.mp_serum_pgs_details.setText(_payload_text(payload, "mp_serum_pgs_details", "mp_serum_dose"))
         self.mp_toxoid.setText(str(payload.get("mp_toxoid") or ""))
         self.mp_antidote.setText(str(payload.get("mp_antidote") or ""))
         self.mp_analgesic.setChecked(_truthy(payload.get("mp_analgesic")))
@@ -271,6 +295,16 @@ class Form100MainWidget(QWidget):
         self.mp_transfusion_substitute.setChecked(_truthy(payload.get("mp_transfusion_substitute")))
         self.mp_immobilization.setChecked(_truthy(payload.get("mp_immobilization")))
         self.mp_bandage.setChecked(_truthy(payload.get("mp_bandage")))
+        self.mp_transfusion_blood_details.setText(str(payload.get("mp_transfusion_blood_details") or ""))
+        self.mp_transfusion_substitute_details.setText(
+            str(payload.get("mp_transfusion_substitute_details") or "")
+        )
+        self.mp_immobilization_details.setText(str(payload.get("mp_immobilization_details") or ""))
+        self.mp_bandage_details.setText(str(payload.get("mp_bandage_details") or ""))
+        self.mp_surgical_intervention.setChecked(_truthy(payload.get("mp_surgical_intervention")))
+        self.mp_surgical_intervention_details.setText(
+            str(payload.get("mp_surgical_intervention_details") or "")
+        )
 
         self.main_issued_place.setText(str(payload.get("main_issued_place") or ""))
         self.main_rank.setText(str(payload.get("main_rank") or ""))
@@ -317,15 +351,25 @@ class Form100MainWidget(QWidget):
         payload["mp_antibiotic_dose"]        = self.mp_antibiotic_dose.text().strip()
         payload["mp_serum_pss"]              = "1" if self.mp_serum_pss.isChecked() else "0"
         payload["mp_serum_pgs"]              = "1" if self.mp_serum_pgs.isChecked() else "0"
-        payload["mp_serum_dose"]             = self.mp_serum_dose.text().strip()
+        serum_pss_details = self.mp_serum_pss_details.text().strip()
+        serum_pgs_details = self.mp_serum_pgs_details.text().strip()
+        payload["mp_serum_dose"]             = serum_pss_details or serum_pgs_details
+        payload["mp_serum_pss_details"]      = serum_pss_details
+        payload["mp_serum_pgs_details"]      = serum_pgs_details
         payload["mp_toxoid"]                 = self.mp_toxoid.text().strip()
         payload["mp_antidote"]               = self.mp_antidote.text().strip()
         payload["mp_analgesic"]              = "1" if self.mp_analgesic.isChecked() else "0"
         payload["mp_analgesic_dose"]         = self.mp_analgesic_dose.text().strip()
         payload["mp_transfusion_blood"]      = "1" if self.mp_transfusion_blood.isChecked() else "0"
+        payload["mp_transfusion_blood_details"] = self.mp_transfusion_blood_details.text().strip()
         payload["mp_transfusion_substitute"] = "1" if self.mp_transfusion_substitute.isChecked() else "0"
+        payload["mp_transfusion_substitute_details"] = self.mp_transfusion_substitute_details.text().strip()
         payload["mp_immobilization"]         = "1" if self.mp_immobilization.isChecked() else "0"
+        payload["mp_immobilization_details"] = self.mp_immobilization_details.text().strip()
         payload["mp_bandage"]                = "1" if self.mp_bandage.isChecked() else "0"
+        payload["mp_bandage_details"]        = self.mp_bandage_details.text().strip()
+        payload["mp_surgical_intervention"]  = "1" if self.mp_surgical_intervention.isChecked() else "0"
+        payload["mp_surgical_intervention_details"] = self.mp_surgical_intervention_details.text().strip()
 
         payload["main_issued_place"] = self.main_issued_place.text().strip()
         payload["main_rank"]         = self.main_rank.text().strip()
@@ -354,11 +398,15 @@ class Form100MainWidget(QWidget):
 
         for mp_w in (
             self.mp_antibiotic, self.mp_antibiotic_dose,
-            self.mp_serum_pss, self.mp_serum_pgs, self.mp_serum_dose,
+            self.mp_serum_pss, self.mp_serum_pgs,
+            self.mp_serum_pss_details, self.mp_serum_pgs_details,
             self.mp_toxoid, self.mp_antidote,
             self.mp_analgesic, self.mp_analgesic_dose,
-            self.mp_transfusion_blood, self.mp_transfusion_substitute,
-            self.mp_immobilization, self.mp_bandage,
+            self.mp_transfusion_blood, self.mp_transfusion_blood_details,
+            self.mp_transfusion_substitute, self.mp_transfusion_substitute_details,
+            self.mp_immobilization, self.mp_immobilization_details,
+            self.mp_bandage, self.mp_bandage_details,
+            self.mp_surgical_intervention, self.mp_surgical_intervention_details,
         ):
             mp_w.setEnabled(enabled)
 
@@ -368,4 +416,3 @@ class Form100MainWidget(QWidget):
             self.main_injury_time, self.main_injury_date,
         ):
             id_w.setEnabled(enabled)
-

@@ -4,10 +4,13 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtWidgets import QPushButton, QWidget
 
 from app.application.dto.auth_dto import SessionContext
-from app.ui.main_window import MainWindow
+from app.config import Settings
+from app.ui.main_window import MainWindow, NavMenuBar
+from app.ui.theme import apply_theme
 from app.ui.widgets.transition_stack import TransitionStack
 
 
@@ -95,6 +98,32 @@ def test_main_window_nav_menu_adapts_titles_on_small_width(monkeypatch, qapp) ->
     assert window._nav_label_mode == "full"
     assert window.menuBar().property("compactNav") is False
     assert all(action.text() == title for action, title in window._nav_action_titles.items())
+
+
+def test_nav_menu_positions_logout_button_evenly(qapp) -> None:
+    apply_theme(qapp, Settings())
+    menubar = NavMenuBar()
+    nav_action = menubar.addAction("Главная")
+    button = QPushButton("Выйти")
+
+    menubar.resize(320, 44)
+    menubar.set_logout_button(button)
+    menubar.show()
+    qapp.processEvents()
+
+    top_left = button.mapTo(menubar, QPoint(0, 0))
+    nav_rect = menubar.actionGeometry(nav_action)
+    logout_center_y = top_left.y() + button.height() // 2
+
+    assert button.height() == 28
+    assert top_left.y() >= 0
+    assert top_left.y() + button.height() <= menubar.height()
+    assert top_left.x() + button.width() <= menubar.width()
+    assert abs(logout_center_y - nav_rect.center().y()) <= 2
+    assert menubar.cornerWidget(Qt.Corner.TopRightCorner) is not None
+    assert menubar.trailing_reserved_width() == button.width() + 16
+
+    menubar.close()
 
 
 def test_main_window_idle_timeout_requests_relogin(monkeypatch, qapp) -> None:

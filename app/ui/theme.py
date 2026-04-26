@@ -27,6 +27,7 @@ COL = {
     "warn": "#F4D58D",
     "error_bg": "#FDE7E5",
     "error": "#E18A85",
+    "error_fg": "#7F2F2A",
     "info_bg": "#F2F1EF",
     "info": "#7A7A78",
     "danger_pressed": "#D8746F",
@@ -157,6 +158,73 @@ def _build_qss(settings: Settings) -> str:
     }}
     QLabel#adminStatus, QLabel#homeUserInfo {{
         color: {COL["text"]};
+    }}
+    QScrollArea#adminPageScrollArea {{
+        background: transparent;
+        border: none;
+    }}
+    QWidget#adminHeroCard {{
+        background: rgba(255, 249, 242, 0.9);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QWidget#adminHeroTextBlock {{
+        background: transparent;
+        border: none;
+    }}
+    QWidget#adminPanelCard {{
+        background: rgba(255, 249, 242, 0.86);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QTabWidget#adminTabs::pane {{
+        border: none;
+        background: transparent;
+    }}
+    QTabWidget#adminTabs QTabBar::tab {{
+        background: {COL["surface"]};
+        border: 1px solid {COL["border"]};
+        border-bottom: none;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        padding: 8px 14px;
+        margin-right: 4px;
+        font-weight: 700;
+    }}
+    QTabWidget#adminTabs QTabBar::tab:selected {{
+        background: {COL["surface2"]};
+        color: {COL["text_primary"]};
+        border-color: {COL["accent_border"]};
+    }}
+    QLabel#adminRoleBadge,
+    QLabel#adminStateBadge {{
+        border-radius: 9px;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 4px 10px;
+    }}
+    QLabel#adminRoleBadge[tone="success"],
+    QLabel#adminStateBadge[tone="success"] {{
+        color: #2D5A40;
+        background: {COL["success_bg"]};
+        border: 1px solid {COL["success"]};
+    }}
+    QLabel#adminRoleBadge[tone="warning"],
+    QLabel#adminStateBadge[tone="warning"] {{
+        color: #6E5525;
+        background: {COL["warn_bg"]};
+        border: 1px solid {COL["warn"]};
+    }}
+    QLabel#adminRoleBadge[tone="info"],
+    QLabel#adminStateBadge[tone="info"] {{
+        color: {COL["info"]};
+        background: {COL["info_bg"]};
+        border: 1px solid #C9C6C1;
+    }}
+    QLabel#adminDetailTitle {{
+        color: {COL["text_primary"]};
+        font-size: 15px;
+        font-weight: 800;
     }}
     QWidget#homeHeroCard {{
         background: rgba(255, 249, 242, 0.88);
@@ -340,13 +408,13 @@ def _build_qss(settings: Settings) -> str:
     }}
     QLabel#labStateBadge[tone="error"],
     QLabel#labStateBadge[tone="positive"] {{
-        color: #7F2F2A;
+        color: {COL["error_fg"]};
         background: {COL["error_bg"]};
         border: 1px solid {COL["error"]};
     }}
     QLabel#sanitaryStateBadge[tone="error"],
     QLabel#sanitaryStateBadge[tone="positive"] {{
-        color: #7F2F2A;
+        color: {COL["error_fg"]};
         background: {COL["error_bg"]};
         border: 1px solid {COL["error"]};
     }}
@@ -1085,6 +1153,26 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["accent_border"]};
         background: {COL["surface2"]};
     }}
+    QFrame#abxComboPopup {{
+        background: {COL["surface"]};
+        border: 1px solid {COL["border"]};
+        border-radius: 8px;
+    }}
+    QListView#abxComboPopupView {{
+        background: {COL["surface"]};
+        border: none;
+        outline: none;
+        padding: 2px;
+    }}
+    QListView#abxComboPopupView::item {{
+        min-height: 24px;
+        padding: 5px 8px;
+        color: {COL["text"]};
+    }}
+    QListView#abxComboPopupView::item:selected {{
+        background: {COL["accent2"]};
+        color: {COL["text_primary"]};
+    }}
     QPushButton {{
         background: {COL["accent2"]};
         border: none;
@@ -1136,15 +1224,83 @@ def _build_qss(settings: Settings) -> str:
         background: {COL["surface"]};
         color: {COL["muted"]};
     }}
-    QPushButton#logoutButton {{
+    QWidget#logoutCorner {{
         background: transparent;
         border: none;
-        border-radius: 8px;
+    }}
+    QPushButton#logoutButton {{
+        background: transparent;
+        border: 1px solid {COL["danger_pressed"]};
+        border-radius: 10px;
         padding: 4px 12px;
         color: {COL["text"]};
+        font-weight: 800;
     }}
     QPushButton#logoutButton:hover {{
+        background: {COL["error_bg"]};
+        border: 1px solid {COL["danger_pressed"]};
+        color: {COL["error_fg"]};
+    }}
+    QPushButton#logoutButton:pressed {{
         background: {COL["error"]};
+        border: 1px solid {COL["danger_pressed"]};
+        color: {COL["surface2"]};
+    }}
+    QDialog#logoutConfirmDialog {{
+        background: {COL["surface2"]};
+        border: 1px solid {COL["border"]};
+        border-radius: 16px;
+    }}
+    QDialog#logoutConfirmDialog QLabel#logoutDialogIcon {{
+        background: {COL["error_bg"]};
+        border: 1px solid {COL["error"]};
+        border-radius: 26px;
+        color: {COL["error_fg"]};
+        font-size: 28px;
+        font-weight: 900;
+    }}
+    QDialog#logoutConfirmDialog QLabel#logoutDialogTitle {{
+        color: {COL["text_primary"]};
+        font-size: 18px;
+        font-weight: 900;
+    }}
+    QDialog#logoutConfirmDialog QLabel#logoutDialogBody {{
+        color: {COL["muted"]};
+        font-size: 12px;
+    }}
+    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton {{
+        background: {COL["surface"]};
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+        padding: 8px 16px;
+        min-width: 96px;
+        font-weight: 800;
+    }}
+    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton:hover {{
+        background: {COL["accent"]};
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton:pressed {{
+        background: {COL["accent_pressed"]};
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton {{
+        background: {COL["error_bg"]};
+        border: 1px solid {COL["error"]};
+        border-radius: 12px;
+        padding: 8px 16px;
+        min-width: 96px;
+        color: {COL["error_fg"]};
+        font-weight: 900;
+    }}
+    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton:hover {{
+        background: {COL["error"]};
+        border: 1px solid {COL["danger_pressed"]};
+        color: {COL["surface2"]};
+    }}
+    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton:pressed {{
+        background: {COL["danger_pressed"]};
+        border: 1px solid {COL["danger_pressed"]};
         color: {COL["surface2"]};
     }}
     QTableWidget, QTableView {{

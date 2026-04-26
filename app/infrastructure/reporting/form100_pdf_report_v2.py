@@ -621,21 +621,24 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     ]
 
     mp_items = [
-        ("Антибиотик", "mp_antibiotic", "mp_antibiotic_dose"),
-        ("Сыворотка ПСС", "mp_serum_pss", "mp_serum_dose"),
-        ("Сыворотка ПГС", "mp_serum_pgs", "mp_serum_dose"),
-        ("Анатоксин", None, "mp_toxoid"),
-        ("Антидот", None, "mp_antidote"),
-        ("Обезболивающее средство", "mp_analgesic", "mp_analgesic_dose"),
-        ("Переливание крови", "mp_transfusion_blood", None),
-        ("Кровезаменители", "mp_transfusion_substitute", None),
-        ("Иммобилизация", "mp_immobilization", None),
-        ("Перевязка", "mp_bandage", None),
+        ("Антибиотик", "mp_antibiotic", "mp_antibiotic_dose", None),
+        ("Сыворотка ПСС", "mp_serum_pss", "mp_serum_pss_details", "mp_serum_dose"),
+        ("Сыворотка ПГС", "mp_serum_pgs", "mp_serum_pgs_details", "mp_serum_dose"),
+        ("Анатоксин", None, "mp_toxoid", None),
+        ("Антидот", None, "mp_antidote", None),
+        ("Обезболивающее средство", "mp_analgesic", "mp_analgesic_dose", None),
+        ("Переливание крови", "mp_transfusion_blood", "mp_transfusion_blood_details", None),
+        ("Кровезаменители", "mp_transfusion_substitute", "mp_transfusion_substitute_details", None),
+        ("Иммобилизация", "mp_immobilization", "mp_immobilization_details", None),
+        ("Перевязка", "mp_bandage", "mp_bandage_details", None),
+        ("Оперативное вмешательство", "mp_surgical_intervention", "mp_surgical_intervention_details", None),
     ]
 
-    for label, check_key, dose_key in mp_items:
+    for label, check_key, dose_key, fallback_key in mp_items:
         done = "Да" if check_key and _is_truthy(mp.get(check_key)) else ("—" if check_key else "—")
         dose = _g(mp, dose_key) if dose_key else "—"
+        if not dose and fallback_key:
+            dose = _g(mp, fallback_key)
         if not check_key:
             done = "—" if not dose or dose == "—" else "Да"
         mp_rows.append([P(label), P(done), P(dose)])
@@ -653,9 +656,9 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     ]
     has_stub_data = any(_is_truthy(stub.get(k)) for _, k, _ in stub_checks)
     if has_stub_data:
-        for label, check_key, dose_key in stub_checks:
+        for label, check_key, stub_dose_key in stub_checks:
             done = "Да" if _is_truthy(stub.get(check_key)) else "—"
-            dose = _g(stub, dose_key) if dose_key else "—"
+            dose = _g(stub, stub_dose_key) if stub_dose_key else "—"
             mp_rows.append([P(label, s_small), P(done, s_small), P(dose, s_small)])
 
     mp_cols = [page_w * 0.45, page_w * 0.2, page_w * 0.35]

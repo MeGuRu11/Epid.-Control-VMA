@@ -4,7 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
-from PySide6.QtCore import QDate, QDateTime
+from PySide6.QtCore import QDate, QDateTime, QPoint, QPointF, Qt
+from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QComboBox
 
 import app.ui.emz.form_widget_factories as factories
@@ -26,12 +27,20 @@ class _FakeComboBox:
         self.tooltip = ""
         self.current_index = -1
         self.edit_text = ""
+        self.max_visible_items: int | None = None
+        self.popup_view = _FakePopupView()
 
     def setEditable(self, editable: bool) -> None:  # noqa: N802
         self.editable = editable
 
     def setInsertPolicy(self, policy: int) -> None:  # noqa: N802
         self.insert_policy = policy
+
+    def setMaxVisibleItems(self, count: int) -> None:  # noqa: N802
+        self.max_visible_items = count
+
+    def view(self) -> _FakePopupView:
+        return self.popup_view
 
     def addItem(self, label: str, data: object = None) -> None:  # noqa: N802
         self.items.append((label, data))
@@ -67,6 +76,14 @@ class _FakeComboBox:
 
     def setItemData(self, idx: int, value: object, role: int) -> None:  # noqa: N802
         self.item_data[(idx, role)] = value
+
+
+class _FakePopupView:
+    def __init__(self) -> None:
+        self.maximum_height: int | None = None
+
+    def setMaximumHeight(self, value: int) -> None:  # noqa: N802
+        self.maximum_height = value
 
 
 class _FakeDateTimeEdit:
@@ -210,14 +227,56 @@ def test_populate_icd_combo_restores_selection_and_edit_text(monkeypatch) -> Non
     assert combo.edit_text == "Her"
 
 
-def test_create_abx_combo(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QComboBox", _FakeComboBox)
-    combo = cast(
-        _FakeComboBox,
-        factories.create_abx_combo(antibiotics=[_Abx(id=5, code="ABX", name="Amoxicillin")]),
+def test_create_abx_combo(qapp) -> None:
+    combo = factories.create_abx_combo(antibiotics=[_Abx(id=5, code="ABX", name="Amoxicillin")])
+
+    assert combo.itemData(0) is None
+    assert combo.itemText(1) == "ABX - Amoxicillin"
+    assert combo.itemData(1) == 5
+    assert combo.maxVisibleItems() == factories.ABX_COMBO_MAX_VISIBLE_ITEMS
+    assert combo.view().maximumHeight() == factories.ABX_COMBO_POPUP_MAX_HEIGHT
+
+    combo.close()
+
+
+def test_create_abx_combo_limits_real_popup_container_height(qapp) -> None:
+    combo = factories.create_abx_combo(
+        antibiotics=[_Abx(id=idx, code=f"ABX-{idx:04d}", name="Antibiotic") for idx in range(1, 61)]
     )
-    assert combo.items[0][1] is None
-    assert combo.items[1] == ("ABX - Amoxicillin", 5)
+    combo.show()
+    qapp.processEvents()
+
+    combo.showPopup()
+    qapp.processEvents()
+
+    assert isinstance(combo, factories.LimitedPopupComboBox)
+    popup = combo._popup_frame
+    popup_view = combo._popup_view
+    assert popup is not None
+    assert popup_view is not None
+    assert combo._global_wheel_filter_installed is True
+    assert popup.height() == factories.ABX_COMBO_POPUP_MAX_HEIGHT
+    assert popup.mapToGlobal(QPoint(0, 0)).y() >= combo.mapToGlobal(QPoint(0, combo.height())).y()
+    scrollbar = popup_view.verticalScrollBar()
+    assert scrollbar.maximum() > 0
+    assert isinstance(popup_view, factories.AntibioticPopupListView)
+    start_value = scrollbar.value()
+    wheel = QWheelEvent(
+        QPointF(8, 8),
+        QPointF(popup_view.mapToGlobal(QPoint(8, 8))),
+        QPoint(0, 0),
+        QPoint(0, -120),
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+        Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    assert combo.eventFilter(popup_view.viewport(), wheel) is True
+    assert scrollbar.value() > start_value
+
+    combo.hidePopup()
+    assert combo._global_wheel_filter_installed is False
+    combo.close()
 
 
 def test_create_ismp_type_combo_sets_tooltip(monkeypatch) -> None:

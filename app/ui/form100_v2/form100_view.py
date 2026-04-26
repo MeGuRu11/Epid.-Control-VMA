@@ -22,7 +22,11 @@ from PySide6.QtWidgets import (
 )
 
 from app.application.dto.auth_dto import SessionContext
-from app.application.dto.form100_v2_dto import Form100V2Filters
+from app.application.dto.form100_v2_dto import (
+    Form100CreateV2Request,
+    Form100UpdateV2Request,
+    Form100V2Filters,
+)
 from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
@@ -43,6 +47,9 @@ class Form100ViewV2(QWidget):
         reporting_service: ReportingService | None,
         session: SessionContext,
         on_data_changed=None,
+        fixed_patient_id: int | None = None,
+        fixed_emr_case_id: int | None = None,
+        embedded_mode: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -50,6 +57,9 @@ class Form100ViewV2(QWidget):
         self.reporting_service = reporting_service
         self.session = session
         self.on_data_changed = on_data_changed
+        self.fixed_patient_id = fixed_patient_id
+        self.fixed_emr_case_id = fixed_emr_case_id
+        self.embedded_mode = embedded_mode
         self._rows_by_index: list[str] = []
         self._cards_preferred_widths = [68, 104, 82, 220, 92, 192, 108, 170]
         self._cards_min_widths = [54, 90, 72, 162, 82, 154, 92, 140]
@@ -241,12 +251,27 @@ class Form100ViewV2(QWidget):
             right = max(1, total - left)
         self._splitter.setSizes([left, right])
 
+    def _build_filters(self) -> Form100V2Filters:
+        return Form100V2Filters(
+            query=self.query_input.text().strip() or None,
+            status=self.status_filter.currentData(),
+            patient_id=self.fixed_patient_id,
+            emr_case_id=self.fixed_emr_case_id,
+        )
+
+    def _with_fixed_create_context(self, request: Form100CreateV2Request) -> Form100CreateV2Request:
+        if self.fixed_emr_case_id is None:
+            return request
+        return request.model_copy(update={"emr_case_id": self.fixed_emr_case_id})
+
+    def _with_fixed_update_context(self, request: Form100UpdateV2Request) -> Form100UpdateV2Request:
+        if self.fixed_emr_case_id is None:
+            return request
+        return request.model_copy(update={"emr_case_id": self.fixed_emr_case_id})
+
     def refresh_cards(self) -> None:
         try:
-            filters = Form100V2Filters(
-                query=self.query_input.text().strip() or None,
-                status=self.status_filter.currentData(),
-            )
+            filters = self._build_filters()
             rows = self.form100_service.list_cards(filters=filters, limit=500, offset=0)
         except _HANDLED_FORM100_V2_ERRORS as exc:
             show_error(self, error_text(exc, "Не удалось загрузить карточки"))
@@ -289,11 +314,11 @@ class Form100ViewV2(QWidget):
         try:
             self.editor.validation_banner.clear_error()
             if self.editor.current_card is None:
-                create_request = self.editor.build_create_request()
+                create_request = self._with_fixed_create_context(self.editor.build_create_request())
                 card = self.form100_service.create_card(create_request, actor_id=self.session.user_id)
                 show_info(self, f"Карточка создана: {card.id}")
             else:
-                update_request = self.editor.build_update_request()
+                update_request = self._with_fixed_update_context(self.editor.build_update_request())
                 card = self.form100_service.update_card(
                     self.editor.current_card.id,
                     update_request,

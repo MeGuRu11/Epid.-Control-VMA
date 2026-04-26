@@ -104,15 +104,12 @@ class Form100StubWidget(QWidget):
         self.stub_evacuation_method = QButtonGroup(self)
         method_row = QHBoxLayout()
         method_row.setContentsMargins(0, 0, 0, 0)
-        self.rb_airplane = QRadioButton("Самолёт")
-        self.rb_ambu = QRadioButton("Санг.")
-        self.rb_truck = QRadioButton("Грузавто")
+        self.rb_airplane = QRadioButton("Самолётом")
+        self.rb_ambu = QRadioButton("Сан. груз. авто.")
         self.stub_evacuation_method.addButton(self.rb_airplane)
         self.stub_evacuation_method.addButton(self.rb_ambu)
-        self.stub_evacuation_method.addButton(self.rb_truck)
         method_row.addWidget(self.rb_airplane)
         method_row.addWidget(self.rb_ambu)
-        method_row.addWidget(self.rb_truck)
         method_row.addStretch(1)
         evac_layout.addLayout(method_row)
 
@@ -176,15 +173,12 @@ class Form100StubWidget(QWidget):
     def _set_evacuation_method(self, value: str) -> None:
         if value == "airplane":
             self.rb_airplane.setChecked(True)
-        elif value == "ambu":
+        elif value in {"ambu", "truck"}:
             self.rb_ambu.setChecked(True)
-        elif value == "truck":
-            self.rb_truck.setChecked(True)
         else:
             self.stub_evacuation_method.setExclusive(False)
             self.rb_airplane.setChecked(False)
             self.rb_ambu.setChecked(False)
-            self.rb_truck.setChecked(False)
             self.stub_evacuation_method.setExclusive(True)
 
     def _evacuation_method(self) -> str:
@@ -192,8 +186,6 @@ class Form100StubWidget(QWidget):
             return "airplane"
         if self.rb_ambu.isChecked():
             return "ambu"
-        if self.rb_truck.isChecked():
-            return "truck"
         return ""
 
     def set_values(self, payload: dict[str, str]) -> None:
@@ -258,4 +250,3 @@ class Form100StubWidget(QWidget):
 
     def set_enabled(self, enabled: bool) -> None:
         self.setEnabled(enabled)
-

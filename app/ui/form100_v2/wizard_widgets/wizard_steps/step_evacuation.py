@@ -237,8 +237,10 @@ class _ReviewPanel(QScrollArea):
             "mp_serum_pgs":         "Сыворотка ПГС",
             "mp_analgesic":         "Обезболивающее",
             "mp_transfusion_blood": "Переливание",
+            "mp_transfusion_substitute": "Кровезаменители",
             "mp_immobilization":    "Иммобилизация",
             "mp_bandage":           "Перевязка",
+            "mp_surgical_intervention": "Опер. вмешательство",
         }
         mp_badges = [v for k, v in _mp_map.items() if str(payload.get(k) or "0") == "1"]
         card = self._make_badge_card("🏥", "Мед. помощь", mp_badges, "med")
@@ -250,6 +252,19 @@ class _ReviewPanel(QScrollArea):
             mp_extra.append(("Анатоксин", str(payload["mp_toxoid"])))
         if payload.get("mp_antidote"):
             mp_extra.append(("Антидот", str(payload["mp_antidote"])))
+        for key, label in (
+            ("mp_antibiotic_dose", "Антибиотик"),
+            ("mp_serum_pss_details", "ПСС"),
+            ("mp_serum_pgs_details", "ПГС"),
+            ("mp_analgesic_dose", "Обезболивающее"),
+            ("mp_transfusion_blood_details", "Переливание крови"),
+            ("mp_transfusion_substitute_details", "Кровезаменители"),
+            ("mp_immobilization_details", "Иммобилизация"),
+            ("mp_bandage_details", "Перевязка"),
+            ("mp_surgical_intervention_details", "Оперативное вмешательство"),
+        ):
+            if payload.get(key):
+                mp_extra.append((label, str(payload[key])))
         if mp_extra:
             card = self._make_card("💊", "Препараты", mp_extra, "med")
             if card:

@@ -63,6 +63,14 @@ class Form100MedicalHelpPayloadInput:
     transfusion_substitute: bool
     immobilization: bool
     bandage: bool
+    serum_pss_details: str = ""
+    serum_pgs_details: str = ""
+    transfusion_blood_details: str = ""
+    transfusion_substitute_details: str = ""
+    immobilization_details: str = ""
+    bandage_details: str = ""
+    surgical_intervention: bool = False
+    surgical_intervention_details: str = ""
 
 
 @dataclass(frozen=True)
@@ -152,14 +160,22 @@ def build_form100_data_payload(payload: Form100DataPayloadInput) -> dict[str, An
             "mp_serum_pss": payload.medical_help.serum_pss,
             "mp_serum_pgs": payload.medical_help.serum_pgs,
             "mp_serum_dose": payload.medical_help.serum_dose,
+            "mp_serum_pss_details": payload.medical_help.serum_pss_details,
+            "mp_serum_pgs_details": payload.medical_help.serum_pgs_details,
             "mp_toxoid": payload.medical_help.toxoid,
             "mp_antidote": payload.medical_help.antidote,
             "mp_analgesic": payload.medical_help.analgesic,
             "mp_analgesic_dose": payload.medical_help.analgesic_dose,
             "mp_transfusion_blood": payload.medical_help.transfusion_blood,
+            "mp_transfusion_blood_details": payload.medical_help.transfusion_blood_details,
             "mp_transfusion_substitute": payload.medical_help.transfusion_substitute,
+            "mp_transfusion_substitute_details": payload.medical_help.transfusion_substitute_details,
             "mp_immobilization": payload.medical_help.immobilization,
+            "mp_immobilization_details": payload.medical_help.immobilization_details,
             "mp_bandage": payload.medical_help.bandage,
+            "mp_bandage_details": payload.medical_help.bandage_details,
+            "mp_surgical_intervention": payload.medical_help.surgical_intervention,
+            "mp_surgical_intervention_details": payload.medical_help.surgical_intervention_details,
         },
         "bottom": {
             "tourniquet_time": payload.bottom.tourniquet_time,

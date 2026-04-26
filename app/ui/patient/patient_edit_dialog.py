@@ -158,4 +158,3 @@ class PatientEditDialog(QDialog):
         exec_message_box(self, "Готово", "Данные пациента обновлены.", icon=QMessageBox.Icon.Information)
         self.accept()
 
-

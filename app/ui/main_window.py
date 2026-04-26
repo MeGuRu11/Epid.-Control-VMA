@@ -7,6 +7,7 @@ from PySide6.QtGui import QAction, QActionGroup, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QMenuBar,
@@ -30,8 +31,8 @@ from app.ui.home.home_view import HomeView
 from app.ui.import_export.import_export_view import ImportExportView
 from app.ui.lab.lab_samples_view import LabSamplesView
 from app.ui.login_dialog import LoginDialog
-from app.ui.patient.patient_edit_dialog import PatientEditDialog
 from app.ui.patient.patient_emk_view import PatientEmkView
+from app.ui.patient.patient_full_edit_dialog import PatientFullEditDialog
 from app.ui.references.reference_view import ReferenceView
 from app.ui.runtime_ui import apply_density_property, resolve_ui_runtime
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
@@ -39,14 +40,20 @@ from app.ui.theme import theme_qcolor
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.context_bar import ContextBar
 from app.ui.widgets.dialog_utils import exec_message_box
+from app.ui.widgets.logout_dialog import confirm_logout
 from app.ui.widgets.transition_stack import TransitionStack
 
 
 class NavMenuBar(QMenuBar):
+    _LOGOUT_BUTTON_HEIGHT = 28
+    _LOGOUT_RIGHT_MARGIN = 8
+    _LOGOUT_RESERVED_PADDING = 16
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._highlight_action: QAction | None = None
         self._logout_btn: QPushButton | None = None
+        self._logout_corner: QWidget | None = None
 
     def set_highlight_action(self, action: QAction | None) -> None:
         self._highlight_action = action
@@ -54,25 +61,35 @@ class NavMenuBar(QMenuBar):
 
     def set_logout_button(self, button: QPushButton | None) -> None:
         self._logout_btn = button
-        if self._logout_btn:
-            self._logout_btn.setParent(self)
-            self._logout_btn.show()
-            self._position_logout_button()
+        if self._logout_corner is not None:
+            self._logout_corner.hide()
+            self._logout_corner.deleteLater()
+            self._logout_corner = None
+        if button is None:
+            return
+        button.setFixedSize(max(86, button.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT)
+        corner = QWidget(self)
+        corner.setObjectName("logoutCorner")
+        layout = QHBoxLayout(corner)
+        layout.setContentsMargins(0, 0, self._LOGOUT_RIGHT_MARGIN, 0)
+        layout.setSpacing(0)
+        layout.addWidget(button, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self._logout_corner = corner
+        self.setCornerWidget(corner, Qt.Corner.TopRightCorner)
+        self._position_logout_button()
 
     def resizeEvent(self, event) -> None:  # noqa: D401, N802
         super().resizeEvent(event)
         self._position_logout_button()
 
     def _position_logout_button(self) -> None:
-        if not self._logout_btn:
+        if not self._logout_btn or not self._logout_corner:
             return
-        margin = 8
-        height = max(20, self.height() - 6)
-        width = max(80, self._logout_btn.sizeHint().width())
-        self._logout_btn.resize(width, height)
-        x = max(margin, self.width() - width - margin)
-        y = max(2, (self.height() - height) // 2)
-        self._logout_btn.move(x, y)
+        self._logout_btn.setFixedSize(max(86, self._logout_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT)
+        self._logout_corner.setFixedSize(
+            self._logout_btn.width() + self._LOGOUT_RESERVED_PADDING,
+            self._LOGOUT_BUTTON_HEIGHT,
+        )
 
     def trailing_reserved_width(self) -> int:
         if not self._logout_btn:
@@ -80,7 +97,7 @@ class NavMenuBar(QMenuBar):
         btn_width = self._logout_btn.width()
         if btn_width <= 0:
             btn_width = max(80, self._logout_btn.sizeHint().width())
-        return btn_width + 20
+        return btn_width + self._LOGOUT_RESERVED_PADDING
 
     def paintEvent(self, event) -> None:  # noqa: D401, N802
         super().paintEvent(event)
@@ -449,15 +466,7 @@ class MainWindow(QMainWindow):
         self._mark_user_activity()
 
     def _logout(self) -> None:
-        confirm = QMessageBox(self)
-        confirm.setWindowTitle("Выход")
-        confirm.setText("Вы точно хотите выйти?")
-        confirm.setIcon(QMessageBox.Icon.Question)
-        yes_btn = confirm.addButton("Да", QMessageBox.ButtonRole.YesRole)
-        no_btn = confirm.addButton("Нет", QMessageBox.ButtonRole.NoRole)
-        confirm.setDefaultButton(no_btn)
-        confirm.exec()
-        if confirm.clickedButton() is not yes_btn:
+        if not confirm_logout(self):
             return
         self._relogin_or_close(show_timeout_message=False)
 
@@ -627,11 +636,22 @@ class MainWindow(QMainWindow):
         if target is not None:
             self._set_active_view(target)
 
-    def _open_patient_edit_dialog(self, patient_id: int) -> None:
-        dlg = PatientEditDialog(
-            patient_service=self.container.patient_service,
+    def _open_patient_edit_dialog(self, patient_id: int, emr_case_id: int | None = None) -> None:
+        if emr_case_id is None and self._current_patient_id == patient_id:
+            emr_case_id = self._current_case_id
+        if emr_case_id is None:
+            exec_message_box(
+                self,
+                "Редактирование ЭМЗ",
+                "Нет выбранной госпитализации для редактирования.",
+                icon=QMessageBox.Icon.Warning,
+            )
+            return
+        dlg = PatientFullEditDialog(
+            container=self.container,
+            session=self.session,
             patient_id=patient_id,
-            actor_id=self.session.user_id,
+            emr_case_id=emr_case_id,
             parent=self,
         )
         if dlg.exec() != QDialog.DialogCode.Accepted:

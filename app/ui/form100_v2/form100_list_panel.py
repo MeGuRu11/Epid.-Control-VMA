@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QHeaderView,
@@ -91,6 +92,10 @@ class _PreviewPanel(QFrame):
         self.open_btn = QPushButton("Открыть / Редактировать")
         self.open_btn.setEnabled(False)
         btn_row.addWidget(self.open_btn, 1)
+        self.export_pdf_btn = QPushButton("Экспорт PDF")
+        self.export_pdf_btn.setObjectName("secondaryButton")
+        self.export_pdf_btn.setEnabled(False)
+        btn_row.addWidget(self.export_pdf_btn)
         self.close_btn = QPushButton("Закрыть")
         self.close_btn.setObjectName("ghost")
         btn_row.addWidget(self.close_btn)
@@ -113,6 +118,7 @@ class _PreviewPanel(QFrame):
         self._diag_lbl.setText("")
         self._date_lbl.setText("")
         self.open_btn.setEnabled(False)
+        self.export_pdf_btn.setEnabled(False)
 
     def show_card(self, card: Form100CardV2ListItemDto) -> None:
         if card.is_archived:
@@ -131,6 +137,7 @@ class _PreviewPanel(QFrame):
         self._diag_lbl.setText(diag if diag else "(диагноз не указан)")
         self._date_lbl.setText(f"Обновлено: {card.updated_at.strftime('%d.%m.%Y %H:%M')}")
         self.open_btn.setEnabled(True)
+        self.export_pdf_btn.setEnabled(True)
 
 
 class Form100ListPanel(QDialog):
@@ -215,6 +222,7 @@ class Form100ListPanel(QDialog):
 
         # Кнопки из превью
         self._preview.open_btn.clicked.connect(self._open_selected)
+        self._preview.export_pdf_btn.clicked.connect(self._export_selected_pdf)
         self._preview.close_btn.clicked.connect(self.reject)
 
         self._apply_initial_size()
@@ -332,6 +340,42 @@ class Form100ListPanel(QDialog):
         if card_item is None:
             return
         self._open_wizard(card_item.id)
+
+    def _export_selected_pdf(self) -> None:
+        card_item = self._selected_list_item()
+        if card_item is None:
+            return
+        safe_card_id = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in card_item.id)
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Экспорт Form100 PDF",
+            f"form100_{safe_card_id}.pdf",
+            "PDF (*.pdf)",
+        )
+        if not path:
+            return
+        try:
+            result = self._service.export_pdf(
+                card_id=card_item.id,
+                file_path=path,
+                actor_id=self._session.user_id,
+            )
+        except _HANDLED_FORM100_ERRORS as exc:
+            exec_message_box(
+                self,
+                "Ошибка",
+                "Не удалось экспортировать PDF:\n"
+                f"{error_text(exc, 'Операция не выполнена')}",
+                icon=QMessageBox.Icon.Critical,
+            )
+            return
+        exec_message_box(
+            self,
+            "Форма 100",
+            f"PDF сформирован:\n{result.get('path', path)}",
+            icon=QMessageBox.Icon.Information,
+        )
+        self._load_cards()
 
     # -- Мастер ---------------------------------------------------------------
 

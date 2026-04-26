@@ -16,6 +16,8 @@ def test_build_structured_data_maps_flat_payload_and_markers() -> None:
         "isolation_required": "0",
         "mp_antibiotic": "1",
         "mp_antibiotic_dose": "500 мг",
+        "mp_surgical_intervention": "1",
+        "mp_surgical_intervention_details": "ПХО раны",
         "flag_emergency": "1",
         "bodymap_gender": "F",
         "bodymap_tissue_types_json": json.dumps(["мягкие ткани"], ensure_ascii=False),
@@ -40,6 +42,8 @@ def test_build_structured_data_maps_flat_payload_and_markers() -> None:
     assert data.lesion["isolation_required"] is False
     assert data.medical_help["mp_antibiotic"] is True
     assert data.medical_help["mp_antibiotic_dose"] == "500 мг"
+    assert data.medical_help["mp_surgical_intervention"] is True
+    assert data.medical_help["mp_surgical_intervention_details"] == "ПХО раны"
     assert data.flags["flag_emergency"] is True
     assert data.bodymap_gender == "F"
     assert data.bodymap_tissue_types == ["мягкие ткани"]
@@ -66,7 +70,11 @@ def test_build_wizard_payload_prefers_structured_sections_over_raw() -> None:
                 }
             ],
             "bodymap_tissue_types": ["мягкие ткани"],
-            "medical_help": {"mp_antibiotic": True},
+            "medical_help": {
+                "mp_antibiotic": True,
+                "mp_surgical_intervention": True,
+                "mp_surgical_intervention_details": "ПХО раны",
+            },
             "bottom": {"main_diagnosis": "Диагноз"},
             "flags": {},
             "raw_payload": {
@@ -82,6 +90,8 @@ def test_build_wizard_payload_prefers_structured_sections_over_raw() -> None:
     assert payload["main_full_name"] == "Структурный ФИО"
     assert payload["main_unit"] == "2 рота"
     assert payload["mp_antibiotic"] == "1"
+    assert payload["mp_surgical_intervention"] == "1"
+    assert payload["mp_surgical_intervention_details"] == "ПХО раны"
     assert payload["lesion_gunshot"] == "1"
     assert payload["main_diagnosis"] == "Диагноз"
     assert json.loads(payload["bodymap_tissue_types_json"]) == ["мягкие ткани"]
