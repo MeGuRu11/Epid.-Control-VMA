@@ -1118,19 +1118,44 @@ def _build_qss(settings: Settings) -> str:
         border-radius: 11px;
         font-weight: 700;
     }}
-    QToolButton#contextToggle {{
-        border: none;
-        border-radius: 6px;
-        padding: 2px;
-        background: transparent;
-    }}
-    QToolButton#contextToggle:hover {{
-        background: {COL["menubar"]};
-    }}
     QWidget#contextBar {{
         background: rgba(239, 230, 218, 0.88);
         border: 1px solid {COL["border"]};
         border-radius: 12px;
+    }}
+    QWidget#contextCompactRow {{
+        background: transparent;
+        border: none;
+    }}
+    QWidget#contextPinnedChips {{
+        background: transparent;
+        border: none;
+    }}
+    QWidget#patientPinnedChip, QWidget#casePinnedChip {{
+        background: {COL["surface"]};
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+    }}
+    QWidget#patientPinnedChip[state="selected"], QWidget#casePinnedChip[state="selected"] {{
+        background: rgba(161, 227, 216, 0.46);
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QWidget#patientPinnedChip[state="empty"], QWidget#casePinnedChip[state="empty"] {{
+        background: rgba(255, 249, 242, 0.68);
+        border: 1px solid {COL["border_soft"]};
+    }}
+    QWidget#patientPinnedChip[state="empty"] QLabel#chipLabel,
+    QWidget#casePinnedChip[state="empty"] QLabel#chipLabel {{
+        color: {COL["muted"]};
+    }}
+    QWidget#contextCompactActions QPushButton {{
+        min-height: 24px;
+        padding: 4px 8px;
+        border-radius: 9px;
+    }}
+    QWidget#contextPickerPanel {{
+        background: transparent;
+        border: none;
     }}
     QWidget#sectionActionBar {{
         background: rgba(255, 249, 242, 0.72);
@@ -1319,10 +1344,6 @@ def _build_qss(settings: Settings) -> str:
         padding: 5px 6px;
         font-size: 10px;
         font-weight: 700;
-    }}
-    QWidget#contextActions QPushButton {{
-        min-height: 26px;
-        padding: 4px 8px;
     }}
     QMenuBar {{
         background: {COL["menubar"]};

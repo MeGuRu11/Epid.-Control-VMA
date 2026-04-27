@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from datetime import date
 from types import SimpleNamespace
 from typing import Any, cast
@@ -7,6 +8,7 @@ from typing import Any, cast
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
 from app.ui.analytics.analytics_view import AnalyticsSearchView
+from app.ui.main_window import MainWindow
 from app.ui.widgets.context_bar import ContextBar
 
 
@@ -110,7 +112,14 @@ def _session_context() -> SessionContext:
     return SessionContext(user_id=1, login="tester", role="admin")
 
 
-def test_context_bar_uses_arrow_indicator_for_toggle(qapp, monkeypatch) -> None:
+def test_context_bar_has_compact_contract_without_quick_actions() -> None:
+    signature = inspect.signature(ContextBar)
+
+    assert "on_quick_action" not in signature.parameters
+    assert not hasattr(MainWindow, "_on_quick_action")
+
+
+def test_context_bar_uses_change_button_for_compact_panel(qapp, monkeypatch) -> None:
     bar = ContextBar(
         emz_service=cast(Any, SimpleNamespace()),
         patient_service=cast(Any, SimpleNamespace()),
@@ -120,15 +129,36 @@ def test_context_bar_uses_arrow_indicator_for_toggle(qapp, monkeypatch) -> None:
     bar.show()
     qapp.processEvents()
 
-    assert bar.toggle_btn.text() == "▾"
+    assert bar.change_btn.text() == "Изменить"
+    assert not bar.content_widget.isVisible()
 
     bar._toggle_content()
     qapp.processEvents()
-    assert bar.toggle_btn.text() == "▴"
+    assert bar.content_widget.isVisible()
 
     bar._toggle_content()
     qapp.processEvents()
-    assert bar.toggle_btn.text() == "▾"
+    assert not bar.content_widget.isVisible()
+
+    bar.close()
+
+
+def test_context_bar_shows_empty_pinned_chips_and_no_navigation_buttons(qapp) -> None:
+    bar = ContextBar(
+        emz_service=cast(Any, SimpleNamespace()),
+        patient_service=cast(Any, SimpleNamespace()),
+        on_context_change=lambda _patient_id, _case_id: None,
+    )
+    bar.show()
+    qapp.processEvents()
+
+    assert bar.patient_label.text() == "Пациент не выбран"
+    assert bar.case_label.text() == "Госпитализация не выбрана"
+    assert not hasattr(bar, "open_emz_btn")
+    assert not hasattr(bar, "open_lab_btn")
+    assert not hasattr(bar, "open_form100_btn")
+    assert not hasattr(bar, "open_san_btn")
+    assert not hasattr(bar, "open_analytics_btn")
 
     bar.close()
 
@@ -157,9 +187,32 @@ def test_context_bar_reset_clears_context_and_search_fields(qapp) -> None:
     assert bar.case_search.text() == ""
     assert bar._completer_model.stringList() == []
     assert bar._case_model.stringList() == []
-    assert bar.patient_label.text() == "Пациент: -"
-    assert bar.case_label.text() == "Госпитализация: -"
+    assert bar.patient_label.text() == "Пациент не выбран"
+    assert bar.case_label.text() == "Госпитализация не выбрана"
     assert calls == [(None, None)]
+
+    bar.close()
+
+
+def test_context_bar_restores_last_patient_without_case(qapp) -> None:
+    calls: list[tuple[int | None, int | None]] = []
+    bar = ContextBar(
+        emz_service=cast(Any, SimpleNamespace()),
+        patient_service=cast(Any, SimpleNamespace()),
+        on_context_change=lambda patient_id, case_id: calls.append((patient_id, case_id)),
+    )
+    bar.show()
+    qapp.processEvents()
+
+    bar._set_context(7, 12, "Иванов Иван", emit=True)
+    bar._clear_patient()
+    bar._restore_last_patient()
+
+    assert bar.patient_id == 7
+    assert bar.case_id is None
+    assert bar.patient_label.text() == "Пациент: 7 Иванов Иван"
+    assert bar.case_label.text() == "Госпитализация не выбрана"
+    assert calls == [(7, 12), (None, None), (7, None)]
 
     bar.close()
 

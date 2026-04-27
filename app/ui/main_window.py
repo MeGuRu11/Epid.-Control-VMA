@@ -201,7 +201,6 @@ class MainWindow(QMainWindow):
             emz_service=self.container.emz_service,
             patient_service=self.container.patient_service,
             on_context_change=self._on_case_selected,
-            on_quick_action=self._on_quick_action,
             parent=self._foreground,
         )
         self._context_bar.set_size_change_callback(self._position_context_bar)
@@ -562,27 +561,6 @@ class MainWindow(QMainWindow):
             self._context_bar.update_context(patient_id, emr_case_id)
         finally:
             self._case_selection_in_progress = False
-
-    def _on_quick_action(self, key: str) -> None:
-        patient_id = self._current_patient_id
-        emr_case_id = self._current_case_id
-        if key == "emz":
-            self._on_case_selected(patient_id, emr_case_id)
-            self._set_active_view(self._emr_form)
-            return
-        if key == "lab":
-            self._on_case_selected(patient_id, emr_case_id)
-            self._set_active_view(self._lab_view)
-            return
-        if key == "form100":
-            self._set_active_view(self._emk_view)
-            return
-        if key == "sanitary":
-            self._set_active_view(self._sanitary_view)
-            return
-        if key == "analytics":
-            self._set_active_view(self._analytics_view)
-            return
 
     def _on_references_updated(self) -> None:
         self._emr_form.refresh_references()

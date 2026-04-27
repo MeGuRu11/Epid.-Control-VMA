@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -24,10 +23,6 @@ from app.application.services.patient_service import PatientService
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error
-from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
-
-_COLLAPSED_ARROW = "▾"
-_EXPANDED_ARROW = "▴"
 
 
 class ContextBar(QWidget):
@@ -36,14 +31,12 @@ class ContextBar(QWidget):
         emz_service: EmzService,
         patient_service: PatientService,
         on_context_change: Callable[[int | None, int | None], None],
-        on_quick_action: Callable[[str], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.emz_service = emz_service
         self.patient_service = patient_service
         self.on_context_change = on_context_change
-        self.on_quick_action = on_quick_action
         self.patient_id: int | None = None
         self.case_id: int | None = None
         self.patient_name: str = ""
@@ -57,62 +50,92 @@ class ContextBar(QWidget):
         self.setObjectName("contextBar")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 6, 8, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(8, 4, 8, 4)
+        layout.setSpacing(4)
 
-        header_row = QHBoxLayout()
-        self.toggle_btn = QToolButton()
-        self.toggle_btn.setObjectName("contextToggle")
-        self.toggle_btn.setText(_COLLAPSED_ARROW)
-        self.toggle_btn.setToolTip("Показать/скрыть контекст пациента и госпитализации.")
-        self.toggle_btn.setFixedSize(26, 26)
-        self.toggle_btn.clicked.connect(self._toggle_content)
-        header_row.addWidget(self.toggle_btn)
-        context_title = QLabel("Закрепить пациента")
+        self._summary_bar = QWidget()
+        self._summary_bar.setObjectName("contextCompactRow")
+        self._summary_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._summary_bar)
+        self._summary_layout.setContentsMargins(0, 0, 0, 0)
+        self._summary_layout.setSpacing(8)
+
+        self._title_group = QWidget()
+        title_layout = QHBoxLayout(self._title_group)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(6)
+        context_title = QLabel("Контекст пациента")
         context_title.setObjectName("sectionTitle")
-        context_title.setToolTip("Задаёт текущего пациента и госпитализацию для всех разделов.")
-        header_row.addWidget(context_title)
-        header_row.addStretch()
-        self._header_helper = QLabel("Быстрый выбор пациента и/или госпитализации для удобной работы.")
-        self._header_helper.setObjectName("muted")
-        header_row.addWidget(self._header_helper)
-        layout.addLayout(header_row)
+        context_title.setToolTip("Задаёт текущего пациента и госпитализацию для рабочих разделов.")
+        title_layout.addWidget(context_title)
+        self._title_group.setToolTip(context_title.toolTip())
+        self._summary_layout.addWidget(self._title_group)
 
-        self.content_widget = QWidget()
-        content_layout = QVBoxLayout(self.content_widget)
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(6)
-
-        chips_row = QHBoxLayout()
-        patient_chip = QHBoxLayout()
-        self.patient_label = QLabel("Пациент: -")
+        self._chips_group = QWidget()
+        self._chips_group.setObjectName("contextPinnedChips")
+        chips_layout = QHBoxLayout(self._chips_group)
+        chips_layout.setContentsMargins(0, 0, 0, 0)
+        chips_layout.setSpacing(6)
+        self._patient_chip = self._build_chip("patientPinnedChip")
+        patient_chip_layout = self._patient_chip.layout()
+        assert isinstance(patient_chip_layout, QHBoxLayout)
+        self.patient_label = QLabel("Пациент не выбран")
         self.patient_label.setObjectName("chipLabel")
-        self.patient_label.setToolTip("Текущий пациент (ID и ФИО).")
-        self.clear_patient_btn = QPushButton("x")
+        self.patient_label.setToolTip("Текущий закреплённый пациент.")
+        self.clear_patient_btn = QPushButton("×")
         self.clear_patient_btn.setObjectName("chipClear")
         self.clear_patient_btn.setToolTip("Очистить пациента и госпитализацию.")
         self.clear_patient_btn.clicked.connect(self._clear_patient)
-        patient_chip.addWidget(self.patient_label)
-        patient_chip.addWidget(self.clear_patient_btn)
-        chips_row.addLayout(patient_chip)
+        patient_chip_layout.addWidget(self.patient_label)
+        patient_chip_layout.addWidget(self.clear_patient_btn)
+        chips_layout.addWidget(self._patient_chip)
 
-        case_chip = QHBoxLayout()
-        self.case_label = QLabel("Госпитализация: -")
+        self._case_chip = self._build_chip("casePinnedChip")
+        case_chip_layout = self._case_chip.layout()
+        assert isinstance(case_chip_layout, QHBoxLayout)
+        self.case_label = QLabel("Госпитализация не выбрана")
         self.case_label.setObjectName("chipLabel")
-        self.case_label.setToolTip("Текущая госпитализация (ID).")
-        self.clear_case_btn = QPushButton("x")
+        self.case_label.setToolTip("Текущая закреплённая госпитализация.")
+        self.clear_case_btn = QPushButton("×")
         self.clear_case_btn.setObjectName("chipClear")
-        self.clear_case_btn.setToolTip("Очистить госпитализацию.")
+        self.clear_case_btn.setToolTip("Очистить только госпитализацию.")
         self.clear_case_btn.clicked.connect(self._clear_case)
-        case_chip.addWidget(self.case_label)
-        case_chip.addWidget(self.clear_case_btn)
-        chips_row.addLayout(case_chip)
-        chips_row.addStretch()
-        content_layout.addLayout(chips_row)
+        case_chip_layout.addWidget(self.case_label)
+        case_chip_layout.addWidget(self.clear_case_btn)
+        chips_layout.addWidget(self._case_chip)
+        self._summary_layout.addWidget(self._chips_group, stretch=1)
 
-        controls_row = QHBoxLayout()
-        controls_row.setSpacing(12)
-        self._controls_row = controls_row
+        self._actions_group = QWidget()
+        self._actions_group.setObjectName("contextCompactActions")
+        actions_layout = QHBoxLayout(self._actions_group)
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(6)
+        self.change_btn = QPushButton("Изменить")
+        compact_button(self.change_btn, min_width=86, max_width=128)
+        self.change_btn.setToolTip("Показать или скрыть выбор пациента и госпитализации.")
+        self.change_btn.clicked.connect(self._toggle_content)
+        actions_layout.addWidget(self.change_btn)
+        self.last_patient_btn = QPushButton("Последний")
+        compact_button(self.last_patient_btn, min_width=86, max_width=128)
+        self.last_patient_btn.setToolTip("Вернуть последнего выбранного пациента.")
+        self.last_patient_btn.clicked.connect(self._restore_last_patient)
+        self.last_patient_btn.setEnabled(False)
+        actions_layout.addWidget(self.last_patient_btn)
+        self.reset_btn = QPushButton("Сбросить")
+        compact_button(self.reset_btn, min_width=86, max_width=128)
+        self.reset_btn.setToolTip("Очистить пациента и госпитализацию.")
+        self.reset_btn.clicked.connect(self._reset)
+        actions_layout.addWidget(self.reset_btn)
+        self._summary_layout.addWidget(self._actions_group)
+        layout.addWidget(self._summary_bar)
+
+        self.content_widget = QWidget()
+        self.content_widget.setObjectName("contextPickerPanel")
+        content_layout = QVBoxLayout(self.content_widget)
+        content_layout.setContentsMargins(0, 2, 0, 0)
+        content_layout.setSpacing(6)
+
+        self._controls_row = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        self._controls_row.setSpacing(12)
 
         self._patient_controls_group = QWidget()
         patient_block = QVBoxLayout(self._patient_controls_group)
@@ -132,17 +155,13 @@ class ContextBar(QWidget):
         self.patient_search.setCompleter(self._completer)
         self.patient_search.textEdited.connect(self._on_patient_search_text)
         patient_row.addWidget(self.patient_search)
-        find_patient_btn = QPushButton("Найти пациента")
+        find_patient_btn = QPushButton("Найти")
+        compact_button(find_patient_btn, min_width=74, max_width=104)
         find_patient_btn.setToolTip("Открыть поиск пациента и выбрать нужного.")
         find_patient_btn.clicked.connect(self._find_patient)
         patient_row.addWidget(find_patient_btn)
-        self.last_patient_btn = QPushButton("Последний пациент")
-        self.last_patient_btn.setToolTip("Вернуть последнего выбранного пациента.")
-        self.last_patient_btn.clicked.connect(self._restore_last_patient)
-        self.last_patient_btn.setEnabled(False)
-        patient_row.addWidget(self.last_patient_btn)
         patient_block.addLayout(patient_row)
-        controls_row.addWidget(self._patient_controls_group)
+        self._controls_row.addWidget(self._patient_controls_group)
 
         self._case_controls_group = QWidget()
         case_block = QVBoxLayout(self._case_controls_group)
@@ -153,7 +172,7 @@ class ContextBar(QWidget):
         case_block.addWidget(case_label)
         case_row = QHBoxLayout()
         self.case_search = QLineEdit()
-        self.case_search.setPlaceholderText("Номер истории болезни (>= 3 символа)")
+        self.case_search.setPlaceholderText("Номер истории болезни")
         self.case_search.setToolTip("Введите часть номера истории болезни для поиска.")
         self._case_model = QStringListModel()
         self._case_completer = QCompleter(self._case_model, self)
@@ -163,46 +182,13 @@ class ContextBar(QWidget):
         self.case_search.textEdited.connect(self._on_case_search_text)
         case_row.addWidget(self.case_search)
         select_case_btn = QPushButton("Выбрать по ID")
+        compact_button(select_case_btn, min_width=112, max_width=144)
         select_case_btn.setToolTip("Введите ID госпитализации вручную.")
         select_case_btn.clicked.connect(self._select_case_by_id)
-        reset_btn = QPushButton("Сбросить")
-        reset_btn.setToolTip("Очистить контекст пациента и госпитализации.")
-        reset_btn.clicked.connect(self._reset)
         case_row.addWidget(select_case_btn)
-        case_row.addWidget(reset_btn)
         case_block.addLayout(case_row)
-        controls_row.addWidget(self._case_controls_group)
-        controls_row.addStretch()
-        content_layout.addLayout(controls_row)
-        content_layout.addSpacing(8)
-
-        self._actions_panel = ResponsiveActionsPanel(min_button_width=84, max_columns=5)
-        self._actions_panel.setObjectName("contextActions")
-        self.open_emz_btn = QPushButton("ЭМЗ")
-        compact_button(self.open_emz_btn, min_width=88, max_width=164)
-        self.open_emz_btn.clicked.connect(lambda: self._quick_action("emz"))
-        self.open_lab_btn = QPushButton("Лаб")
-        compact_button(self.open_lab_btn, min_width=88, max_width=164)
-        self.open_lab_btn.clicked.connect(lambda: self._quick_action("lab"))
-        self.open_form100_btn = QPushButton("Ф100")
-        compact_button(self.open_form100_btn, min_width=88, max_width=164)
-        self.open_form100_btn.clicked.connect(lambda: self._quick_action("form100"))
-        self.open_san_btn = QPushButton("Санитария")
-        compact_button(self.open_san_btn, min_width=88, max_width=164)
-        self.open_san_btn.clicked.connect(lambda: self._quick_action("sanitary"))
-        self.open_analytics_btn = QPushButton("Аналитика")
-        compact_button(self.open_analytics_btn, min_width=88, max_width=164)
-        self.open_analytics_btn.clicked.connect(lambda: self._quick_action("analytics"))
-        self._actions_panel.set_buttons(
-            [
-                self.open_emz_btn,
-                self.open_lab_btn,
-                self.open_form100_btn,
-                self.open_san_btn,
-                self.open_analytics_btn,
-            ]
-        )
-        content_layout.addWidget(self._actions_panel)
+        self._controls_row.addWidget(self._case_controls_group)
+        content_layout.addLayout(self._controls_row)
 
         self.content_widget.setMaximumHeight(0)
         self.content_widget.setVisible(False)
@@ -211,27 +197,32 @@ class ContextBar(QWidget):
         self.content_widget.setGraphicsEffect(self._content_effect)
         layout.addWidget(self.content_widget)
         self._header_height = self.sizeHint().height()
+        self._update_chip_states()
         self._update_layout_mode()
 
-    def _quick_action(self, key: str) -> None:
-        if not self.on_quick_action:
-            return
-        self.on_quick_action(key)
+    def _build_chip(self, object_name: str) -> QWidget:
+        chip = QWidget()
+        chip.setObjectName(object_name)
+        chip.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        chip.setProperty("state", "empty")
+        layout = QHBoxLayout(chip)
+        layout.setContentsMargins(8, 2, 4, 2)
+        layout.setSpacing(4)
+        return chip
 
     def _toggle_content(self) -> None:
         expanding = not self.content_widget.isVisible()
         if expanding:
             self.content_widget.setVisible(True)
+        self.change_btn.setText("Скрыть" if expanding else "Изменить")
         self._animate_content(expanding)
-        self.toggle_btn.setText(_EXPANDED_ARROW if expanding else _COLLAPSED_ARROW)
 
     def _animate_content(self, expanding: bool) -> None:
         target_height = self.content_widget.sizeHint().height()
         start = 0 if expanding else target_height
         end = target_height if expanding else 0
         self._anim = QPropertyAnimation(self.content_widget, b"maximumHeight", self)
-        anim_ms = 180
-        self._anim.setDuration(anim_ms)
+        self._anim.setDuration(160)
         self._anim.setStartValue(start)
         self._anim.setEndValue(end)
         self._anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
@@ -241,7 +232,7 @@ class ContextBar(QWidget):
         fade_start = 0.0 if expanding else 1.0
         fade_end = 1.0 if expanding else 0.0
         self._fade_anim = QPropertyAnimation(self._content_effect, b"opacity", self)
-        self._fade_anim.setDuration(anim_ms)
+        self._fade_anim.setDuration(160)
         self._fade_anim.setStartValue(fade_start)
         self._fade_anim.setEndValue(fade_end)
         self._fade_anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
@@ -251,6 +242,9 @@ class ContextBar(QWidget):
         if not expanded:
             self.content_widget.setVisible(False)
             self._content_effect.setOpacity(0.0)
+            self.change_btn.setText("Изменить")
+        else:
+            self._content_effect.setOpacity(1.0)
         self._emit_size_change()
 
     def set_size_change_callback(self, callback: Callable[[], None] | None) -> None:
@@ -260,7 +254,7 @@ class ContextBar(QWidget):
         return self._header_height
 
     def desired_height(self) -> int:
-        return self._header_height + self.content_widget.maximumHeight() + 8
+        return self._header_height + self.content_widget.maximumHeight()
 
     def _emit_size_change(self) -> None:
         if self._on_size_change:
@@ -272,18 +266,17 @@ class ContextBar(QWidget):
 
     def _update_layout_mode(self) -> None:
         update_action_bar_direction(
+            self._summary_layout,
+            self._summary_bar,
+            [self._title_group, self._chips_group, self._actions_group],
+            extra_width=18,
+        )
+        update_action_bar_direction(
             self._controls_row,
             self.content_widget,
             [self._patient_controls_group, self._case_controls_group],
             extra_width=28,
         )
-        stacked_controls = self._controls_row.direction() == QBoxLayout.Direction.TopToBottom
-        helper_required_width = self._header_helper.sizeHint().width() + 420
-        self._header_helper.setVisible(self.width() >= helper_required_width)
-        actions_required_width = self._actions_panel.sizeHint().width() + 16
-        actions_available = self.content_widget.width()
-        compact_mode = stacked_controls or actions_available < actions_required_width
-        self._actions_panel.set_compact(compact_mode)
 
     def _select_case_by_id(self) -> None:
         from PySide6.QtWidgets import QInputDialog
@@ -345,14 +338,37 @@ class ContextBar(QWidget):
         self.patient_id = patient_id
         self.case_id = case_id
         self.patient_name = patient_name
-        self.patient_label.setText(f"Пациент: {patient_id or '-'} {patient_name}".rstrip())
-        self.case_label.setText(f"Госпитализация: {case_id or '-'}")
+        self.patient_label.setText(self._format_patient_label(patient_id, patient_name))
+        self.case_label.setText(self._format_case_label(case_id))
+        self._update_chip_states()
         if patient_id:
             self.last_patient_id = patient_id
             self.last_patient_name = patient_name
             self.last_patient_btn.setEnabled(True)
         if emit:
             self.on_context_change(patient_id, case_id)
+
+    def _format_patient_label(self, patient_id: int | None, patient_name: str) -> str:
+        if patient_id is None:
+            return "Пациент не выбран"
+        suffix = f" {patient_name}" if patient_name else ""
+        return f"Пациент: {patient_id}{suffix}"
+
+    def _format_case_label(self, case_id: int | None) -> str:
+        if case_id is None:
+            return "Госпитализация не выбрана"
+        return f"Госпитализация: {case_id}"
+
+    def _update_chip_states(self) -> None:
+        self._set_chip_state(self._patient_chip, "selected" if self.patient_id is not None else "empty")
+        self._set_chip_state(self._case_chip, "selected" if self.case_id is not None else "empty")
+
+    def _set_chip_state(self, chip: QWidget, state: str) -> None:
+        chip.setProperty("state", state)
+        style = chip.style()
+        style.unpolish(chip)
+        style.polish(chip)
+        chip.update()
 
     def update_context(self, patient_id: int | None, case_id: int | None, patient_name: str = "") -> None:
         if patient_id is not None and not patient_name and patient_id == self.patient_id:
@@ -458,5 +474,3 @@ class ContextBar(QWidget):
     # Compatibility for external calls
     def set_context(self, patient_id: int | None, case_id: int | None, patient_name: str = "") -> None:
         self.update_context(patient_id, case_id, patient_name)
-
-

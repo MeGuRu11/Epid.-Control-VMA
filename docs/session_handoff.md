@@ -1,3 +1,61 @@
+# Сессия 2026-04-27 — компактный редизайн contextbar пациента
+
+## Что сделано
+
+- Реализован утверждённый план compact contextbar.
+- Создана спецификация `docs/specs/SPEC_contextbar_compact_redesign.md`.
+- Создан task-файл `docs/codex/tasks/2026-04-27-компактный-редизайн-contextbar.md`.
+- `ContextBar` теперь показывает одну компактную строку: `Контекст пациента`, чип пациента, чип госпитализации, действия `Изменить`, `Последний`, `Сбросить`.
+- Расширенный выбор пациента/госпитализации скрыт по умолчанию и раскрывается кнопкой `Изменить`.
+- Удалены quick-action кнопки `ЭМЗ`, `Лаб`, `Ф100`, `Санитария`, `Аналитика` и контракт `on_quick_action`.
+- `MainWindow` больше не передаёт quick-action callback в contextbar.
+- Добавлены/обновлены unit-тесты для compact-контракта, чипов, сброса, восстановления последнего пациента и отсутствия quick-actions.
+- Обновлены QSS-хуки compact-row/pinned-chip и документация.
+
+## Что не закончено / в процессе
+
+- Ручной GUI smoke пользователем ещё нужен: открыть приложение и проверить compact contextbar на широкой и узкой ширине окна.
+- БД, Alembic migrations, domain, infrastructure и сервисные контракты не менялись.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по коду и автопроверкам нет.
+- В рабочем дереве остаётся сторонний untracked каталог `.npm-cache/`; он не относится к этой задаче и не трогался.
+- `git diff --check` показывает только CRLF warnings для `app/ui/main_window.py` и `tests/unit/test_dropdown_indicators.py`.
+
+## Следующие шаги
+
+1. Вручную открыть приложение и убедиться, что contextbar занимает одну строку в свернутом состоянии.
+2. Нажать `Изменить`, проверить поля `ФИО или ID пациента` и `Номер истории болезни`, затем свернуть блок без потери контекста.
+3. Проверить, что переходы через верхнее меню в `ЭМЗ` и `Лабораторию` сохраняют закреплённый patient/case context.
+
+## Ключевые файлы, которые менялись
+
+- `docs/specs/SPEC_contextbar_compact_redesign.md`
+- `docs/codex/tasks/2026-04-27-компактный-редизайн-contextbar.md`
+- `app/ui/widgets/context_bar.py`
+- `app/ui/main_window.py`
+- `app/ui/theme.py`
+- `tests/unit/test_dropdown_indicators.py`
+- `docs/user_guide.md`
+- `docs/tech_guide.md`
+- `docs/context.md`
+- `docs/manual_regression_scenarios.md`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `python -m pytest -q tests\unit\test_dropdown_indicators.py -k context_bar` — RED на старом контракте (`5 failed`), затем pass (`5 passed, 1 deselected`).
+- `python -m pytest -q tests\unit\test_dropdown_indicators.py tests\unit\test_main_window_context_selection.py` — pass (`14 passed`).
+- `ruff check app tests` — pass.
+- `python scripts\check_architecture.py` — pass.
+- `python -m mypy app tests` — pass (`295 source files`).
+- `python -m pytest -q` — pass (`404 passed`).
+- `python -m compileall -q app tests scripts` — pass.
+- `python scripts\check_mojibake.py` — pass.
+- `git diff --check` — pass, только CRLF warnings для уже затронутых файлов.
+
 # Сессия 2026-04-26 — исправление responsive-раскладки администрирования
 
 ## Что сделано
