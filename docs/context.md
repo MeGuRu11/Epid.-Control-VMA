@@ -11,7 +11,9 @@
 - `app/domain` — правила предметной области;
 - `app/infrastructure` — БД, миграции, отчёты, импорт/экспорт, файловые операции.
 
-## 2. Текущее состояние на 2026-04-22
+## 2. Текущее состояние на 2026-04-27
+
+- Lead Codex model updated: GPT-5.4 → GPT-5.5 (2026-04-27) (GPT-5.5 released 2026-04-23, available in Codex)
 
 ### Quality gates
 
