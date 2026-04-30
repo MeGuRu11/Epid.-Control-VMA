@@ -132,6 +132,18 @@ def test_refresh_detail_reference_rows_calls_helpers_and_resizes(monkeypatch) ->
         "refresh_abx_reference_rows",
         lambda **kwargs: calls.append(f"abx:{kwargs['table']}"),
     )
+
+    def fake_setup_intervention_reference_rows(**kwargs: object) -> None:
+        table = kwargs["intervention_table"]
+        calls.append(f"intervention:{table}")
+        resize_table = cast(refs.ResizeTableFn, kwargs["resize_table"])
+        resize_table(cast(QTableWidget, table))
+
+    monkeypatch.setattr(
+        refs,
+        "setup_intervention_reference_rows",
+        fake_setup_intervention_reference_rows,
+    )
     monkeypatch.setattr(
         refs,
         "refresh_ismp_reference_rows",
@@ -140,13 +152,16 @@ def test_refresh_detail_reference_rows_calls_helpers_and_resizes(monkeypatch) ->
 
     refs.refresh_detail_reference_rows(
         diagnosis_table=cast(QTableWidget, "diag"),
+        intervention_table=cast(QTableWidget, "interv"),
         abx_table=cast(QTableWidget, "abx"),
         ismp_table=cast(QTableWidget, "ismp"),
         create_diag_type_combo=lambda: cast(QComboBox, "diag_type"),
         create_icd_combo=lambda: cast(QComboBox, "icd"),
+        create_intervention_type_combo=lambda: cast(QComboBox, "interv_type"),
+        create_dt_cell=lambda: cast(QDateTimeEdit, "dt"),
         create_abx_combo=lambda: cast(QComboBox, "abx_combo"),
         create_ismp_type_combo=lambda: cast(QComboBox, "ismp_type"),
         resize_table=lambda table: resized.append(table),
     )
-    assert calls == ["diagnosis:diag", "abx:abx", "ismp:ismp"]
-    assert resized == ["diag", "abx", "ismp"]
+    assert calls == ["diagnosis:diag", "intervention:interv", "abx:abx", "ismp:ismp"]
+    assert resized == ["interv", "diag", "abx", "ismp"]

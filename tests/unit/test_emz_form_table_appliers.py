@@ -118,6 +118,8 @@ def test_apply_diagnosis_rows_sets_kind_code_and_text(monkeypatch) -> None:
 
 
 def test_apply_intervention_rows_sets_widgets_and_values(monkeypatch) -> None:
+    monkeypatch.setattr(appliers, "QComboBox", _FakeCombo)
+    monkeypatch.setattr(appliers, "QDateTimeEdit", _FakeDateTimeEdit)
     monkeypatch.setattr(appliers, "QTableWidgetItem", _FakeItem)
     resize_calls: list[int] = []
     connect_rows: list[int] = []
@@ -132,6 +134,14 @@ def test_apply_intervention_rows_sets_widgets_and_values(monkeypatch) -> None:
 
     table = cast(QTableWidget, _FakeTable())
 
+    def setup_rows() -> None:
+        fake = cast(_FakeTable, table)
+        for row in range(fake.rowCount()):
+            connect_rows.append(row)
+            fake.setCellWidget(row, 0, _FakeCombo())
+            fake.setCellWidget(row, 1, _FakeDateTimeEdit())
+            fake.setCellWidget(row, 2, _FakeDateTimeEdit())
+
     appliers.apply_intervention_rows(
         table=table,
         items=[
@@ -145,9 +155,8 @@ def test_apply_intervention_rows_sets_widgets_and_values(monkeypatch) -> None:
             )
         ],
         prepare_table=_prepare_table,
+        setup_rows=setup_rows,
         resize_table=resize_table,
-        create_type_combo=cast(appliers.CreateComboFn, lambda: _FakeCombo()),
-        create_dt_cell=cast(appliers.CreateDateTimeEditFn, lambda: _FakeDateTimeEdit()),
         to_qdatetime=cast(appliers.ToQDateTimeFn, lambda dt: cast(Any, f"mapped:{dt.isoformat()}")),
     )
 
@@ -160,6 +169,34 @@ def test_apply_intervention_rows_sets_widgets_and_values(monkeypatch) -> None:
     assert fake.items[(0, 5)].text() == "ok"
     assert connect_rows == [0]
     assert len(resize_calls) == 1
+
+
+def test_apply_intervention_rows_initializes_blank_row_for_empty_items() -> None:
+    table = cast(QTableWidget, _FakeTable(row_count=1))
+    resize_calls: list[int] = []
+
+    def setup_rows() -> None:
+        fake = cast(_FakeTable, table)
+        for row in range(fake.rowCount()):
+            fake.setCellWidget(row, 0, _FakeCombo())
+            fake.setCellWidget(row, 1, _FakeDateTimeEdit())
+            fake.setCellWidget(row, 2, _FakeDateTimeEdit())
+
+    appliers.apply_intervention_rows(
+        table=table,
+        items=[],
+        prepare_table=_prepare_table,
+        setup_rows=setup_rows,
+        resize_table=lambda _table: resize_calls.append(1),
+        to_qdatetime=cast(appliers.ToQDateTimeFn, lambda dt: cast(Any, dt)),
+    )
+
+    fake = cast(_FakeTable, table)
+    assert fake.rowCount() == 1
+    assert isinstance(fake.cellWidget(0, 0), _FakeCombo)
+    assert isinstance(fake.cellWidget(0, 1), _FakeDateTimeEdit)
+    assert isinstance(fake.cellWidget(0, 2), _FakeDateTimeEdit)
+    assert resize_calls == [1]
 
 
 def test_apply_abx_rows_sets_combo_and_text(monkeypatch) -> None:

@@ -107,6 +107,32 @@ def test_setup_abx_rows_preserves_existing_datetime_widget(monkeypatch) -> None:
     assert connect_rows == [0]
 
 
+def test_setup_intervention_rows_initializes_empty_existing_row(monkeypatch) -> None:
+    connect_rows: list[int] = []
+    resize_calls: list[int] = []
+
+    def fake_connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
+        connect_rows.append(row)
+
+    monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
+
+    table = cast(QTableWidget, _FakeTable(row_count=1))
+
+    setups.setup_intervention_rows(
+        table=table,
+        create_type_combo=cast(setups.CreateComboFn, lambda: _FakeCombo()),
+        create_dt_cell=cast(setups.CreateDateTimeEditFn, lambda: _FakeDateTimeEdit()),
+        resize_table=lambda _table: resize_calls.append(1),
+    )
+
+    fake = cast(_FakeTable, table)
+    assert isinstance(fake.cellWidget(0, 0), _FakeCombo)
+    assert isinstance(fake.cellWidget(0, 1), _FakeDateTimeEdit)
+    assert isinstance(fake.cellWidget(0, 2), _FakeDateTimeEdit)
+    assert connect_rows == [0]
+    assert resize_calls == [1]
+
+
 def test_refresh_diagnosis_reference_rows_preserves_selected_values(monkeypatch) -> None:
     monkeypatch.setattr(setups, "QComboBox", _FakeCombo)
     connect_rows: list[int] = []

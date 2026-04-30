@@ -54,27 +54,29 @@ def apply_intervention_rows(
     table: QTableWidget,
     items: list[EmzInterventionDto],
     prepare_table: PrepareTableFn,
+    setup_rows: SetupRowsFn,
     resize_table: ResizeTableFn,
-    create_type_combo: CreateComboFn,
-    create_dt_cell: CreateDateTimeEditFn,
     to_qdatetime: ToQDateTimeFn,
 ) -> None:
     prepare_table(table, len(items))
+    setup_rows()
     for row, intervention in enumerate(items):
-        type_combo = create_type_combo()
-        type_combo.setCurrentText(intervention.type)
-        table.setCellWidget(row, 0, type_combo)
-        connect_combo_resize_on_content(table, type_combo, row)
+        type_widget = table.cellWidget(row, 0)
+        type_combo = cast(QComboBox, type_widget) if isinstance(type_widget, QComboBox) else None
+        if type_combo:
+            type_combo.setCurrentText(intervention.type)
 
-        start_widget = create_dt_cell()
-        if intervention.start_dt:
+        start_widget_raw = table.cellWidget(row, 1)
+        start_widget = (
+            cast(QDateTimeEdit, start_widget_raw) if isinstance(start_widget_raw, QDateTimeEdit) else None
+        )
+        if start_widget and intervention.start_dt:
             start_widget.setDateTime(to_qdatetime(intervention.start_dt))
-        table.setCellWidget(row, 1, start_widget)
 
-        end_widget = create_dt_cell()
-        if intervention.end_dt:
+        end_widget_raw = table.cellWidget(row, 2)
+        end_widget = cast(QDateTimeEdit, end_widget_raw) if isinstance(end_widget_raw, QDateTimeEdit) else None
+        if end_widget and intervention.end_dt:
             end_widget.setDateTime(to_qdatetime(intervention.end_dt))
-        table.setCellWidget(row, 2, end_widget)
 
         table.setItem(
             row,
@@ -141,4 +143,3 @@ def apply_ismp_rows(
         date_widget.setDate(to_qdate(item.start_date))
         table.setCellWidget(row, 1, date_widget)
     resize_table(table)
-

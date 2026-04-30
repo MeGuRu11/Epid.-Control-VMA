@@ -84,6 +84,7 @@ from app.ui.emz.form_reference_orchestrators import (
     setup_abx_reference_rows,
     setup_detail_reference_rows,
     setup_diagnosis_reference_rows,
+    setup_intervention_reference_rows,
     setup_ismp_reference_rows,
 )
 from app.ui.emz.form_request_builders import (
@@ -643,10 +644,13 @@ class EmzForm(QWidget):
         self._ismp_abbrev_list = self.container.reference_service.list_ismp_abbreviations()
         refresh_detail_reference_rows(
             diagnosis_table=self.diagnosis_table,
+            intervention_table=self.intervention_table,
             abx_table=self.abx_table,
             ismp_table=self.ismp_table,
             create_diag_type_combo=create_diag_type_combo,
             create_icd_combo=self._create_icd_combo,
+            create_intervention_type_combo=create_intervention_type_combo,
+            create_dt_cell=self._create_dt_cell,
             create_abx_combo=self._create_abx_combo,
             create_ismp_type_combo=self._create_ismp_type_combo,
             resize_table=self._resize_table_columns,
@@ -1200,9 +1204,13 @@ class EmzForm(QWidget):
             table=self.intervention_table,
             items=items,
             prepare_table=self._prepare_table_for_fill,
+            setup_rows=lambda: setup_intervention_reference_rows(
+                intervention_table=self.intervention_table,
+                create_intervention_type_combo=create_intervention_type_combo,
+                create_dt_cell=self._create_dt_cell,
+                resize_table=self._resize_table_columns,
+            ),
             resize_table=self._resize_table_columns,
-            create_type_combo=create_intervention_type_combo,
-            create_dt_cell=self._create_dt_cell,
             to_qdatetime=self._to_qdatetime,
         )
 
@@ -1238,4 +1246,3 @@ class EmzForm(QWidget):
             create_date_cell=self._create_date_cell,
             to_qdate=self._to_qdate,
         )
-
