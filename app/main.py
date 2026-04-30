@@ -193,6 +193,20 @@ def _create_application() -> QApplication:
     return app
 
 
+def _teardown_completed_dialog(dialog: QDialog, app: QApplication) -> None:
+    if dialog.isVisible():
+        dialog.hide()
+    app.processEvents()
+    dialog.deleteLater()
+    app.processEvents()
+
+
+def _exec_first_run_dialog(dialog: QDialog, app: QApplication) -> QDialog.DialogCode:
+    result = QDialog.DialogCode(dialog.exec())
+    _teardown_completed_dialog(dialog, app)
+    return result
+
+
 def main() -> int:
     log_path = _setup_logging()
     _install_stderr_tee(log_path)
@@ -207,10 +221,11 @@ def main() -> int:
         session_factory=session_scope,
     ):
         return 1
-    if not has_users(session_scope):
-        wizard = FirstRunDialog(parent=None)
-        if wizard.exec() != QDialog.DialogCode.Accepted:
-            return 0
+    if (
+        not has_users(session_scope)
+        and _exec_first_run_dialog(FirstRunDialog(parent=None), app) != QDialog.DialogCode.Accepted
+    ):
+        return 0
     container = build_container()
     seed_core_data(container)
     warn_missing_plot_dependencies()
