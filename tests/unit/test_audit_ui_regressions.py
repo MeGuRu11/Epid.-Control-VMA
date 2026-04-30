@@ -230,7 +230,9 @@ def test_user_admin_view_selection_updates_detail_and_actions(qapp) -> None:
     view = _make_admin_view(user_service=user_service)
     try:
         view.user_table.selectRow(0)
-        payload = view.user_table.item(0, 0).data(Qt.ItemDataRole.UserRole)
+        item = view.user_table.item(0, 0)
+        assert item is not None
+        payload = item.data(Qt.ItemDataRole.UserRole)
 
         assert payload == {"id": 5, "login": "operator", "role": "operator", "is_active": True}
         assert view.selected_user_login.text() == "operator"

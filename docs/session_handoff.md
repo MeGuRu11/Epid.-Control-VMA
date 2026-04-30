@@ -1,3 +1,45 @@
+# Сессия 2026-04-30 — стабилизация CI/local checks
+
+## Что сделано
+
+- Воспроизведена CI-ошибка `mypy`: `tests/unit/test_audit_ui_regressions.py:233` обращался к `.data(...)` у результата `QTableWidget.item(...)` без проверки на `None`.
+- Тест администрирования исправлен типобезопасно: перед чтением `Qt.UserRole` добавлен `assert item is not None`, без `# type: ignore` и без изменения смысла проверки.
+- Разобран возможный Windows access violation в `SanitaryDashboard` при первичном заполнении `QListWidget` через `setItemWidget(...)`.
+- Первичный `refresh()` перенесён на следующий цикл Qt через `QTimer.singleShot(0, ...)`, чтобы список заполнялся после завершения построения UI.
+- Заполнение списка стабилизировано: на время `clear()`/`setItemWidget(...)` отключается repaint, item widgets удерживаются в `_list_item_widgets`, сброс фильтров блокирует каскадные сигналы через `QSignalBlocker`, восстановление выбора проверяет `item is not None`.
+
+## Что не закончено / в процессе
+
+- Кодовая часть завершена.
+- БД, Alembic-миграции, domain, infrastructure и сервисные контракты не менялись.
+
+## Открытые проблемы / блокеры
+
+- Блокеров по quality gates нет.
+- В локальных pytest-запусках остаётся внешний `PytestCacheWarning`: нет доступа к `pytest_cache_local\v\cache`. На результат тестов не влияет.
+
+## Следующие шаги
+
+1. При ближайшем ручном smoke открыть раздел `Санитария` в реальном окне приложения и проверить первичное отображение списка отделений после входа.
+
+## Ключевые файлы, которые менялись
+
+- `app/ui/sanitary/sanitary_dashboard.py`
+- `tests/unit/test_audit_ui_regressions.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+## Проверки
+
+- `python -m mypy app tests` — сначала RED (`union-attr`), после исправления pass.
+- `python -m pytest tests/unit/test_sanitary_dashboard.py -q` — pass; дополнительно 10 повторных запусков подряд — pass.
+- `python -m pytest tests/unit/test_audit_ui_regressions.py -q` — pass (`19 passed`).
+- `ruff check app tests` — pass.
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q` — pass (`404 passed`).
+- `python -m compileall -q app tests scripts` — pass.
+- `python -m alembic check` — pass (`No new upgrade operations detected`).
+
 # Сессия 2026-04-27 — компактный редизайн contextbar пациента
 
 ## Что сделано

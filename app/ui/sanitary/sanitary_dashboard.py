@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import cast
 
-from PySide6.QtCore import QDate, QSignalBlocker, Qt, Signal
+from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCheckBox,
@@ -88,6 +88,8 @@ class SanitaryDashboard(QWidget):
         self._kpi_widgets: dict[str, SanitaryKpiWidgets] = {}
         self._kpi_cards: list[QWidget] = []
         self._entries: list[SanitaryDepartmentEntry] = []
+        self._list_item_widgets: list[QWidget] = []
+        self._initial_refresh_pending = False
         self._selected_department_id: int | None = None
         self._selected_department_name = ""
         self._last_empty_state: str | None = None
@@ -141,6 +143,12 @@ class SanitaryDashboard(QWidget):
         self._update_filter_summary()
         self._update_selection_context()
         self._sync_action_state()
+        self._initial_refresh_pending = True
+        QTimer.singleShot(0, self._run_initial_refresh)
+
+    def _run_initial_refresh(self) -> None:
+        if not self._initial_refresh_pending:
+            return
         self.refresh()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
@@ -608,11 +616,19 @@ class SanitaryDashboard(QWidget):
         self.refresh()
 
     def _clear_filters(self) -> None:
+        blockers = [
+            QSignalBlocker(self.filter_enabled),
+            QSignalBlocker(self.date_from),
+            QSignalBlocker(self.date_to),
+            QSignalBlocker(self.search_input),
+            QSignalBlocker(self.growth_filter),
+        ]
         self.filter_enabled.setChecked(False)
         self.date_from.setDate(self._date_empty)
         self.date_to.setDate(self._date_empty)
         self.search_input.clear()
         self.growth_filter.setCurrentIndex(0)
+        del blockers
         self.refresh()
 
     def _date_value(self, editor: QDateEdit) -> date | None:
@@ -806,41 +822,49 @@ class SanitaryDashboard(QWidget):
         return sample.microorganism_free or ""
 
     def _populate_list(self, entries: list[SanitaryDepartmentEntry], empty_state: str | None) -> None:
+        updates_enabled = self.list_widget.updatesEnabled()
+        self.list_widget.setUpdatesEnabled(False)
+        self._list_item_widgets.clear()
         self.list_widget.clear()
-        if empty_state == "no_data":
-            self._add_empty_state(
-                "no_data",
-                "Проб пока нет",
-                "Санитарные пробы по отделениям ещё не зарегистрированы.",
-            )
-            return
-        if empty_state == "filtered_out":
-            self._add_empty_state(
-                "filtered_out",
-                "Ничего не найдено",
-                "Попробуйте изменить фильтры или сбросить текущие условия отбора.",
-            )
-            return
+        try:
+            if empty_state == "no_data":
+                self._add_empty_state(
+                    "no_data",
+                    "Проб пока нет",
+                    "Санитарные пробы по отделениям ещё не зарегистрированы.",
+                )
+                return
+            if empty_state == "filtered_out":
+                self._add_empty_state(
+                    "filtered_out",
+                    "Ничего не найдено",
+                    "Попробуйте изменить фильтры или сбросить текущие условия отбора.",
+                )
+                return
 
-        self._last_empty_state = None
-        for entry in entries:
-            item = QListWidgetItem()
-            card = self._build_department_item(entry)
-            item.setSizeHint(card.sizeHint())
-            item.setData(Qt.ItemDataRole.UserRole, entry.dep_id)
-            item.setData(Qt.ItemDataRole.UserRole + 1, entry.name)
-            self.list_widget.addItem(item)
-            self.list_widget.setItemWidget(item, card)
+            self._last_empty_state = None
+            for entry in entries:
+                item = QListWidgetItem()
+                card = self._build_department_item(entry)
+                item.setData(Qt.ItemDataRole.UserRole, entry.dep_id)
+                item.setData(Qt.ItemDataRole.UserRole + 1, entry.name)
+                self._add_list_item_widget(item, card)
+        finally:
+            self.list_widget.setUpdatesEnabled(updates_enabled)
 
     def _add_empty_state(self, state: str, title: str, detail: str) -> None:
         self._last_empty_state = state
         item = QListWidgetItem()
         item.setFlags(Qt.ItemFlag.NoItemFlags)
         card = self._build_empty_card(title, detail)
+        self._add_list_item_widget(item, card)
+
+    def _add_list_item_widget(self, item: QListWidgetItem, card: QWidget) -> None:
         hint = card.sizeHint().expandedTo(card.minimumSizeHint())
         item.setSizeHint(hint)
         self.list_widget.addItem(item)
         self.list_widget.setItemWidget(item, card)
+        self._list_item_widgets.append(card)
 
     def _restore_selection(self, department_id: int | None) -> None:
         self._selected_department_id = None
@@ -849,6 +873,8 @@ class SanitaryDashboard(QWidget):
             return
         for row in range(self.list_widget.count()):
             item = self.list_widget.item(row)
+            if item is None:
+                continue
             if item.data(Qt.ItemDataRole.UserRole) == department_id:
                 self.list_widget.setCurrentItem(item)
                 self._selected_department_id = department_id
@@ -872,6 +898,7 @@ class SanitaryDashboard(QWidget):
         self._open_selected()
 
     def refresh(self) -> None:
+        self._initial_refresh_pending = False
         previous_department_id = self._selected_department_id
         self._load_microbe_map()
         entries, empty_state = self._collect_entries()
