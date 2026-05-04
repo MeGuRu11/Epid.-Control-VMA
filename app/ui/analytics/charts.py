@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any, cast
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
@@ -17,10 +17,32 @@ TOP_MICROBES_LEFT_LABEL = "\u0414\u043e\u043b\u044f \u0432\u044b\u0434\u0435\u04
 TOP_MICROBES_BOTTOM_LABEL = "\u041c\u0438\u043a\u0440\u043e\u043e\u0440\u0433\u0430\u043d\u0438\u0437\u043c\u044b"
 TREND_LEFT_LABEL = "\u0414\u043e\u043b\u044f \u043f\u043e\u043b\u043e\u0436\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0445, %"
 TREND_BOTTOM_LABEL = "\u0414\u0430\u0442\u0430"
+DEFAULT_MAX_X_AXIS_LABELS = 10
 _CHART_FALLBACK_TEXT = "\u0413\u0440\u0430\u0444\u0438\u043a \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0432 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0441\u0431\u043e\u0440\u043a\u0435"
 _PYQTGRAPH_MISSING_TEXT = "pyqtgraph \u043d\u0435 \u0443\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d"
 _BAR_BRUSH = COL["accent2"]
 logger = logging.getLogger(__name__)
+
+
+def build_axis_ticks(labels: Sequence[str], max_labels: int = DEFAULT_MAX_X_AXIS_LABELS) -> list[tuple[int, str]]:
+    if not labels or max_labels <= 0:
+        return []
+    if len(labels) <= max_labels:
+        return list(enumerate(labels))
+    if max_labels == 1:
+        return [(0, labels[0])]
+
+    last_index = len(labels) - 1
+    step = last_index / (max_labels - 1)
+    indexes = [round(position * step) for position in range(max_labels)]
+    ticks: list[tuple[int, str]] = []
+    seen: set[int] = set()
+    for index in indexes:
+        if index in seen:
+            continue
+        seen.add(index)
+        ticks.append((index, labels[index]))
+    return ticks
 
 
 class TopMicrobesChart(QWidget):
@@ -124,7 +146,7 @@ class TrendChart(QWidget):
             x = list(range(len(values)))
             bar = pg.BarGraphItem(x=x, height=values, width=0.75, brush=_BAR_BRUSH)
             self._plot.addItem(bar)
-            ax.setTicks([list(zip(x, labels, strict=False))])
+            ax.setTicks([build_axis_ticks(labels)])
             self._plot.setXRange(-0.5, max(len(values) - 0.5, 0.5), padding=0.02)
         except Exception:  # noqa: BLE001
             logger.exception("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c TrendChart")

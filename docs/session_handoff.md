@@ -1,17 +1,18 @@
-# Сессия 2026-04-30 — инициализация строк вмешательств в ЭМЗ
+# Сессия 2026-05-04 — прореживание дат на графиках аналитики
 
 ## Что сделано
 
-- Исправлен баг формы редактирования ЭМЗ: первая строка таблицы `Инвазивные вмешательства` больше не остаётся сырой после открытия ЭМЗ без сохранённых вмешательств.
-- Корневая причина была в `apply_intervention_rows(...)`: после `prepare_table(...)` для interventions не вызывался общий setup строк, в отличие от диагнозов, антибиотиков и ИСМП. При пустом списке `clearContents()` снимал cell widgets, а одна оставшаяся строка не получала `QComboBox` и `QDateTimeEdit`.
-- Для interventions восстановлен общий инвариант: после подготовки/применения строк вызывается `setup_intervention_reference_rows(...)`, который заполняет колонки 0, 1, 2 нужными widgets.
-- `refresh_references()` теперь также прогоняет setup intervention rows, чтобы восстановить widgets, если таблица была очищена или частично пересобрана.
-- Бизнес-логика DTO, domain/application, БД и миграции не менялись.
+- Исправлено наложение дат на оси X в графике тренда раздела `Аналитика`.
+- Корневая причина была в `TrendChart.update_data(...)`: в `AxisItem.setTicks(...)` передавались все labels, поэтому при периодах 21-30+ дней pyqtgraph пытался отрисовать каждую дату.
+- В `app/ui/analytics/charts.py` добавлен общий helper `build_axis_ticks(...)` и константа `DEFAULT_MAX_X_AXIS_LABELS = 10`.
+- `TrendChart` теперь прореживает только подписи оси X: `x` и `height` для `BarGraphItem` остаются полными, без удаления точек или агрегации данных.
+- Первая и последняя дата сохраняются в ticks; короткие периоды остаются с полным набором подписей.
+- Бизнес-логика аналитики, запросы к БД, DTO/domain/application и миграции не менялись.
 
 ## Что не закончено / в процессе
 
 - Кодовая часть завершена.
-- Интерактивный ручной smoke полного приложения не выполнялся. Выполнен автоматизированный GUI smoke на реальном `EmzForm`: открыть ЭМЗ без interventions, проверить первую строку, нажать `Добавить строку`, сохранить, открыть повторно и проверить widgets.
+- Интерактивный ручной smoke полного приложения не выполнялся. Выполнен автоматизированный GUI smoke на реальном `TrendChart` для 7, 30 и 90 точек.
 
 ## Открытые проблемы / блокеры
 
@@ -20,18 +21,13 @@
 
 ## Следующие шаги
 
-1. При ближайшей ручной регрессии в полном приложении открыть существующую ЭМЗ без вмешательств и визуально проверить таблицу `Инвазивные вмешательства`.
-2. Проверить сценарий редактирования уже сохранённой строки вмешательства с выбранным типом и датами.
+1. При ближайшей ручной регрессии открыть `Аналитика` в полном приложении и визуально проверить периоды 7, 30 и 90 дней.
+2. При необходимости отдельно оценить подписи категорий на графике топ-микроорганизмов, но текущий баг касался временной оси тренда.
 
 ## Ключевые файлы, которые менялись
 
-- `app/ui/emz/form_table_appliers.py`
-- `app/ui/emz/form_reference_orchestrators.py`
-- `app/ui/emz/emz_form.py`
-- `tests/unit/test_emz_form_table_setups.py`
-- `tests/unit/test_emz_form_table_appliers.py`
-- `tests/unit/test_emz_form_reference_orchestrators.py`
-- `tests/unit/test_emz_form_intervention_rows.py`
+- `app/ui/analytics/charts.py`
+- `tests/unit/test_analytics_charts.py`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 
@@ -40,13 +36,13 @@
 - `ruff check app tests` — pass.
 - `python scripts/check_architecture.py` — pass.
 - `python -m mypy app tests` — pass (`298 source files`).
-- `python -m pytest tests/unit/test_emz_form_table_setups.py -q` — pass (`6 passed`).
-- `python -m pytest tests/unit/test_emz_form_table_appliers.py -q` — pass (`5 passed`).
-- `python -m pytest tests/unit/test_emz_form_table_collectors.py -q` — pass (`4 passed`).
-- `python -m pytest (Get-ChildItem tests\unit\test_emz_form_*.py).FullName -q` — pass (`102 passed`).
-- `python -m pytest -q` — pass (`412 passed`).
+- `python -m pytest tests/unit/test_analytics_charts.py -q` — pass (`11 passed`).
+- `python -m pytest tests/unit/test_analytics_chart_data.py -q` — pass (`5 passed`).
+- `python -m pytest tests/unit/test_analytics_view_utils.py -q` — pass (`5 passed`).
+- `python -m pytest (Get-ChildItem tests\unit\test_analytics_*.py).FullName -q` — pass (`29 passed`).
+- `python -m pytest -q` — pass (`417 passed`).
 - `python -m compileall -q app tests scripts` — pass.
 - `python -m alembic check` — pass.
 - `python scripts/check_mojibake.py` — pass.
 - `git diff --check` — pass.
-- GUI smoke формы редактирования ЭМЗ — pass (`EMZ_INTERVENTIONS_SMOKE_PASS`).
+- GUI smoke `TrendChart` — pass (`ANALYTICS_AXIS_SMOKE_PASS`).

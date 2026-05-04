@@ -28,6 +28,7 @@ class _FakePlotWidget(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.axis = _FakeAxis()
+        self.items: list[object] = []
 
     def setBackground(self, _value: str) -> None:  # noqa: N802
         return None
@@ -51,7 +52,7 @@ class _FakePlotWidget(QWidget):
         _ = padding
 
     def addItem(self, _item: object) -> None:  # noqa: N802
-        return None
+        self.items.append(_item)
 
     def setMouseEnabled(self, *, x: bool, y: bool) -> None:  # noqa: N802
         _ = (x, y)
@@ -83,6 +84,29 @@ class _CapturingPg:
     def BarGraphItem(self, **kwargs: object) -> object:  # noqa: N802
         self.bar_kwargs = kwargs
         return object()
+
+
+def test_build_axis_ticks_returns_empty_for_empty_labels() -> None:
+    assert charts.build_axis_ticks([]) == []
+
+
+def test_build_axis_ticks_keeps_short_period_complete() -> None:
+    labels = [f"{day:02d}.04.2026" for day in range(1, 6)]
+
+    assert charts.build_axis_ticks(labels, max_labels=10) == list(enumerate(labels))
+
+
+def test_build_axis_ticks_thins_long_period_and_keeps_edges() -> None:
+    labels = [f"{day:02d}.04.2026" for day in range(1, 22)]
+
+    ticks = charts.build_axis_ticks(labels, max_labels=10)
+    indexes = [index for index, _label in ticks]
+
+    assert len(ticks) <= 10
+    assert ticks[0] == (0, "01.04.2026")
+    assert ticks[-1] == (20, "21.04.2026")
+    assert indexes == sorted(indexes)
+    assert len(indexes) == len(set(indexes))
 
 
 @pytest.mark.parametrize("chart_class", [charts.TopMicrobesChart, charts.TrendChart])
@@ -137,4 +161,43 @@ def test_chart_uses_theme_bar_brush(monkeypatch, chart_class, items, qapp) -> No
 
     assert fake_pg.bar_kwargs is not None
     assert fake_pg.bar_kwargs["brush"] == charts._BAR_BRUSH
+    widget.close()
+
+
+def test_trend_chart_keeps_all_points_and_thins_long_axis_ticks(monkeypatch, qapp) -> None:
+    fake_pg = _CapturingPg()
+    monkeypatch.setattr(charts, "pg", fake_pg)
+    items = [(f"{day:02d}.04.2026", float(day)) for day in range(1, 31)]
+
+    widget = charts.TrendChart()
+    qapp.processEvents()
+
+    widget.update_data(items)
+
+    assert fake_pg.bar_kwargs is not None
+    assert fake_pg.bar_kwargs["x"] == list(range(30))
+    assert fake_pg.bar_kwargs["height"] == [float(day) for day in range(1, 31)]
+    plot = widget._plot
+    assert plot is not None
+    ticks = plot.axis.ticks[0]
+    assert len(ticks) <= charts.DEFAULT_MAX_X_AXIS_LABELS
+    assert len(ticks) < len(items)
+    assert ticks[0] == (0, "01.04.2026")
+    assert ticks[-1] == (29, "30.04.2026")
+    widget.close()
+
+
+def test_trend_chart_keeps_short_axis_ticks_complete(monkeypatch, qapp) -> None:
+    fake_pg = _CapturingPg()
+    monkeypatch.setattr(charts, "pg", fake_pg)
+    items = [(f"{day:02d}.04.2026", float(day)) for day in range(1, 8)]
+
+    widget = charts.TrendChart()
+    qapp.processEvents()
+
+    widget.update_data(items)
+
+    plot = widget._plot
+    assert plot is not None
+    assert plot.axis.ticks[0] == list(enumerate([label for label, _value in items]))
     widget.close()
