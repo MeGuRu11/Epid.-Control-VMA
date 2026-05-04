@@ -141,6 +141,18 @@ def _build_view() -> AnalyticsSearchView:
     )
 
 
+def _combo_labels(combo: Any) -> list[str]:
+    return [combo.itemText(index) for index in range(combo.count())]
+
+
+def _combo_values(combo: Any) -> list[object]:
+    return [combo.itemData(index) for index in range(combo.count())]
+
+
+def _layout_contains_widget(layout: Any, widget: Any) -> bool:
+    return any(layout.itemAt(index).widget() is widget for index in range(layout.count()))
+
+
 def _wait_until(qapp: Any, predicate: Any, timeout: float = 1.5) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -359,11 +371,39 @@ def test_apply_trend_sends_real_dates_and_daily_percentage_to_chart(qapp) -> Non
     view.close()
 
 
-def test_analytics_time_grouping_combo_defaults_to_auto(qapp) -> None:
+def test_analytics_time_grouping_combo_is_visible_in_dashboard_controls(qapp) -> None:
+    view = _build_view()
+    view.show()
+    qapp.processEvents()
+
+    assert view.time_grouping.objectName() == "analyticsTimeGroupingCombo"
+    assert view.time_grouping_label.text() == "Группировка"
+    assert _layout_contains_widget(view.dashboard_controls_row, view.time_grouping_label)
+    assert _layout_contains_widget(view.dashboard_controls_row, view.time_grouping)
+    assert view.time_grouping.isVisible()
+    assert view.time_grouping.currentData() == TimeGrouping.AUTO.value
+    assert _combo_labels(view.time_grouping) == ["Авто", "Дни", "Недели", "Месяцы"]
+    assert _combo_values(view.time_grouping) == [
+        TimeGrouping.AUTO.value,
+        TimeGrouping.DAY.value,
+        TimeGrouping.WEEK.value,
+        TimeGrouping.MONTH.value,
+    ]
+    view.close()
+
+
+def test_analytics_compare_period_and_time_grouping_are_separate_controls(qapp) -> None:
     view = _build_view()
 
-    assert view.time_grouping.currentData() == TimeGrouping.AUTO.value
-    assert [view.time_grouping.itemData(index) for index in range(view.time_grouping.count())] == [
+    assert view.compare_period is not view.time_grouping
+    assert view.compare_period.objectName() == "analyticsComparePeriodCombo"
+    assert view.compare_period_label.text() == "Период сравнения"
+    assert _layout_contains_widget(view.dashboard_controls_row, view.compare_period)
+    assert _layout_contains_widget(view.dashboard_controls_row, view.time_grouping)
+    assert _combo_labels(view.compare_period) == ["Неделя", "Месяц"]
+    assert _combo_values(view.compare_period) == [7, 30]
+    assert _combo_labels(view.time_grouping) == ["Авто", "Дни", "Недели", "Месяцы"]
+    assert _combo_values(view.time_grouping) == [
         TimeGrouping.AUTO.value,
         TimeGrouping.DAY.value,
         TimeGrouping.WEEK.value,
@@ -447,15 +487,24 @@ def test_time_grouping_change_refreshes_dashboard_and_keeps_selected_mode(qapp, 
     view.close()
 
 
-def test_filter_payload_preserves_time_grouping(qapp) -> None:
+def test_filter_payload_restores_missing_time_grouping_as_auto(qapp) -> None:
     view = _build_view()
     view._set_time_grouping(TimeGrouping.MONTH, notify=False)
 
-    payload = view._collect_filter_payload()
-    view._set_time_grouping(TimeGrouping.DAY, notify=False)
-    view._apply_filter_payload(payload)
+    view._apply_filter_payload({})
 
-    assert payload["time_grouping"] == TimeGrouping.MONTH.value
+    assert view.time_grouping.currentData() == TimeGrouping.AUTO.value
+    view.close()
+
+
+def test_filter_payload_preserves_time_grouping(qapp) -> None:
+    view = _build_view()
+    view._set_time_grouping(TimeGrouping.WEEK, notify=False)
+
+    payload = view._collect_filter_payload()
+    view._apply_filter_payload({"time_grouping": TimeGrouping.MONTH.value})
+
+    assert payload["time_grouping"] == TimeGrouping.WEEK.value
     assert view.time_grouping.currentData() == TimeGrouping.MONTH.value
     view.close()
 

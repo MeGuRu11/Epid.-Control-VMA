@@ -1,56 +1,58 @@
-# Сессия 2026-05-04 — группировка временной шкалы аналитики
+# Сессия 2026-05-04 — показан контрол группировки аналитики
 
 ## Что сделано
 
-- В разделе `Аналитика` добавлен режим группировки тренда: `Авто`, `Дни`, `Недели`, `Месяцы`.
-- Агрегация вынесена в новый helper-модуль `app/ui/analytics/chart_data.py`; `TrendChart` остался компонентом отображения и продолжает только рисовать уже подготовленные labels/values.
-- Режим `Авто` выбирает детализацию по длине периода: до 31 дня включительно — дни, 32-180 дней — ISO-недели, больше 180 дней — месяцы.
-- Для недель используется стабильный label `YYYY-Www`, для месяцев — `MM.YYYY`.
-- Тренд агрегирует исходные `total/positives`, а процент положительных считает уже после суммирования группы.
-- Текущее прореживание подписей X-оси через `build_axis_ticks(...)` сохранено и работает поверх дневных, недельных и месячных labels.
-- Значение группировки добавлено в сохранённые фильтры аналитики без поломки старых payload: отсутствующее значение трактуется как `Авто`.
-- БД, миграции, application/domain/infrastructure контракты не менялись.
+- Исправлена недоработка UI после `b7843f6 feat: добавлена группировка временной шкалы аналитики`.
+- Корневая причина: `time_grouping` был добавлен в строку быстрого периода раздела `Параметры поиска`, а пользователь ожидает эту настройку в блоке `Сводка` рядом с `Период сравнения`.
+- `Группировка` перенесена в видимый ряд управления сводкой: `Период сравнения` и `Группировка` теперь два разных `QComboBox`.
+- `Период сравнения` сохранил варианты `Неделя` и `Месяц`.
+- `Группировка` показывает `Авто`, `Дни`, `Недели`, `Месяцы`, по умолчанию `Авто`.
+- Смена группировки продолжает обновлять dashboard/trend и не сбрасывает остальные фильтры.
+- Saved filters: payload с `time_grouping` восстанавливает выбранное значение, старый payload без `time_grouping` явно выставляет `Авто`.
+- Для UI-регрессий добавлены стабильные `objectName` у combobox/label.
+- БД, миграции, `chart_data.py`, application/domain/infrastructure контракты не менялись.
 
 ## Что не закончено / в процессе
 
 - Кодовая часть завершена.
-- Интерактивный ручной smoke полного приложения не выполнялся. Выполнен автоматизированный GUI smoke на настоящем `AnalyticsSearchView` с fake-сервисами для 30, 90 и 201 дня.
+- Полный quality gate завершён.
+- Интерактивный ручной smoke полного приложения не выполнялся. Выполнен автоматизированный GUI smoke на настоящем `AnalyticsSearchView` с fake-сервисами.
 
 ## Открытые проблемы / блокеры
 
-- Блокеров по коду, тестам и quality gates нет.
-- Во время pytest остаётся внешний `PytestCacheWarning` по локальному cache-каталогу окружения; проверки проходят.
+- Блокеров по коду нет.
+- Во время pytest в этом окружении сохраняется внешний `PytestCacheWarning` по локальному cache-каталогу; тесты проходят.
 
 ## Следующие шаги
 
-1. При ближайшей ручной регрессии открыть `Аналитика` в полном приложении и визуально проверить переключение `Авто`/`Дни`/`Недели`/`Месяцы` на реальных данных.
-2. Если появится требование сохранять группировку между сессиями приложения, добавить это отдельно через существующий механизм пользовательских настроек, без изменения БД аналитики.
+1. При ближайшей ручной регрессии открыть полное приложение и визуально проверить `Период сравнения` и `Группировка` на реальных данных.
+2. При проверке saved filters сохранить фильтр с `Группировка = Месяцы`, затем загрузить его и убедиться, что combobox восстановился.
 
 ## Ключевые файлы, которые менялись
 
-- `docs/specs/SPEC_analytics_time_grouping.md`
-- `app/ui/analytics/chart_data.py`
-- `app/ui/analytics/view_utils.py`
 - `app/ui/analytics/analytics_view.py`
 - `tests/unit/test_analytics_chart_data.py`
-- `tests/unit/test_analytics_view_utils.py`
+- `docs/specs/SPEC_analytics_time_grouping.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 
-## Проверки
+## Проверки на момент записи
 
+- `ruff check app/ui/analytics/analytics_view.py tests/unit/test_analytics_chart_data.py` — pass.
+- `python -m mypy app/ui/analytics/analytics_view.py tests/unit/test_analytics_chart_data.py` — pass.
+- `python -m pytest tests/unit/test_analytics_chart_data.py -q` — pass (`29 passed`).
 - `ruff check app tests` — pass.
 - `python scripts/check_architecture.py` — pass.
 - `python -m mypy app tests` — pass (`299 source files`).
-- `python -m pytest tests/unit/test_analytics_charts.py -q` — pass (`11 passed`).
-- `python -m pytest tests/unit/test_analytics_chart_data.py -q` — pass (`27 passed`).
 - `python -m pytest tests/unit/test_analytics_view_utils.py -q` — pass (`6 passed`).
-- `python -m pytest @(Get-ChildItem tests/unit/test_analytics_*.py | ForEach-Object { $_.FullName }) -q` — pass (`52 passed`).
+- `python -m pytest tests/unit/test_analytics_charts.py -q` — pass (`11 passed`).
+- `python -m pytest tests/unit/test_analytics_* -q` — не выполнено в PowerShell как wildcard: pytest получил literal path и вернул `file or directory not found`.
+- `python -m pytest @(Get-ChildItem tests/unit/test_analytics_*.py | ForEach-Object { $_.FullName }) -q` — pass (`54 passed`).
 - `python -m pytest tests/integration/test_analytics_date_boundaries.py -q` — pass (`4 passed`).
 - `python -m pytest tests/integration/test_analytics_service_queries.py -q` — pass (`3 passed`).
-- `python -m pytest -q` — pass (`440 passed`).
+- `python -m pytest -q` — pass (`442 passed`).
 - `python -m compileall -q app tests scripts` — pass.
 - `python -m alembic check` — pass.
 - `python scripts/check_mojibake.py` — pass.
 - `git diff --check` — pass.
-- GUI smoke `AnalyticsSearchView` — pass (`ANALYTICS_TIME_GROUPING_SMOKE_PASS day30=30 week90=14 month201=7`).
+- GUI smoke `AnalyticsSearchView` — pass (`ANALYTICS_GROUPING_UI_SMOKE_PASS compare_values=7,30 grouping_values=auto,day,week,month`).

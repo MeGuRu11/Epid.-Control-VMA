@@ -189,13 +189,6 @@ class AnalyticsSearchView(QWidget):
         self.quick_period.addItem("Последние 90 дней", "90d")
         self.quick_period.addItem("Текущий месяц", "month")
         connect_combo_autowidth(self.quick_period)
-        self.time_grouping = QComboBox()
-        self.time_grouping.addItem("Авто", TimeGrouping.AUTO.value)
-        self.time_grouping.addItem("Дни", TimeGrouping.DAY.value)
-        self.time_grouping.addItem("Недели", TimeGrouping.WEEK.value)
-        self.time_grouping.addItem("Месяцы", TimeGrouping.MONTH.value)
-        connect_combo_autowidth(self.time_grouping)
-        self.time_grouping.currentIndexChanged.connect(lambda _index: self._update_dashboard())
         quick_apply_btn = QPushButton("Применить период")
         compact_button(quick_apply_btn)
         quick_apply_btn.clicked.connect(self._apply_quick_period)
@@ -204,8 +197,6 @@ class AnalyticsSearchView(QWidget):
         reset_filters_btn.clicked.connect(self._reset_search_filters)
         quick_row.addWidget(QLabel("Быстрый период"))
         quick_row.addWidget(self.quick_period)
-        quick_row.addWidget(QLabel("Группировка"))
-        quick_row.addWidget(self.time_grouping)
         quick_row.addWidget(quick_apply_btn)
         quick_row.addStretch()
         quick_row.addWidget(reset_filters_btn)
@@ -483,13 +474,27 @@ class AnalyticsSearchView(QWidget):
         content_layout.addWidget(history_box)
 
     def _build_dashboard_box(self) -> QGroupBox:
-        dashboard_box = QGroupBox("Сводка")
-        dashboard_layout = QVBoxLayout(dashboard_box)
+        self.dashboard_box = QGroupBox("Сводка")
+        dashboard_layout = QVBoxLayout(self.dashboard_box)
         compare_row = QHBoxLayout()
+        self.dashboard_controls_row = compare_row
+        self.compare_period_label = QLabel("Период сравнения")
+        self.compare_period_label.setObjectName("analyticsComparePeriodLabel")
         self.compare_period = QComboBox()
+        self.compare_period.setObjectName("analyticsComparePeriodCombo")
         self.compare_period.addItem("Неделя", 7)
         self.compare_period.addItem("Месяц", 30)
         connect_combo_autowidth(self.compare_period)
+        self.time_grouping_label = QLabel("Группировка")
+        self.time_grouping_label.setObjectName("analyticsTimeGroupingLabel")
+        self.time_grouping = QComboBox()
+        self.time_grouping.setObjectName("analyticsTimeGroupingCombo")
+        self.time_grouping.addItem("Авто", TimeGrouping.AUTO.value)
+        self.time_grouping.addItem("Дни", TimeGrouping.DAY.value)
+        self.time_grouping.addItem("Недели", TimeGrouping.WEEK.value)
+        self.time_grouping.addItem("Месяцы", TimeGrouping.MONTH.value)
+        connect_combo_autowidth(self.time_grouping)
+        self.time_grouping.currentIndexChanged.connect(lambda _index: self._update_dashboard())
         self.compare_label = QLabel("Сравнение: -")
         self.compare_label.setObjectName("chipLabel")
         self.dashboard_refresh_btn = QPushButton("Обновить сводку")
@@ -498,8 +503,10 @@ class AnalyticsSearchView(QWidget):
         self.dashboard_reset_btn = QPushButton("Сбросить фильтры сводки")
         compact_button(self.dashboard_reset_btn)
         self.dashboard_reset_btn.clicked.connect(self._reset_dashboard_filters)
-        compare_row.addWidget(QLabel("Период сравнения"))
+        compare_row.addWidget(self.compare_period_label)
         compare_row.addWidget(self.compare_period)
+        compare_row.addWidget(self.time_grouping_label)
+        compare_row.addWidget(self.time_grouping)
         compare_row.addWidget(self.compare_label)
         compare_row.addStretch()
         compare_row.addWidget(self.dashboard_refresh_btn)
@@ -522,7 +529,7 @@ class AnalyticsSearchView(QWidget):
         self.trend_chart = TrendChart()
         self.trend_chart.setMinimumHeight(340)
         dashboard_layout.addWidget(self.trend_chart)
-        return dashboard_box
+        return self.dashboard_box
 
     def _update_main_actions_layout(self) -> None:
         update_action_bar_direction(
@@ -1276,6 +1283,8 @@ class AnalyticsSearchView(QWidget):
             self.patient_category.setCurrentIndex(self.patient_category.findData(payload["patient_category"]))
         if "time_grouping" in payload:
             self._set_time_grouping(payload["time_grouping"], notify=False)
+        else:
+            self._set_time_grouping(TimeGrouping.AUTO, notify=False)
 
         self.patient_name.setText(payload.get("patient_name", "") or "")
         self.lab_no.setText(payload.get("lab_no", "") or "")
