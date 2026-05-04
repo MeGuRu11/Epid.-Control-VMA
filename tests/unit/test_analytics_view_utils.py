@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
+from app.ui.analytics.chart_data import TimeGrouping
 from app.ui.analytics.view_utils import (
     build_top_microbe_chart_items,
     build_trend_chart_items,
@@ -57,6 +58,22 @@ def test_build_trend_chart_items_formats_real_dates_and_calculates_percentages()
         ("02.04.2026", 0.0),
         ("03.04.2026", 25.0),
     ]
+
+
+def test_build_trend_chart_items_groups_by_week_before_calculating_percentage() -> None:
+    rows = [
+        {"day": "2026-04-20", "total": 1, "positives": 1},
+        {"day": "2026-04-21", "total": 99, "positives": 0},
+    ]
+
+    result = build_trend_chart_items(
+        rows,
+        date(2026, 4, 20),
+        date(2026, 4, 26),
+        TimeGrouping.WEEK,
+    )
+
+    assert result == [("2026-W17", 1.0)]
 
 
 def test_build_top_microbe_chart_items_calculates_percentage_share() -> None:

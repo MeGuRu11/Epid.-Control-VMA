@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta
 
+from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping, group_trend_rows
+
 
 def normalize_date_range(date_from: date | None, date_to: date | None) -> tuple[date | None, date | None]:
     if date_from and date_to and date_from > date_to:
@@ -40,42 +42,15 @@ def build_trend_chart_items(
     rows: Iterable[Mapping[str, object]],
     date_from: date | None = None,
     date_to: date | None = None,
+    grouping: TimeGrouping | str = TimeGrouping.DAY,
 ) -> list[tuple[str, float]]:
-    day_map: dict[date, tuple[int, int]] = {}
-    fallback_items: list[tuple[str, float]] = []
-
-    for row in rows:
-        raw_day = row.get("day")
-        total = _coerce_chart_count(row.get("total"))
-        positives = _coerce_chart_count(row.get("positives"))
-        percentage = (positives / total * 100.0) if total else 0.0
-        parsed_day = _coerce_chart_day(raw_day)
-        if parsed_day is None:
-            fallback_items.append((format_day_label(raw_day), percentage))
-            continue
-        day_map[parsed_day] = (total, positives)
-
-    if date_from is not None and date_to is not None:
-        start_date, end_date = normalize_date_range(date_from, date_to)
-        if start_date is not None and end_date is not None:
-            items: list[tuple[str, float]] = []
-            current_day = start_date
-            while current_day <= end_date:
-                total, positives = day_map.get(current_day, (0, 0))
-                percentage = (positives / total * 100.0) if total else 0.0
-                items.append((format_day_label(current_day), percentage))
-                current_day += timedelta(days=1)
-            return items
-
-    if day_map:
-        items = []
-        for current_day in sorted(day_map):
-            total, positives = day_map[current_day]
-            percentage = (positives / total * 100.0) if total else 0.0
-            items.append((format_day_label(current_day), percentage))
-        return items
-
-    return fallback_items
+    grouped = group_trend_rows(
+        rows,
+        requested=coerce_time_grouping(grouping),
+        date_from=date_from,
+        date_to=date_to,
+    )
+    return list(zip(grouped.labels, grouped.values, strict=False))
 
 
 def build_top_microbe_chart_items(
@@ -121,20 +96,3 @@ def _coerce_chart_day(value: object) -> date | None:
             except ValueError:
                 return None
     return None
-
-
-def _coerce_chart_count(value: object) -> int:
-    if value is None:
-        return 0
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        try:
-            return int(value)
-        except ValueError:
-            return 0
-    return 0

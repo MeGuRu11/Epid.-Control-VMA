@@ -35,6 +35,7 @@ from app.application.services.reporting_service import ReportingService
 from app.application.services.saved_filter_service import SavedFilterService
 from app.config import DATA_DIR
 from app.domain.constants import MilitaryCategory
+from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping
 from app.ui.analytics.charts import TopMicrobesChart, TrendChart
 from app.ui.analytics.report_history_helpers import (
     format_report_verification,
@@ -188,6 +189,13 @@ class AnalyticsSearchView(QWidget):
         self.quick_period.addItem("Последние 90 дней", "90d")
         self.quick_period.addItem("Текущий месяц", "month")
         connect_combo_autowidth(self.quick_period)
+        self.time_grouping = QComboBox()
+        self.time_grouping.addItem("Авто", TimeGrouping.AUTO.value)
+        self.time_grouping.addItem("Дни", TimeGrouping.DAY.value)
+        self.time_grouping.addItem("Недели", TimeGrouping.WEEK.value)
+        self.time_grouping.addItem("Месяцы", TimeGrouping.MONTH.value)
+        connect_combo_autowidth(self.time_grouping)
+        self.time_grouping.currentIndexChanged.connect(lambda _index: self._update_dashboard())
         quick_apply_btn = QPushButton("Применить период")
         compact_button(quick_apply_btn)
         quick_apply_btn.clicked.connect(self._apply_quick_period)
@@ -196,6 +204,8 @@ class AnalyticsSearchView(QWidget):
         reset_filters_btn.clicked.connect(self._reset_search_filters)
         quick_row.addWidget(QLabel("Быстрый период"))
         quick_row.addWidget(self.quick_period)
+        quick_row.addWidget(QLabel("Группировка"))
+        quick_row.addWidget(self.time_grouping)
         quick_row.addWidget(quick_apply_btn)
         quick_row.addStretch()
         quick_row.addWidget(reset_filters_btn)
@@ -922,6 +932,7 @@ class AnalyticsSearchView(QWidget):
     def _set_dashboard_busy(self, busy: bool) -> None:
         self.dashboard_refresh_btn.setEnabled(not busy)
         self.dashboard_reset_btn.setEnabled(not busy)
+        self.time_grouping.setEnabled(not busy)
 
     def _run_search_async(self, req: AnalyticsSearchRequest) -> None:
         self._set_search_busy(True)
@@ -930,6 +941,7 @@ class AnalyticsSearchView(QWidget):
         compare_days = int(self.compare_period.currentData() or 7)
         patient_category = self.patient_category.currentData()
         department_id = self.department.currentData()
+        time_grouping = self._selected_time_grouping()
 
         def _run() -> dict:
             self.analytics_service.clear_cache()
@@ -941,6 +953,7 @@ class AnalyticsSearchView(QWidget):
                 patient_category=patient_category,
                 department_id=department_id,
                 compare_days=compare_days,
+                time_grouping=time_grouping,
             )
             return {"rows": rows, "agg": agg, "dashboard": dashboard}
 
@@ -1230,6 +1243,7 @@ class AnalyticsSearchView(QWidget):
         if self.search_text.text().strip():
             payload["search_text"] = self.search_text.text().strip()
 
+        payload["time_grouping"] = self._selected_time_grouping().value
         return payload
 
     def _apply_filter_payload(self, payload: dict) -> None:
@@ -1260,6 +1274,8 @@ class AnalyticsSearchView(QWidget):
             self.growth_flag.setCurrentIndex(self.growth_flag.findData(payload["growth_flag"]))
         if "patient_category" in payload:
             self.patient_category.setCurrentIndex(self.patient_category.findData(payload["patient_category"]))
+        if "time_grouping" in payload:
+            self._set_time_grouping(payload["time_grouping"], notify=False)
 
         self.patient_name.setText(payload.get("patient_name", "") or "")
         self.lab_no.setText(payload.get("lab_no", "") or "")
@@ -1314,6 +1330,7 @@ class AnalyticsSearchView(QWidget):
         compare_days = int(self.compare_period.currentData() or 7)
         patient_category = self.patient_category.currentData()
         department_id = self.department.currentData()
+        time_grouping = self._selected_time_grouping()
         request = self._build_request()
         self._set_dashboard_busy(True)
 
@@ -1325,6 +1342,7 @@ class AnalyticsSearchView(QWidget):
                 patient_category=patient_category,
                 department_id=department_id,
                 compare_days=compare_days,
+                time_grouping=time_grouping,
             )
             agg = self.analytics_service.get_aggregates(request)
             return {"dashboard": dashboard, "agg": agg}
@@ -1348,6 +1366,7 @@ class AnalyticsSearchView(QWidget):
         patient_category: str | None,
         department_id: int | None,
         compare_days: int,
+        time_grouping: TimeGrouping,
     ) -> dict:
         department_rows = self.analytics_service.get_department_summary(
             date_from, date_to, patient_category=patient_category
@@ -1372,6 +1391,7 @@ class AnalyticsSearchView(QWidget):
             "compare": compare,
             "date_from": date_from,
             "date_to": date_to,
+            "time_grouping": time_grouping,
             "ismp": ismp,
         }
 
@@ -1381,6 +1401,7 @@ class AnalyticsSearchView(QWidget):
             data.get("trend_rows", []),
             data.get("date_from"),
             data.get("date_to"),
+            data.get("time_grouping"),
         )
         self._apply_compare(data.get("compare"), data.get("date_to"))
         self._apply_ismp_metrics(data.get("ismp", {}))
@@ -1412,6 +1433,7 @@ class AnalyticsSearchView(QWidget):
         self.patient_name.clear()
         self.lab_no.clear()
         self.search_text.clear()
+        self._set_time_grouping(TimeGrouping.AUTO, notify=False)
         if self.saved_filter_select.count() > 0:
             self.saved_filter_select.setCurrentIndex(0)
 
@@ -1419,6 +1441,23 @@ class AnalyticsSearchView(QWidget):
         date_from = cast(date | None, self.date_from.date().toPython())
         date_to = cast(date | None, self.date_to.date().toPython())
         return normalize_date_range(date_from, date_to)
+
+    def _selected_time_grouping(self) -> TimeGrouping:
+        return coerce_time_grouping(self.time_grouping.currentData())
+
+    def _set_time_grouping(self, value: object, *, notify: bool = True) -> None:
+        grouping = coerce_time_grouping(value)
+        index = self.time_grouping.findData(grouping.value)
+        if index < 0:
+            return
+        if notify:
+            self.time_grouping.setCurrentIndex(index)
+            return
+        blocker = QSignalBlocker(self.time_grouping)
+        try:
+            self.time_grouping.setCurrentIndex(index)
+        finally:
+            del blocker
 
     def _update_department_summary(self, date_from, date_to) -> None:
         rows = self.analytics_service.get_department_summary(
@@ -1430,7 +1469,7 @@ class AnalyticsSearchView(QWidget):
         rows = self.analytics_service.get_trend_by_day(
             date_from, date_to, patient_category=self.patient_category.currentData()
         )
-        self._apply_trend(rows, date_from, date_to)
+        self._apply_trend(rows, date_from, date_to, self._selected_time_grouping())
 
     def _update_compare(self, end_date) -> None:
         if end_date is None:
@@ -1468,8 +1507,14 @@ class AnalyticsSearchView(QWidget):
         rows: list[dict],
         date_from: date | None = None,
         date_to: date | None = None,
+        time_grouping: TimeGrouping | str | None = None,
     ) -> None:
-        items = build_trend_chart_items(rows, date_from, date_to)
+        grouping = (
+            coerce_time_grouping(time_grouping)
+            if time_grouping is not None
+            else self._selected_time_grouping()
+        )
+        items = build_trend_chart_items(rows, date_from, date_to, grouping)
         self.trend_chart.update_data(items)
 
     def _apply_compare(self, compare: dict | None, end_date: date | None) -> None:
@@ -1514,6 +1559,5 @@ class AnalyticsSearchView(QWidget):
         self.date_to.setDate(today)
         self.compare_period.setCurrentIndex(0)
         self.patient_category.setCurrentIndex(0)
+        self._set_time_grouping(TimeGrouping.AUTO, notify=False)
         self._update_dashboard()
-
-
