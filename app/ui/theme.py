@@ -1150,6 +1150,10 @@ def _build_qss(settings: Settings) -> str:
         background: transparent;
         border: none;
     }}
+    QWidget#contextBar QWidget#contextCompactActions {{
+        background: transparent;
+        border: none;
+    }}
     QWidget#patientPinnedChip, QWidget#casePinnedChip {{
         background: {COL["surface"]};
         border: 1px solid {COL["border_soft"]};

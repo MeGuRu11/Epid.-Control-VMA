@@ -108,6 +108,7 @@ class ContextBar(QWidget):
 
         self._actions_group = QWidget()
         self._actions_group.setObjectName("contextCompactActions")
+        self._actions_group.setAutoFillBackground(False)
         actions_layout = QHBoxLayout(self._actions_group)
         actions_layout.setContentsMargins(0, 0, 0, 0)
         actions_layout.setSpacing(6)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -81,6 +82,25 @@ def test_context_bar_labels_use_local_transparent_style_hooks(qapp) -> None:
     parent.close()
 
 
+def test_context_bar_field_labels_use_local_semibold_style(qapp) -> None:
+    parent, bar = _make_context_bar(qapp, width=900)
+
+    patient_label = _label_by_text(bar, "Пациент")
+    case_label = _label_by_text(bar, "Госпитализация")
+    stylesheet = qapp.styleSheet()
+
+    assert patient_label.objectName() == "contextBarFieldLabel"
+    assert case_label.objectName() == "contextBarFieldLabel"
+    assert patient_label.styleSheet() == ""
+    assert case_label.styleSheet() == ""
+    assert patient_label.font().weight() >= 600
+    assert case_label.font().weight() >= 600
+    assert "QWidget#contextBar QLabel#contextBarFieldLabel" in stylesheet
+    assert re.search(r"(?m)^\s*QLabel#contextBarFieldLabel\b", stylesheet) is None
+
+    parent.close()
+
+
 def test_context_bar_title_host_uses_local_transparent_contract(qapp) -> None:
     parent, bar = _make_context_bar(qapp, width=1600)
 
@@ -102,6 +122,38 @@ def test_context_bar_title_host_uses_local_transparent_contract(qapp) -> None:
         "casePinnedChip",
     }
     assert "QWidget#contextBar QWidget#contextBarTitleHost" in qapp.styleSheet()
+
+    parent.close()
+
+
+@pytest.mark.parametrize("width", [1600, 900, 560])
+def test_context_bar_actions_group_uses_local_transparent_contract(
+    qapp,
+    width: int,
+) -> None:
+    parent, bar = _make_context_bar(qapp, width=width)
+    bar.prepare_for_width(parent.width() - 16)
+    bar.setGeometry(8, 6, parent.width() - 16, bar.desired_height())
+    bar.prepare_for_width(parent.width() - 16)
+    qapp.processEvents()
+
+    actions_group = bar._actions_group
+
+    assert actions_group.objectName() == "contextCompactActions"
+    assert actions_group.styleSheet() == ""
+    assert actions_group.autoFillBackground() is False
+    assert actions_group.objectName() not in {
+        "sectionTitle",
+        "chip",
+        "card",
+        "surface",
+        "contextPinnedChips",
+        "patientPinnedChip",
+        "casePinnedChip",
+    }
+    assert "QWidget#contextBar QWidget#contextCompactActions" in qapp.styleSheet()
+    for button in (bar.change_btn, bar.last_patient_btn, bar.reset_btn):
+        _assert_button_inside_parent_and_bar(bar, button)
 
     parent.close()
 
