@@ -1127,6 +1127,10 @@ def _build_qss(settings: Settings) -> str:
         background: transparent;
         border: none;
     }}
+    QWidget#contextBar QWidget#contextBarTitleHost {{
+        background: transparent;
+        border: none;
+    }}
     QWidget#contextBar QLabel#contextBarTitleLabel,
     QWidget#contextBar QLabel#contextBarFieldLabel {{
         background: transparent;

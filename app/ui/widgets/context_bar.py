@@ -60,6 +60,8 @@ class ContextBar(QWidget):
         self._summary_layout.setSpacing(8)
 
         self._title_group = QWidget()
+        self._title_group.setObjectName("contextBarTitleHost")
+        self._title_group.setAutoFillBackground(False)
         title_layout = QHBoxLayout(self._title_group)
         title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(6)

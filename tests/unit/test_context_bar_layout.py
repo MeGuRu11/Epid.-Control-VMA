@@ -81,7 +81,32 @@ def test_context_bar_labels_use_local_transparent_style_hooks(qapp) -> None:
     parent.close()
 
 
-@pytest.mark.parametrize("width", [900, 560])
+def test_context_bar_title_host_uses_local_transparent_contract(qapp) -> None:
+    parent, bar = _make_context_bar(qapp, width=1600)
+
+    title_label = _label_by_text(bar, "Контекст пациента")
+    title_host = title_label.parentWidget()
+
+    assert title_host is not None
+    assert title_host.objectName() == "contextBarTitleHost"
+    assert title_host.styleSheet() == ""
+    assert title_host.autoFillBackground() is False
+    assert title_label.objectName() == "contextBarTitleLabel"
+    assert title_host.objectName() not in {
+        "sectionTitle",
+        "chip",
+        "card",
+        "surface",
+        "contextPinnedChips",
+        "patientPinnedChip",
+        "casePinnedChip",
+    }
+    assert "QWidget#contextBar QWidget#contextBarTitleHost" in qapp.styleSheet()
+
+    parent.close()
+
+
+@pytest.mark.parametrize("width", [1600, 900, 560])
 def test_context_bar_find_button_stays_inside_container(qapp, width: int) -> None:
     parent, bar = _make_context_bar(qapp, width=width)
     _expand_context_bar(qapp, parent, bar)
@@ -91,7 +116,7 @@ def test_context_bar_find_button_stays_inside_container(qapp, width: int) -> Non
     parent.close()
 
 
-@pytest.mark.parametrize("width", [900, 560])
+@pytest.mark.parametrize("width", [1600, 900, 560])
 def test_context_bar_select_by_id_button_stays_inside_container(qapp, width: int) -> None:
     parent, bar = _make_context_bar(qapp, width=width)
     _expand_context_bar(qapp, parent, bar)
