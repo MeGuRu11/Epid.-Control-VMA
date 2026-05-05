@@ -1127,6 +1127,21 @@ def _build_qss(settings: Settings) -> str:
         background: transparent;
         border: none;
     }}
+    QWidget#contextBar QLabel#contextBarTitleLabel,
+    QWidget#contextBar QLabel#contextBarFieldLabel {{
+        background: transparent;
+        border: none;
+        padding: 0;
+    }}
+    QWidget#contextBar QLabel#contextBarTitleLabel {{
+        color: {COL["text_primary"]};
+        font-size: 16px;
+        font-weight: 700;
+    }}
+    QWidget#contextBar QLabel#contextBarFieldLabel {{
+        color: {COL["text_muted"]};
+        font-weight: 600;
+    }}
     QWidget#contextPinnedChips {{
         background: transparent;
         border: none;

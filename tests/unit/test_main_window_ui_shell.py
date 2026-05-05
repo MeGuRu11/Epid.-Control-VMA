@@ -14,6 +14,12 @@ from app.ui.theme import apply_theme
 from app.ui.widgets.transition_stack import TransitionStack
 
 
+def _close_widget(qapp, widget: QWidget) -> None:
+    widget.close()
+    widget.deleteLater()
+    qapp.processEvents()
+
+
 def test_main_window_uses_transition_stack_and_shell_layers(monkeypatch, qapp) -> None:
     def _stub_init_views(self) -> None:  # noqa: ANN001
         return
@@ -37,6 +43,9 @@ def test_main_window_uses_transition_stack_and_shell_layers(monkeypatch, qapp) -
     assert isinstance(window._stack, TransitionStack)
     assert window._background is not None
     assert window._foreground is not None
+
+    window._context_bar.set_size_change_callback(None)
+    _close_widget(qapp, window)
 
 
 def test_main_window_nav_menu_adapts_titles_on_small_width(monkeypatch, qapp) -> None:
@@ -99,6 +108,9 @@ def test_main_window_nav_menu_adapts_titles_on_small_width(monkeypatch, qapp) ->
     assert window.menuBar().property("compactNav") is False
     assert all(action.text() == title for action, title in window._nav_action_titles.items())
 
+    window._context_bar.set_size_change_callback(None)
+    _close_widget(qapp, window)
+
 
 def test_nav_menu_positions_logout_button_evenly(qapp) -> None:
     apply_theme(qapp, Settings())
@@ -123,7 +135,8 @@ def test_nav_menu_positions_logout_button_evenly(qapp) -> None:
     assert menubar.cornerWidget(Qt.Corner.TopRightCorner) is not None
     assert menubar.trailing_reserved_width() == button.width() + 16
 
-    menubar.close()
+    _close_widget(qapp, button)
+    _close_widget(qapp, menubar)
 
 
 def test_main_window_idle_timeout_requests_relogin(monkeypatch, qapp) -> None:
@@ -160,3 +173,6 @@ def test_main_window_idle_timeout_requests_relogin(monkeypatch, qapp) -> None:
 
     assert called["value"] is True
     assert window._idle_timeout_in_progress is False
+
+    window._context_bar.set_size_change_callback(None)
+    _close_widget(qapp, window)

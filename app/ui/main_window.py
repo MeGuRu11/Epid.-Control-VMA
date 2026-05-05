@@ -206,7 +206,6 @@ class MainWindow(QMainWindow):
         self._context_bar.set_size_change_callback(self._position_context_bar)
         self._context_bar.raise_()
         self._position_context_bar()
-        vlayout.setContentsMargins(0, self._context_bar.header_height() + 6, 0, 0)
 
         self._init_views()
         self._build_menu()
@@ -686,7 +685,13 @@ class MainWindow(QMainWindow):
         if not parent:
             return
         width = max(0, parent.width() - 2 * margin_x)
+        self._context_bar.prepare_for_width(width)
         height = self._context_bar.desired_height()
         self._context_bar.setGeometry(margin_x, margin_y, width, height)
-
+        foreground_layout = parent.layout()
+        if foreground_layout is not None:
+            margins = foreground_layout.contentsMargins()
+            top_margin = self._context_bar.header_height() + 6
+            if margins.top() != top_margin:
+                foreground_layout.setContentsMargins(margins.left(), top_margin, margins.right(), margins.bottom())
 

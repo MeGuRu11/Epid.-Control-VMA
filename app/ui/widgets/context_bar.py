@@ -63,11 +63,11 @@ class ContextBar(QWidget):
         title_layout = QHBoxLayout(self._title_group)
         title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(6)
-        context_title = QLabel("Контекст пациента")
-        context_title.setObjectName("sectionTitle")
-        context_title.setToolTip("Задаёт текущего пациента и госпитализацию для рабочих разделов.")
-        title_layout.addWidget(context_title)
-        self._title_group.setToolTip(context_title.toolTip())
+        self.context_title_label = QLabel("Контекст пациента")
+        self.context_title_label.setObjectName("contextBarTitleLabel")
+        self.context_title_label.setToolTip("Задаёт текущего пациента и госпитализацию для рабочих разделов.")
+        title_layout.addWidget(self.context_title_label)
+        self._title_group.setToolTip(self.context_title_label.toolTip())
         self._summary_layout.addWidget(self._title_group)
 
         self._chips_group = QWidget()
@@ -141,10 +141,12 @@ class ContextBar(QWidget):
         patient_block = QVBoxLayout(self._patient_controls_group)
         patient_block.setContentsMargins(0, 0, 0, 0)
         patient_block.setSpacing(4)
-        patient_label = QLabel("Пациент")
-        patient_label.setObjectName("muted")
-        patient_block.addWidget(patient_label)
+        self.patient_field_label = QLabel("Пациент")
+        self.patient_field_label.setObjectName("contextBarFieldLabel")
+        patient_block.addWidget(self.patient_field_label)
         patient_row = QHBoxLayout()
+        patient_row.setContentsMargins(0, 0, 0, 0)
+        patient_row.setSpacing(6)
         self.patient_search = QLineEdit()
         self.patient_search.setPlaceholderText("ФИО или ID пациента")
         self.patient_search.setToolTip("Введите ID пациента или часть ФИО для поиска.")
@@ -155,11 +157,11 @@ class ContextBar(QWidget):
         self.patient_search.setCompleter(self._completer)
         self.patient_search.textEdited.connect(self._on_patient_search_text)
         patient_row.addWidget(self.patient_search)
-        find_patient_btn = QPushButton("Найти")
-        compact_button(find_patient_btn, min_width=74, max_width=104)
-        find_patient_btn.setToolTip("Открыть поиск пациента и выбрать нужного.")
-        find_patient_btn.clicked.connect(self._find_patient)
-        patient_row.addWidget(find_patient_btn)
+        self.find_patient_btn = QPushButton("Найти")
+        compact_button(self.find_patient_btn, min_width=74, max_width=104)
+        self.find_patient_btn.setToolTip("Открыть поиск пациента и выбрать нужного.")
+        self.find_patient_btn.clicked.connect(self._find_patient)
+        patient_row.addWidget(self.find_patient_btn)
         patient_block.addLayout(patient_row)
         self._controls_row.addWidget(self._patient_controls_group)
 
@@ -167,10 +169,12 @@ class ContextBar(QWidget):
         case_block = QVBoxLayout(self._case_controls_group)
         case_block.setContentsMargins(0, 0, 0, 0)
         case_block.setSpacing(4)
-        case_label = QLabel("Госпитализация")
-        case_label.setObjectName("muted")
-        case_block.addWidget(case_label)
+        self.case_field_label = QLabel("Госпитализация")
+        self.case_field_label.setObjectName("contextBarFieldLabel")
+        case_block.addWidget(self.case_field_label)
         case_row = QHBoxLayout()
+        case_row.setContentsMargins(0, 0, 0, 0)
+        case_row.setSpacing(6)
         self.case_search = QLineEdit()
         self.case_search.setPlaceholderText("Номер истории болезни")
         self.case_search.setToolTip("Введите часть номера истории болезни для поиска.")
@@ -181,11 +185,11 @@ class ContextBar(QWidget):
         self.case_search.setCompleter(self._case_completer)
         self.case_search.textEdited.connect(self._on_case_search_text)
         case_row.addWidget(self.case_search)
-        select_case_btn = QPushButton("Выбрать по ID")
-        compact_button(select_case_btn, min_width=112, max_width=144)
-        select_case_btn.setToolTip("Введите ID госпитализации вручную.")
-        select_case_btn.clicked.connect(self._select_case_by_id)
-        case_row.addWidget(select_case_btn)
+        self.select_case_btn = QPushButton("Выбрать по ID")
+        compact_button(self.select_case_btn, min_width=132, max_width=184)
+        self.select_case_btn.setToolTip("Введите ID госпитализации вручную.")
+        self.select_case_btn.clicked.connect(self._select_case_by_id)
+        case_row.addWidget(self.select_case_btn)
         case_block.addLayout(case_row)
         self._controls_row.addWidget(self._case_controls_group)
         content_layout.addLayout(self._controls_row)
@@ -196,9 +200,9 @@ class ContextBar(QWidget):
         self._content_effect.setOpacity(0.0)
         self.content_widget.setGraphicsEffect(self._content_effect)
         layout.addWidget(self.content_widget)
-        self._header_height = self.sizeHint().height()
         self._update_chip_states()
         self._update_layout_mode()
+        self._sync_dynamic_heights()
 
     def _build_chip(self, object_name: str) -> QWidget:
         chip = QWidget()
@@ -214,12 +218,14 @@ class ContextBar(QWidget):
         expanding = not self.content_widget.isVisible()
         if expanding:
             self.content_widget.setVisible(True)
+        self._update_layout_mode()
+        self._sync_dynamic_heights()
         self.change_btn.setText("Скрыть" if expanding else "Изменить")
         self._animate_content(expanding)
 
     def _animate_content(self, expanding: bool) -> None:
-        target_height = self.content_widget.sizeHint().height()
-        start = 0 if expanding else target_height
+        target_height = self._content_target_height()
+        start = self.content_widget.maximumHeight() if expanding else self.content_widget.maximumHeight() or target_height
         end = target_height if expanding else 0
         self._anim = QPropertyAnimation(self.content_widget, b"maximumHeight", self)
         self._anim.setDuration(160)
@@ -254,7 +260,16 @@ class ContextBar(QWidget):
         return self._header_height
 
     def desired_height(self) -> int:
-        return self._header_height + self.content_widget.maximumHeight()
+        height = self.header_height()
+        if self.content_widget.isVisible() or self.content_widget.maximumHeight() > 0:
+            layout = self.layout()
+            spacing = layout.spacing() if layout is not None else 0
+            height += spacing + self.content_widget.maximumHeight()
+        return height
+
+    def prepare_for_width(self, width: int) -> None:
+        self._update_layout_mode(available_width=width)
+        self._sync_dynamic_heights()
 
     def _emit_size_change(self) -> None:
         if self._on_size_change:
@@ -263,20 +278,49 @@ class ContextBar(QWidget):
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._update_layout_mode()
+        self._sync_dynamic_heights()
 
-    def _update_layout_mode(self) -> None:
+    def _update_layout_mode(self, available_width: int | None = None) -> None:
+        inner_width = self._inner_width(available_width)
         update_action_bar_direction(
             self._summary_layout,
             self._summary_bar,
             [self._title_group, self._chips_group, self._actions_group],
             extra_width=18,
+            available_width=inner_width,
         )
         update_action_bar_direction(
             self._controls_row,
             self.content_widget,
             [self._patient_controls_group, self._case_controls_group],
             extra_width=28,
+            available_width=inner_width,
         )
+
+    def _inner_width(self, available_width: int | None) -> int | None:
+        if available_width is None:
+            return None
+        layout = self.layout()
+        if layout is None:
+            return available_width
+        margins = layout.contentsMargins()
+        return max(0, available_width - margins.left() - margins.right())
+
+    def _refresh_header_height(self) -> None:
+        layout = self.layout()
+        if layout is None:
+            self._header_height = self._summary_bar.sizeHint().height()
+            return
+        margins = layout.contentsMargins()
+        self._header_height = margins.top() + self._summary_bar.sizeHint().height() + margins.bottom()
+
+    def _content_target_height(self) -> int:
+        return self.content_widget.sizeHint().height()
+
+    def _sync_dynamic_heights(self) -> None:
+        self._refresh_header_height()
+        if self.content_widget.isVisible() and self.content_widget.maximumHeight() > 0:
+            self.content_widget.setMaximumHeight(self._content_target_height())
 
     def _select_case_by_id(self) -> None:
         from PySide6.QtWidgets import QInputDialog
