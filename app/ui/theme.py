@@ -1144,7 +1144,7 @@ def _build_qss(settings: Settings) -> str:
     }}
     QWidget#contextBar QLabel#contextBarFieldLabel {{
         color: {COL["text_muted"]};
-        font-weight: 600;
+        font-weight: bold;
     }}
     QWidget#contextPinnedChips {{
         background: transparent;

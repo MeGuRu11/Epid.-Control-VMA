@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QStringListModel, Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCompleter,
@@ -146,6 +147,7 @@ class ContextBar(QWidget):
         patient_block.setSpacing(4)
         self.patient_field_label = QLabel("Пациент")
         self.patient_field_label.setObjectName("contextBarFieldLabel")
+        self._apply_field_label_font(self.patient_field_label)
         patient_block.addWidget(self.patient_field_label)
         patient_row = QHBoxLayout()
         patient_row.setContentsMargins(0, 0, 0, 0)
@@ -174,6 +176,7 @@ class ContextBar(QWidget):
         case_block.setSpacing(4)
         self.case_field_label = QLabel("Госпитализация")
         self.case_field_label.setObjectName("contextBarFieldLabel")
+        self._apply_field_label_font(self.case_field_label)
         case_block.addWidget(self.case_field_label)
         case_row = QHBoxLayout()
         case_row.setContentsMargins(0, 0, 0, 0)
@@ -206,6 +209,12 @@ class ContextBar(QWidget):
         self._update_chip_states()
         self._update_layout_mode()
         self._sync_dynamic_heights()
+
+    @staticmethod
+    def _apply_field_label_font(label: QLabel) -> None:
+        font = label.font()
+        font.setWeight(QFont.Weight.Bold)
+        label.setFont(font)
 
     def _build_chip(self, object_name: str) -> QWidget:
         chip = QWidget()

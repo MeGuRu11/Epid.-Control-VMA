@@ -1,21 +1,20 @@
-# Сессия 2026-05-05 — доработан правый край context bar пациента
+# Сессия 2026-05-05 — усилена жирность подписей context bar пациента
 
 ## Что сделано
 
-- Доработан верхний блок `Контекст пациента` после коммитов `d7996f1 fix: исправлен верхний контекст пациента` и `8aea74c fix: убрана подложка заголовка контекста пациента`.
-- Подписи полей `Пациент` и `Госпитализация` закреплены как локальные `QLabel#contextBarFieldLabel` внутри `QWidget#contextBar`; computed font weight проверен как semibold (`>=600`).
-- Найден и исправлен источник лишнего правого визуального хвоста: `_actions_group` (`QWidget#contextCompactActions`) вокруг кнопок `Изменить` / `Последний` / `Сбросить`.
-- Для `_actions_group` явно задан `autoFillBackground=False`.
-- В `app/ui/theme.py` добавлен scoped selector `QWidget#contextBar QWidget#contextCompactActions` с `background: transparent` и `border: none`.
-- `tests/unit/test_context_bar_layout.py` расширен проверками field labels, transparent-контракта action wrapper и геометрии правых кнопок на ширинах 1600, 900 и 560 px.
+- Доисправлена визуальная жирность подписей `Пациент` и `Госпитализация` в верхнем `ContextBar` после коммита `32836ac fix: доработан правый край контекста пациента`.
+- Для двух реальных labels `patient_field_label` и `case_field_label` добавлен явный локальный `QFont.Weight.Bold`.
+- Scoped QSS `QWidget#contextBar QLabel#contextBarFieldLabel` переведён с `font-weight: 600` на `font-weight: bold`.
+- `tests/unit/test_context_bar_layout.py` обновлён: проверяет фактический `QLabel.font()` после `show/processEvents`, а не только наличие QSS-селектора.
+- Сохранены предыдущие fixes: transparent `contextBarTitleHost`, transparent `contextCompactActions`, отсутствие правого светлого хвоста и geometry-контракты кнопок `Найти` / `Выбрать по ID`.
 - БД, миграции, domain/application/infrastructure и бизнес-логика выбора пациента/госпитализации не менялись.
 
 ## Root cause
 
-- Подписи `Пациент` и `Госпитализация` уже были переведены на локальный hook `contextBarFieldLabel`; текущая доработка закрепила их semibold-контракт тестом и оставила стиль scoped внутри `QWidget#contextBar`.
-- Лишний правый хвост создавал не label и не spacer, а wrapper `_actions_group` (`QWidget#contextCompactActions`).
-- У wrapper был `objectName`, участвующий в QSS-селекторе для кнопок (`QWidget#contextCompactActions QPushButton`), из-за чего Qt выставлял `WA_StyledBackground=True`; при отсутствии собственного transparent-селектора контейнер мог рисовать palette window `#F7F2EC` поверх общего фона `contextBar`.
-- Исправление локальное: затрагивает только `QWidget#contextBar QWidget#contextCompactActions`, не меняет глобальные `QLabel`, `QWidget`, `QFrame`, `QGroupBox` и общую тему приложения.
+- Предыдущий фикс был формально корректным, но визуально слабым: QSS `font-weight: 600` применялся к `QLabel#contextBarFieldLabel`, однако на системном `Sans Serif` weight 600 почти не отличался от соседних текстов.
+- Дополнительный фактор: chip labels `Пациент не выбран` / `Госпитализация не выбрана` уже используют `font-weight: 600`, поэтому field labels с тем же весом не создавали заметной иерархии.
+- Новое решение принудительно поднимает только field labels до `QFont.Weight.Bold` / `weight=700`; поля ввода остаются `weight=400`, chip values остаются ниже Bold (`weight=600`).
+- Изменение локально для `ContextBar`: применяется только к двум `QLabel` с `objectName="contextBarFieldLabel"` и scoped selector `QWidget#contextBar QLabel#contextBarFieldLabel`; глобальные `QLabel`, `QWidget`, `QFrame`, `QGroupBox` и общая тема не менялись.
 
 ## Что не закончено / в процессе
 
@@ -30,8 +29,8 @@
 
 ## Следующие шаги
 
-1. При ближайшей ручной регрессии открыть приложение в видимом GUI и визуально проверить `Контекст пациента` на широком и узком окне.
-2. В ручном GUI проверить клики `Найти`, `Выбрать по ID`, `Скрыть`/`Изменить`, `Последний`, `Сбросить` на реальных сервисах.
+1. При ближайшей ручной регрессии открыть приложение в видимом GUI и глазами проверить, что `Пациент` и `Госпитализация` заметно жирнее значений и полей ввода.
+2. В ручном GUI проверить, что справа нет светлого хвоста и кнопки `Найти`, `Выбрать по ID`, `Скрыть`/`Изменить`, `Последний`, `Сбросить` не обрезаются.
 
 ## Ключевые файлы, которые менялись
 
@@ -55,4 +54,4 @@
 - `python -m alembic check` — pass.
 - `python scripts/check_mojibake.py` — pass.
 - `git diff --check` — pass.
-- Offscreen smoke `ContextBar` — pass (`CONTEXT_BAR_ACTIONS_FIELD_LABELS_OFFSCREEN_SMOKE_PASS widths=1600,900,560`).
+- Offscreen smoke `ContextBar` — pass (`CONTEXT_BAR_FIELD_LABELS_BOLD_OFFSCREEN_SMOKE_PASS widths=1600,900,560`).

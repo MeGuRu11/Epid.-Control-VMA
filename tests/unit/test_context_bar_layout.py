@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import pytest
 from PySide6.QtCore import QPoint, QRect
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget
 
 from app.config import Settings
@@ -82,21 +83,47 @@ def test_context_bar_labels_use_local_transparent_style_hooks(qapp) -> None:
     parent.close()
 
 
-def test_context_bar_field_labels_use_local_semibold_style(qapp) -> None:
+def test_context_bar_field_labels_use_local_bold_font(qapp) -> None:
     parent, bar = _make_context_bar(qapp, width=900)
+    _expand_context_bar(qapp, parent, bar)
 
     patient_label = _label_by_text(bar, "Пациент")
     case_label = _label_by_text(bar, "Госпитализация")
+    title_label = _label_by_text(bar, "Контекст пациента")
+    patient_value_label = _label_by_text(bar, "Пациент не выбран")
+    case_value_label = _label_by_text(bar, "Госпитализация не выбрана")
     stylesheet = qapp.styleSheet()
 
     assert patient_label.objectName() == "contextBarFieldLabel"
     assert case_label.objectName() == "contextBarFieldLabel"
     assert patient_label.styleSheet() == ""
     assert case_label.styleSheet() == ""
-    assert patient_label.font().weight() >= 600
-    assert case_label.font().weight() >= 600
+    assert patient_label.font().bold() is True
+    assert case_label.font().bold() is True
+    assert patient_label.font().weight() >= QFont.Weight.Bold
+    assert case_label.font().weight() >= QFont.Weight.Bold
     assert "QWidget#contextBar QLabel#contextBarFieldLabel" in stylesheet
     assert re.search(r"(?m)^\s*QLabel#contextBarFieldLabel\b", stylesheet) is None
+    assert "font-weight: bold;" in stylesheet
+    assert title_label.objectName() == "contextBarTitleLabel"
+    assert title_label.objectName() != "contextBarFieldLabel"
+    assert bar.patient_search.font().bold() is False
+    assert bar.case_search.font().bold() is False
+    assert bar.patient_search.font().weight() < QFont.Weight.Bold
+    assert bar.case_search.font().weight() < QFont.Weight.Bold
+    assert patient_value_label.objectName() == "chipLabel"
+    assert case_value_label.objectName() == "chipLabel"
+    assert patient_value_label.font().weight() < QFont.Weight.Bold
+    assert case_value_label.font().weight() < QFont.Weight.Bold
+    for button in (
+        bar.find_patient_btn,
+        bar.select_case_btn,
+        bar.change_btn,
+        bar.last_patient_btn,
+        bar.reset_btn,
+    ):
+        assert button.objectName() != "contextBarFieldLabel"
+        assert button.styleSheet() == ""
 
     parent.close()
 
