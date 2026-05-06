@@ -172,6 +172,7 @@ def test_reset_full_form_fields() -> None:
     department = _FakeCombo()
     injury = _FakeDateTimeEdit()
     admission = _FakeDateTimeEdit()
+    outcome_type = _FakeCombo()
     outcome = _FakeDateTimeEdit()
     severity = _FakeLineEdit()
     sofa = _FakeLineEdit()
@@ -191,6 +192,7 @@ def test_reset_full_form_fields() -> None:
         department_combo=cast(QComboBox, department),
         injury_date=cast(QDateTimeEdit, injury),
         admission_date=cast(QDateTimeEdit, admission),
+        outcome_type_combo=cast(QComboBox, outcome_type),
         outcome_date=cast(QDateTimeEdit, outcome),
         severity=cast(QLineEdit, severity),
         sofa_score=cast(QLineEdit, sofa),
@@ -209,6 +211,7 @@ def test_reset_full_form_fields() -> None:
     assert department.current_index == 0
     assert injury.datetime is marker_dt
     assert admission.datetime is marker_dt
+    assert outcome_type.current_index == 0
     assert outcome.datetime is marker_dt
     assert severity.cleared is True
     assert sofa.cleared is True
@@ -221,6 +224,7 @@ def test_reset_hospitalization_fields() -> None:
     department = _FakeCombo()
     injury = _FakeDateTimeEdit()
     admission = _FakeDateTimeEdit()
+    outcome_type = _FakeCombo()
     outcome = _FakeDateTimeEdit()
     severity = _FakeLineEdit()
     sofa = _FakeLineEdit()
@@ -233,6 +237,7 @@ def test_reset_hospitalization_fields() -> None:
         department_combo=cast(QComboBox, department),
         injury_date=cast(QDateTimeEdit, injury),
         admission_date=cast(QDateTimeEdit, admission),
+        outcome_type_combo=cast(QComboBox, outcome_type),
         outcome_date=cast(QDateTimeEdit, outcome),
         severity=cast(QLineEdit, severity),
         sofa_score=cast(QLineEdit, sofa),
@@ -244,6 +249,7 @@ def test_reset_hospitalization_fields() -> None:
     assert department.current_index == 0
     assert injury.datetime is marker_dt
     assert admission.datetime is marker_dt
+    assert outcome_type.current_index == 0
     assert outcome.datetime is marker_dt
     assert severity.cleared is True
     assert sofa.cleared is True

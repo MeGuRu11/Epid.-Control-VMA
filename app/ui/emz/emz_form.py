@@ -120,6 +120,7 @@ from app.ui.emz.form_ui_state_orchestrators import (
     set_quick_action_buttons_visible,
 )
 from app.ui.emz.form_utils import (
+    outcome_type_to_label,
     parse_datetime_text,
     sex_code_to_label,
 )
@@ -135,6 +136,7 @@ from app.ui.emz.form_widget_factories import (
     create_icd_combo,
     create_intervention_type_combo,
     create_ismp_type_combo,
+    create_outcome_type_combo,
 )
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
@@ -330,14 +332,18 @@ class EmzForm(QWidget):
         form_layout.addWidget(self.injury_date, 0, 3)
         form_layout.addWidget(QLabel("Дата/время поступления"), 1, 2)
         form_layout.addWidget(self.admission_date, 1, 3)
-        form_layout.addWidget(QLabel("Дата/время исхода"), 2, 2)
-        form_layout.addWidget(self.outcome_date, 2, 3)
-        form_layout.addWidget(QLabel("Тяжесть"), 3, 2)
-        form_layout.addWidget(self.severity, 3, 3)
-        form_layout.addWidget(QLabel("SOFA"), 4, 2)
-        form_layout.addWidget(self.sofa_score, 4, 3)
-        form_layout.addWidget(QLabel("ВПХ-П"), 5, 2)
-        form_layout.addWidget(self.vph_p_score, 5, 3)
+        self.outcome_type_label = QLabel("Исход")
+        self.outcome_type_label.setObjectName("emzOutcomeTypeLabel")
+        form_layout.addWidget(self.outcome_type_label, 2, 2)
+        form_layout.addWidget(self.outcome_type_combo, 2, 3)
+        form_layout.addWidget(QLabel("Дата/время исхода"), 3, 2)
+        form_layout.addWidget(self.outcome_date, 3, 3)
+        form_layout.addWidget(QLabel("Тяжесть"), 4, 2)
+        form_layout.addWidget(self.severity, 4, 3)
+        form_layout.addWidget(QLabel("SOFA"), 5, 2)
+        form_layout.addWidget(self.sofa_score, 5, 3)
+        form_layout.addWidget(QLabel("ВПХ-П"), 6, 2)
+        form_layout.addWidget(self.vph_p_score, 6, 3)
         self.form_box.setLayout(form_layout)
 
     def _init_form_widgets(self) -> None:
@@ -365,9 +371,12 @@ class EmzForm(QWidget):
 
         self.injury_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
         self.admission_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
+        self.outcome_type_combo = create_outcome_type_combo()
+        connect_combo_autowidth(self.outcome_type_combo)
         self.outcome_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
         self.injury_date.setToolTip("Дата/время травмы: ДД.ММ.ГГГГ ЧЧ:ММ.")
         self.admission_date.setToolTip("Дата/время поступления: ДД.ММ.ГГГГ ЧЧ:ММ.")
+        self.outcome_type_combo.setToolTip("Исход госпитализации.")
         self.outcome_date.setToolTip("Дата/время исхода: ДД.ММ.ГГГГ ЧЧ:ММ.")
         self.severity = QLineEdit()
         self.sofa_score = QLineEdit()
@@ -513,6 +522,17 @@ class EmzForm(QWidget):
 
     def _datetime_value(self, widget: QDateTimeEdit) -> datetime | None:
         return optional_datetime_value(widget, empty_datetime=self._dt_empty)
+
+    def _outcome_type_value(self) -> str | None:
+        value = self.outcome_type_combo.currentData()
+        return str(value) if value else None
+
+    def _set_outcome_type(self, value: str | None) -> None:
+        if not outcome_type_to_label(value):
+            self.outcome_type_combo.setCurrentIndex(0)
+            return
+        idx = self.outcome_type_combo.findData(value)
+        self.outcome_type_combo.setCurrentIndex(idx if idx >= 0 else 0)
 
     def _to_qdate(self, value: date) -> QDate:
         return to_qdate(value)
@@ -874,6 +894,7 @@ class EmzForm(QWidget):
             department_combo=self.department_combo,
             injury_date=self.injury_date,
             admission_date=self.admission_date,
+            outcome_type_combo=self.outcome_type_combo,
             outcome_date=self.outcome_date,
             severity=self.severity,
             sofa_score=self.sofa_score,
@@ -907,6 +928,7 @@ class EmzForm(QWidget):
             department_combo=self.department_combo,
             injury_date=self.injury_date,
             admission_date=self.admission_date,
+            outcome_type_combo=self.outcome_type_combo,
             outcome_date=self.outcome_date,
             severity=self.severity,
             sofa_score=self.sofa_score,
@@ -956,6 +978,7 @@ class EmzForm(QWidget):
             admission_date=self._datetime_value(self.admission_date),
             injury_date=self._datetime_value(self.injury_date),
             outcome_date=self._datetime_value(self.outcome_date),
+            outcome_type=self._outcome_type_value(),
             severity=self.severity.text() or None,
             sofa_score=self._parse_int(self.sofa_score.text(), "SOFA"),
             vph_p_or_score=self._parse_int(self.vph_p_score.text(), "ВПХ-П"),
@@ -1081,6 +1104,7 @@ class EmzForm(QWidget):
             self.department_combo.setCurrentIndex(idx)
         self._set_datetime_field_from_case_value(self.admission_date, detail.admission_date)
         self._set_datetime_field_from_case_value(self.injury_date, detail.injury_date)
+        self._set_outcome_type(detail.outcome_type)
         self._set_datetime_field_from_case_value(self.outcome_date, detail.outcome_date)
         self.severity.setText(text_or_empty(detail.severity))
         self.sofa_score.setText(int_or_empty(detail.sofa_score))

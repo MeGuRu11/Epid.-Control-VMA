@@ -2,6 +2,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.domain.constants import EmzOutcomeType
+
+OUTCOME_TYPE_PLACEHOLDER = "Не выбран"
+OUTCOME_TYPE_OPTIONS: tuple[tuple[str, str], ...] = (
+    ("Выписка", EmzOutcomeType.DISCHARGE.value),
+    ("Перевод", EmzOutcomeType.TRANSFER.value),
+    ("Летальный исход", EmzOutcomeType.DEATH.value),
+)
+
 _DIAGNOSIS_KIND_TO_DTO = {
     "поступление": "admission",
     "перевод": "discharge",
@@ -55,3 +64,23 @@ def diagnosis_kind_to_dto(raw_kind: str) -> str:
 def diagnosis_kind_to_ui(kind: str) -> str:
     return _DIAGNOSIS_KIND_TO_UI.get(kind, "Поступление")
 
+
+def outcome_type_to_label(value: str | None) -> str:
+    if not value:
+        return ""
+    for label, code in OUTCOME_TYPE_OPTIONS:
+        if code == value:
+            return label
+    return ""
+
+
+def outcome_label_to_type(label: str | None) -> str | None:
+    if label is None:
+        return None
+    normalized = label.strip().lower()
+    if not normalized or normalized == OUTCOME_TYPE_PLACEHOLDER.lower():
+        return None
+    for option_label, code in OUTCOME_TYPE_OPTIONS:
+        if option_label.lower() == normalized:
+            return code
+    return None

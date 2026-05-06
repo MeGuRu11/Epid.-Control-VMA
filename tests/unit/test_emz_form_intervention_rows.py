@@ -6,7 +6,7 @@ from typing import cast
 
 from PySide6.QtCore import QDate, QDateTime, Qt, QTime
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QComboBox, QDateTimeEdit, QPushButton
+from PySide6.QtWidgets import QComboBox, QDateTimeEdit, QGridLayout, QPushButton, QWidget
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.emz_dto import EmzCaseDetail
@@ -96,6 +96,15 @@ def _intervention_add_button(form: EmzForm) -> QPushButton:
     raise AssertionError("Кнопка добавления строки вмешательства не найдена")
 
 
+def _grid_row_for_widget(layout: QGridLayout, widget: QWidget) -> int:
+    for index in range(layout.count()):
+        item = layout.itemAt(index)
+        if item is not None and item.widget() is widget:
+            row, _, _, _ = cast(tuple[int, int, int, int], layout.getItemPosition(index))
+            return row
+    raise AssertionError(f"Виджет {widget.objectName() or widget.__class__.__name__} не найден в layout")
+
+
 def test_edit_form_initializes_intervention_row_for_empty_items(qapp) -> None:
     form = EmzForm(container=_container(), session=_session())
     try:
@@ -108,6 +117,83 @@ def test_edit_form_initializes_intervention_row_for_empty_items(qapp) -> None:
 
         assert form.intervention_table.rowCount() >= 1
         _assert_intervention_row_widgets(form, 0)
+    finally:
+        form.close()
+
+
+def test_form_contains_outcome_type_combo_between_admission_and_outcome(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        form.show()
+        qapp.processEvents()
+
+        combo = form.outcome_type_combo
+        assert isinstance(combo, QComboBox)
+        assert form.outcome_type_label.text() == "Исход"
+        assert combo.itemText(0) == "Не выбран"
+        assert combo.itemData(0) is None
+        assert [combo.itemText(index) for index in range(1, combo.count())] == [
+            "Выписка",
+            "Перевод",
+            "Летальный исход",
+        ]
+        assert [combo.itemData(index) for index in range(1, combo.count())] == [
+            "discharge",
+            "transfer",
+            "death",
+        ]
+
+        layout = cast(QGridLayout, form.form_box.layout())
+        assert _grid_row_for_widget(layout, form.admission_date) < _grid_row_for_widget(layout, combo)
+        assert _grid_row_for_widget(layout, combo) < _grid_row_for_widget(layout, form.outcome_date)
+    finally:
+        form.close()
+
+
+def test_form_applies_outcome_type_from_detail(qapp) -> None:
+    detail = _empty_interventions_detail().model_copy(update={"outcome_type": "transfer"})
+    form = EmzForm(container=_container(detail), session=_session())
+    try:
+        form.set_edit_mode(True)
+        form.show()
+        qapp.processEvents()
+
+        form.load_case(7, 42, emit_context=False)
+        qapp.processEvents()
+
+        assert form.outcome_type_combo.currentText() == "Перевод"
+        assert form.outcome_type_combo.currentData() == "transfer"
+    finally:
+        form.close()
+
+
+def test_form_collects_selected_outcome_type_in_payload(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        index = form.outcome_type_combo.findData("death")
+        assert index >= 0
+        form.outcome_type_combo.setCurrentIndex(index)
+
+        payload = form._build_payload()
+
+        assert payload.outcome_type == "death"
+    finally:
+        form.close()
+
+
+def test_form_keeps_old_case_without_outcome_type_on_placeholder(qapp) -> None:
+    form = EmzForm(container=_container(_empty_interventions_detail()), session=_session())
+    try:
+        form.set_edit_mode(True)
+        form.show()
+        qapp.processEvents()
+
+        form.load_case(7, 42, emit_context=False)
+        qapp.processEvents()
+
+        assert form.outcome_type_combo.currentIndex() == 0
+        assert form.outcome_type_combo.currentData() is None
+        assert form._outcome_type_value() is None
     finally:
         form.close()
 

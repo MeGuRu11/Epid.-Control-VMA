@@ -6,6 +6,8 @@ from app.ui.emz.form_utils import (
     diagnosis_kind_to_dto,
     diagnosis_kind_to_ui,
     format_datetime,
+    outcome_label_to_type,
+    outcome_type_to_label,
     parse_datetime_text,
     sex_code_to_label,
 )
@@ -49,3 +51,19 @@ def test_diagnosis_kind_to_dto_maps_ru_values() -> None:
 def test_diagnosis_kind_to_ui_maps_dto_values() -> None:
     assert diagnosis_kind_to_ui("discharge") == "Выписка"
     assert diagnosis_kind_to_ui("unknown") == "Поступление"
+
+
+def test_outcome_type_to_label_maps_stable_codes() -> None:
+    assert outcome_type_to_label("discharge") == "Выписка"
+    assert outcome_type_to_label("transfer") == "Перевод"
+    assert outcome_type_to_label("death") == "Летальный исход"
+    assert outcome_type_to_label(None) == ""
+    assert outcome_type_to_label("unknown") == ""
+
+
+def test_outcome_label_to_type_maps_ui_labels_without_placeholder() -> None:
+    assert outcome_label_to_type("Выписка") == "discharge"
+    assert outcome_label_to_type("Перевод") == "transfer"
+    assert outcome_label_to_type("Летальный исход") == "death"
+    assert outcome_label_to_type("Не выбран") is None
+    assert outcome_label_to_type("") is None

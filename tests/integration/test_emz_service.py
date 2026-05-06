@@ -97,6 +97,44 @@ def test_create_emz_case(tmp_path: Path) -> None:
     assert resp.id > 0
     assert resp.version_no == 1
     assert resp.days_to_admission == 5
+    assert service.get_current(resp.id).outcome_type is None
+
+
+def test_emz_service_persists_and_reopens_outcome_type(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "emr_outcome_type.db")
+    actor_id = seed_admin(session_factory)
+    service = EmzService(session_factory=session_factory)
+
+    create_payload = EmzVersionPayload(
+        admission_date=datetime(2025, 12, 15, 10, 0, tzinfo=UTC),
+        injury_date=datetime(2025, 12, 10, 9, 0, tzinfo=UTC),
+        outcome_date=datetime(2025, 12, 20, 12, 30, tzinfo=UTC),
+        outcome_type="discharge",
+        severity="moderate",
+        diagnoses=[],
+        interventions=[],
+        antibiotic_courses=[],
+    )
+    req = EmzCreateRequest(
+        patient_full_name="Сидоров Сидор",
+        patient_dob=date(1990, 1, 1),
+        patient_sex="M",
+        patient_category=MilitaryCategory.PRIVATE.value,
+        patient_military_unit=None,
+        patient_military_district=None,
+        hospital_case_no="CASE-OUTCOME-001",
+        department_id=None,
+        payload=create_payload,
+    )
+
+    created = service.create_emr(req, actor_id=actor_id)
+    assert service.get_current(created.id).outcome_type == "discharge"
+
+    update_payload = create_payload.model_copy(update={"outcome_type": "transfer"})
+    service.update_emr(EmzUpdateRequest(emr_case_id=created.id, payload=update_payload), actor_id=actor_id)
+
+    reopened = service.get_current(created.id)
+    assert reopened.outcome_type == "transfer"
 
 
 def test_create_emz_invalid_outcome_before_injury(tmp_path: Path) -> None:
@@ -247,4 +285,3 @@ def test_update_case_meta_requires_actor_id(tmp_path: Path) -> None:
             department_id=None,
             actor_id=cast(int, None),
         )
-

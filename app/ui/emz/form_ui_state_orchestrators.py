@@ -79,6 +79,7 @@ def reset_full_form_fields(
     department_combo: QComboBox,
     injury_date: QDateTimeEdit,
     admission_date: QDateTimeEdit,
+    outcome_type_combo: QComboBox,
     outcome_date: QDateTimeEdit,
     severity: QLineEdit,
     sofa_score: QLineEdit,
@@ -97,6 +98,7 @@ def reset_full_form_fields(
     department_combo.setCurrentIndex(0)
     injury_date.setDateTime(default_datetime)
     admission_date.setDateTime(default_datetime)
+    outcome_type_combo.setCurrentIndex(0)
     outcome_date.setDateTime(default_datetime)
     severity.clear()
     sofa_score.clear()
@@ -110,6 +112,7 @@ def reset_hospitalization_fields(
     department_combo: QComboBox,
     injury_date: QDateTimeEdit,
     admission_date: QDateTimeEdit,
+    outcome_type_combo: QComboBox,
     outcome_date: QDateTimeEdit,
     severity: QLineEdit,
     sofa_score: QLineEdit,
@@ -121,6 +124,7 @@ def reset_hospitalization_fields(
     department_combo.setCurrentIndex(0)
     injury_date.setDateTime(empty_datetime)
     admission_date.setDateTime(empty_datetime)
+    outcome_type_combo.setCurrentIndex(0)
     outcome_date.setDateTime(empty_datetime)
     severity.clear()
     sofa_score.clear()
@@ -137,4 +141,3 @@ def notify_case_selection(
 ) -> None:
     if emit and callback:
         callback(patient_id, emr_case_id)
-

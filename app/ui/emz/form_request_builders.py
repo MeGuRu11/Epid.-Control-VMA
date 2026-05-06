@@ -29,6 +29,7 @@ def build_emz_version_payload(
     admission_date: datetime | None,
     injury_date: datetime | None,
     outcome_date: datetime | None,
+    outcome_type: str | None,
     severity: str | None,
     sofa_score: int | None,
     vph_p_or_score: int | None,
@@ -41,6 +42,7 @@ def build_emz_version_payload(
         admission_date=admission_date,
         injury_date=injury_date,
         outcome_date=outcome_date,
+        outcome_type=outcome_type,
         severity=severity,
         sofa_score=sofa_score,
         vph_p_or_score=vph_p_or_score,
@@ -101,4 +103,3 @@ def build_patient_update_fields(
         military_unit=military_unit,
         military_district=military_district,
     )
-

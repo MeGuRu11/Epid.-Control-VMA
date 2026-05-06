@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.emz.form_utils import OUTCOME_TYPE_OPTIONS, OUTCOME_TYPE_PLACEHOLDER
 from app.ui.widgets.datetime_inputs import (
     configure_optional_date_edit,
     configure_optional_datetime_edit,
@@ -243,6 +244,15 @@ def create_intervention_type_combo() -> QComboBox:
     )
     combo.setCurrentText("")
     combo.setToolTip("Можно выбрать из списка или ввести вручную.")
+    return combo
+
+
+def create_outcome_type_combo() -> QComboBox:
+    combo = QComboBox()
+    combo.setObjectName("emzOutcomeTypeCombo")
+    combo.addItem(OUTCOME_TYPE_PLACEHOLDER, None)
+    for label, value in OUTCOME_TYPE_OPTIONS:
+        combo.addItem(label, value)
     return combo
 
 

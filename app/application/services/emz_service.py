@@ -251,6 +251,7 @@ class EmzService:
             admission_date = cast(datetime | None, version.admission_date)
             injury_date = cast(datetime | None, version.injury_date)
             outcome_date = cast(datetime | None, version.outcome_date)
+            outcome_type = cast(str | None, version.outcome_type)
             severity = cast(str | None, version.severity)
             sofa_score = cast(int | None, version.sofa_score)
             vph_p_or_score = cast(int | None, version.vph_p_or_score)
@@ -276,6 +277,7 @@ class EmzService:
                 admission_date=admission_date,
                 injury_date=injury_date,
                 outcome_date=outcome_date,
+                outcome_type=outcome_type,
                 severity=severity,
                 sofa_score=sofa_score,
                 vph_p_or_score=vph_p_or_score,
@@ -452,6 +454,5 @@ class EmzService:
         if actor_id is None:
             raise AppPermissionError("actor_id обязателен для операций записи")
         return actor_id
-
 
 

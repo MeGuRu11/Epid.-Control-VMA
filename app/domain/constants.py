@@ -27,3 +27,13 @@ class IsmpType(StrEnum):
     @classmethod
     def values(cls) -> list[str]:
         return [item.value for item in cls]
+
+
+class EmzOutcomeType(StrEnum):
+    DISCHARGE = "discharge"
+    TRANSFER = "transfer"
+    DEATH = "death"
+
+    @classmethod
+    def values(cls) -> list[str]:
+        return [item.value for item in cls]

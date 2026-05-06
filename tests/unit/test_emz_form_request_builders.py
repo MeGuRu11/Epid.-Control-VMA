@@ -78,6 +78,7 @@ def test_build_emz_version_payload_maps_all_fields() -> None:
         admission_date=admission_date,
         injury_date=injury_date,
         outcome_date=outcome_date,
+        outcome_type="death",
         severity="medium",
         sofa_score=3,
         vph_p_or_score=5,
@@ -89,6 +90,7 @@ def test_build_emz_version_payload_maps_all_fields() -> None:
     assert payload.admission_date == admission_date
     assert payload.injury_date == injury_date
     assert payload.outcome_date == outcome_date
+    assert payload.outcome_type == "death"
     assert payload.severity == "medium"
     assert payload.sofa_score == 3
     assert payload.vph_p_or_score == 5

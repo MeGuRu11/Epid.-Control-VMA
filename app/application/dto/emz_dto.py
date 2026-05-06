@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
-from app.domain.constants import IsmpType, MilitaryCategory
+from app.domain.constants import EmzOutcomeType, IsmpType, MilitaryCategory
 
 if TYPE_CHECKING:
     from app.application.dto.patient_dto import PatientCreateRequest
@@ -63,6 +63,15 @@ class EmzVersionPayload(BaseModel):
     interventions: list[EmzInterventionDto] = Field(default_factory=list)
     antibiotic_courses: list[EmzAntibioticCourseDto] = Field(default_factory=list)
     ismp_cases: list[EmzIsmpDto] = Field(default_factory=list)
+
+    @field_validator("outcome_type")
+    @classmethod
+    def _validate_outcome_type(cls, v: str | None) -> str | None:
+        if v is None or v == "":
+            return None
+        if v not in EmzOutcomeType.values():
+            raise ValueError("Неизвестный тип исхода ЭМЗ")
+        return v
 
     @classmethod
     @field_validator("outcome_date")
@@ -141,6 +150,7 @@ class EmzCaseDetail(BaseModel):
     admission_date: datetime | None
     injury_date: datetime | None
     outcome_date: datetime | None
+    outcome_type: str | None = None
     severity: str | None
     sofa_score: int | None
     vph_p_or_score: int | None
@@ -148,4 +158,3 @@ class EmzCaseDetail(BaseModel):
     interventions: list[EmzInterventionDto]
     antibiotic_courses: list[EmzAntibioticCourseDto]
     ismp_cases: list[EmzIsmpDto] = Field(default_factory=list)
-
