@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import cast
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QDate, QDateTime, Qt, QTime
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QComboBox, QDateTimeEdit, QPushButton
 
@@ -79,8 +79,14 @@ def _container(detail: EmzCaseDetail | None = None) -> Container:
 
 def _assert_intervention_row_widgets(form: EmzForm, row: int) -> None:
     assert isinstance(form.intervention_table.cellWidget(row, 0), QComboBox)
-    assert isinstance(form.intervention_table.cellWidget(row, 1), QDateTimeEdit)
-    assert isinstance(form.intervention_table.cellWidget(row, 2), QDateTimeEdit)
+    start = form.intervention_table.cellWidget(row, 1)
+    end = form.intervention_table.cellWidget(row, 2)
+    assert isinstance(start, QDateTimeEdit)
+    assert isinstance(end, QDateTimeEdit)
+    assert start.displayFormat() == "dd.MM.yyyy HH:mm"
+    assert end.displayFormat() == "dd.MM.yyyy HH:mm"
+    assert start.dateTime() == form._dt_empty
+    assert end.dateTime() == form._dt_empty
 
 
 def _intervention_add_button(form: EmzForm) -> QPushButton:
@@ -118,5 +124,41 @@ def test_intervention_add_button_creates_initialized_row(qapp) -> None:
 
         assert form.intervention_table.rowCount() == initial_rows + 1
         _assert_intervention_row_widgets(form, initial_rows)
+    finally:
+        form.close()
+
+
+def test_emz_form_reset_keeps_datetime_fields_empty_not_current(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        explicit = QDateTime(QDate(2026, 1, 10), QTime(8, 30))
+        form.injury_date.setDateTime(explicit)
+        form.admission_date.setDateTime(explicit)
+        form.outcome_date.setDateTime(explicit)
+
+        form._reset_form(emit_context=False)
+        qapp.processEvents()
+
+        assert form._date_value(form.dob) is None
+        assert form.injury_date.dateTime() == form._dt_empty
+        assert form.admission_date.dateTime() == form._dt_empty
+        assert form.outcome_date.dateTime() == form._dt_empty
+        assert form._datetime_value(form.admission_date) is None
+    finally:
+        form.close()
+
+
+def test_intervention_datetime_cell_collects_explicit_time(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        widget = form.intervention_table.cellWidget(0, 1)
+        assert isinstance(widget, QDateTimeEdit)
+
+        widget.setDateTime(QDateTime(QDate(2024, 1, 1), QTime(8, 30)))
+        value = form._dt_from_cell(widget)
+
+        assert value is not None
+        assert value.hour == 8
+        assert value.minute == 30
     finally:
         form.close()

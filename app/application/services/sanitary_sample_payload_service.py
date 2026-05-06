@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
 from app.application.dto.sanitary_dto import (
     SanitarySampleCreateRequest,
@@ -182,8 +182,6 @@ def build_sanitary_result_update(
     phages: list[dict],
 ) -> SanitarySampleResultUpdate:
     """Собирает DTO обновления результатов санитарной пробы."""
-    if has_results and growth_result_at is None:
-        growth_result_at = datetime.now(UTC)
     return SanitarySampleResultUpdate(
         growth_flag=growth_flag if has_results else None,
         growth_result_at=growth_result_at if has_results else None,

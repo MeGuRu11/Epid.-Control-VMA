@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, QDateTime, QSignalBlocker, Qt, QTime, Signal
+from PySide6.QtCore import QDate, QSignalBlocker, Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -52,6 +52,7 @@ from app.ui.sanitary.history_view_helpers import (
     summarize_history,
 )
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import create_optional_datetime_edit, optional_datetime_value
 from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
@@ -662,13 +663,8 @@ class SanitarySampleDetailDialog(QDialog):
         self.sampling_point = QLineEdit()
         self.room = QLineEdit()
         self.medium = QLineEdit()
-        self.taken_at = QDateTimeEdit()
-        self.delivered_at = QDateTimeEdit()
-        min_dt = QDateTime(QDate(2024, 1, 1), QTime(0, 0))
-        self.taken_at.setMinimumDateTime(min_dt)
-        self.delivered_at.setMinimumDateTime(min_dt)
-        self.taken_at.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.delivered_at.setDisplayFormat("dd.MM.yyyy HH:mm")
+        self.taken_at = create_optional_datetime_edit()
+        self.delivered_at = create_optional_datetime_edit()
 
         main_box = QGroupBox("Основные данные")
         main_form = QFormLayout(main_box)
@@ -683,9 +679,7 @@ class SanitarySampleDetailDialog(QDialog):
         self.growth_flag.addItem("Выбрать", None)
         self.growth_flag.addItem("Нет", 0)
         self.growth_flag.addItem("Да", 1)
-        self.growth_result_at = QDateTimeEdit()
-        self.growth_result_at.setMinimumDateTime(min_dt)
-        self.growth_result_at.setDisplayFormat("dd.MM.yyyy HH:mm")
+        self.growth_result_at = create_optional_datetime_edit()
         self.colony_desc = QLineEdit()
         self.microscopy = QLineEdit()
         self.cfu = QLineEdit()
@@ -1073,9 +1067,7 @@ class SanitarySampleDetailDialog(QDialog):
 
     @staticmethod
     def _to_python_datetime(widget: QDateTimeEdit) -> datetime | None:
-        if widget.dateTime().isValid():
-            return cast(datetime | None, widget.dateTime().toPython())
-        return None
+        return optional_datetime_value(widget)
 
     def on_save(self) -> None:
         clear_status(self.error_label)

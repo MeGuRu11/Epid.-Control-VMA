@@ -17,6 +17,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.widgets.datetime_inputs import (
+    configure_optional_date_edit,
+    configure_optional_datetime_edit,
+)
+
 ABX_COMBO_MAX_VISIBLE_ITEMS = 6
 ABX_COMBO_POPUP_MAX_HEIGHT = 216
 ABX_COMBO_POPUP_MIN_WIDTH = 380
@@ -243,22 +248,12 @@ def create_intervention_type_combo() -> QComboBox:
 
 def create_datetime_cell(empty_dt: QDateTime) -> QDateTimeEdit:
     widget = QDateTimeEdit()
-    widget.setCalendarPopup(True)
-    widget.setDisplayFormat("dd.MM.yyyy HH:mm")
-    widget.setMinimumDateTime(empty_dt)
-    widget.setSpecialValueText("")
-    widget.setDateTime(empty_dt)
-    return widget
+    return configure_optional_datetime_edit(widget, empty_datetime=empty_dt)
 
 
 def create_date_cell(empty_date: QDate) -> QDateEdit:
     widget = QDateEdit()
-    widget.setCalendarPopup(True)
-    widget.setDisplayFormat("dd.MM.yyyy")
-    widget.setMinimumDate(empty_date)
-    widget.setDate(empty_date)
-    widget.setSpecialValueText("")
-    return widget
+    return configure_optional_date_edit(widget, empty_date=empty_date)
 
 
 def create_icd_combo(*, icd_items: Sequence[IcdLike], wire_search: Callable[[QComboBox], None]) -> QComboBox:

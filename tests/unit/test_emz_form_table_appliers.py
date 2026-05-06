@@ -230,6 +230,8 @@ def test_apply_abx_rows_sets_combo_and_text(monkeypatch) -> None:
     )
 
     fake = cast(_FakeTable, table)
+    assert cast(_FakeDateTimeEdit, fake.cellWidget(0, 0)).value == "dt:2026-01-01T10:00:00+00:00"
+    assert cast(_FakeDateTimeEdit, fake.cellWidget(0, 1)).value == "dt:2026-01-02T11:00:00+00:00"
     abx_combo = cast(_FakeCombo, fake.cellWidget(0, 2))
     assert abx_combo.current_index == 3
     assert fake.items[(0, 3)].text() == "Амоксициллин"

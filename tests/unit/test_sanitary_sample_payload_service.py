@@ -169,7 +169,7 @@ def test_build_sanitary_sample_update_request_requires_sampling_point() -> None:
         )
 
 
-def test_build_sanitary_result_update_sets_timestamp_for_filled_results() -> None:
+def test_build_sanitary_result_update_does_not_default_result_timestamp() -> None:
     update = build_sanitary_result_update(
         has_results=True,
         growth_flag=1,
@@ -183,8 +183,7 @@ def test_build_sanitary_result_update_sets_timestamp_for_filled_results() -> Non
         phages=[{"phage_id": 2}],
     )
     assert update.growth_flag == 1
-    assert update.growth_result_at is not None
-    assert isinstance(update.growth_result_at, datetime)
+    assert update.growth_result_at is None
     assert update.colony_desc is None
     assert update.microscopy == "micro"
     assert update.cfu == "10^5"

@@ -96,6 +96,8 @@ def test_collect_interventions_maps_duration_and_notes(monkeypatch) -> None:
         dt_resolver=lambda _table, row, col: dt_map.get((row, col)),
     )
     assert len(result) == 1
+    assert result[0].start_dt == datetime(2026, 2, 1, 10, 0, tzinfo=UTC)
+    assert result[0].end_dt == datetime(2026, 2, 1, 11, 0, tzinfo=UTC)
     assert result[0].type == "ИВЛ"
     assert result[0].duration_minutes == 30
     assert result[0].performed_by == "doc"
@@ -118,6 +120,8 @@ def test_collect_abx_maps_from_combo_and_free_text(monkeypatch) -> None:
         dt_resolver=lambda _table, row, col: dt_map.get((row, col)),
     )
     assert len(result) == 1
+    assert result[0].start_dt == datetime(2026, 2, 1, 8, 0, tzinfo=UTC)
+    assert result[0].end_dt == datetime(2026, 2, 1, 9, 0, tzinfo=UTC)
     assert result[0].antibiotic_id == 7
     assert result[0].drug_name_free == "Амоксициллин"
     assert result[0].route == "в/в"

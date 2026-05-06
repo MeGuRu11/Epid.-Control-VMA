@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import cast
 
-from PySide6.QtWidgets import QTableWidget
+from PySide6.QtCore import QDate, QDateTime, QTime
+from PySide6.QtWidgets import QComboBox, QDateTimeEdit, QTableWidget
 
 import app.ui.emz.form_table_setups as setups
+from app.ui.emz.form_widget_factories import create_datetime_cell
 
 
 class _FakeCombo:
@@ -105,6 +107,31 @@ def test_setup_abx_rows_preserves_existing_datetime_widget(monkeypatch) -> None:
     assert isinstance(fake.cellWidget(0, 1), _FakeDateTimeEdit)
     assert isinstance(fake.cellWidget(0, 2), _FakeCombo)
     assert connect_rows == [0]
+
+
+def test_setup_abx_rows_creates_datetime_widgets_with_editable_time(qapp) -> None:
+    table = QTableWidget(1, 3)
+    empty_dt = QDateTime(QDate(2024, 1, 1), QTime(0, 0))
+
+    setups.setup_abx_rows(
+        table=table,
+        create_dt_cell=lambda: create_datetime_cell(empty_dt),
+        create_abx_combo=QComboBox,
+        resize_table=lambda _table: None,
+    )
+
+    start = table.cellWidget(0, 0)
+    end = table.cellWidget(0, 1)
+    assert isinstance(start, QDateTimeEdit)
+    assert isinstance(end, QDateTimeEdit)
+    assert start.displayFormat() == "dd.MM.yyyy HH:mm"
+    assert end.displayFormat() == "dd.MM.yyyy HH:mm"
+
+    start.setDateTime(QDateTime(QDate(2024, 1, 1), QTime(8, 30)))
+    end.setDateTime(QDateTime(QDate(2024, 1, 1), QTime(11, 45)))
+
+    assert start.time() == QTime(8, 30)
+    assert end.time() == QTime(11, 45)
 
 
 def test_setup_intervention_rows_initializes_empty_existing_row(monkeypatch) -> None:

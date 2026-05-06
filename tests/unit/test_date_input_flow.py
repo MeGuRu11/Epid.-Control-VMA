@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from PySide6.QtCore import QDate, QDateTime, QTime
+
 from app.ui.widgets.date_input_flow import DateInputAutoFlow
+from app.ui.widgets.datetime_inputs import (
+    DATETIME_DISPLAY_FORMAT,
+    DEFAULT_EMPTY_DATETIME,
+    create_optional_datetime_edit,
+)
 
 
 class _FakeEditor:
@@ -67,3 +74,51 @@ def test_apply_buffer_keeps_datetime_field_with_time_part() -> None:
 
     assert editor.text == "12.01.2000 15:30"
     assert date_time.datetime_calls == 1
+
+
+def test_optional_datetime_edit_starts_empty_without_current_time(qapp) -> None:
+    widget = create_optional_datetime_edit()
+    try:
+        assert widget.displayFormat() == DATETIME_DISPLAY_FORMAT
+        assert widget.dateTime() == DEFAULT_EMPTY_DATETIME
+        assert widget.time() == QTime(0, 0)
+    finally:
+        widget.deleteLater()
+
+
+def test_optional_datetime_edit_keeps_user_time_when_date_changes(qapp) -> None:
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 1, 1), QTime(8, 30)))
+        widget.setDate(QDate(2024, 1, 2))
+
+        assert widget.date() == QDate(2024, 1, 2)
+        assert widget.time() == QTime(8, 30)
+    finally:
+        widget.deleteLater()
+
+
+def test_auto_flow_datetime_date_only_input_uses_empty_time_not_current(qapp) -> None:
+    flow = DateInputAutoFlow()
+    widget = create_optional_datetime_edit()
+    editor = widget.lineEdit()
+    try:
+        flow._apply_buffer(widget, editor, "01012024")
+
+        assert widget.date() == QDate(2024, 1, 1)
+        assert widget.time() == QTime(0, 0)
+    finally:
+        widget.deleteLater()
+
+
+def test_auto_flow_datetime_full_input_preserves_explicit_user_time(qapp) -> None:
+    flow = DateInputAutoFlow()
+    widget = create_optional_datetime_edit()
+    editor = widget.lineEdit()
+    try:
+        flow._apply_buffer(widget, editor, "010120240830")
+
+        assert widget.date() == QDate(2024, 1, 1)
+        assert widget.time() == QTime(8, 30)
+    finally:
+        widget.deleteLater()

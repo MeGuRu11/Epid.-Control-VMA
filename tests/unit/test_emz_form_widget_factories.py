@@ -93,6 +93,8 @@ class _FakeDateTimeEdit:
         self.minimum_dt: object | None = None
         self.special_text: str | None = None
         self.current_dt: object | None = None
+        self.keyboard_tracking: bool | None = None
+        self.current_section: object | None = None
 
     def setCalendarPopup(self, enabled: bool) -> None:  # noqa: N802
         self.calendar_popup = enabled
@@ -109,6 +111,12 @@ class _FakeDateTimeEdit:
     def setDateTime(self, value: object) -> None:  # noqa: N802
         self.current_dt = value
 
+    def setKeyboardTracking(self, value: bool) -> None:  # noqa: N802
+        self.keyboard_tracking = value
+
+    def setCurrentSection(self, value: object) -> None:  # noqa: N802
+        self.current_section = value
+
 
 class _FakeDateEdit:
     def __init__(self) -> None:
@@ -117,6 +125,7 @@ class _FakeDateEdit:
         self.minimum_date: object | None = None
         self.current_date: object | None = None
         self.special_text: str | None = None
+        self.current_section: object | None = None
 
     def setCalendarPopup(self, enabled: bool) -> None:  # noqa: N802
         self.calendar_popup = enabled
@@ -132,6 +141,9 @@ class _FakeDateEdit:
 
     def setSpecialValueText(self, value: str) -> None:  # noqa: N802
         self.special_text = value
+
+    def setCurrentSection(self, value: object) -> None:  # noqa: N802
+        self.current_section = value
 
 
 @dataclass(frozen=True)
@@ -179,6 +191,8 @@ def test_create_datetime_cell(monkeypatch) -> None:
     assert widget.minimum_dt is marker
     assert widget.current_dt is marker
     assert widget.special_text == ""
+    assert widget.keyboard_tracking is True
+    assert widget.current_section is not None
 
 
 def test_create_date_cell(monkeypatch) -> None:
@@ -190,6 +204,7 @@ def test_create_date_cell(monkeypatch) -> None:
     assert widget.minimum_date is marker
     assert widget.current_date is marker
     assert widget.special_text == ""
+    assert widget.current_section is not None
 
 
 def test_create_icd_combo_and_wire(monkeypatch) -> None:

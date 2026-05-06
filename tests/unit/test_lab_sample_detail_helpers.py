@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
+from PySide6.QtCore import QDate, QDateTime, QTime
+from PySide6.QtWidgets import QDateTimeEdit
 
+from app.ui.lab.lab_sample_detail import LabSampleDetailDialog
 from app.ui.lab.lab_sample_detail_helpers import (
     PhageInput,
     SusceptibilityInput,
@@ -12,6 +17,7 @@ from app.ui.lab.lab_sample_detail_helpers import (
     compose_lab_result_update,
     has_lab_result_data,
 )
+from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATETIME
 
 
 def test_build_susceptibility_payload_normalizes_and_parses() -> None:
@@ -106,3 +112,53 @@ def test_compose_lab_result_update_clears_result_fields_when_no_results() -> Non
     assert update.microorganism_free is None
     assert update.susceptibility == []
     assert update.phages == []
+
+
+class _LabServiceStub:
+    pass
+
+
+class _LabReferenceServiceStub:
+    def list_material_types(self) -> list[SimpleNamespace]:
+        return [SimpleNamespace(id=1, code="BLD", name="Blood")]
+
+    def list_microorganisms(self) -> list[SimpleNamespace]:
+        return [SimpleNamespace(id=1, code="STA", name="Staphylococcus aureus")]
+
+    def search_microorganisms(self, _query: str, *, limit: int) -> list[SimpleNamespace]:
+        return self.list_microorganisms()[:limit]
+
+    def list_antibiotics(self) -> list[SimpleNamespace]:
+        return [SimpleNamespace(id=1, code="AMK", name="Amikacin")]
+
+    def list_phages(self) -> list[SimpleNamespace]:
+        return [SimpleNamespace(id=1, code="PH", name="Phage")]
+
+
+def test_lab_detail_datetime_fields_start_empty_and_keep_explicit_time(qapp) -> None:
+    dialog = LabSampleDetailDialog(
+        lab_service=cast(Any, _LabServiceStub()),
+        reference_service=cast(Any, _LabReferenceServiceStub()),
+        patient_id=1,
+        emr_case_id=None,
+        actor_id=7,
+    )
+    try:
+        dialog.show()
+        qapp.processEvents()
+
+        widgets = [dialog.ordered_at, dialog.taken_at, dialog.delivered_at, dialog.growth_result_at]
+        for widget in widgets:
+            assert isinstance(widget, QDateTimeEdit)
+            assert widget.displayFormat() == "dd.MM.yyyy HH:mm"
+            assert widget.dateTime() == DEFAULT_EMPTY_DATETIME
+            assert dialog._to_python_datetime(widget) is None
+
+        dialog.taken_at.setDateTime(QDateTime(QDate(2024, 1, 1), QTime(8, 30)))
+        value = dialog._to_python_datetime(dialog.taken_at)
+
+        assert value is not None
+        assert value.hour == 8
+        assert value.minute == 30
+    finally:
+        dialog.close()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, QDateTime, QSignalBlocker, Qt, QTime
+from PySide6.QtCore import QSignalBlocker, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QCompleter,
@@ -37,6 +37,10 @@ from app.application.services.lab_sample_payload_service import (
 from app.application.services.lab_service import LabService
 from app.application.services.reference_service import ReferenceService
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import (
+    create_optional_datetime_edit,
+    optional_datetime_value,
+)
 from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, set_status
 from app.ui.widgets.table_utils import (
@@ -100,23 +104,15 @@ class LabSampleDetailDialog(QDialog):
         self.material_type = QComboBox()
         self.material_type.setEditable(False)
         self.material_type.addItem("Выбрать", None)
-        self.taken_at = QDateTimeEdit()
-        self.taken_at.setDisplayFormat("dd.MM.yyyy HH:mm")
-        if not hasattr(self, "ordered_at"):
-            self.ordered_at = QDateTimeEdit()
-        self.ordered_at.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.delivered_at = QDateTimeEdit()
-        self.delivered_at.setDisplayFormat("dd.MM.yyyy HH:mm")
+        self.taken_at = create_optional_datetime_edit()
+        self.ordered_at = create_optional_datetime_edit()
+        self.delivered_at = create_optional_datetime_edit()
         self.study_kind = QComboBox()
         self.study_kind.addItem("Выбрать", None)
         self.study_kind.addItem("Первичное", "primary")
         self.study_kind.addItem("Повторное", "repeat")
         self.material_location = QLineEdit()
         self.medium = QLineEdit()
-        min_dt = QDateTime(QDate(2024, 1, 1), QTime(0, 0))
-        self.ordered_at.setMinimumDateTime(min_dt)
-        self.taken_at.setMinimumDateTime(min_dt)
-        self.delivered_at.setMinimumDateTime(min_dt)
         # Keep editable even when editing existing sample.
 
         main_box = QGroupBox("Основные данные")
@@ -143,9 +139,7 @@ class LabSampleDetailDialog(QDialog):
         self.growth_flag.addItem("Выбрать", None)
         self.growth_flag.addItem("Нет", 0)
         self.growth_flag.addItem("Да", 1)
-        self.growth_result_at = QDateTimeEdit()
-        self.growth_result_at.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.growth_result_at.setMinimumDateTime(min_dt)
+        self.growth_result_at = create_optional_datetime_edit()
         self.colony_desc = QLineEdit()
         self.microscopy = QLineEdit()
         self.cfu = QLineEdit()
@@ -607,9 +601,7 @@ class LabSampleDetailDialog(QDialog):
         has_results = self._has_result_data()
         susceptibility = self._collect_susceptibility() if has_results else []
         phages = self._collect_phages() if has_results else []
-        growth_result_at = None
-        if has_results and self.growth_result_at.dateTime().isValid():
-            growth_result_at = cast(datetime | None, self.growth_result_at.dateTime().toPython())
+        growth_result_at = self._to_python_datetime(self.growth_result_at) if has_results else None
         return compose_lab_result_update(
             has_results=has_results,
             growth_flag=self.growth_flag.currentData(),
@@ -626,9 +618,7 @@ class LabSampleDetailDialog(QDialog):
 
     @staticmethod
     def _to_python_datetime(widget: QDateTimeEdit) -> datetime | None:
-        if widget.dateTime().isValid():
-            return cast(datetime | None, widget.dateTime().toPython())
-        return None
+        return optional_datetime_value(widget)
 
     def on_save(self) -> None:
         clear_status(self.error_label)
@@ -707,4 +697,3 @@ class LabSampleDetailDialog(QDialog):
             self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
             self.phage_table.setItem(idx, 2, QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""))
         resize_columns_to_content(self.phage_table)
-

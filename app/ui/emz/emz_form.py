@@ -11,7 +11,6 @@ from PySide6.QtCore import (
     QModelIndex,
     QPersistentModelIndex,
     Qt,
-    QTime,
 )
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
@@ -139,6 +138,16 @@ from app.ui.emz.form_widget_factories import (
 )
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import (
+    DEFAULT_EMPTY_DATE,
+    DEFAULT_EMPTY_DATETIME,
+    configure_optional_date_edit,
+    configure_optional_datetime_edit,
+    optional_date_value,
+    optional_datetime_value,
+    to_qdate,
+    to_qdatetime,
+)
 from app.ui.widgets.notifications import clear_status, set_status, show_error
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
@@ -203,8 +212,8 @@ class EmzForm(QWidget):
         self._abx_list: list[Any] = []
         self._ismp_abbrev_list: list[Any] = []
         self._icd_search_updating = False
-        self._date_empty = QDate(2024, 1, 1)
-        self._dt_empty = QDateTime(QDate(2024, 1, 1), QTime(0, 0))
+        self._date_empty = DEFAULT_EMPTY_DATE
+        self._dt_empty = DEFAULT_EMPTY_DATETIME
         self._build_ui()
 
     def set_session(self, session: SessionContext) -> None:
@@ -334,9 +343,7 @@ class EmzForm(QWidget):
     def _init_form_widgets(self) -> None:
         self.full_name = QLineEdit()
         self.full_name.setToolTip("ФИО пациента. Обязательное поле.")
-        self.dob = QDateEdit()
-        self.dob.setCalendarPopup(True)
-        self.dob.setDisplayFormat("dd.MM.yyyy")
+        self.dob = configure_optional_date_edit(QDateEdit(), empty_date=self._date_empty)
         self.dob.setToolTip("Дата рождения: ДД.ММ.ГГГГ.")
         self.sex = QComboBox()
         self.sex.addItems(["М", "Ж"])
@@ -356,25 +363,9 @@ class EmzForm(QWidget):
         self.department_combo.setEditable(False)
         self.department_combo.addItem("Выбрать", None)
 
-        self.injury_date = QDateTimeEdit()
-        self.injury_date.setCalendarPopup(True)
-        self.injury_date.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.admission_date = QDateTimeEdit()
-        self.admission_date.setCalendarPopup(True)
-        self.admission_date.setDisplayFormat("dd.MM.yyyy HH:mm")
-        self.outcome_date = QDateTimeEdit()
-        self.outcome_date.setCalendarPopup(True)
-        self.outcome_date.setDisplayFormat("dd.MM.yyyy HH:mm")
-        min_dt = self._dt_empty
-        self.injury_date.setMinimumDateTime(min_dt)
-        self.admission_date.setMinimumDateTime(min_dt)
-        self.outcome_date.setMinimumDateTime(min_dt)
-        self.injury_date.setSpecialValueText("")
-        self.admission_date.setSpecialValueText("")
-        self.outcome_date.setSpecialValueText("")
-        self.injury_date.setDateTime(self._dt_empty)
-        self.admission_date.setDateTime(self._dt_empty)
-        self.outcome_date.setDateTime(self._dt_empty)
+        self.injury_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
+        self.admission_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
+        self.outcome_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
         self.injury_date.setToolTip("Дата/время травмы: ДД.ММ.ГГГГ ЧЧ:ММ.")
         self.admission_date.setToolTip("Дата/время поступления: ДД.ММ.ГГГГ ЧЧ:ММ.")
         self.outcome_date.setToolTip("Дата/время исхода: ДД.ММ.ГГГГ ЧЧ:ММ.")
@@ -518,26 +509,16 @@ class EmzForm(QWidget):
         self._setup_all_detail_tables()
 
     def _date_value(self, widget: QDateEdit) -> date | None:
-        if not widget.date().isValid():
-            return None
-        return cast(date, widget.date().toPython())
+        return optional_date_value(widget, empty_date=self._date_empty)
 
     def _datetime_value(self, widget: QDateTimeEdit) -> datetime | None:
-        if not widget.dateTime().isValid():
-            return None
-        qdt = widget.dateTime()
-        if qdt == self._dt_empty:
-            return None
-        return cast(datetime, qdt.toPython())
+        return optional_datetime_value(widget, empty_datetime=self._dt_empty)
 
     def _to_qdate(self, value: date) -> QDate:
-        return QDate(value.year, value.month, value.day)
+        return to_qdate(value)
 
     def _to_qdatetime(self, value: datetime) -> QDateTime:
-        return QDateTime(
-            self._to_qdate(value.date()),
-            QTime(value.hour, value.minute, value.second),
-        )
+        return to_qdatetime(value)
 
     def _create_dt_cell(self) -> QDateTimeEdit:
         return create_datetime_cell(self._dt_empty)
@@ -545,10 +526,7 @@ class EmzForm(QWidget):
     def _dt_from_cell(self, widget: QDateTimeEdit | None) -> datetime | None:
         if widget is None:
             return None
-        qdt = widget.dateTime()
-        if qdt == self._dt_empty:
-            return None
-        return cast(datetime, qdt.toPython())
+        return optional_datetime_value(widget, empty_datetime=self._dt_empty)
 
     def _table_dt_value(self, table: QTableWidget, row: int, col: int) -> datetime | None:
         dt_widget = table.cellWidget(row, col)
@@ -744,6 +722,8 @@ class EmzForm(QWidget):
         self.full_name.setText(full_name)
         if dob:
             self.dob.setDate(self._to_qdate(dob))
+        else:
+            self.dob.setDate(self._date_empty)
         self.sex.setCurrentText(sex_code_to_label(sex_code))
         idx_cat = self.category_combo.findData(category)
         if idx_cat >= 0:
@@ -898,8 +878,8 @@ class EmzForm(QWidget):
             severity=self.severity,
             sofa_score=self.sofa_score,
             vph_p_score=self.vph_p_score,
-            default_date=QDate.currentDate(),
-            default_datetime=QDateTime.currentDateTime(),
+            default_date=self._date_empty,
+            default_datetime=self._dt_empty,
             reset_detail_tables=self._reset_detail_tables,
         )
         self._set_patient_read_only(False)
@@ -1090,7 +1070,7 @@ class EmzForm(QWidget):
             widget.setDateTime(self._to_qdatetime(dt_value))
             return
         if date_value is not None:
-            widget.setDate(self._to_qdate(date_value))
+            widget.setDateTime(QDateTime(self._to_qdate(date_value), self._dt_empty.time()))
             return
         widget.setDateTime(self._dt_empty)
 

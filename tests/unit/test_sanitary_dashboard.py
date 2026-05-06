@@ -5,11 +5,13 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, QDateTime, QTime
 from PySide6.QtWidgets import QBoxLayout, QLabel, QScrollArea
 
 from app.application.dto.sanitary_dto import SanitarySampleResponse
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
+from app.ui.sanitary.sanitary_history import SanitarySampleDetailDialog
+from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATETIME
 
 
 class _SanitaryServiceStub:
@@ -34,6 +36,12 @@ def _reference_service_stub(*, departments: list[SimpleNamespace] | None = None)
             SimpleNamespace(id=7, code="STA", name="Staphylococcus aureus"),
             SimpleNamespace(id=9, code="KLB", name="Klebsiella pneumoniae"),
         ],
+        search_microorganisms=lambda _query, *, limit: [
+            SimpleNamespace(id=7, code="STA", name="Staphylococcus aureus"),
+            SimpleNamespace(id=9, code="KLB", name="Klebsiella pneumoniae"),
+        ][:limit],
+        list_antibiotics=lambda: [SimpleNamespace(id=1, code="AMK", name="Amikacin")],
+        list_phages=lambda: [SimpleNamespace(id=1, code="PH", name="Phage")],
     )
 
 
@@ -89,6 +97,50 @@ def test_sanitary_dashboard_uses_responsive_hero_and_filter_layouts(qapp) -> Non
     qapp.processEvents()
     assert dashboard._hero_layout.direction() == QBoxLayout.Direction.TopToBottom
     assert dashboard._filter_layout.direction() == QBoxLayout.Direction.TopToBottom
+
+
+def test_sanitary_detail_datetime_fields_start_empty_and_keep_explicit_time(qapp) -> None:
+    dialog = SanitarySampleDetailDialog(
+        sanitary_service=cast(Any, SimpleNamespace()),
+        reference_service=cast(Any, _reference_service_stub()),
+        department_id=1,
+        actor_id=77,
+    )
+    try:
+        dialog.show()
+        qapp.processEvents()
+
+        for widget in (dialog.taken_at, dialog.delivered_at, dialog.growth_result_at):
+            assert widget.displayFormat() == "dd.MM.yyyy HH:mm"
+            assert widget.dateTime() == DEFAULT_EMPTY_DATETIME
+            assert dialog._to_python_datetime(widget) is None
+
+        dialog.taken_at.setDateTime(QDateTime(QDate(2024, 1, 1), QTime(9, 45)))
+        value = dialog._to_python_datetime(dialog.taken_at)
+
+        assert value is not None
+        assert value.hour == 9
+        assert value.minute == 45
+    finally:
+        dialog.close()
+
+
+def test_sanitary_detail_result_update_does_not_default_growth_time(qapp) -> None:
+    dialog = SanitarySampleDetailDialog(
+        sanitary_service=cast(Any, SimpleNamespace()),
+        reference_service=cast(Any, _reference_service_stub()),
+        department_id=1,
+        actor_id=77,
+    )
+    try:
+        dialog.growth_flag.setCurrentIndex(dialog.growth_flag.findData(1))
+
+        has_results, update = dialog._build_result_update()
+
+        assert has_results is True
+        assert update.growth_result_at is None
+    finally:
+        dialog.close()
 
 
 def test_sanitary_dashboard_updates_kpis_summary_and_department_card(qapp) -> None:
