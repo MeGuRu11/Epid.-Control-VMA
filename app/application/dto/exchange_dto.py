@@ -25,6 +25,10 @@ class ExchangeImportErrorEntry(TypedDict):
     scope: str
     row: int
     message: str
+    field: NotRequired[str | None]
+    value: NotRequired[str | None]
+    error_code: NotRequired[str]
+    hint: NotRequired[str | None]
 
 
 class ExchangeTableStats(TypedDict):
@@ -37,6 +41,8 @@ class ExchangeTableStats(TypedDict):
 
 class ExchangeImportSummary(TypedDict):
     rows_total: int
+    total: int
+    imported: int
     added: int
     updated: int
     skipped: int

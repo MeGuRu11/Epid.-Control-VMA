@@ -340,6 +340,12 @@ _JSON_LIST_COLUMNS = frozenset(
     }
 )
 _EXPORT_PATH_COLUMNS = frozenset({"artifact_path", "file_path", "path"})
+_CSV_EXTRA_COLUMNS_KEY = "__extra_columns__"
+_CSV_ENUM_VALUES: dict[str, dict[str, set[str]]] = {
+    "patients": {"sex": {"M", "F", "U"}},
+}
+_DATE_FORMAT_HINT = "Ожидается формат YYYY-MM-DD или ДД.ММ.ГГГГ."
+
 
 def _format_date_value(value: object) -> JSONValue | object:
     if isinstance(value, datetime):
@@ -423,10 +429,183 @@ def _get_csv_headers(table_name: str, columns: list[str]) -> list[str]:
     return [header_map.get(col, col) for col in columns]
 
 
-def _map_csv_row(table_name: str, row: dict[str, object]) -> dict[str, object]:
+def _map_csv_header_name(table_name: str, header_name: object) -> str:
     header_map = CSV_HEADERS.get(table_name, {})
     reverse_map = {label: key for key, label in header_map.items()}
-    return {reverse_map.get(key, key): value for key, value in row.items()}
+    normalized = str(header_name).lstrip("\ufeff").strip()
+    return reverse_map.get(normalized, normalized)
+
+
+def _map_csv_row(table_name: str, row: dict[str, object]) -> dict[str, object]:
+    mapped: dict[str, object] = {}
+    for key, value in row.items():
+        if key == _CSV_EXTRA_COLUMNS_KEY:
+            continue
+        mapped[_map_csv_header_name(table_name, key)] = value
+    return mapped
+
+
+def _string_value(value: object) -> str | None:
+    if value is None:
+        return None
+    return str(value)
+
+
+def _make_import_error(
+    *,
+    scope: str,
+    row: int,
+    field: str | None,
+    value: object,
+    error_code: str,
+    message: str,
+    hint: str | None = None,
+) -> ExchangeImportErrorEntry:
+    return {
+        "scope": scope,
+        "row": row,
+        "field": field,
+        "value": _string_value(value),
+        "error_code": error_code,
+        "message": message,
+        "hint": hint,
+    }
+
+
+def _csv_row_shape_errors(
+    *,
+    table_name: str,
+    row_idx: int,
+    row: dict[str, object],
+) -> list[ExchangeImportErrorEntry]:
+    extra_values = row.get(_CSV_EXTRA_COLUMNS_KEY)
+    if extra_values:
+        return [
+            _make_import_error(
+                scope=table_name,
+                row=row_idx,
+                field=None,
+                value=extra_values,
+                error_code="extra_columns",
+                message=f"Строка {row_idx}: больше значений, чем заголовков.",
+                hint="Проверьте разделители и количество колонок в CSV.",
+            )
+        ]
+    missing_headers = [str(key) for key, value in row.items() if key != _CSV_EXTRA_COLUMNS_KEY and value is None]
+    if missing_headers:
+        return [
+            _make_import_error(
+                scope=table_name,
+                row=row_idx,
+                field=", ".join(missing_headers),
+                value=None,
+                error_code="row_length_mismatch",
+                message=f"Строка {row_idx}: меньше значений, чем заголовков.",
+                hint="Проверьте разделители и количество колонок в CSV.",
+            )
+        ]
+    return []
+
+
+def _validate_csv_row(
+    *,
+    table_name: str,
+    model_cls: type[models.Base],
+    row_idx: int,
+    row: dict[str, object],
+    seen_identities: set[object],
+) -> tuple[dict[str, object] | None, list[ExchangeImportErrorEntry]]:
+    shape_errors = _csv_row_shape_errors(table_name=table_name, row_idx=row_idx, row=row)
+    if shape_errors:
+        return None, shape_errors
+
+    mapped_row = _map_csv_row(table_name, row)
+    errors: list[ExchangeImportErrorEntry] = []
+    pk_cols = list(model_cls.__mapper__.primary_key)
+    if len(pk_cols) == 1:
+        pk_col = pk_cols[0]
+        pk_name = str(pk_col.name)
+        pk_value = mapped_row.get(pk_name)
+        if pk_value is None or str(pk_value).strip() == "":
+            errors.append(
+                _make_import_error(
+                    scope=table_name,
+                    row=row_idx,
+                    field=pk_name,
+                    value=pk_value,
+                    error_code="missing_required",
+                    message=f"Строка {row_idx}, поле «{pk_name}»: обязательное значение отсутствует.",
+                    hint="Укажите идентификатор строки для CSV-импорта.",
+                )
+            )
+        else:
+            try:
+                identity = _parse_value(pk_value, pk_col)
+            except (TypeError, ValueError, IndexError) as exc:
+                errors.append(
+                    _make_import_error(
+                        scope=table_name,
+                        row=row_idx,
+                        field=pk_name,
+                        value=pk_value,
+                        error_code="invalid_value",
+                        message=f"Строка {row_idx}, поле «{pk_name}»: некорректное значение.",
+                        hint=str(exc) or None,
+                    )
+                )
+            else:
+                if identity in seen_identities:
+                    errors.append(
+                        _make_import_error(
+                            scope=table_name,
+                            row=row_idx,
+                            field=pk_name,
+                            value=pk_value,
+                            error_code="duplicate_row",
+                            message=f"Строка {row_idx}, поле «{pk_name}»: дубликат идентификатора в файле.",
+                            hint="Оставьте в файле только одну строку с этим идентификатором.",
+                        )
+                    )
+                else:
+                    seen_identities.add(identity)
+
+    enum_fields = _CSV_ENUM_VALUES.get(table_name, {})
+    for field_name, allowed_values in enum_fields.items():
+        value = mapped_row.get(field_name)
+        if value is not None and str(value).strip() and str(value).strip() not in allowed_values:
+            errors.append(
+                _make_import_error(
+                    scope=table_name,
+                    row=row_idx,
+                    field=field_name,
+                    value=value,
+                    error_code="invalid_enum_value",
+                    message=f"Строка {row_idx}, поле «{field_name}»: недопустимое значение «{value}».",
+                    hint=f"Допустимые значения: {', '.join(sorted(allowed_values))}.",
+                )
+            )
+
+    for column in model_cls.__table__.columns:
+        column_name = str(column.name)
+        column_type = getattr(column, "type", None)
+        value = mapped_row.get(column_name)
+        if isinstance(column_type, Date) and value not in (None, ""):
+            try:
+                _parse_value(value, column)
+            except (TypeError, ValueError, IndexError):
+                errors.append(
+                    _make_import_error(
+                        scope=table_name,
+                        row=row_idx,
+                        field=column_name,
+                        value=value,
+                        error_code="invalid_date_format",
+                        message=f"Строка {row_idx}, поле «{column_name}»: некорректный формат «{value}».",
+                        hint=_DATE_FORMAT_HINT,
+                    )
+                )
+
+    return (None if errors else mapped_row), errors
 
 
 def _get_excel_sheet_title(table_name: str) -> str:
@@ -592,15 +771,32 @@ def _format_import_error(exc: Exception) -> str:
 def _write_import_error_log(
     source_file: Path,
     errors: list[ExchangeImportErrorEntry],
+    summary: ExchangeImportSummary | None = None,
+    *,
+    started_at: datetime | None = None,
+    finished_at: datetime | None = None,
 ) -> str | None:
     if not errors:
         return None
-    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    created_at = finished_at or datetime.now(UTC)
+    timestamp = created_at.strftime("%Y%m%d_%H%M%S")
     log_path = source_file.with_name(f"{source_file.stem}_import_errors_{timestamp}.json")
+    payload_summary: dict[str, object] = {
+        "total": int(summary.get("total", 0)) if summary else 0,
+        "imported": int(summary.get("imported", 0)) if summary else 0,
+        "skipped": int(summary.get("skipped", 0)) if summary else 0,
+        "errors": len(errors),
+        "started_at": (started_at or created_at).isoformat(),
+        "finished_at": created_at.isoformat(),
+        "source_file": source_file.name,
+        "source_sha256": sha256_file(source_file),
+    }
     payload = {
-        "created_at": datetime.now(UTC).isoformat(),
+        "created_at": created_at.isoformat(),
         "source_file": str(source_file),
+        "source_sha256": payload_summary["source_sha256"],
         "errors_count": len(errors),
+        "summary": payload_summary,
         "errors": errors,
     }
     try:
@@ -624,8 +820,11 @@ def _build_import_summary(
         added += int(item.get("added", 0))
         updated += int(item.get("updated", 0))
         skipped += int(item.get("skipped", 0))
+    imported = added + updated
     return {
         "rows_total": rows_total,
+        "total": rows_total,
+        "imported": imported,
         "added": added,
         "updated": updated,
         "skipped": skipped,
@@ -1033,36 +1232,70 @@ class ExchangeService:
         if table_name not in CSV_TABLES:
             raise ValueError("Неизвестная таблица CSV")
         model_cls = CSV_TABLES[table_name]
+        started_at = datetime.now(UTC)
         count = 0
         rows_total = 0
         added = updated = skipped = 0
         errors: list[ExchangeImportErrorEntry] = []
+        seen_identities: set[object] = set()
         with self.session_factory() as session, file_path.open("r", encoding="utf-8-sig", newline="") as f:
-            reader = csv.DictReader(f)
-            for row_idx, row in enumerate(reader, start=2):
-                rows_total += 1
-                try:
-                    mapped_row = _map_csv_row(table_name, row)
-                    identity = _get_pk_identity(model_cls, mapped_row)
-                    existing = session.get(model_cls, identity) if identity is not None else None
-                    if mode == "append" and existing is not None:
+            reader = csv.DictReader(f, restkey=_CSV_EXTRA_COLUMNS_KEY, restval=None, strict=True)
+            try:
+                for row_idx, row in enumerate(reader, start=2):
+                    rows_total += 1
+                    mapped_row, row_errors = _validate_csv_row(
+                        table_name=table_name,
+                        model_cls=model_cls,
+                        row_idx=row_idx,
+                        row=cast(dict[str, object], row),
+                        seen_identities=seen_identities,
+                    )
+                    if row_errors:
+                        errors.extend(row_errors)
                         skipped += 1
                         continue
-                    obj = _dict_to_model(model_cls, mapped_row)
-                    if existing is not None:
-                        updated += 1
-                    else:
-                        added += 1
-                    session.merge(obj)
-                    count += 1
-                except _HANDLED_IMPORT_ERRORS as exc:
-                    errors.append(
-                        {
-                            "scope": table_name,
-                            "row": row_idx,
-                            "message": _format_import_error(exc),
-                        }
+                    if mapped_row is None:
+                        skipped += 1
+                        continue
+                    try:
+                        identity = _get_pk_identity(model_cls, mapped_row)
+                        existing = session.get(model_cls, identity) if identity is not None else None
+                        if mode == "append" and existing is not None:
+                            skipped += 1
+                            continue
+                        obj = _dict_to_model(model_cls, mapped_row)
+                        with session.begin_nested():
+                            session.merge(obj)
+                        if existing is not None:
+                            updated += 1
+                        else:
+                            added += 1
+                        count += 1
+                    except _HANDLED_IMPORT_ERRORS as exc:
+                        skipped += 1
+                        errors.append(
+                            _make_import_error(
+                                scope=table_name,
+                                row=row_idx,
+                                field=None,
+                                value=None,
+                                error_code="import_row_failed",
+                                message=f"Строка {row_idx}: запись не импортирована из-за некорректных данных.",
+                                hint=_format_import_error(exc),
+                            )
+                        )
+            except csv.Error as exc:
+                errors.append(
+                    _make_import_error(
+                        scope=table_name,
+                        row=rows_total + 2,
+                        field=None,
+                        value=None,
+                        error_code="csv_parse_error",
+                        message="CSV-файл повреждён или содержит незакрытые кавычки.",
+                        hint=str(exc) or None,
                     )
+                )
         details: dict[str, ExchangeTableStats] = {
             table_name: {
                 "rows": rows_total,
@@ -1073,6 +1306,7 @@ class ExchangeService:
             }
         }
         summary = _build_import_summary(details, errors_count=len(errors))
+        finished_at = datetime.now(UTC)
         result: CsvImportResult = {
             "path": str(file_path),
             "count": count,
@@ -1080,7 +1314,13 @@ class ExchangeService:
             "details": details,
             "errors": errors,
             "error_count": len(errors),
-            "error_log_path": _write_import_error_log(file_path, errors),
+            "error_log_path": _write_import_error_log(
+                file_path,
+                errors,
+                summary,
+                started_at=started_at,
+                finished_at=finished_at,
+            ),
             "summary": summary,
         }
         self._record_package("import", "csv", file_path, actor_id)
