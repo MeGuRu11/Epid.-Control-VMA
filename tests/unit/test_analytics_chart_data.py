@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -458,6 +458,7 @@ def test_time_grouping_change_refreshes_dashboard_and_keeps_selected_mode(qapp, 
         except Exception as exc:  # noqa: BLE001
             if on_error is not None:
                 on_error(exc)
+            raise
         else:
             if on_success is not None:
                 on_success(result)
@@ -517,7 +518,7 @@ def test_report_history_table_is_read_only() -> None:
 
 
 def test_analytics_view_initializes_current_month_and_populates_charts(qapp, monkeypatch) -> None:
-    current_date = datetime.now(tz=UTC).date()
+    current_date = cast(date, QDate.currentDate().toPython())
 
     class _AnalyticsStartupStub(_AnalyticsServiceStub):
         def get_aggregates(self, request: AnalyticsSearchRequest) -> dict[str, Any]:
@@ -557,6 +558,7 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
         except Exception as exc:  # noqa: BLE001
             if on_error is not None:
                 on_error(exc)
+            raise
         else:
             if on_success is not None:
                 on_success(result)
@@ -565,6 +567,7 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
                 on_finished()
         return None
 
+    monkeypatch.setattr("app.ui.analytics.analytics_view.show_error", lambda *_a, **_kw: None)
     monkeypatch.setattr("app.ui.analytics.analytics_view.run_async", _run_async_sync)
 
     view = AnalyticsSearchView(
@@ -590,7 +593,7 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
 
 
 def test_analytics_view_initializes_current_month_with_real_async(qapp) -> None:
-    current_date = datetime.now(tz=UTC).date()
+    current_date = cast(date, QDate.currentDate().toPython())
 
     class _AnalyticsStartupStub(_AnalyticsServiceStub):
         def get_aggregates(self, request: AnalyticsSearchRequest) -> dict[str, Any]:
