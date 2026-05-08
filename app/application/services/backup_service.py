@@ -9,7 +9,7 @@ from contextlib import AbstractContextManager, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
@@ -133,10 +133,13 @@ class BackupService:
             return None
         try:
             data = json.loads(self._meta_path.read_text(encoding="utf-8"))
-            path = Path(data["path"])
+            raw_path = data["path"]
+            if not isinstance(raw_path, str):
+                raise TypeError("backup metadata path must be a string")
+            path = self._resolve_metadata_path(raw_path)
             created_at = datetime.fromisoformat(data["created_at"])
             reason = data.get("reason", "unknown")
-            if not path.exists():
+            if path is None or not path.exists():
                 return None
             return BackupInfo(path=path, created_at=created_at, reason=reason)
         except (json.JSONDecodeError, KeyError, OSError, TypeError, ValueError) as exc:
@@ -217,11 +220,26 @@ class BackupService:
 
     def _write_meta(self, path: Path, reason: str) -> None:
         payload = {
-            "path": str(path),
+            "path": self._metadata_path_value(path),
             "created_at": datetime.now(UTC).isoformat(),
             "reason": reason,
         }
         self._meta_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _metadata_path_value(self, path: Path) -> str:
+        try:
+            return path.resolve(strict=False).relative_to(self.backup_dir.resolve(strict=False)).as_posix()
+        except (OSError, RuntimeError, ValueError):
+            return path.name
+
+    def _resolve_metadata_path(self, raw_path: str) -> Path | None:
+        path = Path(raw_path)
+        if path.is_absolute():
+            return path
+        posix_path = PurePosixPath(raw_path.replace("\\", "/"))
+        if posix_path.is_absolute() or ".." in posix_path.parts:
+            return None
+        return self.backup_dir.joinpath(*posix_path.parts)
 
     def _audit_event(self, actor_id: int, action: str, path: Path, reason: str) -> None:
         payload = json.dumps(
