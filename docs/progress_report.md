@@ -6249,3 +6249,35 @@ P0.6 — `validate_for_signing` rules in Form100 domain, UI shows all errors at 
 ### Следующий шаг
 
 P0.8 — audit_log events for all exchange exports and imports.
+---
+
+## P0.8 — audit_log events for exchange exports/imports
+
+**Коммит:** pending in this change set
+**Дата:** 2026-05-08
+
+### Что сделано
+
+- `ExchangeService` теперь пишет `audit_log` рядом с `data_exchange_package` для exchange export/import операций.
+- События используют `entity_type='exchange'`, actions `data_export`, `data_import`, `data_import_failed`.
+- Audit payload не содержит ФИО/ID пациентов и включает только служебные поля: `format`, `package_format`, `scope_tables`, `file_sha256`, `rows_affected`, `error_summary`.
+- Покрыты форматы `excel`, `zip`, `csv`, `pdf`, `json`; внутренний temp-Excel при ZIP не создаёт дубль audit-события.
+- Failed CSV import пишет `data_import_failed` с `errors_count` и `first_error_code`.
+- Legacy JSON export/import теперь тоже регистрируются в `data_exchange_package` и `audit_log` как exchange-операции.
+
+### Изменённые файлы
+
+- `app/application/services/exchange_service.py`
+- `tests/integration/test_exchange_audit_log.py`
+- `docs/progress_report.md`
+
+### Проверки
+
+- `ruff check app tests` — pass
+- `python -m mypy app tests` — pass, `329 source files`
+- `python -m pytest -q` — `604 passed`
+- `python -m compileall -q app tests scripts` — pass
+
+### Следующий шаг
+
+P0 закрыт. Следующий этап по `CODEX_ACTION_PLAN.md` — P1.

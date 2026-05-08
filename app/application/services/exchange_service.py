@@ -45,6 +45,7 @@ from app.application.security.role_matrix import Role, has_permission
 from app.config import DATA_DIR
 from app.domain.types import JSONDict, JSONValue
 from app.infrastructure.db import models_sqlalchemy as models
+from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
 from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
@@ -832,6 +833,52 @@ def _build_import_summary(
     }
 
 
+def _audit_format(package_format: str) -> str:
+    if package_format.startswith("zip"):
+        return "zip"
+    if package_format.startswith("form100"):
+        return "form100_zip"
+    return package_format
+
+
+def _first_error_code(errors: list[ExchangeImportErrorEntry] | None) -> str | None:
+    if not errors:
+        return None
+    first = errors[0]
+    code = first.get("error_code")
+    return str(code) if code else "import_error"
+
+
+def _build_exchange_audit_payload(
+    *,
+    direction: str,
+    package_format: str,
+    scope_tables: list[str],
+    file_sha256: str,
+    rows_affected: int,
+    errors_count: int,
+    first_error_code: str | None,
+) -> dict[str, object]:
+    if direction == "export":
+        action = "data_export"
+    else:
+        action = "data_import_failed" if errors_count else "data_import"
+    error_summary: dict[str, object] | None = None
+    if errors_count:
+        error_summary = {"errors_count": errors_count, "first_error_code": first_error_code or "import_error"}
+    return {
+        "schema": "exchange.audit.v1",
+        "action": action,
+        "direction": direction,
+        "format": _audit_format(package_format),
+        "package_format": package_format,
+        "scope_tables": sorted(dict.fromkeys(scope_tables)),
+        "file_sha256": file_sha256,
+        "rows_affected": rows_affected,
+        "error_summary": error_summary,
+    }
+
+
 @contextmanager
 def _working_temp_dir() -> Iterator[Path]:
     """
@@ -870,10 +917,12 @@ class ExchangeService:
         session_factory: Callable = session_scope,
         form100_v2_service: Form100ExchangeService | None = None,
         user_repo: UserRepository | None = None,
+        audit_repo: AuditLogRepository | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.form100_v2_service = form100_v2_service
         self.user_repo = user_repo or UserRepository()
+        self.audit_repo = audit_repo or AuditLogRepository()
 
     def _prepare_output_dir(self, path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
@@ -892,8 +941,27 @@ class ExchangeService:
         raise ValueError("Недостаточно прав для операций импорта/экспорта")
 
     def _log_package(
-        self, direction: str, package_format: str, file_path: Path, sha256: str, created_by: int | None
+        self,
+        direction: str,
+        package_format: str,
+        file_path: Path,
+        sha256: str,
+        created_by: int | None,
+        *,
+        scope_tables: list[str] | None = None,
+        rows_affected: int = 0,
+        errors_count: int = 0,
+        first_error_code: str | None = None,
     ) -> None:
+        audit_payload = _build_exchange_audit_payload(
+            direction=direction,
+            package_format=package_format,
+            scope_tables=scope_tables or [],
+            file_sha256=sha256,
+            rows_affected=rows_affected,
+            errors_count=errors_count,
+            first_error_code=first_error_code,
+        )
         with self.session_factory() as session:
             session.add(
                 models.DataExchangePackage(
@@ -904,6 +972,14 @@ class ExchangeService:
                     created_by=created_by,
                 )
             )
+            self.audit_repo.add_event(
+                session,
+                user_id=created_by,
+                entity_type="exchange",
+                entity_id=package_format,
+                action=str(audit_payload["action"]),
+                payload_json=json.dumps(audit_payload, ensure_ascii=False),
+            )
 
     def _record_package(
         self,
@@ -911,9 +987,24 @@ class ExchangeService:
         package_format: str,
         file_path: Path,
         created_by: int | None,
+        *,
+        scope_tables: list[str] | None = None,
+        rows_affected: int = 0,
+        errors: list[ExchangeImportErrorEntry] | None = None,
     ) -> str:
         package_hash = sha256_file(file_path)
-        self._log_package(direction, package_format, file_path, package_hash, created_by)
+        errors_count = len(errors or [])
+        self._log_package(
+            direction,
+            package_format,
+            file_path,
+            package_hash,
+            created_by,
+            scope_tables=scope_tables,
+            rows_affected=rows_affected,
+            errors_count=errors_count,
+            first_error_code=_first_error_code(errors),
+        )
         return package_hash
 
     def get_actor_label(self, actor_id: int | None) -> str:
@@ -967,7 +1058,7 @@ class ExchangeService:
         self._prepare_output_dir(file_path.parent)
         wb.save(file_path)
         if log_package:
-            self._record_package("export", "excel", file_path, actor_id)
+            self._record_package("export", "excel", file_path, actor_id, scope_tables=list(TABLE_MODELS), rows_affected=sum(counts.values()))
         return {"path": str(file_path), "counts": counts}
 
     def export_zip(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> ZipExportResult:
@@ -1007,7 +1098,7 @@ class ExchangeService:
                 zf.write(manifest_path, arcname=manifest_path.name)
 
         package_hash = sha256_file(file_path)
-        self._log_package("export", "zip+excel", file_path, package_hash, actor_id)
+        self._log_package("export", "zip+excel", file_path, package_hash, actor_id, scope_tables=list(TABLE_MODELS), rows_affected=sum(result["counts"].values()))
         return {"path": str(file_path), "counts": result["counts"], "sha256": package_hash}
 
     def import_excel(
@@ -1099,7 +1190,7 @@ class ExchangeService:
         if write_error_log:
             result["error_log_path"] = _write_import_error_log(file_path, errors)
         if log_package:
-            self._record_package("import", "excel", file_path, actor_id)
+            self._record_package("import", "excel", file_path, actor_id, scope_tables=list(details), rows_affected=int(summary["imported"]), errors=errors)
         return result
 
     def import_zip(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> ZipImportResult:
@@ -1136,8 +1227,18 @@ class ExchangeService:
             )
 
         package_hash = sha256_file(file_path)
-        self._log_package("import", "zip+excel", file_path, package_hash, actor_id)
         errors = result["errors"]
+        self._log_package(
+            "import",
+            "zip+excel",
+            file_path,
+            package_hash,
+            actor_id,
+            scope_tables=list(result["details"]),
+            rows_affected=int(result["summary"]["imported"]),
+            errors_count=len(errors),
+            first_error_code=_first_error_code(errors),
+        )
         return {
             "path": str(file_path),
             "counts": result["counts"],
@@ -1221,7 +1322,7 @@ class ExchangeService:
                     data = _model_to_dict(row)
                     writer.writerow([data.get(col) for col in columns])
                     count += 1
-        self._record_package("export", "csv", file_path, actor_id)
+        self._record_package("export", "csv", file_path, actor_id, scope_tables=[table_name], rows_affected=count)
         return {"path": str(file_path), "count": count}
 
     def import_csv(
@@ -1323,7 +1424,7 @@ class ExchangeService:
             ),
             "summary": summary,
         }
-        self._record_package("import", "csv", file_path, actor_id)
+        self._record_package("import", "csv", file_path, actor_id, scope_tables=[table_name], rows_affected=int(summary["imported"]), errors=errors)
         return result
 
     def export_pdf(self, file_path: str | Path, table_name: str, *, actor_id: int) -> CsvExportResult:
@@ -1389,7 +1490,7 @@ class ExchangeService:
             )
         )
         build_invariant_pdf(doc, [table])
-        self._record_package("export", "pdf", file_path, actor_id)
+        self._record_package("export", "pdf", file_path, actor_id, scope_tables=[table_name], rows_affected=count)
         return {"path": str(file_path), "count": count}
 
     # Legacy JSON support (not used in UI)
@@ -1414,9 +1515,18 @@ class ExchangeService:
         self._prepare_output_dir(file_path.parent)
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         data_payload = cast(JSONDict, payload["data"])
+        counts = {k: len(cast(list[object], v)) for k, v in data_payload.items()}
+        self._record_package(
+            "export",
+            "json",
+            file_path,
+            actor_id,
+            scope_tables=list(counts),
+            rows_affected=sum(counts.values()),
+        )
         return {
             "path": str(file_path),
-            "counts": {k: len(cast(list[object], v)) for k, v in data_payload.items()},
+            "counts": counts,
         }
 
     def import_json(self, file_path: str | Path, *, actor_id: int, mode: str = "merge") -> LegacyJsonImportResult:
@@ -1469,6 +1579,15 @@ class ExchangeService:
                     "errors": table_errors,
                 }
         summary = _build_import_summary(details, errors_count=len(errors))
+        self._record_package(
+            "import",
+            "json",
+            file_path,
+            actor_id,
+            scope_tables=[name for name, stats in details.items() if stats["rows"] or stats["errors"]],
+            rows_affected=int(summary["imported"]),
+            errors=errors,
+        )
         return {
             "path": str(file_path),
             "counts": counts,
