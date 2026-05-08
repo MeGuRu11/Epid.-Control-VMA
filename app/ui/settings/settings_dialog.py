@@ -153,15 +153,12 @@ class SettingsDialog(QDialog):
         )
         localize_button_box(self._button_box)
         apply_btn = self._button_box.button(QDialogButtonBox.StandardButton.Apply)
-        if apply_btn is not None:
-            apply_btn.setText("Применить")
+        apply_btn.setText("Применить")
         save_btn = self._button_box.button(QDialogButtonBox.StandardButton.Save)
-        if save_btn is not None:
-            save_btn.setObjectName("primaryButton")
+        save_btn.setObjectName("primaryButton")
         self._button_box.accepted.connect(self._on_save_clicked)
         self._button_box.rejected.connect(self.reject)
-        if apply_btn is not None:
-            apply_btn.clicked.connect(self._on_apply_clicked)
+        apply_btn.clicked.connect(self._on_apply_clicked)
         button_row.addWidget(self._button_box)
 
         root.addLayout(button_row)
@@ -439,7 +436,7 @@ class SettingsDialog(QDialog):
         info_form.addRow("Каталог логов:", self._make_info_label(str(LOG_DIR)))
         info_form.addRow(
             "Файл настроек:",
-            self._make_info_label(str(self._service._repo.file_path)),  # noqa: SLF001
+            self._make_info_label(str(self._service._repo.file_path)),  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         )
         layout.addLayout(info_form)
 
