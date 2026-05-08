@@ -42,6 +42,7 @@ from app.application.dto.exchange_dto import (
     ZipImportResult,
 )
 from app.application.security.role_matrix import Role, has_permission
+from app.config import DATA_DIR
 from app.domain.types import JSONDict, JSONValue
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.user_repo import UserRepository
@@ -58,8 +59,10 @@ TABLE_MODELS: dict[str, type[models.Base]] = {
     "ref_antibiotics": models.RefAntibiotic,
     "ref_phages": models.RefPhage,
     "ref_material_types": models.RefMaterialType,
+    "ref_ismp_abbreviations": models.RefIsmpAbbreviation,
     "patients": models.Patient,
     "emr_case": models.EmrCase,
+    "ismp_case": models.IsmpCase,
     "emr_case_version": models.EmrCaseVersion,
     "emr_diagnosis": models.EmrDiagnosis,
     "emr_intervention": models.EmrIntervention,
@@ -72,6 +75,8 @@ TABLE_MODELS: dict[str, type[models.Base]] = {
     "san_microbe_isolation": models.SanMicrobeIsolation,
     "san_abx_susceptibility": models.SanAbxSusceptibility,
     "san_phage_panel_result": models.SanPhagePanelResult,
+    "form100": models.Form100V2,
+    "form100_data": models.Form100DataV2,
 }
 
 CSV_TABLES: dict[str, type[models.Base]] = {
@@ -150,8 +155,10 @@ EXCEL_SHEET_TITLES: dict[str, str] = {
     "ref_antibiotics": "Антибиотики",
     "ref_phages": "Бактериофаги",
     "ref_material_types": "Типы материала",
+    "ref_ismp_abbreviations": "ИСМП сокращения",
     "patients": "Пациенты",
     "emr_case": "Госпитализации",
+    "ismp_case": "ИСМП случаи",
     "emr_case_version": "Версии ЭМЗ",
     "emr_diagnosis": "Диагнозы ЭМЗ",
     "emr_intervention": "Вмешательства ЭМЗ",
@@ -164,6 +171,8 @@ EXCEL_SHEET_TITLES: dict[str, str] = {
     "san_microbe_isolation": "Сан. выделения",
     "san_abx_susceptibility": "Сан. чувствительность",
     "san_phage_panel_result": "Сан. фаги",
+    "form100": "Форма 100",
+    "form100_data": "Форма 100 данные",
 }
 
 EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
@@ -319,7 +328,18 @@ _HANDLED_IMPORT_ERRORS = (
 )
 
 _EXPORT_BATCH_SIZE = 500
-
+_FORM100_PDF_EXPORT_NOTE = "PDF-артефакты карточек Формы 100 экспортируются отдельно через Form100 ZIP"
+_FULL_EXPORT_NOTES: dict[str, str] = {"form100_pdf": _FORM100_PDF_EXPORT_NOTE}
+_JSON_LIST_COLUMNS = frozenset(
+    {
+        "bodymap_annotations_json",
+        "bodymap_tissue_types_json",
+        "features_json",
+        "trauma_types_json",
+        "wound_types_json",
+    }
+)
+_EXPORT_PATH_COLUMNS = frozenset({"artifact_path", "file_path", "path"})
 
 def _format_date_value(value: object) -> JSONValue | object:
     if isinstance(value, datetime):
@@ -339,10 +359,62 @@ def _serialize_value(value: object) -> JSONValue | object:
     return _format_date_value(value)
 
 
-def _model_to_dict(obj: models.Base) -> JSONDict:
+def _is_json_column(column_name: str) -> bool:
+    return column_name.endswith("_json")
+
+
+def _json_column_default(column_name: str) -> JSONValue:
+    return [] if column_name in _JSON_LIST_COLUMNS else {}
+
+
+def _parse_json_payload(value: object, *, column_name: str) -> JSONValue:
+    if value is None or value == "":
+        return _json_column_default(column_name)
+    if isinstance(value, dict | list):
+        return cast(JSONValue, value)
+    try:
+        return cast(JSONValue, json.loads(str(value)))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return _json_column_default(column_name)
+
+
+def _portable_export_path(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return text
+    normalized = text.replace("\\", "/")
+    posix_path = PurePosixPath(normalized)
+    path = Path(text)
+    if path.is_absolute() or posix_path.is_absolute() or (posix_path.parts and ":" in posix_path.parts[0]):
+        for base_dir in (DATA_DIR, Path.cwd()):
+            try:
+                return path.resolve(strict=False).relative_to(base_dir.resolve(strict=False)).as_posix()
+            except (OSError, RuntimeError, ValueError):
+                continue
+        return posix_path.name
+    if ".." in posix_path.parts:
+        return posix_path.name
+    return posix_path.as_posix()
+
+
+def _model_to_dict(
+    obj: models.Base,
+    *,
+    nested_json: bool = False,
+    portable_paths: bool = False,
+) -> JSONDict:
     data: JSONDict = {}
     for column in obj.__table__.columns:
-        data[column.name] = cast(JSONValue, _serialize_value(getattr(obj, column.name)))
+        column_name = str(column.name)
+        value = getattr(obj, column_name)
+        if nested_json and _is_json_column(column_name):
+            data[column_name] = _parse_json_payload(value, column_name=column_name)
+        elif portable_paths and column_name in _EXPORT_PATH_COLUMNS:
+            data[column_name] = cast(JSONValue, _portable_export_path(value))
+        else:
+            data[column_name] = cast(JSONValue, _serialize_value(value))
     return data
 
 
@@ -440,12 +512,19 @@ def _finalize_excel_workbook(workbook: Workbook) -> None:
         _format_excel_worksheet(worksheet)
 
 
+def _prepare_import_value(value: object, column: object) -> object:
+    column_name = str(getattr(column, "name", ""))
+    if _is_json_column(column_name) and isinstance(value, dict | list):
+        return json.dumps(value, ensure_ascii=False, default=str)
+    return _parse_value(value, column)
+
+
 def _dict_to_model(model_cls: type[models.Base], data: dict[str, object]) -> models.Base:
     obj = model_cls()
     for column in model_cls.__table__.columns:
         name = column.name
         if name in data:
-            setattr(obj, name, _parse_value(data[name], column))
+            setattr(obj, name, _prepare_import_value(data[name], column))
     return obj
 
 
@@ -667,6 +746,7 @@ class ExchangeService:
         meta.append(["schema_version", "1.0"])
         meta.append(["exported_at", datetime.now(UTC).isoformat()])
         meta.append(["exported_by", exported_by or ""])
+        meta.append(["note_form100_pdf", _FORM100_PDF_EXPORT_NOTE])
 
         counts: dict[str, int] = {}
         with self.session_factory() as session:
@@ -709,6 +789,7 @@ class ExchangeService:
                 "exported_at": datetime.now(UTC).isoformat(),
                 "exported_by": exported_by,
                 "files": manifest_files,
+                "notes": dict(_FULL_EXPORT_NOTES),
             }
             for f in files:
                 manifest_files.append(
@@ -1082,12 +1163,13 @@ class ExchangeService:
             "exported_at": datetime.now(UTC).isoformat(),
             "exported_by": exported_by,
             "data": cast(JSONValue, {}),
+            "notes": cast(JSONValue, dict(_FULL_EXPORT_NOTES)),
         }
 
         with self.session_factory() as session:
             for name, model_cls in TABLE_MODELS.items():
                 data_payload = cast(JSONDict, payload["data"])
-                data_payload[name] = cast(JSONValue, [_model_to_dict(x) for x in _iter_model_rows(session, model_cls)])
+                data_payload[name] = cast(JSONValue, [_model_to_dict(x, nested_json=True, portable_paths=True) for x in _iter_model_rows(session, model_cls)])
 
         self._prepare_output_dir(file_path.parent)
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -18,6 +18,7 @@ class ExchangeManifest(TypedDict):
     exported_at: str
     exported_by: str | None
     files: list[ExchangeManifestFileEntry]
+    notes: NotRequired[dict[str, str]]
 
 
 class ExchangeImportErrorEntry(TypedDict):
