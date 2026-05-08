@@ -11,11 +11,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
+from app.application.dto.form100_v2_dto import Form100SignV2Request
 from app.application.services import reporting_service as reporting_service_module
 from app.application.services.analytics_service import AnalyticsService
+from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
 from app.infrastructure.db.models_sqlalchemy import Base
 from app.infrastructure.reporting.form100_pdf_report_v2 import export_form100_pdf_v2
+from tests.integration.test_form100_v2_service import make_create_request, seed_users
 
 
 class _FixedDateTime:
@@ -122,5 +125,34 @@ def test_analytics_pdf_is_byte_identical_for_same_request(
 
     service.export_analytics_pdf(request=request, file_path=pdf_a, actor_id=None)
     service.export_analytics_pdf(request=request, file_path=pdf_b, actor_id=None)
+
+    assert pdf_a.read_bytes() == pdf_b.read_bytes()
+
+def test_reporting_form100_pdf_is_byte_identical_for_same_card(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Два вызова ReportingService.export_form100_pdf на одной карточке дают одинаковые байты."""
+    session_factory = _make_session_factory(tmp_path / "reporting_form100_pdf_determinism.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    _admin_id, operator_id = seed_users(session_factory)
+    form100_service = Form100ServiceV2(session_factory=session_factory)
+    created = form100_service.create_card(make_create_request(), actor_id=operator_id)
+    form100_service.sign_card(
+        created.id,
+        Form100SignV2Request(signed_by="doctor"),
+        actor_id=operator_id,
+        expected_version=created.version,
+    )
+    reporting_service = ReportingService(
+        analytics_service=AnalyticsService(session_factory=session_factory),
+        form100_v2_service=form100_service,
+        session_factory=session_factory,
+    )
+    pdf_a = tmp_path / "reporting_form100_a.pdf"
+    pdf_b = tmp_path / "reporting_form100_b.pdf"
+
+    reporting_service.export_form100_pdf(card_id=created.id, file_path=pdf_a, actor_id=operator_id)
+    reporting_service.export_form100_pdf(card_id=created.id, file_path=pdf_b, actor_id=operator_id)
 
     assert pdf_a.read_bytes() == pdf_b.read_bytes()

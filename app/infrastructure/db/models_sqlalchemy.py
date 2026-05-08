@@ -552,8 +552,11 @@ class Form100V2(Base):
     updated_by = Column(String, nullable=False)
     status = Column(String, nullable=False, server_default=expression.literal("DRAFT"))
     version = Column(Integer, nullable=False, server_default=expression.literal("1"))
+    signed_version = Column(Integer)
     is_archived = Column(Boolean, nullable=False, server_default=expression.false())
+    # deprecated: source of truth is form100_artifact
     artifact_path = Column(Text)
+    # deprecated: source of truth is form100_artifact
     artifact_sha256 = Column(String)
 
     # Denormalized fields to speed up list/filter without JSON traversal.
@@ -573,6 +576,26 @@ class Form100V2(Base):
         Index("ix_form100_status", "status"),
         Index("ix_form100_main_full_name", "main_full_name"),
         Index("ix_form100_main_unit", "main_unit"),
+    )
+
+
+class Form100Artifact(Base):
+    __tablename__ = "form100_artifact"
+
+    id = Column(String(36), primary_key=True)
+    form100_id = Column(String(36), ForeignKey("form100.id", ondelete="CASCADE"), nullable=False)
+    version_at_generation = Column(Integer, nullable=False)
+    kind = Column(String, nullable=False)
+    path = Column(Text, nullable=False)
+    sha256 = Column(String, nullable=False)
+    generated_at = Column(DateTime, nullable=False, default=utc_now)
+    generated_by = Column(String)
+
+    __table_args__ = (
+        CheckConstraint("kind in ('pdf','json','zip')", name="ck_form100_artifact_kind"),
+        Index("ix_form100_artifact_form100_id", "form100_id"),
+        Index("ix_form100_artifact_generated_at", "generated_at"),
+        Index("ix_form100_artifact_form100_kind", "form100_id", "kind"),
     )
 
 

@@ -255,6 +255,34 @@ class Form100RepositoryV2:
         session.flush()
         return row
 
+    def record_artifact(
+        self,
+        session: Session,
+        *,
+        card_id: str,
+        version_at_generation: int,
+        kind: str,
+        path: str,
+        sha256: str,
+        generated_by: str,
+    ) -> models.Form100Artifact:
+        row = self.get_card(session, card_id)
+        if row is None:
+            raise ValueError("Карточка Form100 не найдена")
+        artifact = models.Form100Artifact(
+            id=str(uuid4()),
+            form100_id=card_id,
+            version_at_generation=version_at_generation,
+            kind=kind,
+            path=path,
+            sha256=sha256,
+            generated_at=_utc_now(),
+            generated_by=generated_by,
+        )
+        session.add(artifact)
+        session.flush()
+        return artifact
+
     def find_cards_for_export(
         self,
         session: Session,

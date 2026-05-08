@@ -141,6 +141,7 @@ class Form100ServiceV2:
                     id=str(item.id),
                     status=str(item.status),
                     version=_as_int(item.version),
+                    signed_version=cast(int | None, item.signed_version),
                     main_full_name=str(item.main_full_name),
                     birth_date=cast(date | None, item.birth_date),
                     main_unit=cast(str | None, item.main_unit),
@@ -304,6 +305,7 @@ class Form100ServiceV2:
                     "status": FORM100_V2_STATUS_SIGNED,
                     "signed_by": request.signed_by or actor_login,
                     "signed_at": _utc_now(),
+                    "signed_version": expected_version + 1,
                 },
                 data_payload=None,
                 expected_version=expected_version,
@@ -390,15 +392,20 @@ class Form100ServiceV2:
             data_row = self.repo.get_data(session, card_id)
             payload = self.repo.to_card_dict(row, data_row)
 
+        card_version = _as_int(payload.get("version"))
+        card_status = str(payload.get("status") or "")
+
         export_form100_pdf_v2(card=payload, file_path=file_path)
         artifact_hash = sha256_file(file_path)
         with self.session_factory() as session:
-            row = self.repo.set_pdf_artifact(
+            self.repo.record_artifact(
                 session,
                 card_id=card_id,
-                artifact_path=str(file_path),
-                artifact_sha256=artifact_hash,
-                actor_login=actor_login,
+                version_at_generation=card_version,
+                kind="pdf",
+                path=str(file_path),
+                sha256=artifact_hash,
+                generated_by=actor_login,
             )
             self._write_audit(
                 session=session,
@@ -406,14 +413,11 @@ class Form100ServiceV2:
                 actor_role=actor_role,
                 card_id=card_id,
                 action="pdf_generate",
-                status_from=str(row.status),
-                status_to=str(row.status),
-                expected_version=_as_int(row.version) - 1,
-                new_version=_as_int(row.version),
-                changes={
-                    "before": {},
-                    "after": {"artifact_path": str(file_path), "artifact_sha256": artifact_hash},
-                },
+                status_from=card_status,
+                status_to=card_status,
+                expected_version=None,
+                new_version=card_version,
+                changes={"before": {}, "after": {}},
             )
         return {"path": str(file_path), "card_id": card_id, "sha256": artifact_hash}
 

@@ -80,6 +80,7 @@ class Form100CardV2ListItemDto(BaseModel):
     id: str
     status: str
     version: int
+    signed_version: int | None = None
     main_full_name: str
     birth_date: date | None = None
     main_unit: str | None = None
@@ -99,6 +100,7 @@ class Form100CardV2Dto(BaseModel):
     updated_by: str
     status: str
     version: int
+    signed_version: int | None = None
     is_archived: bool
     artifact_path: str | None = None
     artifact_sha256: str | None = None

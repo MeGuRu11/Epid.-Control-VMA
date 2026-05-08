@@ -49,6 +49,7 @@ class Form100CardV2:
     main_unit: str | None
     main_id_tag: str | None
     main_diagnosis: str | None
+    signed_version: int | None = None
     birth_date: date | None = None
     signed_by: str | None = None
     signed_at: datetime | None = None

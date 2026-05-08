@@ -756,7 +756,10 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     # ── Нижний колонтитул ──────────────────────────────────────────────
     elements.append(Spacer(1, 8 * mm))
     card_id = str(card.get("id") or "")
-    version = str(card.get("version") or "")
+    if status == "SIGNED":
+        version = str(card.get("signed_version") or card.get("version") or "")
+    else:
+        version = "(черновик)"
     footer_text = f"Карточка ID: {card_id}   Версия: {version}"
     elements.append(Paragraph(footer_text, s_small))
 
