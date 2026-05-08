@@ -1119,9 +1119,18 @@ def _build_qss(settings: Settings) -> str:
         font-weight: 700;
     }}
     QWidget#contextBar {{
+        background: rgba(239, 230, 218, 0.88);
+        border: 1px solid {COL["border"]};
+        border-radius: 12px;
+    }}
+    QWidget#contextBar QLineEdit {{
         background: transparent;
         border: none;
-        border-radius: 12px;
+        border-bottom: 1px solid {COL["border_soft"]};
+        border-radius: 0;
+    }}
+    QWidget#contextBar QLineEdit:focus {{
+        border-bottom: 1px solid {COL["accent"]};
     }}
     QWidget#contextCompactRow {{
         background: transparent;
