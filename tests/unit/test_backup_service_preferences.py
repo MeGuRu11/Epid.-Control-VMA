@@ -226,8 +226,13 @@ def test_backup_dir_uses_configured_path(
 def test_backup_dir_falls_back_when_configured_path_is_invalid(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Путь с невалидными символами (на Linux) — или просто несуществующий внутри root.
-    prefs = UserPreferences(backup_dir="/proc/sys/kernel/invalid_backup_path_xyz")
+    # Создаём файл (не папку) и пытаемся использовать его как backup_dir —
+    # mkdir внутри файла упадёт с OSError на любой платформе.
+    blocker = tmp_path / "not_a_dir.db"
+    blocker.write_bytes(b"\x00")
+    invalid_path = str(blocker / "subdir")  # файл/subdir — невалидно везде
+
+    prefs = UserPreferences(backup_dir=invalid_path)
     service = _build_service(tmp_path, monkeypatch, prefs=prefs)
 
     # Откат к DATA_DIR/backups.
