@@ -252,7 +252,7 @@ def main() -> int:
 
 def _resolve_window_handle_screen(window: QMainWindow) -> QScreen | None:
     handle = window.windowHandle()
-    if handle is None:
+    if handle is None:  # pyright: ignore[reportUnnecessaryComparison]  # PySide6 stubs incorrect
         return None
     return handle.screen()
 
