@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import os
-import platform
 import subprocess  # noqa: S404 - использование контролируется (см. _open_path)
 import sys
 from pathlib import Path
@@ -442,8 +441,6 @@ class SettingsDialog(QDialog):
             "Файл настроек:",
             self._make_info_label(str(self._service._repo.file_path)),  # noqa: SLF001
         )
-        info_form.addRow("Платформа:", self._make_info_label(platform.platform()))
-        info_form.addRow("Python:", self._make_info_label(sys.version.split()[0]))
         layout.addLayout(info_form)
 
         actions_row = QHBoxLayout()
@@ -490,22 +487,7 @@ class SettingsDialog(QDialog):
             combo.setCurrentIndex(index)
 
     def _read_version(self) -> str:
-        try:
-            from importlib.metadata import PackageNotFoundError, version
-
-            return version("codex-emr-lab")
-        except (PackageNotFoundError, ImportError, ModuleNotFoundError):
-            pass
-        try:
-            changelog = Path(__file__).resolve().parents[3] / "CHANGELOG.md"
-            if changelog.exists():
-                for line in changelog.read_text(encoding="utf-8").splitlines():
-                    text = line.strip()
-                    if text.startswith("## "):
-                        return text.lstrip("# ").strip()
-        except OSError:
-            logger.exception("Failed to read CHANGELOG version")
-        return "—"
+        return "1.1.0"
 
     def _open_path(self, path: str) -> None:
         """Открыть путь во внешнем проводнике (Windows/macOS/Linux)."""

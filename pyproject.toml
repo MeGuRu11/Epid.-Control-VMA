@@ -7,7 +7,7 @@ include = ["app*"]
 
 [project]
 name = "codex-emr-lab"
-version = "0.1.0"
+version = "1.1.0"
 description = "Desktop EMR + microbiology app (PySide6 + SQLite)"
 requires-python = ">=3.11"
 dependencies = [

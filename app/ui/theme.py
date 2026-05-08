@@ -1119,8 +1119,8 @@ def _build_qss(settings: Settings) -> str:
         font-weight: 700;
     }}
     QWidget#contextBar {{
-        background: rgba(239, 230, 218, 0.88);
-        border: 1px solid {COL["border"]};
+        background: transparent;
+        border: none;
         border-radius: 12px;
     }}
     QWidget#contextCompactRow {{
