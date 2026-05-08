@@ -1691,4 +1691,111 @@ def _build_qss(settings: Settings) -> str:
         font-size: 12px;
         font-weight: 700;
     }}
+    QDialog#settingsDialog {{
+        background: {COL["bg"]};
+    }}
+    QDialog#settingsDialog QLabel#settingsHeader {{
+        color: {COL["text_primary"]};
+        font-size: 18px;
+        font-weight: 800;
+    }}
+    QDialog#settingsDialog QLabel#settingsSubtitle {{
+        color: {COL["text_muted"]};
+        font-size: 12px;
+    }}
+    QDialog#settingsDialog QLabel#settingsSectionTitle {{
+        color: {COL["text_primary"]};
+        font-size: 14px;
+        font-weight: 700;
+    }}
+    QDialog#settingsDialog QLabel#settingsSectionHint {{
+        color: {COL["text_muted"]};
+        font-size: 12px;
+    }}
+    QDialog#settingsDialog QLabel#settingsFieldLabel {{
+        color: {COL["text_primary"]};
+        font-size: 12px;
+        font-weight: 600;
+    }}
+    QDialog#settingsDialog QLabel#settingsInfoValue {{
+        color: {COL["text"]};
+        background: {COL["surface2"]};
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }}
+    QTabWidget#settingsTabs::pane {{
+        border: 1px solid {COL["border"]};
+        border-radius: 8px;
+        background: {COL["surface2"]};
+        top: -1px;
+    }}
+    QTabWidget#settingsTabs QTabBar::tab {{
+        background: {COL["surface"]};
+        color: {COL["text"]};
+        border: 1px solid {COL["border"]};
+        border-bottom: none;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        padding: 8px 14px;
+        margin-right: 4px;
+        font-weight: 700;
+    }}
+    QTabWidget#settingsTabs QTabBar::tab:selected {{
+        background: {COL["surface2"]};
+        color: {COL["text_primary"]};
+        border-color: {COL["accent_border"]};
+    }}
+    QTabWidget#settingsTabs QTabBar::tab:hover:!selected {{
+        background: {COL["menubar"]};
+    }}
+    QScrollArea#settingsTabScroll {{
+        background: transparent;
+        border: none;
+    }}
+    QLineEdit#settingsPathEdit {{
+        background: {COL["surface"]};
+        border: 1px solid {COL["border"]};
+        border-radius: 6px;
+        padding: 6px 8px;
+        color: {COL["text"]};
+    }}
+    QLineEdit#settingsPathEdit:focus {{
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QToolButton#settingsBrowseButton,
+    QToolButton#settingsOpenFolderButton {{
+        background: {COL["surface"]};
+        color: {COL["text"]};
+        border: 1px solid {COL["border"]};
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-weight: 600;
+    }}
+    QToolButton#settingsBrowseButton:hover,
+    QToolButton#settingsOpenFolderButton:hover {{
+        background: {COL["menubar"]};
+        border-color: {COL["accent_border"]};
+    }}
+    QToolButton#settingsBrowseButton:pressed,
+    QToolButton#settingsOpenFolderButton:pressed {{
+        background: {COL["accent_pressed"]};
+        color: {COL["text_primary"]};
+    }}
+    QPushButton#settingsMenuButton {{
+        background: transparent;
+        border: 1px solid transparent;
+        color: {COL["text"]};
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+    }}
+    QPushButton#settingsMenuButton:hover {{
+        background: {COL["menubar"]};
+        border-color: {COL["border"]};
+    }}
+    QPushButton#settingsMenuButton:pressed {{
+        background: {COL["accent2"]};
+    }}
     """

@@ -230,13 +230,23 @@ def main() -> int:
     seed_core_data(container)
     warn_missing_plot_dependencies()
 
+    # Регистрируем сервис настроек как источник дефолтных папок экспорта
+    # (используется в QFileDialog по всему приложению).
+    from app.ui.settings.export_paths import install_preferences_service
+
+    install_preferences_service(container.user_preferences_service)
+
     login_dialog = LoginDialog(auth_service=container.auth_service)
     if login_dialog.exec() != QDialog.DialogCode.Accepted or not login_dialog.session:
         return 0
 
     window = MainWindow(session=login_dialog.session, container=container)
-    window.show()
-    _schedule_initial_window_size(window, app)
+    prefs = container.user_preferences_service.current
+    if prefs.window_initial_state == "maximized":
+        window.showMaximized()
+    else:
+        window.show()
+    _schedule_initial_window_size(window, app, prefs=prefs)
     return app.exec()
 
 
@@ -274,11 +284,33 @@ def _compute_initial_window_size(available: QRect, minimum_size: QSize) -> tuple
     return max(0, width), max(0, height)
 
 
-def _apply_initial_window_size(window: QMainWindow, app: QApplication) -> None:
+def _apply_initial_window_size(
+    window: QMainWindow,
+    app: QApplication,
+    *,
+    prefs: object | None = None,
+) -> None:
+    from app.application.dto.user_preferences_dto import UserPreferences
+
     screen = _resolve_initial_screen(window, app)
     if not screen:
         return
     available = screen.availableGeometry()
+
+    # Восстанавливаем последнюю сохранённую геометрию, если включено в настройках.
+    if isinstance(prefs, UserPreferences) and prefs.window_initial_state != "maximized":
+        saved = prefs.last_window_geometry
+        if saved is not None and prefs.remember_window_geometry:
+            sx, sy, sw, sh = saved
+            min_size = window.minimumSizeHint()
+            sw = max(min_size.width(), min(available.width(), sw))
+            sh = max(min_size.height(), min(available.height(), sh))
+            # Удерживаем окно в пределах видимой области.
+            sx = max(available.x(), min(available.x() + available.width() - sw, sx))
+            sy = max(available.y(), min(available.y() + available.height() - sh, sy))
+            window.setGeometry(sx, sy, sw, sh)
+            return
+
     width, height = _compute_initial_window_size(available, window.minimumSizeHint())
     x = available.x() + max(0, (available.width() - width) // 2)
     y = available.y() + max(0, (available.height() - height) // 2)
@@ -286,14 +318,20 @@ def _apply_initial_window_size(window: QMainWindow, app: QApplication) -> None:
     window.setGeometry(x, y, width, height)
 
 
-def _schedule_initial_window_size(window: QMainWindow, app: QApplication, retries: int = 3) -> None:
+def _schedule_initial_window_size(
+    window: QMainWindow,
+    app: QApplication,
+    retries: int = 3,
+    *,
+    prefs: object | None = None,
+) -> None:
     def _apply_when_ready(remaining_retries: int) -> None:
         if not window.isVisible():
             return
         if _resolve_initial_screen(window, app, allow_fallback=False) is None and remaining_retries > 0:
             QTimer.singleShot(0, lambda: _apply_when_ready(remaining_retries - 1))
             return
-        _apply_initial_window_size(window, app)
+        _apply_initial_window_size(window, app, prefs=prefs)
 
     QTimer.singleShot(0, lambda: _apply_when_ready(retries))
 

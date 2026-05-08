@@ -375,7 +375,14 @@ class Form100ViewV2(QWidget):
             show_error(self, error_text(exc, "Не удалось архивировать карточку"))
 
     def _export_zip(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Экспорт Form100 ZIP", "form100_export.zip", "ZIP (*.zip)")
+        from app.ui.settings.export_paths import compose_save_path
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Экспорт Form100 ZIP",
+            compose_save_path("zip", "form100_export.zip"),
+            "ZIP (*.zip)",
+        )
         if not path:
             return
         try:
@@ -391,7 +398,11 @@ class Form100ViewV2(QWidget):
             show_error(self, error_text(exc, "Не удалось экспортировать ZIP"))
 
     def _import_zip(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Импорт Form100 ZIP", "", "ZIP (*.zip)")
+        from app.ui.settings.export_paths import get_open_dir
+
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Импорт Form100 ZIP", get_open_dir("zip"), "ZIP (*.zip)"
+        )
         if not path:
             return
         try:
@@ -420,13 +431,15 @@ class Form100ViewV2(QWidget):
             show_error(self, error_text(exc, "Не удалось импортировать ZIP"))
 
     def _export_pdf(self) -> None:
+        from app.ui.settings.export_paths import compose_save_path
+
         if self.editor.current_card is None:
             show_error(self, "Сначала выберите карточку")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Экспорт Form100 PDF",
-            f"form100_{self.editor.current_card.id}.pdf",
+            compose_save_path("pdf", f"form100_{self.editor.current_card.id}.pdf"),
             "PDF (*.pdf)",
         )
         if not path:

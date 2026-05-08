@@ -375,34 +375,64 @@ class PathPage(QWizardPage):
 
     def _browse(self) -> None:
         direction = self.wizard_ref._direction_page.direction.currentData()
+        from app.ui.settings.export_paths import compose_save_path, get_open_dir
+
         fmt = self.wizard_ref._direction_page.format.currentData()
 
         if direction == "export":
             filename = "export"
             if fmt == "excel":
-                path, _ = QFileDialog.getSaveFileName(self, "Экспорт Excel", f"{filename}.xlsx", "Excel (*.xlsx)")
+                path, _ = QFileDialog.getSaveFileName(
+                    self,
+                    "Экспорт Excel",
+                    compose_save_path("excel", f"{filename}.xlsx"),
+                    "Excel (*.xlsx)",
+                )
             elif fmt == "csv":
-                path, _ = QFileDialog.getSaveFileName(self, "Экспорт CSV", f"{filename}.csv", "CSV (*.csv)")
+                path, _ = QFileDialog.getSaveFileName(
+                    self,
+                    "Экспорт CSV",
+                    compose_save_path("excel", f"{filename}.csv"),
+                    "CSV (*.csv)",
+                )
             elif fmt == "pdf":
-                path, _ = QFileDialog.getSaveFileName(self, "Экспорт PDF", f"{filename}.pdf", "PDF (*.pdf)")
+                path, _ = QFileDialog.getSaveFileName(
+                    self,
+                    "Экспорт PDF",
+                    compose_save_path("pdf", f"{filename}.pdf"),
+                    "PDF (*.pdf)",
+                )
             elif fmt == "form100_zip":
                 path, _ = QFileDialog.getSaveFileName(
                     self,
                     "Экспорт Form100 ZIP",
-                    "form100_export.zip",
+                    compose_save_path("zip", "form100_export.zip"),
                     "ZIP (*.zip)",
                 )
             else:
-                path, _ = QFileDialog.getSaveFileName(self, "Экспорт ZIP", f"{filename}.zip", "ZIP (*.zip)")
+                path, _ = QFileDialog.getSaveFileName(
+                    self,
+                    "Экспорт ZIP",
+                    compose_save_path("zip", f"{filename}.zip"),
+                    "ZIP (*.zip)",
+                )
         else:
             if fmt == "excel":
-                path, _ = QFileDialog.getOpenFileName(self, "Импорт Excel", "", "Excel (*.xlsx)")
+                path, _ = QFileDialog.getOpenFileName(
+                    self, "Импорт Excel", get_open_dir("excel"), "Excel (*.xlsx)"
+                )
             elif fmt == "csv":
-                path, _ = QFileDialog.getOpenFileName(self, "Импорт CSV", "", "CSV (*.csv)")
+                path, _ = QFileDialog.getOpenFileName(
+                    self, "Импорт CSV", get_open_dir("excel"), "CSV (*.csv)"
+                )
             elif fmt == "form100_zip":
-                path, _ = QFileDialog.getOpenFileName(self, "Импорт Form100 ZIP", "", "ZIP (*.zip)")
+                path, _ = QFileDialog.getOpenFileName(
+                    self, "Импорт Form100 ZIP", get_open_dir("zip"), "ZIP (*.zip)"
+                )
             else:
-                path, _ = QFileDialog.getOpenFileName(self, "Импорт ZIP", "", "ZIP (*.zip)")
+                path, _ = QFileDialog.getOpenFileName(
+                    self, "Импорт ZIP", get_open_dir("zip"), "ZIP (*.zip)"
+                )
         if path:
             self.path_input.setText(path)
 

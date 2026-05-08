@@ -342,6 +342,8 @@ class Form100ListPanel(QDialog):
         self._open_wizard(card_item.id)
 
     def _export_selected_pdf(self) -> None:
+        from app.ui.settings.export_paths import compose_save_path
+
         card_item = self._selected_list_item()
         if card_item is None:
             return
@@ -349,7 +351,7 @@ class Form100ListPanel(QDialog):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Экспорт Form100 PDF",
-            f"form100_{safe_card_id}.pdf",
+            compose_save_path("pdf", f"form100_{safe_card_id}.pdf"),
             "PDF (*.pdf)",
         )
         if not path:

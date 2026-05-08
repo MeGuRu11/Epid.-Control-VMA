@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import os
 import shutil
 import sqlite3
@@ -9,7 +8,9 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from logging import getLogger
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,13 @@ from app.config import DATA_DIR, DB_FILE
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
+
+logger = getLogger(__name__)
+
+if TYPE_CHECKING:
+    from app.application.dto.user_preferences_dto import UserPreferences
+
+PreferencesProvider = Callable[[], "UserPreferences"]
 
 
 @dataclass(frozen=True)
@@ -32,13 +40,59 @@ class BackupService:
         audit_repo: AuditLogRepository,
         user_repo: UserRepository | None = None,
         session_factory: Callable[[], AbstractContextManager[Session]] | None = None,
+        preferences_provider: PreferencesProvider | None = None,
     ) -> None:
         self.audit_repo = audit_repo
         self.user_repo = user_repo or UserRepository()
         self.session_factory = session_factory or session_scope
-        self.backup_dir = DATA_DIR / "backups"
+        self._preferences_provider = preferences_provider
+        # backup_dir резолвится один раз при инициализации — смена каталога
+        # через настройки требует перезапуска (отмечено в UI значком ⟳).
+        self.backup_dir = self._resolve_backup_dir()
         self._prepare_artifacts_dir(self.backup_dir)
         self._meta_path = self.backup_dir / "last_backup.json"
+
+    # ------------------------------------------------------------------
+    # Preferences helpers
+    # ------------------------------------------------------------------
+
+    def _get_prefs(self) -> UserPreferences | None:
+        """Безопасно получить текущие настройки. None при ошибке провайдера."""
+        if self._preferences_provider is None:
+            return None
+        try:
+            return self._preferences_provider()
+        except Exception:  # noqa: BLE001
+            logger.exception("BackupService: preferences_provider raised an exception")
+            return None
+
+    def _resolve_backup_dir(self) -> Path:
+        """Определить каталог резервных копий из настроек или дефолт."""
+        prefs = self._get_prefs()
+        if prefs is not None and prefs.backup_dir:
+            candidate = Path(prefs.backup_dir)
+            try:
+                candidate.mkdir(parents=True, exist_ok=True)
+                return candidate
+            except OSError:
+                logger.warning(
+                    "BackupService: configured backup_dir is not accessible (%s);"
+                    " falling back to default.",
+                    candidate,
+                )
+        return DATA_DIR / "backups"
+
+    def _enforce_retention(self) -> None:
+        """Удалить лишние резервные копии согласно backup_retention_count."""
+        prefs = self._get_prefs()
+        if prefs is None:
+            return
+        keep = max(1, prefs.backup_retention_count)
+        all_backups = self.list_backups()  # отсортированы новые-первые
+        for old_path in all_backups[keep:]:
+            with suppress(OSError):
+                old_path.unlink()
+                logger.debug("BackupService: removed old backup %s (retention=%d)", old_path.name, keep)
 
     def _prepare_artifacts_dir(self, path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
@@ -86,7 +140,7 @@ class BackupService:
                 return None
             return BackupInfo(path=path, created_at=created_at, reason=reason)
         except (json.JSONDecodeError, KeyError, OSError, TypeError, ValueError) as exc:
-            logging.getLogger(__name__).warning("Failed to parse backup metadata: %s", exc)
+            logger.warning("Failed to parse backup metadata: %s", exc)
             return None
 
     def create_backup(self, *, actor_id: int, reason: str = "manual") -> Path:
@@ -100,10 +154,12 @@ class BackupService:
             self._create_sqlite_backup(DB_FILE, backup_path)
         except (OSError, sqlite3.Error) as exc:
             # Fallback for environments where sqlite backup API is unavailable.
-            logging.getLogger(__name__).warning("SQLite backup API failed, fallback to file copy: %s", exc)
+            logger.warning("SQLite backup API failed, fallback to file copy: %s", exc)
             shutil.copy2(DB_FILE, backup_path)
         self._write_meta(backup_path, reason)
         self._audit_event(actor_id, "backup_create", backup_path, reason)
+        # Подрезаем устаревшие копии согласно настройке retention.
+        self._enforce_retention()
         return backup_path
 
     def restore_backup(self, backup_path: Path, *, actor_id: int) -> None:
@@ -116,7 +172,7 @@ class BackupService:
 
             sa_engine.dispose()
         except (AttributeError, ImportError, RuntimeError) as exc:
-            logging.getLogger(__name__).warning("Failed to dispose SQLAlchemy engine before restore: %s", exc)
+            logger.warning("Failed to dispose SQLAlchemy engine before restore: %s", exc)
         # Safety copy of current DB before overwrite.
         if DB_FILE.exists():
             timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
@@ -127,11 +183,30 @@ class BackupService:
         self._audit_event(actor_id, "backup_restore", backup_path, "restore")
 
     def ensure_daily_backup(self) -> bool:
+        prefs = self._get_prefs()
+
+        # Если автоматические бэкапы выключены в настройках — ничего не делаем.
+        if prefs is not None and not prefs.auto_backup_enabled:
+            return False
+
+        # Режим "manual" — автоматика полностью отключена.
+        if prefs is not None and prefs.auto_backup_frequency == "manual":
+            return False
+
         last = self.get_last_backup()
         backup_user_id = self._resolve_system_actor_id()
         if backup_user_id is None:
-            logging.getLogger(__name__).warning("Automatic backup skipped: admin actor not found")
+            logger.warning("Automatic backup skipped: admin actor not found")
             return False
+
+        # Режим "startup_only" — создать только если бэкапов ещё нет ни одного.
+        if prefs is not None and prefs.auto_backup_frequency == "startup_only":
+            if last is not None:
+                return False
+            self.create_backup(actor_id=backup_user_id, reason="auto")
+            return True
+
+        # Режим "startup_daily" (дефолт) — создавать раз в сутки.
         if not last:
             self.create_backup(actor_id=backup_user_id, reason="auto")
             return True
@@ -179,6 +254,3 @@ class BackupService:
                 if str(user.role) == "admin":
                     return int(user.id)
         return None
-
-
-

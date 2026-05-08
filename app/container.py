@@ -22,6 +22,8 @@ from app.application.services.reporting_service import ReportingService
 from app.application.services.sanitary_service import SanitaryService
 from app.application.services.saved_filter_service import SavedFilterService
 from app.application.services.user_admin_service import UserAdminService
+from app.application.services.user_preferences_service import UserPreferencesService
+from app.config import DATA_DIR, settings
 from app.infrastructure.db.fts_manager import FtsManager
 from app.infrastructure.db.repositories.analytics_repo import AnalyticsRepository
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
@@ -33,6 +35,7 @@ from app.infrastructure.db.repositories.reference_repo import ReferenceRepositor
 from app.infrastructure.db.repositories.sanitary_repo import SanitaryRepository
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
+from app.infrastructure.preferences.preferences_repository import PreferencesRepository
 
 
 @dataclass
@@ -61,6 +64,7 @@ class Container:
     saved_filter_service: SavedFilterService
     reporting_service: ReportingService
     backup_service: BackupService
+    user_preferences_service: UserPreferencesService
 
 
 def build_container() -> Container:
@@ -142,7 +146,17 @@ def build_container() -> Container:
         reference_service=reference_service,
         session_factory=app_session_scope,
     )
-    backup_service = BackupService(audit_repo=audit_repo, user_repo=user_repo)
+    # Создаём UserPreferencesService раньше BackupService — чтобы передать
+    # lambda-провайдер настроек (backup_dir, enabled, retention_count).
+    user_preferences_service = UserPreferencesService(
+        repository=PreferencesRepository(DATA_DIR),
+        defaults_settings=settings,
+    )
+    backup_service = BackupService(
+        audit_repo=audit_repo,
+        user_repo=user_repo,
+        preferences_provider=lambda: user_preferences_service.current,
+    )
 
     return Container(
         user_repo=user_repo,
@@ -168,4 +182,5 @@ def build_container() -> Container:
         saved_filter_service=saved_filter_service,
         reporting_service=reporting_service,
         backup_service=backup_service,
+        user_preferences_service=user_preferences_service,
     )

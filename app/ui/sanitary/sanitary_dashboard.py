@@ -538,20 +538,18 @@ class SanitaryDashboard(QWidget):
         )
 
     def _apply_hero_layout(self) -> None:
+        from app.ui.widgets.responsive import HERO_BREAKPOINT_PX, responsive_direction
+
         spacing = max(0, self._hero_layout.spacing())
         margins = self._hero_layout.contentsMargins()
-        required_width = (
+        computed = (
             self._hero_card.minimumSizeHint().width()
             + self._utility_card.minimumSizeHint().width()
             + spacing
             + margins.left()
             + margins.right()
         )
-        direction = (
-            QBoxLayout.Direction.LeftToRight
-            if self.width() >= required_width
-            else QBoxLayout.Direction.TopToBottom
-        )
+        direction = responsive_direction(self.width(), computed, HERO_BREAKPOINT_PX)
         self._hero_layout.setDirection(direction)
         if direction == QBoxLayout.Direction.LeftToRight:
             self._hero_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -563,9 +561,11 @@ class SanitaryDashboard(QWidget):
         self._utility_card.updateGeometry()
 
     def _update_filter_layout(self) -> None:
+        from app.ui.widgets.responsive import FILTER_BREAKPOINT_PX, responsive_direction
+
         spacing = max(0, self._filter_layout.spacing())
         margins = self._filter_layout.contentsMargins()
-        required_width = (
+        computed = (
             self._filter_date_group.minimumSizeHint().width()
             + self._filter_query_group.minimumSizeHint().width()
             + spacing
@@ -574,11 +574,7 @@ class SanitaryDashboard(QWidget):
             + 80
         )
         available_width = max(0, self._scroll_area.viewport().width() - 32)
-        direction = (
-            QBoxLayout.Direction.LeftToRight
-            if available_width >= required_width
-            else QBoxLayout.Direction.TopToBottom
-        )
+        direction = responsive_direction(available_width, computed, FILTER_BREAKPOINT_PX)
         self._filter_layout.setDirection(direction)
         self._filter_date_group.updateGeometry()
         self._filter_query_group.updateGeometry()

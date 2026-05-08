@@ -1030,7 +1030,14 @@ class AnalyticsSearchView(QWidget):
     def _export_xlsx(self) -> None:
         from PySide6.QtWidgets import QFileDialog
 
-        path, _ = QFileDialog.getSaveFileName(self, "Экспорт XLSX", "analytics_report.xlsx", "Excel (*.xlsx)")
+        from app.ui.settings.export_paths import compose_save_path
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Экспорт XLSX",
+            compose_save_path("excel", "analytics_report.xlsx"),
+            "Excel (*.xlsx)",
+        )
         if not path:
             return
         req = self._build_request()
@@ -1058,7 +1065,14 @@ class AnalyticsSearchView(QWidget):
     def _export_pdf(self) -> None:
         from PySide6.QtWidgets import QFileDialog
 
-        path, _ = QFileDialog.getSaveFileName(self, "Экспорт PDF", "analytics_report.pdf", "PDF (*.pdf)")
+        from app.ui.settings.export_paths import compose_save_path
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Экспорт PDF",
+            compose_save_path("pdf", "analytics_report.pdf"),
+            "PDF (*.pdf)",
+        )
         if not path:
             return
         req = self._build_request()
@@ -1170,23 +1184,30 @@ class AnalyticsSearchView(QWidget):
             show_error(self, "Исходный файл отчета не найден на диске.")
             return
 
+        from app.ui.settings.export_paths import compose_save_path
+
         # Prepare default filename based on original artifact name
         default_filename = source_path.name
 
-        # Determine file filter based on extension
+        # Determine file filter and target dir based on extension
         ext = source_path.suffix.lower()
         if ext == ".xlsx":
             filter_str = "Excel (*.xlsx)"
+            initial = compose_save_path("excel", default_filename)
         elif ext == ".csv":
             filter_str = "CSV (*.csv)"
+            initial = compose_save_path("excel", default_filename)
         elif ext == ".pdf":
             filter_str = "PDF (*.pdf)"
+            initial = compose_save_path("pdf", default_filename)
         elif ext == ".zip":
             filter_str = "ZIP (*.zip)"
+            initial = compose_save_path("zip", default_filename)
         else:
             filter_str = "All Files (*)"
+            initial = default_filename
 
-        dest_path, _ = QFileDialog.getSaveFileName(self, "Сохранить отчет как", default_filename, filter_str)
+        dest_path, _ = QFileDialog.getSaveFileName(self, "Сохранить отчет как", initial, filter_str)
         if not dest_path:
             return
 

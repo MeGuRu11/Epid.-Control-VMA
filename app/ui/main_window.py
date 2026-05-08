@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from datetime import UTC, datetime
 
 from PySide6.QtCore import QEvent, Qt, QTimer
@@ -53,6 +54,7 @@ class NavMenuBar(QMenuBar):
         super().__init__(parent)
         self._highlight_action: QAction | None = None
         self._logout_btn: QPushButton | None = None
+        self._settings_btn: QPushButton | None = None
         self._logout_corner: QWidget | None = None
 
     def set_highlight_action(self, action: QAction | None) -> None:
@@ -61,19 +63,37 @@ class NavMenuBar(QMenuBar):
 
     def set_logout_button(self, button: QPushButton | None) -> None:
         self._logout_btn = button
+        self._rebuild_corner()
+
+    def set_settings_button(self, button: QPushButton | None) -> None:
+        """Кнопка «Настройки» располагается слева от «Выйти» в правом углу."""
+        self._settings_btn = button
+        self._rebuild_corner()
+
+    def _rebuild_corner(self) -> None:
         if self._logout_corner is not None:
             self._logout_corner.hide()
             self._logout_corner.deleteLater()
             self._logout_corner = None
-        if button is None:
+        if self._logout_btn is None and self._settings_btn is None:
             return
-        button.setFixedSize(max(86, button.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT)
         corner = QWidget(self)
         corner.setObjectName("logoutCorner")
         layout = QHBoxLayout(corner)
         layout.setContentsMargins(0, 0, self._LOGOUT_RIGHT_MARGIN, 0)
-        layout.setSpacing(0)
-        layout.addWidget(button, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        layout.setSpacing(6)
+        if self._settings_btn is not None:
+            self._settings_btn.setFixedHeight(self._LOGOUT_BUTTON_HEIGHT)
+            layout.addWidget(
+                self._settings_btn, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
+        if self._logout_btn is not None:
+            self._logout_btn.setFixedSize(
+                max(86, self._logout_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT
+            )
+            layout.addWidget(
+                self._logout_btn, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
         self._logout_corner = corner
         self.setCornerWidget(corner, Qt.Corner.TopRightCorner)
         self._position_logout_button()
@@ -83,21 +103,38 @@ class NavMenuBar(QMenuBar):
         self._position_logout_button()
 
     def _position_logout_button(self) -> None:
-        if not self._logout_btn or not self._logout_corner:
+        if not self._logout_corner:
             return
-        self._logout_btn.setFixedSize(max(86, self._logout_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT)
-        self._logout_corner.setFixedSize(
-            self._logout_btn.width() + self._LOGOUT_RESERVED_PADDING,
-            self._LOGOUT_BUTTON_HEIGHT,
-        )
+        if self._logout_btn:
+            self._logout_btn.setFixedSize(
+                max(86, self._logout_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT
+            )
+        if self._settings_btn:
+            self._settings_btn.setFixedSize(
+                max(96, self._settings_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT
+            )
+        total_width = self._LOGOUT_RESERVED_PADDING
+        if self._settings_btn:
+            total_width += self._settings_btn.width() + 6
+        if self._logout_btn:
+            total_width += self._logout_btn.width()
+        self._logout_corner.setFixedSize(total_width, self._LOGOUT_BUTTON_HEIGHT)
 
     def trailing_reserved_width(self) -> int:
-        if not self._logout_btn:
+        if not self._logout_btn and not self._settings_btn:
             return 0
-        btn_width = self._logout_btn.width()
-        if btn_width <= 0:
-            btn_width = max(80, self._logout_btn.sizeHint().width())
-        return btn_width + self._LOGOUT_RESERVED_PADDING
+        total = self._LOGOUT_RESERVED_PADDING
+        if self._settings_btn:
+            settings_width = self._settings_btn.width()
+            if settings_width <= 0:
+                settings_width = max(96, self._settings_btn.sizeHint().width())
+            total += settings_width + 6
+        if self._logout_btn:
+            logout_width = self._logout_btn.width()
+            if logout_width <= 0:
+                logout_width = max(86, self._logout_btn.sizeHint().width())
+            total += logout_width
+        return total
 
     def paintEvent(self, event) -> None:  # noqa: D401, N802
         super().paintEvent(event)
@@ -166,7 +203,23 @@ class MainWindow(QMainWindow):
         self._home_dirty = False
         self._menubar: NavMenuBar | None = None
         self._admin_action: QAction | None = None
-        self._session_timeout_seconds = max(60, int(settings.session_timeout_minutes) * 60)
+        self._settings_button: QPushButton | None = None
+        # Live-параметры берём из сервиса настроек, если он есть в контейнере;
+        # иначе откатываемся на статические Settings (упрощает тестовые моки).
+        prefs_service = getattr(self.container, "user_preferences_service", None)
+        if prefs_service is not None:
+            prefs = prefs_service.current
+            self._session_timeout_seconds = max(60, int(prefs.session_timeout_minutes) * 60)
+            if not prefs.auto_logout_enabled:
+                self._session_timeout_seconds = 100 * 365 * 24 * 3600
+            self._unsubscribe_preferences = prefs_service.subscribe(self._on_preferences_changed)
+        else:
+            self._session_timeout_seconds = max(60, int(settings.session_timeout_minutes) * 60)
+
+            def _noop_unsubscribe() -> None:
+                return
+
+            self._unsubscribe_preferences = _noop_unsubscribe
         self._last_activity_at = datetime.now(UTC)
         self._idle_timeout_in_progress = False
         self._idle_timer = QTimer(self)
@@ -244,6 +297,13 @@ class MainWindow(QMainWindow):
         logout_btn.setToolTip("Выйти из системы")
         logout_btn.clicked.connect(self._logout)
         menubar.set_logout_button(logout_btn)
+
+        settings_btn = QPushButton("⚙ Настройки")
+        settings_btn.setObjectName("settingsMenuButton")
+        settings_btn.setToolTip("Настройки приложения")
+        settings_btn.clicked.connect(self._open_settings)
+        menubar.set_settings_button(settings_btn)
+        self._settings_button = settings_btn
 
         self._nav_actions = {
             self._home_view: home_action,
@@ -468,6 +528,35 @@ class MainWindow(QMainWindow):
             return
         self._relogin_or_close(show_timeout_message=False)
 
+    def _open_settings(self) -> None:
+        prefs_service = getattr(self.container, "user_preferences_service", None)
+        if prefs_service is None:
+            return
+        from app.ui.settings import SettingsDialog
+
+        dlg = SettingsDialog(
+            preferences_service=prefs_service,
+            parent=self,
+        )
+        dlg.exec()
+
+    def _on_preferences_changed(self, prefs: object) -> None:
+        from app.application.dto.user_preferences_dto import UserPreferences
+
+        if not isinstance(prefs, UserPreferences):
+            return
+        # Сразу применяем live-настройки — таймаут сессии и плотность UI.
+        self._session_timeout_seconds = max(60, int(prefs.session_timeout_minutes) * 60)
+        if not prefs.auto_logout_enabled:
+            # 100 лет — практически «никогда» в рамках одного запуска.
+            self._session_timeout_seconds = 100 * 365 * 24 * 3600
+        self.setProperty("uiDensity", prefs.ui_density)
+        style = self.style()
+        if style is not None:
+            style.unpolish(self)
+            style.polish(self)
+        self.update()
+
     def _relogin_or_close(self, *, show_timeout_message: bool) -> None:
         self._clear_context()
         self.hide()
@@ -674,6 +763,21 @@ class MainWindow(QMainWindow):
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.removeEventFilter(self)
+        # Сохраняем геометрию для восстановления при следующем запуске.
+        # Не блокируем выход из приложения, если не удалось сохранить.
+        with contextlib.suppress(RuntimeError, OSError, AttributeError):
+            prefs_service = getattr(self.container, "user_preferences_service", None)
+            if (
+                prefs_service is not None
+                and not self.isMaximized()
+                and not self.isFullScreen()
+            ):
+                geom = self.geometry()
+                prefs_service.update_window_geometry(
+                    (geom.x(), geom.y(), geom.width(), geom.height())
+                )
+        with contextlib.suppress(RuntimeError, AttributeError):
+            self._unsubscribe_preferences()
         super().closeEvent(event)
 
     def _position_context_bar(self) -> None:
