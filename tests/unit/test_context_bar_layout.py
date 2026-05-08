@@ -40,14 +40,14 @@ def _expand_context_bar(qapp, parent: QWidget, bar: ContextBar) -> None:
 
 
 def _label_by_text(bar: ContextBar, text: str) -> QLabel:
-    for label in bar.findChildren(QLabel):
+    for label in cast(list[QLabel], bar.findChildren(QLabel)):
         if label.text() == text:
             return label
     raise AssertionError(f"Label not found: {text}")
 
 
 def _button_by_text(bar: ContextBar, text: str) -> QPushButton:
-    for button in bar.findChildren(QPushButton):
+    for button in cast(list[QPushButton], bar.findChildren(QPushButton)):
         if button.text() == text:
             return button
     raise AssertionError(f"Button not found: {text}")

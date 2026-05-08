@@ -90,7 +90,7 @@ def _assert_intervention_row_widgets(form: EmzForm, row: int) -> None:
 
 
 def _intervention_add_button(form: EmzForm) -> QPushButton:
-    for button in form.interv_box.findChildren(QPushButton):
+    for button in cast(list[QPushButton], form.interv_box.findChildren(QPushButton)):
         if button.text() == "Добавить строку":
             return button
     raise AssertionError("Кнопка добавления строки вмешательства не найдена")
