@@ -1783,19 +1783,18 @@ def _build_qss(settings: Settings) -> str:
         background: {COL["accent_pressed"]};
         color: {COL["text_primary"]};
     }}
-    QPushButton#settingsMenuButton {{
+    QToolButton#settingsMenuButton {{
         background: transparent;
         border: 1px solid transparent;
-        color: {COL["text"]};
-        padding: 4px 12px;
         border-radius: 6px;
-        font-weight: 600;
+        padding: 4px;
     }}
-    QPushButton#settingsMenuButton:hover {{
+    QToolButton#settingsMenuButton:hover {{
         background: {COL["menubar"]};
         border-color: {COL["border"]};
     }}
-    QPushButton#settingsMenuButton:pressed {{
+    QToolButton#settingsMenuButton:pressed {{
         background: {COL["accent2"]};
+        border-color: {COL["accent_border"]};
     }}
     """

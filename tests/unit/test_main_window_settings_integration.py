@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QToolButton, QWidget
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.services.user_preferences_service import UserPreferencesService
@@ -125,19 +125,10 @@ def test_main_window_renders_settings_button_in_navmenu(
     )
     window = _make_minimal_main_window(monkeypatch, qapp, container)
 
-    settings_btn = window.findChild(QPushButton, "settingsMenuButton")
-    assert settings_btn is not None, "Кнопка «Настройки» должна быть отрисована в menubar"
-    assert settings_btn.text().endswith("Настройки")
-
-    # Подменяем _open_settings, чтобы проверить, что кнопка к нему подключена,
-    # без необходимости показывать модальный диалог настроек.
-    calls: list[bool] = []
-    monkeypatch.setattr(window, "_open_settings", lambda: calls.append(True))
-    settings_btn.clicked.disconnect()
-    settings_btn.clicked.connect(window._open_settings)
-    settings_btn.click()
-    qapp.processEvents()
-    assert calls == [True]
+    settings_btn = window.findChild(QToolButton, "settingsMenuButton")
+    assert settings_btn is not None, "Кнопка настроек должна быть QToolButton в menubar"
+    assert settings_btn.toolTip() == "Настройки приложения"
+    assert not settings_btn.icon().isNull()
 
     window.close()
     window.deleteLater()

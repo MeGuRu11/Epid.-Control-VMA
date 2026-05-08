@@ -3,8 +3,8 @@ from __future__ import annotations
 import contextlib
 from datetime import UTC, datetime
 
-from PySide6.QtCore import QEvent, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QPainter, QPen
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer
+from PySide6.QtGui import QAction, QActionGroup, QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QStackedLayout,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -54,7 +55,7 @@ class NavMenuBar(QMenuBar):
         super().__init__(parent)
         self._highlight_action: QAction | None = None
         self._logout_btn: QPushButton | None = None
-        self._settings_btn: QPushButton | None = None
+        self._settings_btn: QToolButton | None = None
         self._logout_corner: QWidget | None = None
 
     def set_highlight_action(self, action: QAction | None) -> None:
@@ -65,7 +66,7 @@ class NavMenuBar(QMenuBar):
         self._logout_btn = button
         self._rebuild_corner()
 
-    def set_settings_button(self, button: QPushButton | None) -> None:
+    def set_settings_button(self, button: QToolButton | None) -> None:
         """Кнопка «Настройки» располагается слева от «Выйти» в правом углу."""
         self._settings_btn = button
         self._rebuild_corner()
@@ -109,10 +110,7 @@ class NavMenuBar(QMenuBar):
             self._logout_btn.setFixedSize(
                 max(86, self._logout_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT
             )
-        if self._settings_btn:
-            self._settings_btn.setFixedSize(
-                max(96, self._settings_btn.sizeHint().width()), self._LOGOUT_BUTTON_HEIGHT
-            )
+        # settings_btn — QToolButton с фиксированным размером, не трогаем.
         total_width = self._LOGOUT_RESERVED_PADDING
         if self._settings_btn:
             total_width += self._settings_btn.width() + 6
@@ -125,10 +123,7 @@ class NavMenuBar(QMenuBar):
             return 0
         total = self._LOGOUT_RESERVED_PADDING
         if self._settings_btn:
-            settings_width = self._settings_btn.width()
-            if settings_width <= 0:
-                settings_width = max(96, self._settings_btn.sizeHint().width())
-            total += settings_width + 6
+            total += self._settings_btn.width() + 6
         if self._logout_btn:
             logout_width = self._logout_btn.width()
             if logout_width <= 0:
@@ -203,7 +198,7 @@ class MainWindow(QMainWindow):
         self._home_dirty = False
         self._menubar: NavMenuBar | None = None
         self._admin_action: QAction | None = None
-        self._settings_button: QPushButton | None = None
+        self._settings_button: QToolButton | None = None
         # Live-параметры берём из сервиса настроек, если он есть в контейнере;
         # иначе откатываемся на статические Settings (упрощает тестовые моки).
         prefs_service = getattr(self.container, "user_preferences_service", None)
@@ -298,9 +293,14 @@ class MainWindow(QMainWindow):
         logout_btn.clicked.connect(self._logout)
         menubar.set_logout_button(logout_btn)
 
-        settings_btn = QPushButton("⚙ Настройки")
+        from app.ui.widgets.settings_icon import make_settings_icon
+
+        settings_btn = QToolButton()
         settings_btn.setObjectName("settingsMenuButton")
         settings_btn.setToolTip("Настройки приложения")
+        settings_btn.setIcon(make_settings_icon(QColor("#3A3A38"), size=18))
+        settings_btn.setIconSize(QSize(18, 18))
+        settings_btn.setFixedSize(QSize(28, 28))
         settings_btn.clicked.connect(self._open_settings)
         menubar.set_settings_button(settings_btn)
         self._settings_button = settings_btn
