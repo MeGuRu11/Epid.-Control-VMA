@@ -171,7 +171,7 @@ class Form100ListPanel(QDialog):
         # -- Заголовок --------------------------------------------------------
         hdr = QHBoxLayout()
         hdr.setSpacing(12)
-        title = QLabel("Карточки Формы 100")
+        title = QLabel("Первичные медицинские карточки (ф. 100)")
         title.setObjectName("pageTitle")
         hdr.addWidget(title)
         hdr.addStretch(1)

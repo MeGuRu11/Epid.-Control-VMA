@@ -328,7 +328,7 @@ class Form100Wizard(QDialog):
         sp_lay.setContentsMargins(16, 28, 16, 20)
         sp_lay.setSpacing(0)
 
-        hdr_title = QLabel("Форма 100")
+        hdr_title = QLabel("Первичные медицинские карточки (ф. 100)")
         hdr_title.setObjectName("wizardStepTitle")
         hdr_title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         sp_lay.addWidget(hdr_title)

@@ -94,7 +94,7 @@ class Form100ViewV2(QWidget):
         root.setContentsMargins(16, 16, 16, 16)
         root.setSpacing(10)
 
-        title = QLabel("Форма 100")
+        title = QLabel("Первичные медицинские карточки (ф. 100)")
         title.setObjectName("pageTitle")
         root.addWidget(title)
 
