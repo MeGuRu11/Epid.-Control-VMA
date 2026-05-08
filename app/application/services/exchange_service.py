@@ -46,6 +46,7 @@ from app.domain.types import JSONDict, JSONValue
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
+from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 from app.infrastructure.security.sha256 import sha256_file
 
@@ -1066,7 +1067,7 @@ class ExchangeService:
                 ]
             )
         )
-        doc.build([table])
+        build_invariant_pdf(doc, [table])
         self._record_package("export", "pdf", file_path, actor_id)
         return {"path": str(file_path), "count": count}
 

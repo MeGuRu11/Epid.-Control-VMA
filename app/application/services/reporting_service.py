@@ -26,6 +26,7 @@ from app.config import DATA_DIR
 from app.domain.constants import MilitaryCategory
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.session import session_scope
+from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 from app.infrastructure.security.sha256 import sha256_file
 
@@ -307,7 +308,7 @@ class ReportingService:
                 ]
             )
         )
-        doc.build([summary_table, filter_table, data_table])
+        build_invariant_pdf(doc, [summary_table, filter_table, data_table])
 
         artifact_path = self._save_artifact_copy(report_type="analytics", source_path=file_path)
         report_hash = sha256_file(artifact_path)

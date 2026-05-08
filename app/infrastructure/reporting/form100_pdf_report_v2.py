@@ -35,6 +35,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 
 _PILImageModule: Any
@@ -760,4 +761,4 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     elements.append(Paragraph(footer_text, s_small))
 
     # ── Сборка ─────────────────────────────────────────────────────────
-    doc.build(elements)
+    build_invariant_pdf(doc, elements)
