@@ -85,3 +85,6 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 addopts = "-ra -p no:tmpdir --timeout=60"
 cache_dir = "pytest_cache_local"
+filterwarnings = [
+    "ignore::pytest.PytestConfigWarning:.*asyncio_mode.*",
+]
