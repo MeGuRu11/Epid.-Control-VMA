@@ -4,9 +4,27 @@ from weakref import WeakKeyDictionary
 
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, Qt, QTimer
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QWidget
+from PySide6.QtWidgets import (
+    QGraphicsDropShadowEffect,
+    QHBoxLayout,
+    QLabel,
+    QWidget,
+)
 
 _VALID_LEVELS = {"success", "warning", "error", "info"}
+
+
+def _effects_supported() -> bool:
+    """Вернуть True если платформа поддерживает тени и анимацию opacity.
+
+    На Windows с offscreen-платформой QGraphicsDropShadowEffect и
+    QPropertyAnimation(windowOpacity) вызывают access violation, потому что
+    offscreen backend не инициализирует нативные оконные дескрипторы.
+    Проверяем через переменную окружения — самый надёжный способ.
+    """
+    import os
+
+    return os.environ.get("QT_QPA_PLATFORM", "").lower() not in ("offscreen", "minimal")
 
 
 class Toast(QWidget):
@@ -29,11 +47,12 @@ class Toast(QWidget):
         self.setProperty("toastLevel", self._toast_level)
         self.setMaximumWidth(460)
 
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(28)
-        shadow.setOffset(0, 8)
-        shadow.setColor(QColor(54, 46, 38, 55))
-        self.setGraphicsEffect(shadow)
+        if _effects_supported():
+            shadow = QGraphicsDropShadowEffect(self)
+            shadow.setBlurRadius(28)
+            shadow.setOffset(0, 8)
+            shadow.setColor(QColor(54, 46, 38, 55))
+            self.setGraphicsEffect(shadow)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
@@ -42,22 +61,29 @@ class Toast(QWidget):
         label.setMaximumWidth(420)
         layout.addWidget(label)
 
-        self._anim_in = QPropertyAnimation(self, b"windowOpacity", self)
-        self._anim_in.setDuration(180)
-        self._anim_in.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._anim_in.setStartValue(0.0)
-        self._anim_in.setEndValue(1.0)
+        if _effects_supported():
+            self._anim_in = QPropertyAnimation(self, b"windowOpacity", self)
+            self._anim_in.setDuration(180)
+            self._anim_in.setEasingCurve(QEasingCurve.Type.OutCubic)
+            self._anim_in.setStartValue(0.0)
+            self._anim_in.setEndValue(1.0)
 
-        self._anim_out = QPropertyAnimation(self, b"windowOpacity", self)
-        self._anim_out.setDuration(180)
-        self._anim_out.setEasingCurve(QEasingCurve.Type.InCubic)
-        self._anim_out.setStartValue(1.0)
-        self._anim_out.setEndValue(0.0)
-        self._anim_out.finished.connect(self._finalize_close)
+            self._anim_out = QPropertyAnimation(self, b"windowOpacity", self)
+            self._anim_out.setDuration(180)
+            self._anim_out.setEasingCurve(QEasingCurve.Type.InCubic)
+            self._anim_out.setStartValue(1.0)
+            self._anim_out.setEndValue(0.0)
+            self._anim_out.finished.connect(self._finalize_close)
 
-        self.setWindowOpacity(0.0)
-        self._anim_in.start()
-        QTimer.singleShot(timeout_ms, self._anim_out.start)
+            self.setWindowOpacity(0.0)
+            self._anim_in.start()
+            QTimer.singleShot(timeout_ms, self._anim_out.start)
+        else:
+            # Headless / offscreen: без анимации, авто-закрытие через таймер.
+            self._anim_in = None  # type: ignore[assignment]
+            self._anim_out = None  # type: ignore[assignment]
+            self.setWindowOpacity(1.0)
+            QTimer.singleShot(timeout_ms, self._finalize_close)
 
     def matches(self, *, text: str, level: str) -> bool:
         normalized_level = level if level in _VALID_LEVELS else "info"
