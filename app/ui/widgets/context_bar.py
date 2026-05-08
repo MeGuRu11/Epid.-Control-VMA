@@ -142,6 +142,7 @@ class ContextBar(QWidget):
         self._controls_row.setSpacing(12)
 
         self._patient_controls_group = QWidget()
+        self._patient_controls_group.setAutoFillBackground(False)
         patient_block = QVBoxLayout(self._patient_controls_group)
         patient_block.setContentsMargins(0, 0, 0, 0)
         patient_block.setSpacing(4)
@@ -171,6 +172,7 @@ class ContextBar(QWidget):
         self._controls_row.addWidget(self._patient_controls_group)
 
         self._case_controls_group = QWidget()
+        self._case_controls_group.setAutoFillBackground(False)
         case_block = QVBoxLayout(self._case_controls_group)
         case_block.setContentsMargins(0, 0, 0, 0)
         case_block.setSpacing(4)
