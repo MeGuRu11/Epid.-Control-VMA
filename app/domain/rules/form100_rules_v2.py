@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import cast
 
 from app.domain.models.form100_v2 import (
@@ -14,6 +15,23 @@ from app.domain.types import JSONDict, JSONValue
 _TISSUE_TYPES: set[str] = {"мягкие ткани", "кости", "сосуды", "полостные раны", "ожоги"}
 
 
+@dataclass(frozen=True)
+class FieldError:
+    field: str
+    message: str
+    hint: str | None = None
+
+
+class Form100SigningError(ValueError):
+    def __init__(self, errors: list[FieldError]) -> None:
+        self.errors = errors
+        error_lines = [f"- {error.field}: {error.message}" for error in errors]
+        message = "Карточку Формы 100 нельзя подписать. Заполните обязательные поля:"
+        if error_lines:
+            message = f"{message}\n" + "\n".join(error_lines)
+        super().__init__(message)
+
+
 def validate_status_transition_v2(from_status: str, to_status: str) -> None:
     if from_status == to_status:
         return
@@ -23,19 +41,23 @@ def validate_status_transition_v2(from_status: str, to_status: str) -> None:
 
 
 def validate_card_payload_v2(payload: Mapping[str, object]) -> None:
-    main = _as_dict(payload.get("main"))
-    bottom = _as_dict(payload.get("bottom"))
-    medical_help = _as_dict(payload.get("medical_help"))
-    flags = _as_dict(payload.get("flags"))
+    validate_for_draft(payload)
 
-    main_full_name = str(main.get("main_full_name") or payload.get("main_full_name") or "").strip()
+
+def validate_for_draft(payload: Mapping[str, object]) -> None:
+    main = _section(payload, "main")
+    bottom = _section(payload, "bottom")
+    medical_help = _section(payload, "medical_help")
+    flags = _section(payload, "flags")
+
+    main_full_name = _first_text(main.get("main_full_name"), payload.get("main_full_name"))
     if not main_full_name:
         raise ValueError("Поле ФИО обязательно для формы 100")
-    main_unit = str(main.get("main_unit") or payload.get("main_unit") or "").strip()
+    main_unit = _first_text(main.get("main_unit"), payload.get("main_unit"))
     if not main_unit:
         raise ValueError("Поле подразделения обязательно для формы 100")
 
-    diagnosis = str(bottom.get("main_diagnosis") or payload.get("main_diagnosis") or "").strip()
+    diagnosis = _first_text(bottom.get("main_diagnosis"), payload.get("main_diagnosis"))
     if not diagnosis:
         raise ValueError("Поле диагноза обязательно для формы 100")
 
@@ -56,11 +78,13 @@ def validate_card_payload_v2(payload: Mapping[str, object]) -> None:
         if key in flags and not isinstance(flags.get(key), bool):
             raise ValueError(f"Флаг {key} должен быть логическим значением")
 
-    bodymap_gender = str(payload.get("bodymap_gender") or "M").upper()
+    bodymap_gender = str(payload.get("bodymap_gender") or _section_value(payload, "bodymap_gender") or "M").upper()
     if bodymap_gender not in {"M", "F"}:
         raise ValueError("bodymap_gender должен быть 'M' или 'F'")
 
     tissue_types_raw = payload.get("bodymap_tissue_types")
+    if tissue_types_raw is None:
+        tissue_types_raw = _section_value(payload, "bodymap_tissue_types")
     if tissue_types_raw is None:
         tissue_types: list[JSONValue] = []
     elif isinstance(tissue_types_raw, list):
@@ -72,6 +96,8 @@ def validate_card_payload_v2(payload: Mapping[str, object]) -> None:
             raise ValueError(f"Недопустимый тип ткани: {item}")
 
     annotations_raw = payload.get("bodymap_annotations")
+    if annotations_raw is None:
+        annotations_raw = _section_value(payload, "bodymap_annotations")
     if annotations_raw is None:
         annotations: list[JSONValue] = []
     elif isinstance(annotations_raw, list):
@@ -92,6 +118,40 @@ def validate_card_payload_v2(payload: Mapping[str, object]) -> None:
             raise ValueError("Координаты аннотаций должны быть числами")
         if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
             raise ValueError("Координаты аннотаций должны быть в диапазоне 0..1")
+
+
+def validate_for_signing(payload: Mapping[str, object], *, signed_by: str | None) -> None:
+    main = _section(payload, "main")
+    stub = _section(payload, "stub")
+    lesion = _section(payload, "lesion")
+    san_loss = _section(payload, "san_loss")
+    medical_help = _section(payload, "medical_help")
+    bottom = _section(payload, "bottom")
+    flags = _section(payload, "flags")
+
+    errors: list[FieldError] = []
+    _require_text(errors, "main.main_full_name", "Укажите ФИО.", main.get("main_full_name"), payload.get("main_full_name"))
+    _require_text(errors, "main.main_rank", "Укажите воинское звание.", main.get("main_rank"), stub.get("stub_rank"))
+    _require_text(errors, "main.main_unit", "Укажите воинскую часть.", main.get("main_unit"), payload.get("main_unit"), stub.get("stub_unit"))
+    _require_text(errors, "main.birth_date", "Укажите дату рождения.", payload.get("birth_date"), main.get("birth_date"))
+    _require_text(errors, "bottom.main_diagnosis", "Укажите основной диагноз.", bottom.get("main_diagnosis"), payload.get("main_diagnosis"), stub.get("stub_diagnosis"))
+    _require_text(errors, "main.main_injury_date", "Укажите дату ранения или заболевания.", main.get("main_injury_date"), stub.get("stub_injury_date"))
+    _require_text(errors, "main.main_injury_time", "Укажите время ранения или заболевания.", main.get("main_injury_time"), stub.get("stub_injury_time"))
+    _require_text(errors, "signed_by", "Укажите подписанта.", signed_by)
+
+    if not (_section_has_selected_value(lesion, exclude={"isolation_required"}) or _section_has_selected_value(san_loss)):
+        errors.append(FieldError("lesion_or_san_loss", "Укажите вид поражения или вид санитарных потерь."))
+
+    if _truthy(flags.get("flag_emergency")):
+        _require_text(errors, "bottom.evacuation_priority", "Укажите очередность эвакуации.", bottom.get("evacuation_priority"))
+
+    if _truthy(medical_help.get("mp_antibiotic")):
+        _require_text(errors, "medical_help.mp_antibiotic_dose", "Укажите дозу/детали антибиотика.", medical_help.get("mp_antibiotic_dose"))
+    if _truthy(medical_help.get("mp_analgesic")):
+        _require_text(errors, "medical_help.mp_analgesic_dose", "Укажите дозу/детали обезболивающего.", medical_help.get("mp_analgesic_dose"))
+
+    if errors:
+        raise Form100SigningError(errors)
 
 
 def build_changed_paths_v2(before: Mapping[str, object], after: Mapping[str, object]) -> dict[str, dict[str, object]]:
@@ -138,10 +198,50 @@ def _validate_bool_with_details(
         raise ValueError(f"{label}: укажите дозу/детали")
 
 
+def _section(payload: Mapping[str, object], name: str) -> JSONDict:
+    data = _as_dict(payload.get("data"))
+    if name in data:
+        return _as_dict(data.get(name))
+    return _as_dict(payload.get(name))
+
+
+def _section_value(payload: Mapping[str, object], name: str) -> object:
+    data = _as_dict(payload.get("data"))
+    if name in data:
+        return data.get(name)
+    return payload.get(name)
+
+
 def _as_dict(value: object) -> JSONDict:
     if isinstance(value, Mapping):
         return {str(key): cast(JSONValue, item) for key, item in value.items()}
     return {}
+
+
+def _first_text(*values: object) -> str:
+    for value in values:
+        text = "" if value is None else str(value).strip()
+        if text:
+            return text
+    return ""
+
+
+def _require_text(errors: list[FieldError], field: str, message: str, *values: object) -> None:
+    if not _first_text(*values):
+        errors.append(FieldError(field, message))
+
+
+def _truthy(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on", "y", "да"}
+
+
+def _section_has_selected_value(section: Mapping[str, object], *, exclude: set[str] | None = None) -> bool:
+    excluded = exclude or set()
+    return any(key not in excluded and _truthy(value) for key, value in section.items())
 
 
 def _as_float(value: object) -> float | None:

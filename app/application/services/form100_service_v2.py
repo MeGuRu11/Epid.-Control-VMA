@@ -38,6 +38,7 @@ from app.domain.models.form100_v2 import FORM100_V2_STATUS_DRAFT, FORM100_V2_STA
 from app.domain.rules.form100_rules_v2 import (
     build_changed_paths_v2,
     validate_card_payload_v2,
+    validate_for_signing,
     validate_status_transition_v2,
 )
 from app.domain.types import JSONDict, JSONValue
@@ -298,12 +299,14 @@ class Form100ServiceV2:
 
             before_data_row = self.repo.get_data(session, card_id)
             before_payload = self.repo.to_card_dict(row, before_data_row)
+            signer = request.signed_by or actor_login
+            validate_for_signing(cast(dict[str, object], before_payload), signed_by=signer)
             row, data_row = self.repo.update_card(
                 session,
                 card_id=card_id,
                 payload={
                     "status": FORM100_V2_STATUS_SIGNED,
-                    "signed_by": request.signed_by or actor_login,
+                    "signed_by": signer,
                     "signed_at": _utc_now(),
                     "signed_version": expected_version + 1,
                 },

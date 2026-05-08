@@ -6212,3 +6212,40 @@ P0.7 — структурированные ошибки импорта CSV (BOM
 ### Следующий шаг
 
 P0.6 — `validate_for_signing` rules in Form100 domain, UI shows all errors at once.
+---
+
+## P0.6 — validate_for_signing rules in Form100 domain
+
+**Коммит:** pending in this change set
+**Дата:** 2026-05-08
+
+### Что сделано
+
+- В `form100_rules_v2` разделены `validate_for_draft` и `validate_for_signing`; прежний `validate_card_payload_v2` сохранён как backward-compatible wrapper для draft/create/update/import.
+- Добавлены `FieldError` и `Form100SigningError`, которые аккумулируют все ошибки подписи и форматируют их единым списком.
+- `Form100ServiceV2.sign_card` валидирует карточку только перед новой операцией signing и не трогает экспорт/старые подписанные карточки.
+- Минимальный набор для подписи проверяет ФИО, звание, воинскую часть, дату рождения, диагноз, дату/время ранения или заболевания, подписанта, вид поражения/санитарных потерь, evacuation priority при `flag_emergency=True`, дозы для отмеченных антибиотика/обезболивания.
+- `form100_view.py` и `form100_wizard.py` явно показывают `Form100SigningError` как список всех ошибок в одном диалоге.
+- Обновлены sign-fixtures существующих тестов, чтобы успешные сценарии подписывали заполненную карточку.
+
+### Изменённые файлы
+
+- `app/domain/rules/form100_rules_v2.py`
+- `app/application/services/form100_service_v2.py`
+- `app/ui/form100_v2/form100_view.py`
+- `app/ui/form100_v2/form100_wizard.py`
+- `tests/integration/test_form100_signing_validation.py`
+- `tests/integration/test_form100_v2_service.py`
+- `tests/integration/test_full_system.py`
+- `docs/progress_report.md`
+
+### Проверки
+
+- `ruff check app tests` — pass
+- `python -m mypy app tests` — pass, `328 source files`
+- `python -m pytest -q` — `602 passed`
+- `python -m compileall -q app tests scripts` — pass
+
+### Следующий шаг
+
+P0.8 — audit_log events for all exchange exports and imports.
