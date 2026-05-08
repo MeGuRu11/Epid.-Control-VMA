@@ -530,7 +530,7 @@ class SettingsDialog(QDialog):
         # может вернуть False).
         try:
             if sys.platform.startswith("win"):
-                os.startfile(str(target))  # type: ignore[attr-defined]  # noqa: S606
+                os.startfile(str(target))  # noqa: S606
             elif sys.platform == "darwin":
                 subprocess.run(["open", str(target)], check=False)  # noqa: S603, S607
             else:
