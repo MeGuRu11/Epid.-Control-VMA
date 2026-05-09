@@ -36,6 +36,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from app.domain.services.bodymap_geometry import denormalize_for_drawing, denormalize_for_pil
 from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 
@@ -251,9 +252,13 @@ def _build_bodymap_image_flowable(
         silhouette = _normalize_silhouette(str(ann.get("silhouette") or "male_front"))
         x_norm = _clamp01(_to_float(ann.get("x"), 0.5))
         y_norm = _clamp01(_to_float(ann.get("y"), 0.5))
-        panel_offset = panel_width if silhouette.endswith("back") else 0.0
-        x = panel_offset + x_norm * panel_width
-        y = y_norm * canvas_height
+        x, y = denormalize_for_pil(
+            x_norm,
+            y_norm,
+            panel_width_px=panel_width,
+            canvas_height_px=canvas_height,
+            is_back=silhouette.endswith("back"),
+        )
         _draw_annotation_marker(
             draw,
             annotation_type=ann_type,
@@ -341,13 +346,15 @@ def _render_bodymap_drawing(
     for ann in annotations:
         sil = str(ann.get("silhouette", "male_front"))
         atype = str(ann.get("annotation_type", "WOUND_X"))
-        x_norm = float(ann.get("x", 0.5))
-        y_norm = float(ann.get("y", 0.5))
-
-        cx_base = mid / 2 if "back" not in sil else mid + mid / 2
-        body_w_half = 45
-        ax = cx_base + (x_norm - 0.5) * body_w_half * 2
-        ay = body_top - 6 - y_norm * (body_h - 12)
+        x_norm = _clamp01(_to_float(ann.get("x"), 0.5))
+        y_norm = _clamp01(_to_float(ann.get("y"), 0.5))
+        ax, ay = denormalize_for_drawing(
+            x_norm,
+            y_norm,
+            panel_width_pt=mid,
+            total_height_pt=height_pt,
+            is_back="back" in sil,
+        )
 
         if "WOUND" in atype:
             sc = colors.Color(0.9, 0.15, 0.15)

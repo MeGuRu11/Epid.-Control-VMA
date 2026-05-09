@@ -22,6 +22,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.domain.services.bodymap_geometry import (
+    SLOT_EFFECTIVE_H,
+    SLOT_EFFECTIVE_W,
+    SLOT_PAD_LEFT,
+    SLOT_PAD_TOP,
+)
 from app.ui.form100_v2.bodymap_assets import (
     SILHOUETTE_ORDER,
     load_bodymap_template_pixmap,
@@ -125,10 +131,10 @@ class _BodyCanvas(QWidget):
     def _body_hit_rect(self, sil: str) -> QRectF:
         r = self._sil_rect(sil)
         return QRectF(
-            r.x() + r.width() * 0.06,
-            r.y() + r.height() * 0.03,
-            r.width() * 0.88,
-            r.height() * 0.94,
+            r.x() + r.width() * SLOT_PAD_LEFT,
+            r.y() + r.height() * SLOT_PAD_TOP,
+            r.width() * SLOT_EFFECTIVE_W,
+            r.height() * SLOT_EFFECTIVE_H,
         )
 
     def _template_rect(self, sil: str) -> QRectF:
