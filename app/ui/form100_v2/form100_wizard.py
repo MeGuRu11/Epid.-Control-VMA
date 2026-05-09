@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from datetime import date
 from typing import Any
 
 from PySide6.QtCore import Qt
@@ -213,7 +214,20 @@ def _build_wizard_payload(data: Form100DataV2Dto) -> tuple[dict[str, str], list[
     return payload, markers
 
 
-def _build_structured_data(payload: Mapping[str, str], markers: list[dict[str, Any]]) -> Form100DataV2Dto:
+
+
+def _birth_date_from_payload(payload: Mapping[str, Any]) -> date | None:
+    value = payload.get("birth_date_iso")
+    if value is None or value == "":
+        return None
+    if isinstance(value, date):
+        return value
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
+
+def _build_structured_data(payload: Mapping[str, Any], markers: list[dict[str, Any]]) -> Form100DataV2Dto:
     stub: dict[str, Any] = {
         key: value
         for key, value in payload.items()
@@ -420,6 +434,8 @@ class Form100Wizard(QDialog):
         # Загружаем данные если карточка существует
         if card is not None:
             wizard_payload, markers = _build_wizard_payload(card.data)
+            if card.birth_date is not None:
+                wizard_payload["birth_date_iso"] = card.birth_date.isoformat()
         else:
             wizard_payload = {}
             markers = []
@@ -599,8 +615,8 @@ class Form100Wizard(QDialog):
 
     # -- Сбор данных ----------------------------------------------------------
 
-    def _collect_all(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
-        payload: dict[str, str] = {}
+    def _collect_all(self) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        payload: dict[str, Any] = {}
         markers: list[dict[str, Any]] = []
         for step in self._steps:
             p, m = step.collect()
@@ -625,12 +641,14 @@ class Form100Wizard(QDialog):
             return
         self.accept()
 
-    def _do_save(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> Form100CardV2Dto:
+    def _do_save(self, payload: dict[str, Any], markers: list[dict[str, Any]]) -> Form100CardV2Dto:
         data = _build_structured_data(payload, markers)
-        main_full_name = payload.get("main_full_name") or payload.get("stub_full_name") or ""
-        main_unit = payload.get("main_unit") or payload.get("stub_unit") or ""
-        main_id_tag = payload.get("main_id_tag") or payload.get("stub_id_tag") or None
-        main_diagnosis = payload.get("main_diagnosis") or payload.get("stub_diagnosis") or ""
+        main_full_name = str(payload.get("main_full_name") or payload.get("stub_full_name") or "")
+        main_unit = str(payload.get("main_unit") or payload.get("stub_unit") or "")
+        main_id_tag_value = payload.get("main_id_tag") or payload.get("stub_id_tag") or None
+        main_id_tag = str(main_id_tag_value) if main_id_tag_value is not None else None
+        main_diagnosis = str(payload.get("main_diagnosis") or payload.get("stub_diagnosis") or "")
+        birth_date = _birth_date_from_payload(payload)
 
         if self._card is None:
             request = Form100CreateV2Request(
@@ -639,6 +657,7 @@ class Form100Wizard(QDialog):
                 main_unit=main_unit,
                 main_id_tag=main_id_tag,
                 main_diagnosis=main_diagnosis,
+                birth_date=birth_date,
                 data=data,
             )
             saved = self._form100_service.create_card(request, actor_id=self._session.user_id)
@@ -652,6 +671,7 @@ class Form100Wizard(QDialog):
             main_unit=main_unit,
             main_id_tag=main_id_tag,
             main_diagnosis=main_diagnosis,
+            birth_date=birth_date,
             data=data,
         )
         saved = self._form100_service.update_card(

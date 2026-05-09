@@ -1,6 +1,7 @@
 """WizardStep1 — Идентификация + Корешок."""
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from PySide6.QtCore import QDate, QTime
@@ -66,7 +67,13 @@ class StepIdentification(QWidget):
         self.main_full_name.setPlaceholderText("фамилия, имя, отчество")
         self.main_id_tag = QLineEdit()
         self.main_id_tag.setPlaceholderText("удостоверение / жетон №")
-
+        self.birth_date = QDateEdit()
+        self.birth_date.setDisplayFormat("dd.MM.yyyy")
+        self.birth_date.setCalendarPopup(True)
+        self.birth_date.setSpecialValueText("Не указана")
+        self.birth_date.setMinimumDate(QDate(1900, 1, 1))
+        self.birth_date.setMaximumDate(QDate.currentDate())
+        self.birth_date.setDate(self.birth_date.minimumDate())
         injury_row = QHBoxLayout()
         injury_row.setContentsMargins(0, 0, 0, 0)
         injury_row.setSpacing(6)
@@ -86,6 +93,7 @@ class StepIdentification(QWidget):
         ident_lay.addRow("В/часть:", self.main_unit)
         ident_lay.addRow("ФИО:", self.main_full_name)
         ident_lay.addRow("Жетон №:", self.main_id_tag)
+        ident_lay.addRow("Дата рождения:", self.birth_date)
         ident_lay.addRow("Ранен / заболел:", injury_row)
 
         ident_scroll = QScrollArea()
@@ -94,14 +102,28 @@ class StepIdentification(QWidget):
         ident_scroll.setWidget(ident_box)
         layout.addWidget(ident_scroll, 1)
 
-    def set_values(self, payload: dict[str, str], markers: list[dict[str, Any]]) -> None:  # noqa: ARG002
+    def set_values(self, payload: dict[str, Any], markers: list[dict[str, Any]]) -> None:  # noqa: ARG002
         self._stub.set_values(payload)
         self.main_issued_place.setText(str(payload.get("main_issued_place") or ""))
         self.main_rank.setText(str(payload.get("main_rank") or ""))
         self.main_unit.setText(str(payload.get("main_unit") or ""))
         self.main_full_name.setText(str(payload.get("main_full_name") or ""))
         self.main_id_tag.setText(str(payload.get("main_id_tag") or ""))
-
+        birth_date_value = payload.get("birth_date_iso") or payload.get("birth_date")
+        if birth_date_value:
+            try:
+                parsed_birth_date = (
+                    birth_date_value
+                    if isinstance(birth_date_value, date)
+                    else date.fromisoformat(str(birth_date_value))
+                )
+                self.birth_date.setDate(
+                    QDate(parsed_birth_date.year, parsed_birth_date.month, parsed_birth_date.day)
+                )
+            except ValueError:
+                self.birth_date.setDate(self.birth_date.minimumDate())
+        else:
+            self.birth_date.setDate(self.birth_date.minimumDate())
         for time_edit, key in (
             (self.main_issued_time, "main_issued_time"),
             (self.main_injury_time, "main_injury_time"),
@@ -118,13 +140,21 @@ class StepIdentification(QWidget):
             d = QDate.fromString(val, "dd.MM.yyyy")
             date_edit.setDate(d if d.isValid() else QDate.currentDate())
 
-    def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
-        out = self._stub.collect()
+    def _get_birth_date(self) -> date | None:
+        qdate = self.birth_date.date()
+        if qdate == self.birth_date.minimumDate():
+            return None
+        return date(qdate.year(), qdate.month(), qdate.day())
+
+    def collect(self) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        out: dict[str, Any] = self._stub.collect()
         out["main_issued_place"] = self.main_issued_place.text().strip()
         out["main_rank"] = self.main_rank.text().strip()
         out["main_unit"] = self.main_unit.text().strip()
         out["main_full_name"] = self.main_full_name.text().strip()
         out["main_id_tag"] = self.main_id_tag.text().strip()
+        birth_date = self._get_birth_date()
+        out["birth_date_iso"] = birth_date.isoformat() if birth_date else None
         out["main_issued_time"] = self.main_issued_time.time().toString("HH:mm")
         out["main_issued_date"] = self.main_issued_date.date().toString("dd.MM.yyyy")
         out["main_injury_time"] = self.main_injury_time.time().toString("HH:mm")
@@ -141,6 +171,7 @@ class StepIdentification(QWidget):
             self.main_unit,
             self.main_full_name,
             self.main_id_tag,
+            self.birth_date,
             self.main_injury_time,
             self.main_injury_date,
         ):

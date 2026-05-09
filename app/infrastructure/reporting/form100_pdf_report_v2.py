@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -104,6 +105,19 @@ def _g(d: dict[str, Any], key: str, default: str = "") -> str:
 def _is_truthy(value: object) -> bool:
     return str(value).lower() in {"1", "true", "yes", "on"}
 
+
+
+
+def _format_birth_date(value: object) -> str:
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, date):
+        return value.strftime("%d.%m.%Y")
+    text = str(value).strip()
+    try:
+        return date.fromisoformat(text).strftime("%d.%m.%Y")
+    except ValueError:
+        return text or "—"
 
 def _checked_items(d: dict[str, Any], labels: dict[str, str]) -> list[str]:
     return [label for key, label in labels.items() if _is_truthy(d.get(key, ""))]
@@ -477,7 +491,8 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     rank = _g(main, "main_rank") or _g(stub, "stub_rank")
     unit = _g(main, "main_unit") or _g(stub, "stub_unit") or _g(card, "main_unit")
     tag = _g(main, "main_id_tag") or _g(stub, "stub_id_tag") or _g(card, "main_id_tag")
-    birth = str(card.get("birth_date") or "")
+    # TODO: заменить на formatters.format_date() после P1.1.
+    birth = _format_birth_date(card.get("birth_date"))
     issued_place = _g(main, "main_issued_place") or _g(bottom, "issued_by")
 
     ident_rows = [
