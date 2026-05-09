@@ -1,3 +1,28 @@
+# Сессия 2026-05-09 - Form100 fixes D/E
+
+## Текущее состояние
+
+- HEAD: `239fd6f fix: align Form100 PDF bodymap markers to match UI coordinate geometry`.
+- Form100 C уже был подтянут из remote: `1d84e95` + progress commit `0254e1f`.
+- Form100 D закрыт коммитом `b056aae`: поле `birth_date` добавлено в `StepIdentification`, сохраняется через `Form100CreateV2Request`/`Form100UpdateV2Request`, загружается из существующей карточки, PDF показывает дату рождения как `ДД.ММ.ГГГГ`.
+- Form100 E закрыт коммитом `239fd6f`: добавлен `app/domain/services/bodymap_geometry.py`, UI использует общие константы, PDF PIL path и ReportLab Drawing fallback используют `denormalize_for_*`.
+
+## Проверки
+
+- `ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`334 source files`).
+- `python -m pytest -q --tb=no` - pass (`617 passed`).
+- `python -m compileall -q app tests scripts` - pass.
+- `python -m pytest tests/integration/test_form100_wizard_birth_date.py -v` - pass (`6 passed`).
+- `python -m pytest tests/unit/test_bodymap_geometry.py -v` - pass (`5 passed`).
+- `python -m pytest tests/integration/test_form100_pdf_bodymap_alignment.py -v` - pass (`2 passed`).
+
+## Открытые проблемы / блокеры
+
+- Блокеров по Form100 D/E нет.
+- Видимый GUI smoke не выполнялся; покрытие выполнено через offscreen Qt tests и PDF geometry tests.
+
+---
 # Сессия 2026-05-06 - добавлен исход в форму ЭМЗ
 
 ## Что сделано
