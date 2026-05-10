@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -29,6 +28,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Image as PlatypusImage,
+    KeepTogether,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -36,7 +36,14 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from app.application.reporting.formatters import (
+    format_annotation_type,
+    format_date,
+    format_datetime,
+    format_silhouette_short,
+)
 from app.domain.services.bodymap_geometry import denormalize_for_drawing, denormalize_for_pil
+from app.domain.services.bodymap_zones import coordinates_to_zone
 from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 
@@ -107,18 +114,19 @@ def _is_truthy(value: object) -> bool:
     return str(value).lower() in {"1", "true", "yes", "on"}
 
 
+def _fmt_optional(value: object) -> str:
+    """None -> 'не указано'; иначе str(value)."""
+    if value is None:
+        return "не указано"
+    return str(value)
 
 
-def _format_birth_date(value: object) -> str:
-    if value is None or value == "":
-        return "—"
-    if isinstance(value, date):
-        return value.strftime("%d.%m.%Y")
-    text = str(value).strip()
-    try:
-        return date.fromisoformat(text).strftime("%d.%m.%Y")
-    except ValueError:
-        return text or "—"
+def _fmt_bool_field(value: object) -> str:
+    """True/1 -> 'Да'; False/0 -> 'Нет'; None -> 'не указано'."""
+    if value is None:
+        return "не указано"
+    return "Да" if _is_truthy(value) else "Нет"
+
 
 def _checked_items(d: dict[str, Any], labels: dict[str, str]) -> list[str]:
     return [label for key, label in labels.items() if _is_truthy(d.get(key, ""))]
@@ -144,6 +152,27 @@ def _to_float(value: object, default: float = 0.5) -> float:
         return float(str(value))
     except (TypeError, ValueError):
         return default
+
+
+def _to_optional_float(value: object) -> float | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    try:
+        return float(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _body_side(x: float | None) -> str:
+    if x is None:
+        return "—"
+    if x < 0.35:
+        return "Левая"
+    if x > 0.65:
+        return "Правая"
+    return "По центру"
 
 
 def _clamp01(value: float) -> float:
@@ -429,6 +458,10 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
         "F100Cell", parent=styles["Normal"], fontName=font,
         fontSize=9, leading=11,
     )
+    s_unset = ParagraphStyle(
+        "F100Unset", parent=s_cell, fontName=font,
+        fontSize=9, leading=11, textColor=colors.HexColor("#888780"),
+    )
     s_cell_bold = ParagraphStyle(
         "F100CellBold", parent=s_cell, fontName=font,
         fontSize=9, leading=11,
@@ -445,8 +478,9 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     def P(text: str, style: ParagraphStyle = s_cell) -> Paragraph:  # noqa: N802
         return Paragraph(str(text or "—"), style)
 
-    def _field_row(label: str, value: str) -> list[Paragraph]:
-        return [P(f"<b>{label}</b>", s_cell_bold), P(value or "—")]
+    def _field_row(label: str, value: object, style: ParagraphStyle = s_cell) -> list[Paragraph]:
+        value_text = "—" if value is None or value == "" else str(value)
+        return [P(f"<b>{label}</b>", s_cell_bold), P(value_text, style)]
 
     # ── Построение документа ───────────────────────────────────────────
     elements: list[Any] = []
@@ -498,8 +532,7 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     rank = _g(main, "main_rank") or _g(stub, "stub_rank")
     unit = _g(main, "main_unit") or _g(stub, "stub_unit") or _g(card, "main_unit")
     tag = _g(main, "main_id_tag") or _g(stub, "stub_id_tag") or _g(card, "main_id_tag")
-    # TODO: заменить на formatters.format_date() после P1.1.
-    birth = _format_birth_date(card.get("birth_date"))
+    birth = format_date(card.get("birth_date"))
     issued_place = _g(main, "main_issued_place") or _g(bottom, "issued_by")
 
     ident_rows = [
@@ -529,6 +562,32 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
     elements.append(t)
+
+    emr_context_raw = card.get("emr_context") or {}
+    emr_context = emr_context_raw if isinstance(emr_context_raw, dict) else {}
+    if emr_context:
+        emr_rows: list[list[Paragraph]] = []
+        if emr_context.get("hospital_case_no"):
+            emr_rows.append(_field_row("Номер ЭМЗ", emr_context["hospital_case_no"]))
+        if emr_context.get("department_name"):
+            emr_rows.append(_field_row("Отделение", emr_context["department_name"]))
+        if emr_context.get("admission_date"):
+            emr_rows.append(_field_row("Дата поступления", format_datetime(emr_context["admission_date"])))
+        if emr_context.get("injury_date"):
+            emr_rows.append(_field_row("Дата травмы", format_datetime(emr_context["injury_date"])))
+        if emr_rows:
+            elements.append(Paragraph("Связанная госпитализация", s_section))
+            emr_table = Table(emr_rows, colWidths=cols)
+            emr_table.setStyle(TableStyle([
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.Color(0.8, 0.8, 0.8)),
+                ("BACKGROUND", (0, 0), (0, -1), colors.Color(0.94, 0.96, 0.98)),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ]))
+            elements.append(emr_table)
 
     # ── 2. Обстоятельства ──────────────────────────────────────────────
     elements.append(Paragraph("2. Дата/время ранения (заболевания)", s_section))
@@ -583,45 +642,51 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     elements.append(t)
 
     # ── 4. Схема тела ──────────────────────────────────────────────────
-    elements.append(Paragraph("4. Схема тела (локализация повреждений)", s_section))
+    heading_4_element = Paragraph("4. Схема тела (локализация повреждений)", s_section)
 
     bodymap_flowable = _build_bodymap_image_flowable(
         annotations=annotations,
         max_width_pt=page_w,
         max_height_pt=page_w * 0.62,
     )
-    if bodymap_flowable is not None:
-        elements.append(bodymap_flowable)
-    else:
+    if bodymap_flowable is None:
         # Fallback path: if template image is unavailable, keep vector rendering.
-        bm_drawing = _render_bodymap_drawing(
+        bodymap_flowable = _render_bodymap_drawing(
             annotations,
             tissue_types,
             width_pt=page_w,
             height_pt=page_w * 300 / 440,
         )
-        elements.append(bm_drawing)
+    elements.append(KeepTogether([heading_4_element, bodymap_flowable]))
     elements.append(Spacer(1, 2 * mm))
 
     # Таблица аннотаций
     if annotations:
-        ann_header = [P("<b>№</b>"), P("<b>Тип</b>"), P("<b>Сторона</b>"), P("<b>Координаты</b>"), P("<b>Заметка</b>")]
+        ann_header = [
+            P("<b>№</b>"),
+            P("<b>Тип</b>"),
+            P("<b>Проекция</b>"),
+            P("<b>Сторона тела</b>"),
+            P("<b>Локализация</b>"),
+            P("<b>Заметка</b>"),
+        ]
         ann_rows = [ann_header]
         for idx, ann in enumerate(annotations, 1):
-            atype = str(ann.get("annotation_type", ""))
-            sil = str(ann.get("silhouette", ""))
-            ax = _to_float(ann.get("x"), 0.0)
-            ay = _to_float(ann.get("y"), 0.0)
+            x_val = _to_optional_float(ann.get("x"))
+            y_val = _to_optional_float(ann.get("y"))
+            sil = str(ann.get("silhouette") or "")
+            location = coordinates_to_zone(x_val, y_val, sil) if x_val is not None and y_val is not None else "—"
             note = str(ann.get("note", ""))
             ann_rows.append([
                 P(str(idx)),
-                P(_ANNOTATION_LABELS.get(atype, atype)),
-                P(_SILHOUETTE_LABELS.get(sil, sil)),
-                P(f"X={ax:.2f}, Y={ay:.2f}", s_small),
+                P(format_annotation_type(ann.get("annotation_type"))),
+                P(format_silhouette_short(sil)),
+                P(_body_side(x_val)),
+                P(location, s_small),
                 P(note or "—"),
             ])
 
-        ann_cols = [page_w * 0.06, page_w * 0.22, page_w * 0.2, page_w * 0.22, page_w * 0.3]
+        ann_cols = [page_w * 0.06, page_w * 0.16, page_w * 0.15, page_w * 0.17, page_w * 0.22, page_w * 0.24]
         t = Table(ann_rows, colWidths=ann_cols)
         t.setStyle(TableStyle([
             ("GRID", (0, 0), (-1, -1), 0.4, colors.Color(0.8, 0.8, 0.8)),
@@ -634,7 +699,6 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
         elements.append(t)
     else:
         elements.append(P("Метки на схеме тела отсутствуют.", s_small))
-
     # ── 5. Медицинская помощь ──────────────────────────────────────────
     elements.append(Paragraph("5. Медицинская помощь", s_section))
 
@@ -658,14 +722,19 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     ]
 
     for label, check_key, dose_key, fallback_key in mp_items:
-        done = "Да" if check_key and _is_truthy(mp.get(check_key)) else ("—" if check_key else "—")
+        if check_key:
+            raw_done = mp.get(check_key)
+            done_style = s_unset if raw_done is None else s_cell
+            done_cell = P(_fmt_bool_field(raw_done), done_style)
+        else:
+            done_cell = P("—")
+
         dose = _g(mp, dose_key) if dose_key else "—"
         if not dose and fallback_key:
             dose = _g(mp, fallback_key)
         if not check_key:
-            done = "—" if not dose or dose == "—" else "Да"
-        mp_rows.append([P(label), P(done), P(dose)])
-
+            done_cell = P("—" if not dose or dose == "—" else "Да")
+        mp_rows.append([P(label), done_cell, P(dose or "—")])
     # Дополнительно из корешка
     stub_checks = [
         ("Антибиотик (корешок)", "stub_med_help_antibiotic", "stub_antibiotic_dose"),
@@ -680,9 +749,11 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
     has_stub_data = any(_is_truthy(stub.get(k)) for _, k, _ in stub_checks)
     if has_stub_data:
         for label, check_key, stub_dose_key in stub_checks:
-            done = "Да" if _is_truthy(stub.get(check_key)) else "—"
+            raw_done = stub.get(check_key)
+            done_style = s_unset if raw_done is None else s_small
+            done = _fmt_bool_field(raw_done)
             dose = _g(stub, stub_dose_key) if stub_dose_key else "—"
-            mp_rows.append([P(label, s_small), P(done, s_small), P(dose, s_small)])
+            mp_rows.append([P(label, s_small), P(done, done_style), P(dose, s_small)])
 
     mp_cols = [page_w * 0.45, page_w * 0.2, page_w * 0.35]
     t = Table(mp_rows, colWidths=mp_cols)
@@ -754,14 +825,14 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
 
     doctor = _g(bottom, "doctor_signature")
     signed_by = str(card.get("signed_by") or "")
-    signed_at = str(card.get("signed_at") or "")
+    signed_at = format_datetime(card.get("signed_at"))
     status = str(card.get("status") or "DRAFT")
 
     sign_rows = [
         _field_row("Врач (подпись)", doctor or signed_by or "—"),
         _field_row("Статус карточки", "Подписано" if status == "SIGNED" else "Черновик"),
     ]
-    if signed_at:
+    if card.get("signed_at") is not None:
         sign_rows.append(_field_row("Дата подписания", signed_at))
 
     t = Table(sign_rows, colWidths=cols)
@@ -782,7 +853,8 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
         version = str(card.get("signed_version") or card.get("version") or "")
     else:
         version = "(черновик)"
-    footer_text = f"Карточка ID: {card_id}   Версия: {version}"
+    short_id = card_id[:8] if card_id else "—"
+    footer_text = f"ID: {card_id or short_id}   Ревизия: {version}"
     elements.append(Paragraph(footer_text, s_small))
 
     # ── Сборка ─────────────────────────────────────────────────────────

@@ -273,6 +273,20 @@ def format_silhouette(code: str | None) -> str:
     return _format_code(code, _SILHOUETTE_LABELS)
 
 
+def format_silhouette_short(code: str | None) -> str:
+    """'male_front'/'female_front' -> 'Спереди'; '*_back' -> 'Сзади'; None -> '—'."""
+    if code is None:
+        return DASH
+    normalized = code.strip().lower()
+    if not normalized:
+        return DASH
+    if normalized.endswith("_front") or normalized == "front":
+        return "Спереди"
+    if normalized.endswith("_back") or normalized == "back":
+        return "Сзади"
+    return DASH
+
+
 def format_ismp_type(code: str | None) -> str:
     if code is None:
         return DASH

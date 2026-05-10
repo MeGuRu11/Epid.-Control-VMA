@@ -13,6 +13,7 @@ from app.application.reporting.formatters import (
     format_percent,
     format_ris,
     format_sex,
+    format_silhouette_short,
     localize_header,
     localize_headers,
     to_iso_utc,
@@ -139,3 +140,17 @@ def test_to_iso_utc_adds_utc_timezone_to_naive_datetime() -> None:
 
 def test_to_iso_utc_none_returns_none() -> None:
     assert to_iso_utc(None) is None
+
+
+def test_format_silhouette_short_front() -> None:
+    assert format_silhouette_short("male_front") == "Спереди"
+    assert format_silhouette_short("female_front") == "Спереди"
+
+
+def test_format_silhouette_short_back() -> None:
+    assert format_silhouette_short("male_back") == "Сзади"
+    assert format_silhouette_short("female_back") == "Сзади"
+
+
+def test_format_silhouette_short_none() -> None:
+    assert format_silhouette_short(None) == DASH

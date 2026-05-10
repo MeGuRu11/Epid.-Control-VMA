@@ -100,3 +100,29 @@
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 - `docs/codex/tasks/2026-05-06-emz-outcome-field.md`
+
+---
+# Сессия 2026-05-10 — P1.2 Form100 PDF layout and formatting
+
+## Что сделано
+
+- Закрыт P1.2 одним коммитом: `fix: P1.2 — Form100 PDF layout and formatting improvements`.
+- В `form100_pdf_report_v2.py` улучшены форматы дат, bodymap-таблица, footer, блок связанной госпитализации, KeepTogether для схемы тела и отображение незаполненных флагов медицинской помощи.
+- В `form100_service_v2.py` PDF payload обогащается `emr_context` из `EmzRepository` для одиночного PDF и PDF внутри Form100 ZIP.
+- Добавлен `app/domain/services/bodymap_zones.py`; `formatters.py` расширен `format_silhouette_short()`.
+- Добавлены unit/integration тесты для зон bodymap, короткой проекции силуэта и PDF layout-инвариантов.
+
+## Проверки
+
+- `ruff check app tests` — pass
+- `python scripts/check_architecture.py` — pass
+- `python -m mypy app tests` — pass (`341 source files`)
+- `python -m pytest -q --tb=short` — pass (`668 passed`)
+- `python -m compileall -q app tests scripts` — pass
+- `python -m pytest tests/unit/test_bodymap_zones.py -v` — pass (`6 passed`)
+- `python -m pytest tests/integration/test_form100_pdf_layout.py -v` — pass (`13 passed`)
+
+## Открытые вопросы
+
+- Блокеров нет.
+- P1.3/P1.4 и миграция `app/ui/emz/form_utils.py` на общий formatting layer не начинались, по условиям задачи.

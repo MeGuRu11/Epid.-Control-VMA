@@ -12,8 +12,10 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePosixPath
-from typing import SupportsInt, cast
+from typing import Any, SupportsInt, cast
 from uuid import uuid4
+
+from sqlalchemy.orm import Session
 
 from app.application.dto.form100_service_dto import (
     Form100Changes,
@@ -44,6 +46,7 @@ from app.domain.rules.form100_rules_v2 import (
 from app.domain.types import JSONDict, JSONValue
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.repositories.audit_repo import AuditLogRepository
+from app.infrastructure.db.repositories.emz_repo import EmzRepository
 from app.infrastructure.db.repositories.form100_repo_v2 import Form100RepositoryV2
 from app.infrastructure.db.repositories.user_repo import UserRepository
 from app.infrastructure.db.session import session_scope
@@ -120,11 +123,13 @@ class Form100ServiceV2:
         repo: Form100RepositoryV2 | None = None,
         user_repo: UserRepository | None = None,
         audit_repo: AuditLogRepository | None = None,
+        emr_repo: EmzRepository | None = None,
         session_factory: Callable = session_scope,
     ) -> None:
         self.repo = repo or Form100RepositoryV2()
         self.user_repo = user_repo or UserRepository()
         self.audit_repo = audit_repo or AuditLogRepository()
+        self.emr_repo = emr_repo or EmzRepository()
         self.session_factory = session_factory
 
     def list_cards(
@@ -385,6 +390,33 @@ class Form100ServiceV2:
                 payload_json=json.dumps({"schema": "form100.audit.v2"}, ensure_ascii=False),
             )
 
+    def _build_emr_context(self, session: Session, emr_case_id: object) -> dict[str, Any]:
+        if emr_case_id is None:
+            return {}
+        try:
+            case_id = _as_int(emr_case_id)
+        except (TypeError, ValueError):
+            return {}
+
+        emr_case = self.emr_repo.get_case(session, case_id)
+        current_version = self.emr_repo.get_current_version(session, case_id)
+        if emr_case is None or current_version is None:
+            return {}
+
+        department_name: str | None = None
+        department_id = cast(int | None, emr_case.department_id)
+        if department_id is not None:
+            department = session.get(models.Department, department_id)
+            if department is not None:
+                department_name = str(department.name)
+
+        return {
+            "hospital_case_no": emr_case.hospital_case_no,
+            "department_name": department_name,
+            "admission_date": current_version.admission_date,
+            "injury_date": current_version.injury_date,
+        }
+
     def export_pdf(self, card_id: str, file_path: str | Path, actor_id: int) -> Form100PdfExportResult:
         actor_login, actor_role = self._resolve_actor(actor_id)
         file_path = Path(file_path)
@@ -394,6 +426,7 @@ class Form100ServiceV2:
                 raise ValueError("Form100 card not found")
             data_row = self.repo.get_data(session, card_id)
             payload = self.repo.to_card_dict(row, data_row)
+            payload["emr_context"] = self._build_emr_context(session, payload.get("emr_case_id"))
 
         card_version = _as_int(payload.get("version"))
         card_status = str(payload.get("status") or "")
@@ -438,7 +471,11 @@ class Form100ServiceV2:
         filter_payload = filters.model_dump(exclude_none=True) if filters else {}
         with self.session_factory() as session:
             rows = self.repo.find_cards_for_export(session, card_id=card_id, filters=filter_payload)
-            cards_payload = [self.repo.to_card_dict(item, self.repo.get_data(session, str(item.id))) for item in rows]
+            cards_payload = []
+            for item in rows:
+                card = self.repo.to_card_dict(item, self.repo.get_data(session, str(item.id)))
+                card["emr_context"] = self._build_emr_context(session, card.get("emr_case_id"))
+                cards_payload.append(card)
             json_cards_payload = [
                 Form100CardV2Dto.model_validate(card).model_dump(mode="json")
                 for card in cards_payload
