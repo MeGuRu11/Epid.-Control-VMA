@@ -439,21 +439,25 @@ class Form100ServiceV2:
         with self.session_factory() as session:
             rows = self.repo.find_cards_for_export(session, card_id=card_id, filters=filter_payload)
             cards_payload = [self.repo.to_card_dict(item, self.repo.get_data(session, str(item.id))) for item in rows]
+            json_cards_payload = [
+                Form100CardV2Dto.model_validate(card).model_dump(mode="json")
+                for card in cards_payload
+            ]
 
         with _working_temp_dir() as tmp_dir:
             form_dir = tmp_dir / "form100"
             form_dir.mkdir(parents=True, exist_ok=True)
             files: list[Path] = []
-            for card in cards_payload:
+            for card, json_card in zip(cards_payload, json_cards_payload, strict=True):
                 card_pdf_path = form_dir / f"{card['id']}.pdf"
                 export_form100_pdf_v2(card=card, file_path=card_pdf_path)
                 pdf_sha256 = sha256_file(card_pdf_path)
-                card["artifact_path"] = card_pdf_path.relative_to(tmp_dir).as_posix()
-                card["artifact_sha256"] = pdf_sha256
+                json_card["artifact_path"] = card_pdf_path.relative_to(tmp_dir).as_posix()
+                json_card["artifact_sha256"] = pdf_sha256
                 files.append(card_pdf_path)
 
             json_path = tmp_dir / "form100.json"
-            counts = export_form100_json(cards_payload, json_path)
+            counts = export_form100_json(json_cards_payload, json_path)
             files.insert(0, json_path)
 
             manifest = build_manifest_v2(files=files, exported_by=exported_by, base_dir=tmp_dir)

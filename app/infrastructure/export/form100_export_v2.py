@@ -20,7 +20,6 @@ def export_form100_json(cards: list[dict[str, Any]], file_path: str | Path) -> d
             },
             ensure_ascii=False,
             indent=2,
-            default=str,
         ),
         encoding="utf-8",
     )

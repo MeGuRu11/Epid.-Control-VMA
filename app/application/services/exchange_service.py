@@ -41,6 +41,7 @@ from app.application.dto.exchange_dto import (
     ZipExportResult,
     ZipImportResult,
 )
+from app.application.reporting.formatters import to_iso_utc
 from app.application.security.role_matrix import Role, has_permission
 from app.config import DATA_DIR
 from app.domain.types import JSONDict, JSONValue
@@ -366,6 +367,14 @@ def _serialize_value(value: object) -> JSONValue | object:
     return _format_date_value(value)
 
 
+def _serialize_json_value(value: object) -> JSONValue | object:
+    if isinstance(value, datetime):
+        return to_iso_utc(value)
+    if isinstance(value, date):
+        return value.isoformat()
+    return value
+
+
 def _is_json_column(column_name: str) -> bool:
     return column_name.endswith("_json")
 
@@ -411,6 +420,7 @@ def _model_to_dict(
     *,
     nested_json: bool = False,
     portable_paths: bool = False,
+    machine_json: bool = False,
 ) -> JSONDict:
     data: JSONDict = {}
     for column in obj.__table__.columns:
@@ -420,6 +430,8 @@ def _model_to_dict(
             data[column_name] = _parse_json_payload(value, column_name=column_name)
         elif portable_paths and column_name in _EXPORT_PATH_COLUMNS:
             data[column_name] = cast(JSONValue, _portable_export_path(value))
+        elif machine_json:
+            data[column_name] = cast(JSONValue, _serialize_json_value(value))
         else:
             data[column_name] = cast(JSONValue, _serialize_value(value))
     return data
@@ -1076,7 +1088,7 @@ class ExchangeService:
             manifest_files: list[ExchangeManifestFileEntry] = []
             manifest: ExchangeManifest = {
                 "schema_version": "1.0",
-                "exported_at": datetime.now(UTC).isoformat(),
+                "exported_at": cast(str, to_iso_utc(datetime.now(UTC))),
                 "exported_by": exported_by,
                 "files": manifest_files,
                 "notes": dict(_FULL_EXPORT_NOTES),
@@ -1501,7 +1513,7 @@ class ExchangeService:
         file_path = Path(file_path)
         payload: JSONDict = {
             "schema_version": "1.0",
-            "exported_at": datetime.now(UTC).isoformat(),
+            "exported_at": cast(str, to_iso_utc(datetime.now(UTC))),
             "exported_by": exported_by,
             "data": cast(JSONValue, {}),
             "notes": cast(JSONValue, dict(_FULL_EXPORT_NOTES)),
@@ -1510,7 +1522,13 @@ class ExchangeService:
         with self.session_factory() as session:
             for name, model_cls in TABLE_MODELS.items():
                 data_payload = cast(JSONDict, payload["data"])
-                data_payload[name] = cast(JSONValue, [_model_to_dict(x, nested_json=True, portable_paths=True) for x in _iter_model_rows(session, model_cls)])
+                data_payload[name] = cast(
+                    JSONValue,
+                    [
+                        _model_to_dict(x, nested_json=True, portable_paths=True, machine_json=True)
+                        for x in _iter_model_rows(session, model_cls)
+                    ],
+                )
 
         self._prepare_output_dir(file_path.parent)
         file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -6356,3 +6356,24 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m mypy app tests` — pass, `337 source files`
 - `python -m pytest -q --tb=short` — `642 passed`
 - `python -m compileall -q app tests scripts` — pass
+---
+
+## P1.8 — uniform ISO datetime serialization with TZ in JSON exports
+
+**Коммит:** `fix: P1.8 — uniform ISO datetime serialization with TZ in JSON exports`
+**Статус:** закрыто
+
+- Добавлен `to_iso_utc()` в `app/application/reporting/formatters.py` для machine-exchange JSON.
+- DTO `Form100CardV2Dto` и `Form100CardV2ListItemDto` сериализуют datetime-поля через единый ISO+TZ serializer.
+- Form100 ZIP пишет `form100.json` из JSON-mode DTO payload, без `default=str`; PDF остаётся на raw DTO payload и не меняет поведение отчёта.
+- Full JSON export использует отдельный machine serializer для `datetime`/`date`, не затрагивая Excel/PDF human-readable path.
+- Добавлен invariant `tests/integration/test_datetime_format_consistency.py`: все `*_at` в `form100.json` и `full_export.json` должны быть ISO 8601 с timezone.
+
+### Проверки
+
+- `ruff check app tests` — pass
+- `python -m mypy app tests` — pass, `338 source files`
+- `python -m pytest -q --tb=short` — `646 passed`
+- `python -m compileall -q app tests scripts` — pass
+- `python -m pytest tests/unit/test_formatters.py -v` — `27 passed`
+- `python -m pytest tests/integration/test_datetime_format_consistency.py -v` — `2 passed`

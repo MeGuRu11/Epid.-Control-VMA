@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from app.domain.constants import IsmpType, MilitaryCategory
@@ -297,3 +297,12 @@ def localize_header(field: str) -> str:
 
 def localize_headers(fields: list[str]) -> list[str]:
     return [localize_header(field) for field in fields]
+
+
+def to_iso_utc(dt: datetime | None) -> str | None:
+    """datetime -> ISO 8601 с TZ (+00:00). None -> None. Используется для JSON-экспорта."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.isoformat()

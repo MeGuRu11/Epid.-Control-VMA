@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
+
+from app.application.reporting.formatters import to_iso_utc
 
 
 class Form100AnnotationDto(BaseModel):
@@ -89,6 +91,10 @@ class Form100CardV2ListItemDto(BaseModel):
     updated_at: datetime
     is_archived: bool
 
+    @field_serializer("updated_at")
+    def serialize_updated_at(self, value: datetime) -> str | None:
+        return to_iso_utc(value)
+
 
 class Form100CardV2Dto(BaseModel):
     id: str
@@ -112,3 +118,7 @@ class Form100CardV2Dto(BaseModel):
     signed_by: str | None = None
     signed_at: datetime | None = None
     data: Form100DataV2Dto = Field(default_factory=Form100DataV2Dto)
+
+    @field_serializer("created_at", "updated_at", "signed_at")
+    def serialize_datetime(self, value: datetime | None) -> str | None:
+        return to_iso_utc(value)

@@ -15,6 +15,7 @@ from app.application.reporting.formatters import (
     format_sex,
     localize_header,
     localize_headers,
+    to_iso_utc,
 )
 
 
@@ -129,3 +130,12 @@ def test_localize_headers_list() -> None:
         "ФИО",
         "custom_field",
     ]
+
+
+def test_to_iso_utc_adds_utc_timezone_to_naive_datetime() -> None:
+    value = datetime.fromisoformat("2026-05-10T07:14:46.206189")
+    assert to_iso_utc(value) == "2026-05-10T07:14:46.206189+00:00"
+
+
+def test_to_iso_utc_none_returns_none() -> None:
+    assert to_iso_utc(None) is None
