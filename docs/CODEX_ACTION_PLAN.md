@@ -1522,3 +1522,69 @@ git diff --check
 ---
 
 **Этот документ — единое ТЗ для Codex. Работа идёт по приоритету сверху вниз. P0 — блокирующий, без него P1/P2 не имеют смысла.**
+
+---
+
+# Спринт 4 — UI и Редизайн (добавлено 2026-05-09)
+
+Задачи появились в ходе работы и не вошли в исходный план. Каждая имеет отдельный документ-спецификацию.
+
+## S4.1. Подтверждение закрытия приложения через системные кнопки
+
+**Спецификация:** `docs/EXIT_CONFIRM_PLAN.md`
+
+**Суть:** при нажатии ✗ окна / Alt+F4 / Cmd+Q приложение закрывается без подтверждения. Кнопка «Выйти» в шапке показывает диалог, а системное закрытие — нет. Нужно добавить `ExitConfirmDialog` и вызывать его в `closeEvent`.
+
+**Ключевые файлы:**
+- `app/ui/widgets/logout_dialog.py` — добавить `ExitConfirmDialog` и `confirm_exit`
+- `app/ui/main_window.py` — `closeEvent` с `confirm_exit` + флаг `_close_confirmed`
+- `app/ui/theme.py` — стили `#exitConfirmDialog`
+
+**Сложность:** S (один коммит).
+
+**Conventional commit:**
+```
+feat: confirm exit on system close (✗ button, Alt+F4)
+```
+
+---
+
+## S4.2. Редизайн раздела «Аналитика» (v2)
+
+**Спецификации:**
+- `docs/specs/SPEC_analytics_redesign_plan.md` — финальный утверждённый план (8 этапов)
+- `docs/specs/SPEC_analytics_redesign.md` — regression-сценарии (130+ чек-боксов)
+
+**Суть:** текущий раздел — длинная вертикальная простыня из 9 секций без визуальной иерархии, в устаревшем QGroupBox-стиле. Редизайн без потери функционала: 5 вкладок (Обзор / Микробиология / ИСМП / Поиск / Отчёты), KPI-cards с тренд-индикаторами, новые фичи (heatmap, resistance pattern, drill-down, sparklines, quick filter chips), стиль системы.
+
+**Этапы:**
+
+| Этап | Что | Коммит |
+|------|-----|--------|
+| 0 | Флаг `use_analytics_v2` в UserPreferences + миграция | `chore: add analytics v2 feature flag` |
+| 1 | Каркас: tabs + sticky filter-bar + controller.py | `refactor: extract analytics view into tabs (v2 behind feature flag)` |
+| 2 | KPI-cards (40×40px иконка, гибрид B+C) + Overview tab | `feat: analytics overview tab with KPI cards and trend indicators` |
+| 3 | Sparklines + drill-down | `feat: KPI cards sparklines and drill-down navigation` |
+| 4 | Microbiology tab: heatmap + resistance pattern + quick chips | `feat: microbiology tab with heatmap, resistance pattern and quick filter chips` |
+| 5 | ISMP tab: donut + bar + KPI | `feat: ismp tab redesign with donut and trend charts` |
+| 6 | Search tab + Reports tab + color-coded badges | `feat: search and reports tabs with color-coded badges` |
+| 7 | Стиль: QGroupBox → sectionFrame, empty states, loading | `feat: analytics v2 styling polish` |
+| 8 | Удаление v1, v2 как default | `chore: remove analytics v1, make v2 default` |
+
+**Ключевые архитектурные решения:**
+- `AnalyticsService`, `ReportingService`, DTO — без изменений.
+- БД-схема не меняется.
+- Все вызовы сервисов через `controller.py` (новый файл-фасад).
+- UI не импортирует `app.infrastructure.*`.
+- Старая страница работает до этапа 8 — переключение по флагу в UserPreferences.
+- P1.3 и P1.4 (полировка analytics PDF/XLSX) делаются после этапа 5 v2, не раньше.
+
+**Утверждённый дизайн KPI-карточки:**
+- Размер иконки: 40×40px, border-radius 10px.
+- Цветные плашки по категории: мятный (нейтральная статистика), красный (ИСМП), амбер (лаборатория), фиолетовый (расчётные показатели).
+- Значение: 22px, tabular-nums, letter-spacing -0.3px.
+- Тренд в одной строке со значением.
+- Hover: border-color меняется на акцентный (намёк на drill-down).
+
+**Сложность:** L (5–6 спринтов, 8 коммитов).
+
