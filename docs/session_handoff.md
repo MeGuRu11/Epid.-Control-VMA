@@ -126,3 +126,29 @@
 
 - Блокеров нет.
 - P1.3/P1.4 и миграция `app/ui/emz/form_utils.py` на общий formatting layer не начинались, по условиям задачи.
+---
+# Сессия 2026-05-12 — состояние P1 после P1.6
+
+## Текущее состояние P1
+
+- P1.1 закрыт: общий formatting layer добавлен.
+- P1.8 закрыт: JSON datetime сериализация унифицирована через ISO+TZ.
+- P1.2 закрыт: Form100 PDF layout/formatting improvements добавлены.
+- P1.6 подготовлен к коммиту: ИСМП-показатели подключены в analytics PDF, analytics XLSX и `report_run.summary`.
+- P1.3/P1.4 analytics layout redesign не начинались.
+
+## P1.6 изменения
+
+- `ReportingService.export_analytics_pdf()` и `export_analytics_xlsx()` вызывают `AnalyticsService.get_ismp_metrics()` с фильтрами отчёта.
+- В XLSX добавлен лист `ИСМП` с числовыми метриками, процентным форматом превалентности, разбивкой по типам и placeholder для пустого периода.
+- В PDF добавлен блок `ИСМП — Инфекции, связанные с оказанием медицинской помощи` со сводкой, разбивкой по типам и placeholder для нулевых случаев.
+- `report_run.summary` расширен полями `ismp_cases`, `ismp_incidence`, `ismp_incidence_density`, `ismp_prevalence`, `ismp_by_type`.
+
+## Проверки перед коммитом
+
+- Ранее в этой сессии: ruff pass, mypy pass (`344 source files`), architecture pass, full pytest `678 passed`, compileall pass.
+- Перед коммитом по запросу пользователя повторяется `python -m pytest -q --tb=no`.
+
+## Блокеры
+
+- Блокеров нет.

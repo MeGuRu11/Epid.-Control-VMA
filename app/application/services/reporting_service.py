@@ -10,15 +10,17 @@ from typing import Any, cast
 from uuid import uuid4
 
 from openpyxl import Workbook
+from openpyxl.styles import Font
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
+from app.application.reporting.formatters import format_percent
 from app.application.services.analytics_service import AnalyticsService
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reference_service import ReferenceService
@@ -75,6 +77,17 @@ def _format_filter_label(key: str) -> str:
     return FILTER_LABELS.get(key, key)
 
 
+
+def _build_ismp_summary(agg: dict[str, Any], ismp: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **agg,
+        "ismp_cases": ismp.get("ismp_cases", 0),
+        "ismp_incidence": ismp.get("incidence", 0.0),
+        "ismp_incidence_density": ismp.get("incidence_density", 0.0),
+        "ismp_prevalence": ismp.get("prevalence", 0.0),
+        "ismp_by_type": ismp.get("by_type") or [],
+    }
+
 def _as_int(value: object) -> int:
     return int(cast(Any, value))
 
@@ -101,6 +114,12 @@ class ReportingService:
         file_path = Path(file_path)
         rows = self.analytics_service.search_samples(request)
         agg = self.analytics_service.get_aggregates(request)
+        ismp = self.analytics_service.get_ismp_metrics(
+            date_from=request.date_from,
+            date_to=request.date_to,
+            department_id=request.department_id,
+        )
+        extended_summary = _build_ismp_summary(agg, ismp)
 
         wb = Workbook()
         summary_ws = wb.active
@@ -150,6 +169,49 @@ class ReportingService:
                 ]
             )
 
+        ismp_ws = wb.create_sheet(title="ИСМП")
+        ismp_ws.append(["Показатель", "Значение"])
+        ismp_ws["A1"].font = Font(bold=True)
+        ismp_ws["B1"].font = Font(bold=True)
+
+        ismp_rows = [
+            ("Всего госпитализаций", ismp.get("total_cases", 0)),
+            ("Госпитализаций с ИСМП", ismp.get("ismp_cases", 0)),
+            ("Инцидентность (на 1000 госпит.)", ismp.get("incidence", 0.0)),
+            ("Плотность (на 1000 койко-дн.)", ismp.get("incidence_density", 0.0)),
+            ("Превалентность", ismp.get("prevalence", 0.0) / 100),
+        ]
+        for label, value in ismp_rows:
+            ismp_ws.append([label, value])
+
+        for row_idx, (_, value) in enumerate(ismp_rows, start=2):
+            cell = ismp_ws.cell(row=row_idx, column=2)
+            if isinstance(value, float):
+                if row_idx == 6:
+                    cell.number_format = "0.0%"
+                else:
+                    cell.number_format = "0.0"
+
+        ismp_ws.column_dimensions["A"].width = 38
+        ismp_ws.column_dimensions["B"].width = 16
+
+        by_type = cast(list[dict[str, Any]], ismp.get("by_type") or [])
+        if by_type:
+            ismp_ws.append([])
+            ismp_ws.append(["Тип ИСМП", "Случаев", "Доля (%)"])
+            header_row = ismp_ws.max_row
+            for col in range(1, 4):
+                ismp_ws.cell(row=header_row, column=col).font = Font(bold=True)
+
+            total_ismp = ismp.get("ismp_total") or sum(entry.get("count", 0) for entry in by_type)
+            for entry in by_type:
+                count = entry.get("count", 0)
+                share = (count / total_ismp * 100) if total_ismp else 0.0
+                ismp_ws.append([entry.get("type", ""), count, round(share, 1)])
+                share_cell = ismp_ws.cell(row=ismp_ws.max_row, column=3)
+                share_cell.number_format = "0.0"
+        elif ismp.get("ismp_cases", 0) == 0:
+            ismp_ws.append(["Случаев ИСМП в выбранном периоде не зарегистрировано"])
         file_path.parent.mkdir(parents=True, exist_ok=True)
         wb.save(file_path)
 
@@ -158,7 +220,7 @@ class ReportingService:
         report_run_id = self._log_report_run(
             report_type="analytics",
             filters=filters,
-            summary=agg,
+            summary=extended_summary,
             file_path=artifact_path,
             sha256=report_hash,
             created_by=actor_id,
@@ -180,6 +242,12 @@ class ReportingService:
         file_path = Path(file_path)
         rows = self.analytics_service.search_samples(request)
         agg = self.analytics_service.get_aggregates(request)
+        ismp = self.analytics_service.get_ismp_metrics(
+            date_from=request.date_from,
+            date_to=request.date_to,
+            department_id=request.department_id,
+        )
+        extended_summary = _build_ismp_summary(agg, ismp)
         filters = request.model_dump(exclude_none=True)
         filter_maps = self._build_filter_maps()
         unicode_font = get_pdf_unicode_font_name()
@@ -308,14 +376,98 @@ class ReportingService:
                 ]
             )
         )
-        build_invariant_pdf(doc, [summary_table, filter_table, data_table])
+
+        elements = [summary_table, filter_table, data_table]
+        ismp_cases = ismp.get("ismp_cases", 0)
+        elements.append(Spacer(1, 14))
+        elements.append(
+            Paragraph(
+                "<b>ИСМП — Инфекции, связанные с оказанием медицинской помощи</b>",
+                cell_style,
+            )
+        )
+        elements.append(Spacer(1, 6))
+
+        if ismp_cases == 0:
+            elements.append(Paragraph("Случаев ИСМП в выбранном периоде не зарегистрировано.", cell_style))
+        else:
+            ismp_metrics_data = [
+                [Paragraph("Показатель", cell_style), Paragraph("Значение", cell_style)],
+                [Paragraph("Всего госпитализаций", cell_style), Paragraph(str(ismp.get("total_cases", 0)), cell_style)],
+                [Paragraph("Госпитализаций с ИСМП", cell_style), Paragraph(str(ismp_cases), cell_style)],
+                [
+                    Paragraph("Инцидентность (на 1000 госпит.)", cell_style),
+                    Paragraph(f"{ismp.get('incidence', 0.0):.1f}", cell_style),
+                ],
+                [
+                    Paragraph("Плотность (на 1000 койко-дн.)", cell_style),
+                    Paragraph(f"{ismp.get('incidence_density', 0.0):.1f}", cell_style),
+                ],
+                [
+                    Paragraph("Превалентность", cell_style),
+                    Paragraph(format_percent(ismp.get("prevalence", 0.0) / 100), cell_style),
+                ],
+            ]
+            ismp_table = Table(ismp_metrics_data, colWidths=[available_width * 0.6, available_width * 0.4])
+            ismp_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#EDE4D8")),
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F5EFE8")),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ]
+                )
+            )
+            elements.append(ismp_table)
+
+            by_type = cast(list[dict[str, Any]], ismp.get("by_type") or [])
+            if by_type:
+                elements.append(Spacer(1, 8))
+                elements.append(Paragraph("<b>Разбивка по типам ИСМП:</b>", cell_style))
+                elements.append(Spacer(1, 4))
+                total_ismp = ismp.get("ismp_total") or sum(entry.get("count", 0) for entry in by_type)
+                type_data = [
+                    [
+                        Paragraph("Тип ИСМП", cell_style),
+                        Paragraph("Случаев", cell_style),
+                        Paragraph("Доля", cell_style),
+                    ]
+                ]
+                for entry in by_type:
+                    count = entry.get("count", 0)
+                    share = (count / total_ismp * 100) if total_ismp else 0.0
+                    type_data.append(
+                        [
+                            Paragraph(str(entry.get("type", "")), cell_style),
+                            Paragraph(str(count), cell_style),
+                            Paragraph(f"{share:.1f}%", cell_style),
+                        ]
+                    )
+                type_table = Table(type_data, colWidths=[available_width * 0.5, available_width * 0.25, available_width * 0.25])
+                type_table.setStyle(
+                    TableStyle(
+                        [
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#EDE4D8")),
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F5EFE8")),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                            ("TOPPADDING", (0, 0), (-1, -1), 4),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                        ]
+                    )
+                )
+                elements.append(type_table)
+        build_invariant_pdf(doc, elements)
 
         artifact_path = self._save_artifact_copy(report_type="analytics", source_path=file_path)
         report_hash = sha256_file(artifact_path)
         report_run_id = self._log_report_run(
             report_type="analytics",
             filters=filters,
-            summary=agg,
+            summary=extended_summary,
             file_path=artifact_path,
             sha256=report_hash,
             created_by=actor_id,
