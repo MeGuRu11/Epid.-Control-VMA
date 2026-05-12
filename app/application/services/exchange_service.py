@@ -42,6 +42,7 @@ from app.application.dto.exchange_dto import (
     ZipImportResult,
 )
 from app.application.reporting.formatters import to_iso_utc
+from app.application.reporting.id_resolver import IdResolver
 from app.application.security.role_matrix import Role, has_permission
 from app.config import DATA_DIR
 from app.domain.types import JSONDict, JSONValue
@@ -105,7 +106,8 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "hospital_case_no": "№ госпитализации",
         "department_id": "ID отделения",
         "created_at": "Создано",
-        "created_by": "Создал",
+        "created_by": "Создал (ID)",
+        "created_by_name": "Создал",
     },
     "lab_sample": {
         "id": "ID пробы",
@@ -114,6 +116,7 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "lab_no": "Лаб. номер",
         "barcode": "Штрихкод",
         "material_type_id": "ID типа материала",
+        "material_type_name": "Тип материала",
         "material_location": "Локализация материала",
         "medium": "Среда",
         "study_kind": "Тип исследования",
@@ -121,16 +124,20 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "taken_at": "Взято",
         "delivered_at": "Доставлено",
         "growth_result_at": "Результат роста",
-        "growth_flag": "Рост (0/1)",
+        "growth_flag": "Рост",
         "colony_desc": "Колонии/морфология",
         "microscopy": "Микроскопия",
         "cfu": "КОЕ",
+        "qc_due_at": "Срок QC",
+        "qc_status": "Статус QC",
         "created_at": "Создано",
-        "created_by": "Создал",
+        "created_by": "Создал (ID)",
+        "created_by_name": "Создал",
     },
     "sanitary_sample": {
         "id": "ID пробы",
         "department_id": "ID отделения",
+        "department_name": "Отделение",
         "room": "Помещение",
         "sampling_point": "Точка отбора",
         "lab_no": "Лаб. номер",
@@ -140,12 +147,13 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "taken_at": "Взято",
         "delivered_at": "Доставлено",
         "growth_result_at": "Результат роста",
-        "growth_flag": "Рост (0/1)",
+        "growth_flag": "Рост",
         "colony_desc": "Колонии/морфология",
         "microscopy": "Микроскопия",
         "cfu": "КОЕ",
         "created_at": "Создано",
-        "created_by": "Создал",
+        "created_by": "Создал (ID)",
+        "created_by_name": "Создал",
     },
 }
 
@@ -264,11 +272,7 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "route": "Путь введения",
         "dose": "Доза",
     },
-    "lab_sample": CSV_HEADERS["lab_sample"]
-    | {
-        "qc_due_at": "Срок QC",
-        "qc_status": "Статус QC",
-    },
+    "lab_sample": CSV_HEADERS["lab_sample"],
     "lab_microbe_isolation": {
         "id": "ID выделения",
         "lab_sample_id": "ID лабораторной пробы",
@@ -440,6 +444,50 @@ def _model_to_dict(
 def _get_csv_headers(table_name: str, columns: list[str]) -> list[str]:
     header_map = CSV_HEADERS.get(table_name, {})
     return [header_map.get(col, col) for col in columns]
+
+
+def _build_extended_columns(table_name: str, columns: list[str]) -> list[str]:
+    resolved_after: dict[str, dict[str, str]] = {
+        "lab_sample": {"material_type_id": "material_type_name"},
+        "sanitary_sample": {"department_id": "department_name"},
+    }
+    table_resolved_after = resolved_after.get(table_name, {})
+    extended_columns: list[str] = []
+    for column in columns:
+        extended_columns.append(column)
+        resolved_column = table_resolved_after.get(column)
+        if resolved_column and resolved_column not in extended_columns:
+            extended_columns.append(resolved_column)
+        if column == "created_by" and "created_by_name" not in extended_columns:
+            extended_columns.append("created_by_name")
+    return extended_columns
+
+
+def _coerce_int_id(value: object) -> int | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    try:
+        return int(str(value))
+    except ValueError:
+        return None
+
+
+def _fill_resolved_fields(record: JSONDict, table_name: str, resolver: IdResolver) -> None:
+    """Добавить в record резолвленные имена для FK-колонок."""
+    if table_name == "lab_sample":
+        record["material_type_name"] = resolver.resolve_material_type(
+            _coerce_int_id(record.get("material_type_id"))
+        )
+    if table_name == "sanitary_sample":
+        record["department_name"] = resolver.resolve_department(
+            _coerce_int_id(record.get("department_id"))
+        )
+    if "created_by" in record:
+        record["created_by_name"] = resolver.resolve_user(_coerce_int_id(record.get("created_by")))
 
 
 def _map_csv_header_name(table_name: str, header_name: object) -> str:
@@ -1324,15 +1372,18 @@ class ExchangeService:
             raise ValueError("Неизвестная таблица CSV")
         model_cls = CSV_TABLES[table_name]
         with self.session_factory() as session:
+            resolver = IdResolver(session)
             columns = [c.name for c in model_cls.__table__.columns]
+            extended_columns = _build_extended_columns(table_name, columns)
             self._prepare_output_dir(file_path.parent)
             count = 0
             with file_path.open("w", encoding="utf-8-sig", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(_get_csv_headers(table_name, columns))
+                writer.writerow(_get_csv_headers(table_name, extended_columns))
                 for row in _iter_model_rows(session, model_cls):
                     data = _model_to_dict(row)
-                    writer.writerow([data.get(col) for col in columns])
+                    _fill_resolved_fields(data, table_name, resolver)
+                    writer.writerow([data.get(col) for col in extended_columns])
                     count += 1
         self._record_package("export", "csv", file_path, actor_id, scope_tables=[table_name], rows_affected=count)
         return {"path": str(file_path), "count": count}
@@ -1460,13 +1511,19 @@ class ExchangeService:
 
         count = 0
         with self.session_factory() as session:
+            resolver = IdResolver(session)
             columns = [c.name for c in model_cls.__table__.columns]
-            headers = _get_csv_headers(table_name, columns)
+            extended_columns = _build_extended_columns(table_name, columns)
+            headers = _get_csv_headers(table_name, extended_columns)
             data = [[Paragraph(h, cell_style) for h in headers]]
             for row in _iter_model_rows(session, model_cls):
                 record = _model_to_dict(row)
+                _fill_resolved_fields(record, table_name, resolver)
                 data.append(
-                    [Paragraph("" if record.get(col) is None else str(record.get(col)), cell_style) for col in columns]
+                    [
+                        Paragraph("" if record.get(col) is None else str(record.get(col)), cell_style)
+                        for col in extended_columns
+                    ]
                 )
                 count += 1
 
@@ -1482,7 +1539,7 @@ class ExchangeService:
 
         # Approximate dynamic widths by equally dividing usable landscape space
         usable_width = landscape(A4)[0] - 10 * mm
-        num_cols = len(columns)
+        num_cols = len(data[0])
         col_widths = [usable_width / num_cols] * num_cols
 
         table = Table(data, repeatRows=1, colWidths=col_widths)

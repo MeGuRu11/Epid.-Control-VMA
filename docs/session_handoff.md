@@ -1,154 +1,49 @@
-# Сессия 2026-05-09 - Form100 fixes D/E
+# Сессия 2026-05-12 — P1.7 localized headers and IdResolver
 
 ## Текущее состояние
 
-- HEAD: `239fd6f fix: align Form100 PDF bodymap markers to match UI coordinate geometry`.
-- Form100 C уже был подтянут из remote: `1d84e95` + progress commit `0254e1f`.
-- Form100 D закрыт коммитом `b056aae`: поле `birth_date` добавлено в `StepIdentification`, сохраняется через `Form100CreateV2Request`/`Form100UpdateV2Request`, загружается из существующей карточки, PDF показывает дату рождения как `ДД.ММ.ГГГГ`.
-- Form100 E закрыт коммитом `239fd6f`: добавлен `app/domain/services/bodymap_geometry.py`, UI использует общие константы, PDF PIL path и ReportLab Drawing fallback используют `denormalize_for_*`.
-
-## Проверки
-
-- `ruff check app tests` - pass.
-- `python -m mypy app tests` - pass (`334 source files`).
-- `python -m pytest -q --tb=no` - pass (`617 passed`).
-- `python -m compileall -q app tests scripts` - pass.
-- `python -m pytest tests/integration/test_form100_wizard_birth_date.py -v` - pass (`6 passed`).
-- `python -m pytest tests/unit/test_bodymap_geometry.py -v` - pass (`5 passed`).
-- `python -m pytest tests/integration/test_form100_pdf_bodymap_alignment.py -v` - pass (`2 passed`).
-
-## Открытые проблемы / блокеры
-
-- Блокеров по Form100 D/E нет.
-- Видимый GUI smoke не выполнялся; покрытие выполнено через offscreen Qt tests и PDF geometry tests.
-
----
-# Сессия 2026-05-06 - добавлен исход в форму ЭМЗ
+- P1.7 закрыт: локализованные заголовки и resolved FK-колонки подключены в CSV/PDF экспорты.
+- HEAD перед началом был `df551b5 feat: P1.6 — ISMP metrics in analytics PDF, XLSX and report_run summary`.
+- Рабочий репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA` (это же имя указано в `docs/CODEX_ACTION_PLAN.md`).
 
 ## Что сделано
 
-- В форму ЭМЗ добавлено поле `Исход` между `Дата/время поступления` и `Дата/время исхода`.
-- Поле реализовано через `QComboBox`:
-  - `Не выбран` -> `None`;
-  - `Выписка` -> `discharge`;
-  - `Перевод` -> `transfer`;
-  - `Летальный исход` -> `death`.
-- Проверено, что поле исхода уже существовало в модели данных:
-  - `EmzVersionPayload.outcome_type`;
-  - `EmrCaseVersion.outcome_type`;
-  - Alembic-миграции уже создают колонку `outcome_type`.
-- Новая миграция не создана, потому что схема БД уже содержит поле, а `python -m alembic check` не нашёл новых операций.
-- Исправлен разрыв чтения/редактирования:
-  - `EmzCaseDetail` теперь содержит `outcome_type`;
-  - `EmzService.get_current()` возвращает `outcome_type`;
-  - `build_emz_version_payload()` принимает `outcome_type`;
-  - `EmzForm` применяет сохранённый исход, собирает выбранный исход в payload и сбрасывает ComboBox к placeholder.
-- Optional-семантика сохранена: старые ЭМЗ без исхода открываются с `Не выбран`, placeholder не сохраняется как медицинский исход.
-
-## Root cause
-
-- `outcome_type` уже был в payload/ORM/миграциях, но UI и read-path не использовали его.
-- При сохранении формы нельзя было выбрать исход, а при открытии существующей ЭМЗ `get_current()` не возвращал значение в `EmzCaseDetail`.
-- Поэтому проблема была не в БД, а в неполной сквозной привязке существующего поля к форме.
-
-## Что не закончено / в процессе
-
-- Кодовая часть завершена.
-- Полный quality gate пройден.
-- Интерактивный smoke в видимом GUI не выполнялся из-за API/offscreen среды; выполнен offscreen smoke на реальной `EmzForm`.
+- Добавлен `app/application/reporting/id_resolver.py`.
+- `CSV_HEADERS["lab_sample"]` теперь содержит `qc_due_at`, `qc_status`, `material_type_name`, `created_by_name`.
+- `CSV_HEADERS["sanitary_sample"]` теперь содержит `department_name`, `created_by_name`.
+- `CSV_HEADERS["emr_case"]` теперь содержит `created_by_name`.
+- `created_by` в human-readable CSV/PDF оставлен как ID-колонка с заголовком `Создал (ID)`, рядом добавляется `Создал` с login пользователя.
+- `material_type_id` и `department_id` остаются в выгрузке, рядом добавляются `Тип материала` и `Отделение`.
+- `growth_flag` в CSV/PDF согласован с `formatters.LOCALIZED_HEADERS`: `Рост`.
+- `EXCEL_COLUMN_HEADERS["lab_sample"]` больше не добавляет `qc_due_at/qc_status` отдельным merge, потому что они уже есть в `CSV_HEADERS`.
+- Machine JSON (`full_export.json`) не изменялся.
 
 ## Проверки
 
-- `ruff check app tests` - pass.
-- `python scripts/check_architecture.py` - pass.
-- `python -m mypy app tests` - pass (`301 source files`).
-- `python -m pytest tests/unit/test_emz_form_widget_factories.py -q` - pass (`10 passed`).
-- `python -m pytest tests/unit/test_emz_form_mappers.py -q` - pass (`6 passed`).
-- `python -m pytest tests/unit/test_emz_form_request_builders.py -q` - pass (`4 passed`).
-- `python -m pytest tests/unit/test_emz_form_validators.py -q` - pass (`6 passed`).
-- PowerShell-expanded equivalent of `python -m pytest tests/unit/test_emz_form_* -q` - pass (`112 passed`); raw glob is not expanded by PowerShell.
-- `python -m pytest tests/integration/test_emz_service.py -q` - pass (`6 passed`).
-- `python -m pytest -q` - pass (`472 passed`).
-- `python -m compileall -q app tests scripts` - pass.
-- `python -m alembic upgrade head` - pass.
-- `python -m alembic check` - pass (`No new upgrade operations detected`).
-- `python scripts/check_mojibake.py` - pass.
-- `git diff --check` - pass; только стандартные CRLF warnings Git, whitespace ошибок нет.
-- Offscreen smoke `EmzForm` - pass (`offscreen smoke ok`).
+- `ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`347 source files`).
+- `python -m pytest -q --tb=short` — pass (`691 passed`, `1 warning`).
+- `python -m pytest tests/unit/test_id_resolver.py -v` — pass (`6 passed`).
+- `python -m pytest tests/integration/test_exchange_csv_headers.py -v` — pass (`7 passed`, `1 warning`).
+- `python -m compileall -q app tests scripts` — pass.
+- `python scripts/check_architecture.py` — pass.
 
 ## Открытые проблемы / блокеры
 
 - Блокеров нет.
-- При ближайшей ручной регрессии в видимом GUI стоит проверить создание ЭМЗ, выбор `Перевод`, сохранение, повторное открытие и изменение на `Летальный исход`.
+- Видимый GUI smoke не выполнялся: задача касается файловых CSV/PDF экспортов и покрыта unit/integration тестами.
 
 ## Ключевые файлы
 
-- `app/domain/constants.py`
-- `app/application/dto/emz_dto.py`
-- `app/application/services/emz_service.py`
-- `app/ui/emz/emz_form.py`
-- `app/ui/emz/form_request_builders.py`
-- `app/ui/emz/form_ui_state_orchestrators.py`
-- `app/ui/emz/form_utils.py`
-- `app/ui/emz/form_widget_factories.py`
-- `tests/integration/test_emz_service.py`
-- `tests/unit/test_emz_form_intervention_rows.py`
-- `tests/unit/test_emz_form_request_builders.py`
-- `tests/unit/test_emz_form_ui_state_orchestrators.py`
-- `tests/unit/test_emz_form_utils.py`
-- `tests/unit/test_emz_form_widget_factories.py`
+- `app/application/reporting/id_resolver.py`
+- `app/application/reporting/formatters.py`
+- `app/application/services/exchange_service.py`
+- `tests/unit/test_id_resolver.py`
+- `tests/integration/test_exchange_csv_headers.py`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
-- `docs/codex/tasks/2026-05-06-emz-outcome-field.md`
 
----
-# Сессия 2026-05-10 — P1.2 Form100 PDF layout and formatting
+## Следующие шаги
 
-## Что сделано
-
-- Закрыт P1.2 одним коммитом: `fix: P1.2 — Form100 PDF layout and formatting improvements`.
-- В `form100_pdf_report_v2.py` улучшены форматы дат, bodymap-таблица, footer, блок связанной госпитализации, KeepTogether для схемы тела и отображение незаполненных флагов медицинской помощи.
-- В `form100_service_v2.py` PDF payload обогащается `emr_context` из `EmzRepository` для одиночного PDF и PDF внутри Form100 ZIP.
-- Добавлен `app/domain/services/bodymap_zones.py`; `formatters.py` расширен `format_silhouette_short()`.
-- Добавлены unit/integration тесты для зон bodymap, короткой проекции силуэта и PDF layout-инвариантов.
-
-## Проверки
-
-- `ruff check app tests` — pass
-- `python scripts/check_architecture.py` — pass
-- `python -m mypy app tests` — pass (`341 source files`)
-- `python -m pytest -q --tb=short` — pass (`668 passed`)
-- `python -m compileall -q app tests scripts` — pass
-- `python -m pytest tests/unit/test_bodymap_zones.py -v` — pass (`6 passed`)
-- `python -m pytest tests/integration/test_form100_pdf_layout.py -v` — pass (`13 passed`)
-
-## Открытые вопросы
-
-- Блокеров нет.
-- P1.3/P1.4 и миграция `app/ui/emz/form_utils.py` на общий formatting layer не начинались, по условиям задачи.
----
-# Сессия 2026-05-12 — состояние P1 после P1.6
-
-## Текущее состояние P1
-
-- P1.1 закрыт: общий formatting layer добавлен.
-- P1.8 закрыт: JSON datetime сериализация унифицирована через ISO+TZ.
-- P1.2 закрыт: Form100 PDF layout/formatting improvements добавлены.
-- P1.6 подготовлен к коммиту: ИСМП-показатели подключены в analytics PDF, analytics XLSX и `report_run.summary`.
-- P1.3/P1.4 analytics layout redesign не начинались.
-
-## P1.6 изменения
-
-- `ReportingService.export_analytics_pdf()` и `export_analytics_xlsx()` вызывают `AnalyticsService.get_ismp_metrics()` с фильтрами отчёта.
-- В XLSX добавлен лист `ИСМП` с числовыми метриками, процентным форматом превалентности, разбивкой по типам и placeholder для пустого периода.
-- В PDF добавлен блок `ИСМП — Инфекции, связанные с оказанием медицинской помощи` со сводкой, разбивкой по типам и placeholder для нулевых случаев.
-- `report_run.summary` расширен полями `ismp_cases`, `ismp_incidence`, `ismp_incidence_density`, `ismp_prevalence`, `ismp_by_type`.
-
-## Проверки перед коммитом
-
-- Ранее в этой сессии: ruff pass, mypy pass (`344 source files`), architecture pass, full pytest `678 passed`, compileall pass.
-- Перед коммитом по запросу пользователя повторяется `python -m pytest -q --tb=no`.
-
-## Блокеры
-
-- Блокеров нет.
+- P1.3/P1.4 analytics layout/export polish остаются не начатыми.
+- P1.5 не начинался по ограничению задачи.
