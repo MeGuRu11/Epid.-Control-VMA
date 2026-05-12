@@ -571,6 +571,20 @@ def export_form100_pdf_v2(*, card: dict[str, Any], file_path: str | Path) -> Non
             emr_rows.append(_field_row("Номер ЭМЗ", emr_context["hospital_case_no"]))
         if emr_context.get("department_name"):
             emr_rows.append(_field_row("Отделение", emr_context["department_name"]))
+        patient_name = emr_context.get("patient_full_name")
+        card_name = str(card.get("main_full_name") or "")
+        if (
+            isinstance(patient_name, str)
+            and patient_name.strip()
+            and card_name.strip()
+            and patient_name.strip() != card_name.strip()
+        ):
+            emr_rows.append(
+                _field_row(
+                    "ФИО пациента в ЭМЗ",
+                    f"{patient_name}  Отличается от ФИО в карточке",
+                )
+            )
         if emr_context.get("admission_date"):
             emr_rows.append(_field_row("Дата поступления", format_datetime(emr_context["admission_date"])))
         if emr_context.get("injury_date"):

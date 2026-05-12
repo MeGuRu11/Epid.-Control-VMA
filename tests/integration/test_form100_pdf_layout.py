@@ -268,4 +268,6 @@ def test_form100_service_export_pdf_adds_emr_context(
         "department_name": "Surgery",
         "admission_date": datetime(2026, 5, 1, 8, 30, tzinfo=UTC).replace(tzinfo=None),
         "injury_date": datetime(2026, 4, 30, 22, 15, tzinfo=UTC).replace(tzinfo=None),
+        "patient_full_name": "Synthetic Patient",
+        "patient_dob": None,
     }

@@ -23,11 +23,13 @@ from PySide6.QtWidgets import (
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import (
+    Form100CardV2Dto,
     Form100CreateV2Request,
     Form100UpdateV2Request,
     Form100V2Filters,
 )
 from app.application.exceptions import AppError
+from app.application.reporting.formatters import format_date
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
 from app.domain.rules.form100_rules_v2 import Form100SigningError
@@ -160,8 +162,20 @@ class Form100ViewV2(QWidget):
         self.cards_table.itemSelectionChanged.connect(self._load_selected_card)
         self._splitter.addWidget(self.cards_table)
 
+        editor_panel = QWidget()
+        editor_layout = QVBoxLayout(editor_panel)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(8)
+
+        self._diff_banner = QLabel()
+        self._diff_banner.setObjectName("diffWarningBanner")
+        self._diff_banner.setWordWrap(True)
+        self._diff_banner.setVisible(False)
+        editor_layout.addWidget(self._diff_banner)
+
         self.editor = Form100EditorV2()
-        self._splitter.addWidget(self.editor)
+        editor_layout.addWidget(self.editor)
+        self._splitter.addWidget(editor_panel)
         self._splitter.setChildrenCollapsible(False)
         self._splitter.setStretchFactor(0, 1)
         self._splitter.setStretchFactor(1, 2)
@@ -303,6 +317,7 @@ class Form100ViewV2(QWidget):
 
     def _new_card(self) -> None:
         self.editor.clear_form()
+        self._hide_diff_banner()
 
     def _load_selected_card(self) -> None:
         row = self.cards_table.currentRow()
@@ -316,6 +331,53 @@ class Form100ViewV2(QWidget):
             return
         self.editor.load_card(card)
         self.editor.set_read_only(card.status == "SIGNED" or card.is_archived)
+        self._check_patient_data_diff(card)
+
+    def _check_patient_data_diff(self, card: Form100CardV2Dto) -> None:
+        if card.emr_case_id is None:
+            self._hide_diff_banner()
+            return
+        if card.patient_full_name is None and card.patient_dob is None:
+            self._hide_diff_banner()
+            return
+
+        warnings: list[str] = []
+
+        if (
+            card.patient_full_name is not None
+            and card.main_full_name
+            and card.main_full_name.strip() != card.patient_full_name.strip()
+        ):
+            warnings.append(
+                f"ФИО в карточке «{card.main_full_name}» отличается от ФИО пациента "
+                f"в ЭМЗ «{card.patient_full_name}»."
+            )
+
+        if (
+            card.patient_dob is not None
+            and card.birth_date is not None
+            and card.birth_date != card.patient_dob
+        ):
+            warnings.append(
+                f"Дата рождения в карточке {format_date(card.birth_date)} отличается "
+                f"от ДР пациента в ЭМЗ {format_date(card.patient_dob)}."
+            )
+
+        if warnings:
+            self._show_diff_banner("\n".join(warnings))
+        else:
+            self._hide_diff_banner()
+
+    def _show_diff_banner(self, text: str) -> None:
+        if not hasattr(self, "_diff_banner"):
+            return
+        self._diff_banner.setText(text)
+        self._diff_banner.setVisible(True)
+
+    def _hide_diff_banner(self) -> None:
+        if not hasattr(self, "_diff_banner"):
+            return
+        self._diff_banner.setVisible(False)
 
     def _save_card(self) -> None:
         try:
@@ -335,6 +397,7 @@ class Form100ViewV2(QWidget):
                 show_info(self, "Карточка обновлена")
             self.editor.load_card(card)
             self.editor.set_read_only(card.status == "SIGNED" or card.is_archived)
+            self._check_patient_data_diff(card)
             self.refresh_cards()
             if self.on_data_changed:
                 self.on_data_changed()
@@ -355,6 +418,7 @@ class Form100ViewV2(QWidget):
             )
             self.editor.load_card(card)
             self.editor.set_read_only(True)
+            self._check_patient_data_diff(card)
             self.refresh_cards()
             show_info(self, "Карточка подписана")
             if self.on_data_changed:
@@ -374,6 +438,7 @@ class Form100ViewV2(QWidget):
             )
             self.editor.load_card(card)
             self.editor.set_read_only(True)
+            self._check_patient_data_diff(card)
             self.refresh_cards()
             show_info(self, "Карточка архивирована")
             if self.on_data_changed:

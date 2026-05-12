@@ -115,6 +115,8 @@ class Form100CardV2Dto(BaseModel):
     main_id_tag: str | None = None
     main_diagnosis: str | None = None
     birth_date: date | None = None
+    patient_full_name: str | None = None
+    patient_dob: date | None = None
     signed_by: str | None = None
     signed_at: datetime | None = None
     data: Form100DataV2Dto = Field(default_factory=Form100DataV2Dto)

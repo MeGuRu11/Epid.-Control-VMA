@@ -475,6 +475,15 @@ def _build_qss(settings: Settings) -> str:
         padding: 6px;
         color: #7A2424;
     }}
+    QLabel#diffWarningBanner {{
+        background: {COL["warn_bg"]};
+        border: 1px solid {COL["warn"]};
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: #6E5525;
+        font-size: 12px;
+        font-weight: 600;
+    }}
     QLabel#statusLabel {{
         color: {COL["text"]};
         background: transparent;

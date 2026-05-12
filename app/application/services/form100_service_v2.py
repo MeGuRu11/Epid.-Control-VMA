@@ -166,6 +166,7 @@ class Form100ServiceV2:
                 raise ValueError("Form100 card not found")
             data_row = self.repo.get_data(session, card_id)
             payload = self.repo.to_card_dict(row, data_row)
+            self._add_patient_snapshot_to_payload(session, payload)
             return Form100CardV2Dto.model_validate(payload)
 
     def create_card(self, request: Form100CreateV2Request, actor_id: int) -> Form100CardV2Dto:
@@ -201,6 +202,7 @@ class Form100ServiceV2:
                 data_payload=cast(dict[str, object], data_payload),
                 actor_login=actor_login,
             )
+            after_payload = self.repo.to_card_dict(row, data_row)
             self._write_audit(
                 session=session,
                 actor_id=actor_id,
@@ -211,9 +213,10 @@ class Form100ServiceV2:
                 status_to=FORM100_V2_STATUS_DRAFT,
                 expected_version=None,
                 new_version=_as_int(row.version),
-                changes={"before": {}, "after": self.repo.to_card_dict(row, data_row)},
+                changes={"before": {}, "after": after_payload},
             )
-            return Form100CardV2Dto.model_validate(self.repo.to_card_dict(row, data_row))
+            self._add_patient_snapshot_to_payload(session, after_payload)
+            return Form100CardV2Dto.model_validate(after_payload)
 
     def update_card(
         self,
@@ -284,6 +287,7 @@ class Form100ServiceV2:
                     ),
                 ),
             )
+            self._add_patient_snapshot_to_payload(session, after_payload)
             return Form100CardV2Dto.model_validate(after_payload)
 
     def sign_card(
@@ -338,6 +342,7 @@ class Form100ServiceV2:
                     ),
                 ),
             )
+            self._add_patient_snapshot_to_payload(session, after_payload)
             return Form100CardV2Dto.model_validate(after_payload)
 
     def archive_card(self, card_id: str, actor_id: int, expected_version: int) -> Form100CardV2Dto:
@@ -373,6 +378,7 @@ class Form100ServiceV2:
                     ),
                 ),
             )
+            self._add_patient_snapshot_to_payload(session, after_payload)
             return Form100CardV2Dto.model_validate(after_payload)
 
     def delete_card(self, card_id: str, actor_id: int) -> None:
@@ -389,6 +395,34 @@ class Form100ServiceV2:
                 action="form100_delete",
                 payload_json=json.dumps({"schema": "form100.audit.v2"}, ensure_ascii=False),
             )
+
+    def _resolve_patient_snapshot(
+        self, session: Session, emr_case_id: object
+    ) -> tuple[str | None, date | None]:
+        if emr_case_id is None:
+            return None, None
+        try:
+            case_id = _as_int(emr_case_id)
+        except (TypeError, ValueError):
+            return None, None
+
+        emr_case = self.emr_repo.get_case(session, case_id)
+        if emr_case is None or emr_case.patient_id is None:
+            return None, None
+
+        patient = session.get(models.Patient, cast(int, emr_case.patient_id))
+        if patient is None:
+            return None, None
+        return str(patient.full_name), cast(date | None, patient.dob)
+
+    def _add_patient_snapshot_to_payload(
+        self, session: Session, payload: dict[str, Any]
+    ) -> None:
+        patient_full_name, patient_dob = self._resolve_patient_snapshot(
+            session, payload.get("emr_case_id")
+        )
+        payload["patient_full_name"] = patient_full_name
+        payload["patient_dob"] = patient_dob
 
     def _build_emr_context(self, session: Session, emr_case_id: object) -> dict[str, Any]:
         if emr_case_id is None:
@@ -410,11 +444,15 @@ class Form100ServiceV2:
             if department is not None:
                 department_name = str(department.name)
 
+        patient_full_name, patient_dob = self._resolve_patient_snapshot(session, case_id)
+
         return {
             "hospital_case_no": emr_case.hospital_case_no,
             "department_name": department_name,
             "admission_date": current_version.admission_date,
             "injury_date": current_version.injury_date,
+            "patient_full_name": patient_full_name,
+            "patient_dob": patient_dob,
         }
 
     def export_pdf(self, card_id: str, file_path: str | Path, actor_id: int) -> Form100PdfExportResult:
