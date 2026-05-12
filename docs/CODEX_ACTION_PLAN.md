@@ -1588,3 +1588,36 @@ feat: confirm exit on system close (✗ button, Alt+F4)
 
 **Сложность:** L (5–6 спринтов, 8 коммитов).
 
+
+---
+
+## S4.3. Обновление документации
+
+**Приоритет:** выполняется последним, после закрытия P1, S4.1, S4.2.
+
+**Суть:** в ходе работы накопились изменения в поведении, интерфейсе и форматах, которые не отражены в пользовательской и технической документации. Нужен финальный проход по всем doc-файлам.
+
+### Что обновить
+
+| Файл | Что |
+|------|-----|
+| `docs/user_guide.md` | Новое название раздела «Первичные медицинские карточки (ф. 100)»; дата рождения в карточке; новая структура Analytics v2 (5 вкладок); блок ИСМП в отчётах; подтверждение закрытия приложения |
+| `docs/manual_regression_scenarios.md` | Добавить сценарии из `docs/specs/SPEC_analytics_redesign.md` (разделы 1–11); сценарии exit confirmation; round-trip импорта/экспорта CSV |
+| `docs/tech_guide.md` | Новые модули: `formatters.py`, `id_resolver.py`, `bodymap_zones.py`, `bodymap_geometry.py`, `controller.py` (Analytics v2); новые сервисные методы и их сигнатуры |
+| `CHANGELOG.md` | Записи по версии 1.1.0: все закрытые P0/P1/S4 задачи с коммитами |
+| `README.md` | Если есть — обновить описание ключевых возможностей |
+
+### Что НЕ трогать
+
+- `docs/specs/SPEC_*.md` — спеки актуальны, не менять.
+- `docs/CODEX_ACTION_PLAN.md` — живой документ, Codex обновляет сам через `progress_report`.
+- `docs/progress_report.md` и `docs/session_handoff.md` — Codex ведёт сам.
+
+### Conventional commit
+
+```
+docs: update user guide, tech guide, regression scenarios and CHANGELOG for v1.1.0
+```
+
+**Сложность:** M (один коммит, только текст).
+
