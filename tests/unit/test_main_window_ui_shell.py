@@ -15,6 +15,8 @@ from app.ui.widgets.transition_stack import TransitionStack
 
 
 def _close_widget(qapp, widget: QWidget) -> None:
+    if hasattr(widget, "_close_confirmed"):
+        widget._close_confirmed = True
     widget.close()
     widget.deleteLater()
     qapp.processEvents()

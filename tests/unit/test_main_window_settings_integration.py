@@ -65,6 +65,7 @@ def _make_minimal_main_window(
         container=cast(Any, container),
     )
     qapp.processEvents()
+    window._close_confirmed = True
     return window
 
 
@@ -184,6 +185,7 @@ def test_main_window_works_when_preferences_service_missing(monkeypatch, qapp) -
         container=cast(Any, container),
     )
     qapp.processEvents()
+    window._close_confirmed = True
 
     # Окно не должно падать при попытке открыть настройки без сервиса.
     window._open_settings()

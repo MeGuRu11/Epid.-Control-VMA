@@ -4,7 +4,7 @@ import contextlib
 from datetime import UTC, datetime
 
 from PySide6.QtCore import QEvent, QSize, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QColor, QPainter, QPen
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -42,7 +42,7 @@ from app.ui.theme import theme_qcolor
 from app.ui.widgets.animated_background import MedicalBackground
 from app.ui.widgets.context_bar import ContextBar
 from app.ui.widgets.dialog_utils import exec_message_box
-from app.ui.widgets.logout_dialog import confirm_logout
+from app.ui.widgets.logout_dialog import confirm_exit, confirm_logout
 from app.ui.widgets.transition_stack import TransitionStack
 
 
@@ -177,6 +177,7 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self.session = session
         self.container = container
+        self._close_confirmed: bool = False
         app = QApplication.instance()
         if app is None:
             raise RuntimeError("QApplication is not initialized")
@@ -569,6 +570,7 @@ class MainWindow(QMainWindow):
             )
         dlg = LoginDialog(auth_service=self.container.auth_service, parent=None)
         if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.session:
+            self._close_confirmed = True
             self.close()
             return
         self._apply_session(dlg.session)
@@ -759,7 +761,11 @@ class MainWindow(QMainWindow):
             active = self._nav_actions.get(self._stack.currentWidget())
             self._menubar.set_highlight_action(active)
 
-    def closeEvent(self, event) -> None:  # noqa: N802
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        if not self._close_confirmed and not confirm_exit(self):
+            event.ignore()
+            return
+
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.removeEventFilter(self)
@@ -798,4 +804,3 @@ class MainWindow(QMainWindow):
             top_margin = self._context_bar.header_height() + 6
             if margins.top() != top_margin:
                 foreground_layout.setContentsMargins(margins.left(), top_margin, margins.right(), margins.bottom())
-

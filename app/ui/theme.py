@@ -1303,12 +1303,14 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["danger_pressed"]};
         color: {COL["surface2"]};
     }}
-    QDialog#logoutConfirmDialog {{
+    QDialog#logoutConfirmDialog,
+    QDialog#exitConfirmDialog {{
         background: {COL["surface2"]};
         border: 1px solid {COL["border"]};
         border-radius: 16px;
     }}
-    QDialog#logoutConfirmDialog QLabel#logoutDialogIcon {{
+    QDialog#logoutConfirmDialog QLabel#logoutDialogIcon,
+    QDialog#exitConfirmDialog QLabel#exitDialogIcon {{
         background: {COL["error_bg"]};
         border: 1px solid {COL["error"]};
         border-radius: 26px;
@@ -1316,16 +1318,19 @@ def _build_qss(settings: Settings) -> str:
         font-size: 28px;
         font-weight: 900;
     }}
-    QDialog#logoutConfirmDialog QLabel#logoutDialogTitle {{
+    QDialog#logoutConfirmDialog QLabel#logoutDialogTitle,
+    QDialog#exitConfirmDialog QLabel#exitDialogTitle {{
         color: {COL["text_primary"]};
         font-size: 18px;
         font-weight: 900;
     }}
-    QDialog#logoutConfirmDialog QLabel#logoutDialogBody {{
+    QDialog#logoutConfirmDialog QLabel#logoutDialogBody,
+    QDialog#exitConfirmDialog QLabel#exitDialogBody {{
         color: {COL["muted"]};
         font-size: 12px;
     }}
-    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton {{
+    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton,
+    QDialog#exitConfirmDialog QPushButton#exitCancelButton {{
         background: {COL["surface"]};
         border: 1px solid {COL["border"]};
         border-radius: 12px;
@@ -1333,15 +1338,18 @@ def _build_qss(settings: Settings) -> str:
         min-width: 96px;
         font-weight: 800;
     }}
-    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton:hover {{
+    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton:hover,
+    QDialog#exitConfirmDialog QPushButton#exitCancelButton:hover {{
         background: {COL["accent"]};
         border: 1px solid {COL["accent_border"]};
     }}
-    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton:pressed {{
+    QDialog#logoutConfirmDialog QPushButton#logoutCancelButton:pressed,
+    QDialog#exitConfirmDialog QPushButton#exitCancelButton:pressed {{
         background: {COL["accent_pressed"]};
         border: 1px solid {COL["accent_border"]};
     }}
-    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton {{
+    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton,
+    QDialog#exitConfirmDialog QPushButton#exitConfirmButton {{
         background: {COL["error_bg"]};
         border: 1px solid {COL["error"]};
         border-radius: 12px;
@@ -1350,12 +1358,14 @@ def _build_qss(settings: Settings) -> str:
         color: {COL["error_fg"]};
         font-weight: 900;
     }}
-    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton:hover {{
+    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton:hover,
+    QDialog#exitConfirmDialog QPushButton#exitConfirmButton:hover {{
         background: {COL["error"]};
         border: 1px solid {COL["danger_pressed"]};
         color: {COL["surface2"]};
     }}
-    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton:pressed {{
+    QDialog#logoutConfirmDialog QPushButton#logoutConfirmButton:pressed,
+    QDialog#exitConfirmDialog QPushButton#exitConfirmButton:pressed {{
         background: {COL["danger_pressed"]};
         border: 1px solid {COL["danger_pressed"]};
         color: {COL["surface2"]};

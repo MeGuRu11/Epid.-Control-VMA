@@ -1,29 +1,36 @@
-# Сессия 2026-05-12 — P1.5 Form100 ↔ ЭМЗ diff-баннер
+# Сессия 2026-05-15 — S4.1 подтверждение закрытия приложения
 
 ## Текущее состояние
 
-- P1.5 закрыт: карточка Form100 показывает предупреждение, если ФИО или дата рождения в карточке отличаются от пациента связанной ЭМЗ.
-- HEAD перед началом задачи: `6a451e8 fix: P1.7 — localized headers and IdResolver in CSV/PDF exports`.
+- S4.1 реализован: ручное закрытие главного окна (`✗`, Alt+F4) показывает отдельный диалог подтверждения полного закрытия приложения.
 - Рабочий репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
-- Коммит к созданию: `feat: P1.5 — Form100 vs patient data diff warning banner`.
+- HEAD перед началом задачи: `0be620e feat: P1.5 — Form100 vs patient data diff warning banner`.
+- Коммит к созданию: `feat: S4.1 — confirm exit on system close (✗ button, Alt+F4)`.
 
 ## Что сделано
 
-- `Form100CardV2Dto` получил read-only поля `patient_full_name` и `patient_dob`; create/update DTO не менялись.
-- `Form100ServiceV2.get_card()` добавляет снимок данных пациента через `EmrCase.patient_id -> Patient`.
-- `_build_emr_context()` расширен `patient_full_name` и `patient_dob`, чтобы PDF-экспорт видел данные пациента.
-- В `Form100ViewV2` добавлен `diffWarningBanner` над редактором: баннер показывает расхождение ФИО/ДР, скрывается при совпадении и для карточек без ЭМЗ.
-- Подписание, сохранение и архивирование не блокируются; баннер обновляется после загрузки/сохранения/подписания/архивации.
-- PDF-блок «Связанная госпитализация» добавляет строку `ФИО пациента в ЭМЗ`, если имя пациента отличается от имени в карточке.
-- Старый тест точного `emr_context` обновлён под новые поля пациента.
+- В `app/ui/widgets/logout_dialog.py` добавлен `ExitConfirmDialog` и `confirm_exit()`.
+- `confirm_logout()` оставлен отдельным: logout и закрытие приложения не смешиваются.
+- В `MainWindow` добавлен флаг `_close_confirmed`.
+- `closeEvent()` теперь вызывает `confirm_exit(self)` для обычного закрытия и делает `event.ignore()` при отмене.
+- Программное закрытие в `_relogin_or_close()` выставляет `_close_confirmed = True` перед `self.close()`.
+- Стили `#exitConfirmDialog` добавлены в `app/ui/theme.py` по образцу logout-диалога.
+- Добавлен unit-файл `tests/unit/test_main_window_close_event.py`.
+- Тестовые cleanup-пути в существующих MainWindow UI-тестах выставляют `_close_confirmed`, чтобы не открывать модальный диалог во время teardown.
 
 ## Проверки
 
+- Baseline: `git log --oneline -3` → HEAD `0be620e`.
+- Baseline: `ruff check app tests` — pass.
+- Baseline: `python -m mypy app tests` — pass (`349 source files`).
+- Baseline: `python -m pytest -q --tb=no` — pass (`701 passed`, `3 warnings`).
+- RED: `python -m pytest tests/unit/test_main_window_close_event.py -v` — expected failures по отсутствующим `confirm_exit` и `ExitConfirmDialog`.
+- GREEN: `python -m pytest tests/unit/test_main_window_close_event.py -v` — `4 passed`, `3 warnings`.
 - `ruff check app tests` — pass.
-- `python -m mypy app tests` — pass (`349 source files`).
-- `python -m pytest -q --tb=short` — pass (`701 passed`, `3 warnings`).
-- `python -m pytest tests/unit/test_form100_patient_diff.py -v` — pass (`8 passed`, `3 warnings`).
-- `python -m pytest tests/integration/test_form100_pdf_patient_diff.py -v` — pass (`2 passed`, `3 warnings`).
+- `python -m mypy app tests` — pass (`350 source files`).
+- `python -m pytest -q --tb=short` — pass (`705 passed`, `3 warnings`).
+- `python -m pytest tests/unit/test_main_window_close_event.py -v` — pass (`4 passed`, `3 warnings`).
+- `python -m compileall -q app tests` — pass.
 
 ## Открытые проблемы / блокеры
 
@@ -32,16 +39,13 @@
 
 ## Ключевые файлы
 
-- `app/application/dto/form100_v2_dto.py`
-- `app/application/services/form100_service_v2.py`
-- `app/ui/form100_v2/form100_view.py`
-- `app/infrastructure/reporting/form100_pdf_report_v2.py`
+- `app/ui/main_window.py`
+- `app/ui/widgets/logout_dialog.py`
 - `app/ui/theme.py`
-- `tests/unit/test_form100_patient_diff.py`
-- `tests/integration/test_form100_pdf_patient_diff.py`
-- `tests/integration/test_form100_pdf_layout.py`
+- `tests/unit/test_main_window_close_event.py`
+- `tests/unit/test_main_window_settings_integration.py`
+- `tests/unit/test_main_window_ui_shell.py`
 
 ## Следующие шаги
 
-- Создать один коммит `feat: P1.5 — Form100 vs patient data diff warning banner`.
-- После коммита можно переходить к оставшимся пунктам плана, но S4.1 в рамках P1.5 не начинался.
+- Создать один коммит `feat: S4.1 — confirm exit on system close (✗ button, Alt+F4)`.
