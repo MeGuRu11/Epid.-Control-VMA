@@ -7,7 +7,7 @@ from typing import Any, cast
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
-from app.ui.analytics.analytics_view import AnalyticsSearchView
+from app.ui.analytics.analytics_view_v2 import AnalyticsViewV2
 from app.ui.main_window import MainWindow
 from app.ui.widgets.context_bar import ContextBar
 
@@ -218,7 +218,7 @@ def test_context_bar_restores_last_patient_without_case(qapp) -> None:
 
 
 def test_analytics_saved_filters_toggle_uses_arrow_indicator(qapp) -> None:
-    view = AnalyticsSearchView(
+    view = AnalyticsViewV2(
         analytics_service=cast(Any, _AnalyticsServiceStub()),
         reference_service=cast(Any, _ReferenceServiceStub()),
         saved_filter_service=cast(Any, _SavedFilterServiceStub()),
@@ -226,12 +226,14 @@ def test_analytics_saved_filters_toggle_uses_arrow_indicator(qapp) -> None:
         session=_session_context(),
     )
 
-    assert view.saved_filters_toggle.text() == "Фильтры ▾"
+    search_tab = view._search_tab
 
-    view._toggle_saved_filters(True)
-    assert view.saved_filters_toggle.text() == "Фильтры ▴"
+    assert search_tab.saved_filters_toggle.text() == "Фильтры ▾"
 
-    view._toggle_saved_filters(False)
-    assert view.saved_filters_toggle.text() == "Фильтры ▾"
+    search_tab._toggle_saved_filters(True)
+    assert search_tab.saved_filters_toggle.text() == "Фильтры ▴"
+
+    search_tab._toggle_saved_filters(False)
+    assert search_tab.saved_filters_toggle.text() == "Фильтры ▾"
 
     view.close()

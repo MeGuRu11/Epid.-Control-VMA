@@ -1,76 +1,65 @@
-# Сессия 2026-05-15 — S4.2 Этап 7 Analytics v2 style polish
+# Сессия 2026-05-15 - S4.2 Этап 8 Analytics v2 финализация
 
 ## Текущее состояние
 
-- S4.2 Этап 7 реализован: Analytics v2 переведена с `QGroupBox` на лёгкие `sectionFrame`, добавлены empty states и базовая адаптация KPI-рядов.
+- S4.2 Analytics v2 полностью завершён.
+- `AnalyticsViewV2` стал единственным UI аналитики в `MainWindow`.
+- `AnalyticsSearchView` v1 удалён вместе с файлом `app/ui/analytics/analytics_view.py`.
+- Временный флаг `use_analytics_v2` удалён из `UserPreferences`, диалога настроек и тестов.
 - Рабочий репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
-- HEAD перед началом задачи: `7c64352 feat: S4.2 Этап 6 — color-coded badges in search results and reports tab actions`.
-- Коммит к созданию: `feat: S4.2 Этап 7 — analytics v2 styling polish with section frames and empty states`.
+- HEAD перед началом задачи: `6a82d5b docs: add S4.4 comprehensive system audit task to action plan`.
+- Ожидаемый в промпте HEAD был `3bce4b5`; фактический `6a82d5b` проверен как docs-only изменение `docs/CODEX_ACTION_PLAN.md`.
+- Коммит к созданию: `chore: S4.2 Этап 8 — remove analytics v1, make v2 default`.
 
 ## Что сделано
 
-- В `app/ui/analytics/view_utils.py` добавлен `make_section_frame(title, parent=None)`.
-- Создан `app/ui/analytics/widgets/empty_state.py` с виджетом `EmptyState`.
-- В `app/ui/theme.py` добавлены QSS-правила:
-  - `QFrame#sectionFrame`;
-  - `QFrame#sectionFrame QLabel#sectionTitle`;
-  - `QFrame#emptyState`;
-  - `QLabel#emptyStateText`;
-  - `QLabel#emptyStateHint`.
-- Заменены `QGroupBox` на section-frame в:
-  - `app/ui/analytics/filter_bar.py`;
-  - `app/ui/analytics/tabs/overview_tab.py`;
-  - `app/ui/analytics/tabs/microbiology_tab.py`;
-  - `app/ui/analytics/tabs/ismp_tab.py`;
-  - `app/ui/analytics/tabs/search_tab.py`;
-  - `app/ui/analytics/tabs/reports_tab.py`.
-- Empty states подключены:
-  - Overview: нет данных за период;
-  - Microbiology: нет положительных проб;
-  - ISMP: нет случаев ИСМП;
-  - Search: ничего не найдено;
-  - Reports: история отчётов пуста.
-- KPI-ряды в `OverviewTab` и `IsmpTab` переведены на `QGridLayout` с `setColumnStretch`.
-- `app/ui/analytics/analytics_view.py` v1 не изменялся.
-- Inline `setStyleSheet()` не добавлялся.
+- `app/ui/main_window.py` больше не читает `use_analytics_v2` и не импортирует `AnalyticsSearchView`.
+- `MainWindow._init_views()` безусловно создаёт `AnalyticsViewV2`.
+- `app/application/dto/user_preferences_dto.py` больше не содержит поле `use_analytics_v2`; старые `preferences.json` с этим ключом безопасно игнорируются через существующую логику `from_dict`.
+- `app/ui/settings/settings_dialog.py` больше не показывает beta-чекбокс аналитики.
+- Удалён `tests/unit/test_user_preferences_analytics_flag.py`.
+- Адаптированы v1-bound тесты:
+  - `tests/unit/test_ui_smoke.py`;
+  - `tests/unit/test_dropdown_indicators.py`;
+  - `tests/unit/test_analytics_chart_data.py`.
+- Логические проверки chart data сохранены; UI-проверки перенесены на `AnalyticsViewV2`, `OverviewTab`, `FilterBar`, `ReportsTab` и `SearchTab`.
+- Регрессионный чеклист `docs/specs/SPEC_analytics_redesign.md` пройден по коду и автоматическим тестам; результат записан в `docs/progress_report.md`.
 
 ## Проверки
 
-- Baseline: `git log --oneline -3` → HEAD `7c64352`.
+- Baseline: `git log --oneline -3` → HEAD `6a82d5b`.
 - Baseline: `ruff check app tests` — pass.
-- Baseline: `python -m mypy app tests` — pass (`380 source files`).
-- Baseline: `python -m pytest -q --tb=no` — pass (`769 passed`, `3 warnings`).
-- RED: `python -m pytest tests/unit/test_empty_state.py tests/unit/test_analytics_v2_structure.py -q` — expected `9 failed`, `14 passed`.
-- GREEN: `python -m pytest tests/unit/test_empty_state.py tests/unit/test_analytics_v2_structure.py -q` — `23 passed`, `2 warnings`.
-- `ruff check app tests` — pass.
-- `python -m mypy app tests` — pass (`382 source files`).
-- `python scripts/check_architecture.py` — pass.
-- `python -m pytest tests/unit/test_ui_no_inline_styles.py -q --tb=short` — `1 passed`, `2 warnings`.
-- `python -m pytest -q --tb=short` — pass (`778 passed`, `3 warnings`).
-- `python -m pytest tests/unit/test_empty_state.py -v` — `3 passed`, `2 warnings`.
-- `python -m pytest tests/unit/test_analytics_v2_structure.py -v` — `20 passed`, `2 warnings`.
-- `python -m compileall -q app tests` — pass.
+- Baseline: `python -m mypy app tests` — pass (`382 source files`).
+- Baseline: `python -m pytest -q --tb=no` — pass (`778 passed`, `3 warnings`).
+- После включения default `use_analytics_v2=True`: `python -m pytest -q --tb=short` — `778 passed`, `3 warnings`.
+- После безусловного `AnalyticsViewV2` в `MainWindow`: `python -m pytest -q --tb=short` — `778 passed`, `3 warnings`.
+- После удаления `analytics_view.py`: `python -m pytest -q --tb=short` — `778 passed`, `3 warnings`.
+- После удаления feature flag: `python -m pytest -q --tb=short` — `774 passed`, `3 warnings`.
+- Финально:
+  - `ruff check app tests` — pass.
+  - `python -m mypy app tests` — pass (`380 source files`).
+  - `python scripts/check_architecture.py` — pass.
+  - `python -m pytest -q --tb=short` — pass (`774 passed`, `3 warnings`).
+  - `python -m compileall -q app tests` — pass.
 
 ## Открытые вопросы / блокеры
 
 - Блокеров нет.
 - Pytest продолжает показывать существующие предупреждения `reportlab`, `pytest_asyncio` и отказ записи cache в `pytest_cache_local`; на результат тестов не влияет.
+- Ручной GUI-прогон не выполнялся.
 
 ## Ключевые файлы
 
-- `app/ui/analytics/view_utils.py`
-- `app/ui/analytics/widgets/empty_state.py`
-- `app/ui/analytics/filter_bar.py`
-- `app/ui/analytics/tabs/overview_tab.py`
-- `app/ui/analytics/tabs/microbiology_tab.py`
-- `app/ui/analytics/tabs/ismp_tab.py`
-- `app/ui/analytics/tabs/search_tab.py`
-- `app/ui/analytics/tabs/reports_tab.py`
-- `app/ui/theme.py`
-- `tests/unit/test_empty_state.py`
-- `tests/unit/test_analytics_v2_structure.py`
+- `app/ui/main_window.py`
+- `app/application/dto/user_preferences_dto.py`
+- `app/ui/settings/settings_dialog.py`
+- `tests/unit/test_analytics_chart_data.py`
+- `tests/unit/test_dropdown_indicators.py`
+- `tests/unit/test_ui_smoke.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
 
-## Следующие шаги
+## Следующие задачи
 
-- Создать один коммит `feat: S4.2 Этап 7 — analytics v2 styling polish with section frames and empty states`.
-- S4.2 Этап 8 выполнять отдельным коммитом после подтверждения.
+- S4.3 - документация.
+- S4.4 - аудит.

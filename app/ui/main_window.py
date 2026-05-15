@@ -27,7 +27,6 @@ from app.application.security import can_access_admin_view, can_manage_exchange
 from app.config import settings
 from app.container import Container
 from app.ui.admin.user_admin_view import UserAdminView
-from app.ui.analytics.analytics_view import AnalyticsSearchView
 from app.ui.analytics.analytics_view_v2 import AnalyticsViewV2
 from app.ui.emz.emz_form import EmzForm
 from app.ui.form100_v2.form100_view import Form100ViewV2
@@ -204,15 +203,11 @@ class MainWindow(QMainWindow):
         self._menubar: NavMenuBar | None = None
         self._admin_action: QAction | None = None
         self._settings_button: QToolButton | None = None
-        self._use_analytics_v2 = False
         # Live-параметры берём из сервиса настроек, если он есть в контейнере;
         # иначе откатываемся на статические Settings (упрощает тестовые моки).
         prefs_service = getattr(self.container, "user_preferences_service", None)
         if prefs_service is not None:
             prefs = prefs_service.current
-            self._use_analytics_v2 = prefs.use_analytics_v2
-            if self._use_analytics_v2:
-                logger.info("Analytics v2 UI enabled via user preferences")
             self._session_timeout_seconds = max(60, int(prefs.session_timeout_minutes) * 60)
             if not prefs.auto_logout_enabled:
                 self._session_timeout_seconds = 100 * 365 * 24 * 3600
@@ -453,24 +448,13 @@ class MainWindow(QMainWindow):
             on_data_changed=self._notify_data_changed,
             on_open_form100=self._open_form100_from_emk,
         )
-        self._analytics_view: AnalyticsSearchView | AnalyticsViewV2
-        if self._use_analytics_v2:
-            logger.info("Analytics v2 UI enabled via user preferences")
-            self._analytics_view = AnalyticsViewV2(
-                analytics_service=self.container.analytics_service,
-                reference_service=self.container.reference_service,
-                saved_filter_service=self.container.saved_filter_service,
-                reporting_service=self.container.reporting_service,
-                session=self.session,
-            )
-        else:
-            self._analytics_view = AnalyticsSearchView(
-                analytics_service=self.container.analytics_service,
-                reference_service=self.container.reference_service,
-                saved_filter_service=self.container.saved_filter_service,
-                reporting_service=self.container.reporting_service,
-                session=self.session,
-            )
+        self._analytics_view: AnalyticsViewV2 = AnalyticsViewV2(
+            analytics_service=self.container.analytics_service,
+            reference_service=self.container.reference_service,
+            saved_filter_service=self.container.saved_filter_service,
+            reporting_service=self.container.reporting_service,
+            session=self.session,
+        )
         self._exchange_view = ImportExportView(
             exchange_service=self.container.exchange_service,
             session=self.session,

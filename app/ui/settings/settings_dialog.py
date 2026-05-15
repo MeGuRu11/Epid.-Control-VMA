@@ -210,13 +210,6 @@ class SettingsDialog(QDialog):
         self._background_check = QCheckBox("Анимированный медицинский фон")
         form.addRow("", self._background_check)
 
-        self._analytics_v2_check = QCheckBox("Использовать новый интерфейс Аналитики (beta)")
-        self._analytics_v2_check.setToolTip(
-            "Включает переработанный раздел Аналитики с вкладками и KPI-карточками.\n"
-            "Для вступления в силу требуется перезапуск приложения."
-        )
-        form.addRow("", self._analytics_v2_check)
-
         layout.addLayout(form)
         layout.addStretch(1)
         return self._wrap_in_scroll(page)
@@ -534,7 +527,6 @@ class SettingsDialog(QDialog):
         self._set_combo_value(self._animation_combo, prefs.ui_animation_policy)
         self._premium_check.setChecked(prefs.ui_premium_enabled)
         self._background_check.setChecked(prefs.ui_background_enabled)
-        self._analytics_v2_check.setChecked(prefs.use_analytics_v2)
 
         # Окно
         self._remember_geometry_check.setChecked(prefs.remember_window_geometry)
@@ -579,7 +571,6 @@ class SettingsDialog(QDialog):
             ui_animation_policy=self._animation_combo.currentData(),
             ui_premium_enabled=self._premium_check.isChecked(),
             ui_background_enabled=self._background_check.isChecked(),
-            use_analytics_v2=self._analytics_v2_check.isChecked(),
             remember_window_geometry=self._remember_geometry_check.isChecked(),
             window_initial_state=self._window_state_combo.currentData(),
             pdf_export_dir=self._pdf_dir_picker.value,

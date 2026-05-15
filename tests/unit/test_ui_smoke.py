@@ -7,7 +7,7 @@ from typing import Any, cast
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
 from app.container import Container
-from app.ui.analytics.analytics_view import AnalyticsSearchView
+from app.ui.analytics.analytics_view_v2 import AnalyticsViewV2
 from app.ui.emz.emz_form import EmzForm
 from app.ui.sanitary.sanitary_history import SanitaryHistoryDialog
 
@@ -117,9 +117,9 @@ def _session_context() -> SessionContext:
     return SessionContext(user_id=1, login="tester", role="admin")
 
 
-def test_analytics_view_smoke(qapp) -> None:
+def test_analytics_view_v2_smoke(qapp) -> None:
     reference_service = _ReferenceServiceStub()
-    view = AnalyticsSearchView(
+    view = AnalyticsViewV2(
         analytics_service=cast(Any, _AnalyticsServiceStub()),
         reference_service=cast(Any, reference_service),
         saved_filter_service=cast(Any, _SavedFilterServiceStub()),
@@ -129,8 +129,8 @@ def test_analytics_view_smoke(qapp) -> None:
     view.show()
     qapp.processEvents()
 
-    assert view.report_history_table.rowCount() == 0
-    assert view.summary_total.text().startswith("Итого:")
+    assert view._reports_tab.report_history_table.rowCount() == 0
+    assert view._overview_tab.summary_total.text().startswith("Итого:")
     view.close()
 
 

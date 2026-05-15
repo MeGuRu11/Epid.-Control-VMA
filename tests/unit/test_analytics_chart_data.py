@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from datetime import date, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
@@ -11,7 +10,7 @@ from PySide6.QtWidgets import QAbstractItemView
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.dto.auth_dto import SessionContext
-from app.ui.analytics.analytics_view import AnalyticsSearchView
+from app.ui.analytics.analytics_view_v2 import AnalyticsViewV2
 from app.ui.analytics.chart_data import (
     AUTO_DAY_MAX_DAYS,
     AUTO_WEEK_MAX_DAYS,
@@ -68,6 +67,9 @@ class _AnalyticsServiceStub:
     def clear_cache(self) -> None:
         return None
 
+    def search_samples(self, _request: AnalyticsSearchRequest) -> list[object]:
+        return []
+
     def get_aggregates(self, _request: AnalyticsSearchRequest) -> dict[str, Any]:
         return {
             "total": 0,
@@ -118,6 +120,13 @@ class _AnalyticsServiceStub:
     ) -> dict[str, Any]:
         return {}
 
+    def get_ismp_by_department(
+        self,
+        _date_from: date | None,
+        _date_to: date | None,
+    ) -> list[tuple[str, int]]:
+        return []
+
 
 class _ChartCapture:
     def __init__(self) -> None:
@@ -131,8 +140,8 @@ def _session_context() -> SessionContext:
     return SessionContext(user_id=1, login="tester", role="admin")
 
 
-def _build_view() -> AnalyticsSearchView:
-    return AnalyticsSearchView(
+def _build_view() -> AnalyticsViewV2:
+    return AnalyticsViewV2(
         analytics_service=cast(Any, _AnalyticsServiceStub()),
         reference_service=cast(Any, _ReferenceServiceStub()),
         saved_filter_service=cast(Any, _SavedFilterServiceStub()),
@@ -147,20 +156,6 @@ def _combo_labels(combo: Any) -> list[str]:
 
 def _combo_values(combo: Any) -> list[object]:
     return [combo.itemData(index) for index in range(combo.count())]
-
-
-def _layout_contains_widget(layout: Any, widget: Any) -> bool:
-    return any(layout.itemAt(index).widget() is widget for index in range(layout.count()))
-
-
-def _wait_until(qapp: Any, predicate: Any, timeout: float = 1.5) -> None:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        qapp.processEvents()
-        if predicate():
-            return
-        time.sleep(0.01)
-    raise AssertionError("Аналитический экран не обновился за ожидаемое время")
 
 
 @pytest.mark.parametrize(
@@ -316,29 +311,29 @@ def test_group_trend_rows_week_on_ninety_days_has_fewer_points_than_day() -> Non
 
 def test_apply_search_results_sends_percentage_share_to_top_microbes_chart(qapp) -> None:
     view = _build_view()
-    view.chart = cast(Any, _ChartCapture())
+    overview = view._overview_tab
+    overview.chart = cast(Any, _ChartCapture())
 
-    view._apply_search_results(
-        rows=[],
-        agg={
+    overview._apply_aggregate_summary(
+        {
             "total": 8,
             "positives": 4,
             "positive_share": 0.5,
             "top_microbes": [("ECO - E. coli", 3), ("SAU - S. aureus", 1)],
             "total_microbe_isolations": 4,
-        },
+        }
     )
 
-    assert view.summary_share.text() == "Доля: 50.0%"
-    assert cast(_ChartCapture, view.chart).items == [
+    assert overview.summary_share.text() == "Доля: 50.0%"
+    assert cast(_ChartCapture, overview.chart).items == [
         ("ECO - E. coli", 75.0),
         ("SAU - S. aureus", 25.0),
     ]
-    assert view.top_table.columnCount() == 3
-    first_name_item = view.top_table.item(0, 0)
-    first_count_item = view.top_table.item(0, 1)
-    first_share_item = view.top_table.item(0, 2)
-    second_share_item = view.top_table.item(1, 2)
+    assert overview.top_table.columnCount() == 3
+    first_name_item = overview.top_table.item(0, 0)
+    first_count_item = overview.top_table.item(0, 1)
+    first_share_item = overview.top_table.item(0, 2)
+    second_share_item = overview.top_table.item(1, 2)
     assert first_name_item is not None
     assert first_count_item is not None
     assert first_share_item is not None
@@ -352,18 +347,18 @@ def test_apply_search_results_sends_percentage_share_to_top_microbes_chart(qapp)
 
 def test_apply_trend_sends_real_dates_and_daily_percentage_to_chart(qapp) -> None:
     view = _build_view()
-    view.trend_chart = cast(Any, _ChartCapture())
+    overview = view._overview_tab
+    overview.trend_chart = cast(Any, _ChartCapture())
 
-    view._apply_trend(
+    overview._apply_trend(
         rows=[
             {"day": "2026-04-01", "total": 10, "positives": 5},
             {"day": "2026-04-03", "total": 4, "positives": 1},
         ],
-        date_from=date(2026, 4, 1),
-        date_to=date(2026, 4, 3),
+        request=AnalyticsSearchRequest(date_from=date(2026, 4, 1), date_to=date(2026, 4, 3)),
     )
 
-    assert cast(_ChartCapture, view.trend_chart).items == [
+    assert cast(_ChartCapture, overview.trend_chart).items == [
         ("01.04.2026", 50.0),
         ("02.04.2026", 0.0),
         ("03.04.2026", 25.0),
@@ -373,17 +368,14 @@ def test_apply_trend_sends_real_dates_and_daily_percentage_to_chart(qapp) -> Non
 
 def test_analytics_time_grouping_combo_is_visible_in_dashboard_controls(qapp) -> None:
     view = _build_view()
+    overview = view._overview_tab
     view.show()
     qapp.processEvents()
 
-    assert view.time_grouping.objectName() == "analyticsTimeGroupingCombo"
-    assert view.time_grouping_label.text() == "Группировка"
-    assert _layout_contains_widget(view.dashboard_controls_row, view.time_grouping_label)
-    assert _layout_contains_widget(view.dashboard_controls_row, view.time_grouping)
-    assert view.time_grouping.isVisible()
-    assert view.time_grouping.currentData() == TimeGrouping.AUTO.value
-    assert _combo_labels(view.time_grouping) == ["Авто", "Дни", "Недели", "Месяцы"]
-    assert _combo_values(view.time_grouping) == [
+    assert overview.time_grouping.count() == 4
+    assert overview.time_grouping.currentData() == TimeGrouping.AUTO.value
+    assert _combo_labels(overview.time_grouping) == ["Авто", "Дни", "Недели", "Месяцы"]
+    assert _combo_values(overview.time_grouping) == [
         TimeGrouping.AUTO.value,
         TimeGrouping.DAY.value,
         TimeGrouping.WEEK.value,
@@ -394,16 +386,13 @@ def test_analytics_time_grouping_combo_is_visible_in_dashboard_controls(qapp) ->
 
 def test_analytics_compare_period_and_time_grouping_are_separate_controls(qapp) -> None:
     view = _build_view()
+    overview = view._overview_tab
 
-    assert view.compare_period is not view.time_grouping
-    assert view.compare_period.objectName() == "analyticsComparePeriodCombo"
-    assert view.compare_period_label.text() == "Период сравнения"
-    assert _layout_contains_widget(view.dashboard_controls_row, view.compare_period)
-    assert _layout_contains_widget(view.dashboard_controls_row, view.time_grouping)
-    assert _combo_labels(view.compare_period) == ["Неделя", "Месяц"]
-    assert _combo_values(view.compare_period) == [7, 30]
-    assert _combo_labels(view.time_grouping) == ["Авто", "Дни", "Недели", "Месяцы"]
-    assert _combo_values(view.time_grouping) == [
+    assert overview.compare_period is not overview.time_grouping
+    assert _combo_labels(overview.compare_period) == ["Неделя", "Месяц"]
+    assert _combo_values(overview.compare_period) == [7, 30]
+    assert _combo_labels(overview.time_grouping) == ["Авто", "Дни", "Недели", "Месяцы"]
+    assert _combo_values(overview.time_grouping) == [
         TimeGrouping.AUTO.value,
         TimeGrouping.DAY.value,
         TimeGrouping.WEEK.value,
@@ -414,23 +403,23 @@ def test_analytics_compare_period_and_time_grouping_are_separate_controls(qapp) 
 
 def test_apply_trend_uses_selected_time_grouping(qapp) -> None:
     view = _build_view()
-    view.trend_chart = cast(Any, _ChartCapture())
-    view._set_time_grouping(TimeGrouping.WEEK, notify=False)
+    overview = view._overview_tab
+    overview.trend_chart = cast(Any, _ChartCapture())
+    overview.time_grouping.setCurrentIndex(overview.time_grouping.findData(TimeGrouping.WEEK.value))
 
-    view._apply_trend(
+    overview._apply_trend(
         rows=[
             {"day": "2026-04-20", "total": 1, "positives": 1},
             {"day": "2026-04-21", "total": 99, "positives": 0},
         ],
-        date_from=date(2026, 4, 20),
-        date_to=date(2026, 4, 26),
+        request=AnalyticsSearchRequest(date_from=date(2026, 4, 20), date_to=date(2026, 4, 26)),
     )
 
-    assert cast(_ChartCapture, view.trend_chart).items == [("2026-W17", 1.0)]
+    assert cast(_ChartCapture, overview.trend_chart).items == [("2026-W17", 1.0)]
     view.close()
 
 
-def test_time_grouping_change_refreshes_dashboard_and_keeps_selected_mode(qapp, monkeypatch) -> None:
+def test_time_grouping_change_refreshes_dashboard_and_keeps_selected_mode(qapp) -> None:
     class _AnalyticsGroupingStub(_AnalyticsServiceStub):
         def __init__(self) -> None:
             self.trend_calls = 0
@@ -446,78 +435,66 @@ def test_time_grouping_change_refreshes_dashboard_and_keeps_selected_mode(qapp, 
             assert date_from is not None
             return [{"day": date_from.isoformat(), "total": 1, "positives": 1}]
 
-    def _run_async_sync(
-        _parent: Any,
-        fn: Any,
-        on_success: Any = None,
-        on_error: Any = None,
-        on_finished: Any = None,
-    ) -> Any:
-        try:
-            result = fn()
-        except Exception as exc:  # noqa: BLE001
-            if on_error is not None:
-                on_error(exc)
-            raise
-        else:
-            if on_success is not None:
-                on_success(result)
-        finally:
-            if on_finished is not None:
-                on_finished()
-        return None
-
     service = _AnalyticsGroupingStub()
-    monkeypatch.setattr("app.ui.analytics.analytics_view.run_async", _run_async_sync)
-    view = AnalyticsSearchView(
+    view = AnalyticsViewV2(
         analytics_service=cast(Any, service),
         reference_service=cast(Any, _ReferenceServiceStub()),
         saved_filter_service=cast(Any, _SavedFilterServiceStub()),
         reporting_service=cast(Any, _ReportingServiceStub()),
         session=_session_context(),
     )
-    view.trend_chart = cast(Any, _ChartCapture())
-    view.date_from.setDate(QDate(2026, 1, 1))
-    view.date_to.setDate(QDate(2026, 3, 31))
+    overview = view._overview_tab
+    overview.trend_chart = cast(Any, _ChartCapture())
+    overview._last_request = AnalyticsSearchRequest(date_from=date(2026, 1, 1), date_to=date(2026, 3, 31))
 
-    view.time_grouping.setCurrentIndex(view.time_grouping.findData(TimeGrouping.WEEK.value))
+    overview.time_grouping.setCurrentIndex(overview.time_grouping.findData(TimeGrouping.WEEK.value))
 
     assert service.trend_calls == 1
-    assert view.time_grouping.currentData() == TimeGrouping.WEEK.value
-    assert cast(_ChartCapture, view.trend_chart).items[0][0] == "2026-W01"
+    assert overview.time_grouping.currentData() == TimeGrouping.WEEK.value
+    assert cast(_ChartCapture, overview.trend_chart).items[0][0] == "2026-W01"
     view.close()
 
 
-def test_filter_payload_restores_missing_time_grouping_as_auto(qapp) -> None:
+def test_filter_payload_applies_dates_and_department(qapp) -> None:
     view = _build_view()
-    view._set_time_grouping(TimeGrouping.MONTH, notify=False)
+    filter_bar = view._filter_bar
 
-    view._apply_filter_payload({})
+    filter_bar.set_request_payload(
+        {
+            "date_from": "01.04.2026",
+            "date_to": "03.04.2026",
+            "department_id": 1,
+        }
+    )
 
-    assert view.time_grouping.currentData() == TimeGrouping.AUTO.value
+    request = filter_bar.request()
+    assert request.date_from == date(2026, 4, 1)
+    assert request.date_to == date(2026, 4, 3)
+    assert request.department_id == 1
     view.close()
 
 
-def test_filter_payload_preserves_time_grouping(qapp) -> None:
+def test_filter_payload_preserves_text_fields(qapp) -> None:
     view = _build_view()
-    view._set_time_grouping(TimeGrouping.WEEK, notify=False)
+    filter_bar = view._filter_bar
 
-    payload = view._collect_filter_payload()
-    view._apply_filter_payload({"time_grouping": TimeGrouping.MONTH.value})
+    filter_bar.set_request_payload({"patient_name": "Иванов", "lab_no": "LAB-1", "search_text": "E. coli"})
+    payload = filter_bar.request_payload()
 
-    assert payload["time_grouping"] == TimeGrouping.WEEK.value
-    assert view.time_grouping.currentData() == TimeGrouping.MONTH.value
+    assert payload["patient_name"] == "Иванов"
+    assert payload["lab_no"] == "LAB-1"
+    assert payload["search_text"] == "E. coli"
     view.close()
 
 
 def test_report_history_table_is_read_only() -> None:
     view = _build_view()
 
-    assert view.report_history_table.editTriggers() == QAbstractItemView.EditTrigger.NoEditTriggers
+    assert view._reports_tab.report_history_table.editTriggers() == QAbstractItemView.EditTrigger.NoEditTriggers
     view.close()
 
 
-def test_analytics_view_initializes_current_month_and_populates_charts(qapp, monkeypatch) -> None:
+def test_analytics_view_initializes_current_month_and_populates_charts(qapp) -> None:
     current_date = cast(date, QDate.currentDate().toPython())
 
     class _AnalyticsStartupStub(_AnalyticsServiceStub):
@@ -546,31 +523,7 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
                 {"day": current_date.isoformat(), "total": 4, "positives": 2},
             ]
 
-    def _run_async_sync(
-        _parent: Any,
-        fn: Any,
-        on_success: Any = None,
-        on_error: Any = None,
-        on_finished: Any = None,
-    ) -> Any:
-        try:
-            result = fn()
-        except Exception as exc:  # noqa: BLE001
-            if on_error is not None:
-                on_error(exc)
-            raise
-        else:
-            if on_success is not None:
-                on_success(result)
-        finally:
-            if on_finished is not None:
-                on_finished()
-        return None
-
-    monkeypatch.setattr("app.ui.analytics.analytics_view.show_error", lambda *_a, **_kw: None)
-    monkeypatch.setattr("app.ui.analytics.analytics_view.run_async", _run_async_sync)
-
-    view = AnalyticsSearchView(
+    view = AnalyticsViewV2(
         analytics_service=cast(Any, _AnalyticsStartupStub()),
         reference_service=cast(Any, _ReferenceServiceStub()),
         saved_filter_service=cast(Any, _SavedFilterServiceStub()),
@@ -578,25 +531,32 @@ def test_analytics_view_initializes_current_month_and_populates_charts(qapp, mon
         session=_session_context(),
     )
     view.show()
+    view.activate_view()
     qapp.processEvents()
+    overview = view._overview_tab
+    filter_bar = view._filter_bar
 
     first_day = date(current_date.year, current_date.month, 1)
-    assert view.quick_period.currentData() == "month"
-    assert view.date_from.date().toPython() == first_day
-    assert view.date_to.date().toPython() == current_date
-    assert view.summary_share.text() == "Доля: 50.0%"
-    assert view.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
-    assert len(view.trend_chart._items) == current_date.day
-    assert view.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
-    assert view.trend_chart._items[current_date.day - 1][1] == 50.0
+    assert filter_bar.quick_period.currentData() == "month"
+    assert filter_bar.date_from.date().toPython() == first_day
+    assert filter_bar.date_to.date().toPython() == current_date
+    assert overview.summary_share.text() == "Доля: 50.0%"
+    assert overview.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
+    assert len(overview.trend_chart._items) == current_date.day
+    assert overview.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
+    assert overview.trend_chart._items[current_date.day - 1][1] == 50.0
     view.close()
 
 
-def test_analytics_view_initializes_current_month_with_real_async(qapp) -> None:
+def test_analytics_view_activate_view_refreshes_once(qapp) -> None:
     current_date = cast(date, QDate.currentDate().toPython())
 
     class _AnalyticsStartupStub(_AnalyticsServiceStub):
+        def __init__(self) -> None:
+            self.aggregate_calls = 0
+
         def get_aggregates(self, request: AnalyticsSearchRequest) -> dict[str, Any]:
+            self.aggregate_calls += 1
             assert request.date_from == date(current_date.year, current_date.month, 1)
             assert request.date_to == current_date
             return {
@@ -621,23 +581,23 @@ def test_analytics_view_initializes_current_month_with_real_async(qapp) -> None:
                 {"day": current_date.isoformat(), "total": 4, "positives": 2},
             ]
 
-    view = AnalyticsSearchView(
-        analytics_service=cast(Any, _AnalyticsStartupStub()),
+    service = _AnalyticsStartupStub()
+    view = AnalyticsViewV2(
+        analytics_service=cast(Any, service),
         reference_service=cast(Any, _ReferenceServiceStub()),
         saved_filter_service=cast(Any, _SavedFilterServiceStub()),
         reporting_service=cast(Any, _ReportingServiceStub()),
         session=_session_context(),
     )
     view.show()
+    view.activate_view()
+    view.activate_view()
+    qapp.processEvents()
+    overview = view._overview_tab
 
-    _wait_until(qapp, lambda: len(view.trend_chart._items) == current_date.day)
-
-    first_day = date(current_date.year, current_date.month, 1)
-    assert view.quick_period.currentData() == "month"
-    assert view.date_from.date().toPython() == first_day
-    assert view.date_to.date().toPython() == current_date
-    assert view.summary_share.text().endswith("50.0%")
-    assert view.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
-    assert view.trend_chart._items[0][0] == first_day.strftime("%d.%m.%Y")
-    assert view.trend_chart._items[current_date.day - 1][1] == 50.0
+    assert service.aggregate_calls == 1
+    assert overview.summary_share.text().endswith("50.0%")
+    assert overview.chart._items == [("ECO - E. coli", 66.66666666666666), ("SAU - S. aureus", 33.33333333333333)]
+    assert overview.trend_chart._items[0][0] == date(current_date.year, current_date.month, 1).strftime("%d.%m.%Y")
+    assert overview.trend_chart._items[current_date.day - 1][1] == 50.0
     view.close()
