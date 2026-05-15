@@ -76,6 +76,7 @@ class AnalyticsViewV2(QWidget):
         self._ismp_tab = IsmpTab(self._controller)
         self._search_tab = SearchTab(self._controller, self.session)
         self._reports_tab = ReportsTab(self._controller)
+        self._overview_tab.drill_down_requested.connect(self._tabs.setCurrentIndex)
         self._search_tab.saved_filter_applied.connect(self._filter_bar.set_request_payload)
 
         self._tabs.addTab(self._overview_tab, "Обзор")

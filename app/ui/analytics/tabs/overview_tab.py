@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping
 from app.ui.analytics.charts import TopMicrobesChart, TrendChart
+from app.ui.analytics.tabs import TAB_ISMP, TAB_MICROBIOLOGY
 from app.ui.analytics.view_utils import build_top_microbe_chart_items, build_trend_chart_items
 from app.ui.analytics.widgets.kpi_card import KpiCard
 from app.ui.widgets.button_utils import compact_button
@@ -31,14 +33,19 @@ if TYPE_CHECKING:
 
 
 class OverviewTab(QWidget):
+    drill_down_requested = Signal(int)
+
     def __init__(self, controller: AnalyticsController, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.controller = controller
         self._last_request: AnalyticsSearchRequest | None = None
-        self._kpi_hosp = KpiCard("Госпитализаций", "Г", "neutral", "neutral")
-        self._kpi_ismp = KpiCard("Случаев ИСМП", "И", "negative", "negative")
-        self._kpi_pos = KpiCard("Положительных", "Л", "lab", "neutral")
-        self._kpi_prev = KpiCard("Превалентность", "%", "calc", "negative")
+        self._kpi_hosp = KpiCard("Госпитализаций", "Г", "neutral", "neutral", show_sparkline=True)
+        self._kpi_ismp = KpiCard("Случаев ИСМП", "И", "negative", "negative", show_sparkline=False)
+        self._kpi_pos = KpiCard("Положительных", "Л", "lab", "neutral", show_sparkline=True)
+        self._kpi_prev = KpiCard("Превалентность", "%", "calc", "negative", show_sparkline=False)
+        self._kpi_ismp.clicked.connect(lambda: self.drill_down_requested.emit(TAB_ISMP))
+        self._kpi_pos.clicked.connect(lambda: self.drill_down_requested.emit(TAB_MICROBIOLOGY))
+        self._kpi_prev.clicked.connect(lambda: self.drill_down_requested.emit(TAB_ISMP))
         self._build_ui()
 
     def refresh(self, request: AnalyticsSearchRequest) -> None:
@@ -47,10 +54,11 @@ class OverviewTab(QWidget):
         agg = self.controller.get_aggregates(request)
         ismp = self.controller.get_ismp_metrics(request)
         compare = self.controller.compare_periods(request, self._compare_days())
-        self._update_kpi(agg, ismp, compare)
+        trend_rows = self.controller.get_trend(request)
+        self._update_kpi(agg, ismp, compare, trend_rows=trend_rows)
         self._apply_aggregate_summary(agg)
         self._apply_department_summary(self.controller.get_department_summary(request))
-        self._apply_trend(self.controller.get_trend(request), request)
+        self._apply_trend(trend_rows, request)
         self._apply_compare(compare)
 
     def _build_ui(self) -> None:
@@ -161,6 +169,7 @@ class OverviewTab(QWidget):
         agg: dict[str, Any],
         ismp: dict[str, Any],
         compare: dict[str, Any] | None,
+        trend_rows: list[dict[str, Any]] | None = None,
     ) -> None:
         from app.application.reporting.formatters import format_percent
 
@@ -182,10 +191,22 @@ class OverviewTab(QWidget):
         self._kpi_prev.set_value(format_percent(prevalence / 100))
         self._kpi_prev.clear_trend()
 
+        if trend_rows:
+            self._kpi_hosp.set_sparkline_data([self._number_from_row(row.get("total")) for row in trend_rows])
+            self._kpi_pos.set_sparkline_data([self._number_from_row(row.get("positives")) for row in trend_rows])
+        else:
+            self._kpi_hosp.set_sparkline_data([])
+            self._kpi_pos.set_sparkline_data([])
+
     def _numeric_or_none(self, value: object) -> float | int | None:
         if isinstance(value, int | float):
             return value
         return None
+
+    def _number_from_row(self, value: object) -> float | int:
+        if isinstance(value, int | float):
+            return value
+        return 0
 
     def _apply_aggregate_summary(self, agg: dict[str, Any]) -> None:
         total = int(agg.get("total", 0))

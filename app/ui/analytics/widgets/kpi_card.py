@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+from app.ui.analytics.widgets.sparkline import Sparkline
 from app.ui.analytics.widgets.trend_indicator import TrendIndicator
 
 
@@ -18,6 +19,7 @@ class KpiCard(QFrame):
         icon_symbol: str,
         icon_category: str = "neutral",
         metric_kind: str = "neutral",
+        show_sparkline: bool = True,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -37,6 +39,7 @@ class KpiCard(QFrame):
         self._value.setObjectName("kpiValue")
 
         self._trend = TrendIndicator(metric_kind=metric_kind)
+        self._sparkline: Sparkline | None = Sparkline() if show_sparkline else None
 
         value_row = QHBoxLayout()
         value_row.setContentsMargins(0, 0, 0, 0)
@@ -49,6 +52,8 @@ class KpiCard(QFrame):
         body.setSpacing(6)
         body.addWidget(self._title)
         body.addLayout(value_row)
+        if self._sparkline is not None:
+            body.addWidget(self._sparkline)
 
         root = QHBoxLayout(self)
         root.setContentsMargins(14, 14, 14, 14)
@@ -64,6 +69,11 @@ class KpiCard(QFrame):
 
     def clear_trend(self) -> None:
         self._trend.clear_trend()
+
+    def set_sparkline_data(self, values: list[float | int]) -> None:
+        """Передать данные для мини-графика."""
+        if self._sparkline is not None:
+            self._sparkline.set_data(values)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         super().mousePressEvent(event)

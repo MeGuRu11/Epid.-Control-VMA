@@ -304,3 +304,34 @@ def test_overview_tab_has_four_kpi_cards(qtbot: Any) -> None:
     qtbot.addWidget(view)
 
     assert len(view._overview_tab.findChildren(KpiCard)) == 4
+
+
+def test_overview_tab_has_drill_down_signal(qtbot: Any) -> None:
+    from app.ui.analytics.tabs import TAB_ISMP
+
+    view = _build_view()
+    qtbot.addWidget(view)
+    emitted: list[int] = []
+    view._overview_tab.drill_down_requested.connect(emitted.append)
+
+    view._overview_tab.drill_down_requested.emit(TAB_ISMP)
+
+    assert emitted == [TAB_ISMP]
+
+
+def test_drill_down_signal_connected_to_tabs(qtbot: Any) -> None:
+    from PySide6.QtCore import Qt
+
+    from app.ui.analytics.tabs import TAB_MICROBIOLOGY, TAB_OVERVIEW
+
+    view = _build_view()
+    qtbot.addWidget(view)
+    assert view._tabs.currentIndex() == TAB_OVERVIEW
+    view._filter_bar.patient_name.setText("Иванов")
+    qtbot.waitUntil(lambda: view._current_request is not None, timeout=1000)
+
+    qtbot.mouseClick(view._overview_tab._kpi_pos, Qt.MouseButton.LeftButton)
+
+    assert view._tabs.currentIndex() == TAB_MICROBIOLOGY
+    assert view._current_request is not None
+    assert view._current_request.patient_name == "Иванов"
