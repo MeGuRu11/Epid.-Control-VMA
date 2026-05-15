@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping
 from app.ui.analytics.charts import TopMicrobesChart, TrendChart
 from app.ui.analytics.view_utils import build_top_microbe_chart_items, build_trend_chart_items
+from app.ui.analytics.widgets.kpi_card import KpiCard
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
@@ -34,21 +35,35 @@ class OverviewTab(QWidget):
         super().__init__(parent)
         self.controller = controller
         self._last_request: AnalyticsSearchRequest | None = None
+        self._kpi_hosp = KpiCard("Госпитализаций", "Г", "neutral", "neutral")
+        self._kpi_ismp = KpiCard("Случаев ИСМП", "И", "negative", "negative")
+        self._kpi_pos = KpiCard("Положительных", "Л", "lab", "neutral")
+        self._kpi_prev = KpiCard("Превалентность", "%", "calc", "negative")
         self._build_ui()
 
     def refresh(self, request: AnalyticsSearchRequest) -> None:
         self._last_request = request
         self.controller.clear_cache()
         agg = self.controller.get_aggregates(request)
+        ismp = self.controller.get_ismp_metrics(request)
+        compare = self.controller.compare_periods(request, self._compare_days())
+        self._update_kpi(agg, ismp, compare)
         self._apply_aggregate_summary(agg)
         self._apply_department_summary(self.controller.get_department_summary(request))
         self._apply_trend(self.controller.get_trend(request), request)
-        self._apply_compare(self.controller.compare_periods(request, self._compare_days()))
+        self._apply_compare(compare)
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
+        kpi_row = QHBoxLayout()
+        kpi_row.setSpacing(12)
+        kpi_row.addWidget(self._kpi_hosp)
+        kpi_row.addWidget(self._kpi_ismp)
+        kpi_row.addWidget(self._kpi_pos)
+        kpi_row.addWidget(self._kpi_prev)
+        layout.addLayout(kpi_row)
         self._build_summary_row(layout)
         layout.addWidget(self._build_dashboard_box())
         layout.addWidget(self._build_top_box())
@@ -140,6 +155,37 @@ class OverviewTab(QWidget):
 
     def _selected_time_grouping(self) -> TimeGrouping:
         return coerce_time_grouping(self.time_grouping.currentData())
+
+    def _update_kpi(
+        self,
+        agg: dict[str, Any],
+        ismp: dict[str, Any],
+        compare: dict[str, Any] | None,
+    ) -> None:
+        from app.application.reporting.formatters import format_percent
+
+        previous = cast(dict[str, Any], compare.get("previous", {}) if compare else {})
+
+        total_cur = int(ismp.get("total_cases", 0))
+        self._kpi_hosp.set_value(str(total_cur))
+        self._kpi_hosp.set_trend(total_cur, self._numeric_or_none(previous.get("total")))
+
+        self._kpi_ismp.set_value(str(int(ismp.get("ismp_cases", 0))))
+        self._kpi_ismp.clear_trend()
+
+        pos_cur = int(agg.get("positives", 0))
+        share = float(agg.get("positive_share", 0.0))
+        self._kpi_pos.set_value(f"{pos_cur} ({format_percent(share)})")
+        self._kpi_pos.set_trend(pos_cur, self._numeric_or_none(previous.get("positives")))
+
+        prevalence = float(ismp.get("prevalence", 0.0))
+        self._kpi_prev.set_value(format_percent(prevalence / 100))
+        self._kpi_prev.clear_trend()
+
+    def _numeric_or_none(self, value: object) -> float | int | None:
+        if isinstance(value, int | float):
+            return value
+        return None
 
     def _apply_aggregate_summary(self, agg: dict[str, Any]) -> None:
         total = int(agg.get("total", 0))

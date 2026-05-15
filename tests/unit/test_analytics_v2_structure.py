@@ -295,3 +295,12 @@ def test_filter_bar_emits_filters_changed_on_period_change(qtbot: Any) -> None:
     qtbot.waitUntil(lambda: len(emitted) == 1, timeout=1000)
 
     assert isinstance(emitted[0], AnalyticsSearchRequest)
+
+
+def test_overview_tab_has_four_kpi_cards(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.kpi_card import KpiCard
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert len(view._overview_tab.findChildren(KpiCard)) == 4

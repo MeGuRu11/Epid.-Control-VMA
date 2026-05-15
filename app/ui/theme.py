@@ -524,6 +524,60 @@ def _build_qss(settings: Settings) -> str:
         color: {COL["text"]};
         font-weight: 600;
     }}
+    QFrame#kpiCard {{
+        background: rgba(255, 253, 248, 0.95);
+        border: 1px solid {COL["border"]};
+        border-radius: 14px;
+    }}
+    QFrame#kpiCard:hover {{
+        border-color: {COL["accent"]};
+    }}
+    QLabel#kpiIcon {{
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: 600;
+    }}
+    QLabel#kpiIcon[iconCategory="neutral"] {{
+        background: #E1F5EE;
+        color: #0F6E56;
+    }}
+    QLabel#kpiIcon[iconCategory="negative"] {{
+        background: #FCEBEB;
+        color: #A32D2D;
+    }}
+    QLabel#kpiIcon[iconCategory="lab"] {{
+        background: #FAEEDA;
+        color: #854F0B;
+    }}
+    QLabel#kpiIcon[iconCategory="calc"] {{
+        background: #EEEDFE;
+        color: #3C3489;
+    }}
+    QLabel#kpiTitle {{
+        font-size: 11px;
+        color: {COL["muted"]};
+        letter-spacing: 0px;
+    }}
+    QLabel#kpiValue {{
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: 0px;
+    }}
+    QLabel#kpiTrendUp {{
+        font-size: 12px;
+        font-weight: 500;
+        color: #2E7D32;
+    }}
+    QLabel#kpiTrendDown {{
+        font-size: 12px;
+        font-weight: 500;
+        color: #C62828;
+    }}
+    QLabel#kpiTrendFlat {{
+        font-size: 12px;
+        font-weight: 500;
+        color: {COL["muted"]};
+    }}
     QGroupBox#patientCard {{
         background: rgba(255, 249, 242, 0.72);
         border: 1px solid {COL["border"]};
