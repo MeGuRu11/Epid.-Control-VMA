@@ -66,7 +66,6 @@ class ExitConfirmDialog(QDialog):
         self.setWindowTitle("Закрытие приложения")
         self.setModal(True)
         self.setMinimumWidth(380)
-        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(18, 18, 18, 16)

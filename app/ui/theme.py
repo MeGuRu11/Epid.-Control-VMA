@@ -1562,8 +1562,8 @@ def _build_qss(settings: Settings) -> str:
         padding: 4px 6px;
     }}
     QMenuBar::item {{
-        padding: 7px 10px;
-        border-radius: 10px;
+        padding: 5px 10px;
+        border-radius: 8px;
         background: transparent;
     }}
     QMenuBar[compactNav="true"] {{
