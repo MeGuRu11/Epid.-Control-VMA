@@ -4,7 +4,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import Signal
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtGui import QBrush, QColor, QResizeEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.application.reporting.formatters import format_growth_flag
 from app.ui.analytics.view_utils import format_analytics_datetime
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
 
 _COLLAPSED_ARROW = "▾"
 _EXPANDED_ARROW = "▴"
+POSITIVE_BG = QColor("#FEE2E2")
 
 
 class SearchTab(QWidget):
@@ -168,7 +170,7 @@ class SearchTab(QWidget):
     def _build_results_box(self) -> QGroupBox:
         results_box = QGroupBox("Результаты")
         results_layout = QVBoxLayout(results_box)
-        self.table = QTableWidget(0, 9)
+        self.table = QTableWidget(0, 10)
         self.table.setHorizontalHeaderLabels(
             [
                 "ID",
@@ -180,11 +182,12 @@ class SearchTab(QWidget):
                 "Материал",
                 "Микроорганизм",
                 "Антибиотик",
+                "Рост",
             ]
         )
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(True)
+        self.table.setAlternatingRowColors(False)
         self.table.setMinimumHeight(320)
         set_table_read_only(self.table)
         results_layout.addWidget(self.table)
@@ -220,7 +223,9 @@ class SearchTab(QWidget):
 
         self.table.clearContents()
         self.table.setRowCount(len(display_rows))
+        self.table.setAlternatingRowColors(False)
         for i, row in enumerate(display_rows):
+            is_positive = getattr(row, "growth_flag", None) == 1
             values = [
                 getattr(row, "lab_sample_id", ""),
                 getattr(row, "lab_no", ""),
@@ -231,9 +236,13 @@ class SearchTab(QWidget):
                 getattr(row, "material_type", "") or "",
                 getattr(row, "microorganism", "") or "",
                 getattr(row, "antibiotic", "") or "",
+                format_growth_flag(getattr(row, "growth_flag", None)),
             ]
             for column, value in enumerate(values):
-                self.table.setItem(i, column, QTableWidgetItem(str(value)))
+                item = QTableWidgetItem(str(value))
+                if is_positive:
+                    item.setBackground(QBrush(POSITIVE_BG))
+                self.table.setItem(i, column, item)
         resize_columns_to_content(self.table)
 
     def _update_main_actions_layout(self) -> None:

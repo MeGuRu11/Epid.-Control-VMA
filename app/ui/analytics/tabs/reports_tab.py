@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -29,6 +30,9 @@ from app.ui.widgets.table_utils import (
 
 if TYPE_CHECKING:
     from app.ui.analytics.controller import AnalyticsController
+
+VERIFY_OK_BG = QColor("#EAF3DE")
+VERIFY_FAIL_BG = QColor("#FECACA")
 
 
 class ReportsTab(QWidget):
@@ -66,8 +70,15 @@ class ReportsTab(QWidget):
 
         refresh_btn = QPushButton("Обновить историю")
         compact_button(refresh_btn)
-        refresh_btn.clicked.connect(self.load_report_history)
-        history_layout.addWidget(refresh_btn)
+        refresh_btn.clicked.connect(lambda _checked=False: self.load_report_history())
+        verify_btn = QPushButton("Проверить хеши")
+        compact_button(verify_btn)
+        verify_btn.clicked.connect(lambda _checked=False: self.load_report_history(verify_hash=True))
+        history_actions = QHBoxLayout()
+        history_actions.addWidget(refresh_btn)
+        history_actions.addWidget(verify_btn)
+        history_actions.addStretch()
+        history_layout.addLayout(history_actions)
 
         self.report_history_table = QTableWidget(0, 8)
         self.report_history_table.setHorizontalHeaderLabels(
@@ -99,6 +110,7 @@ class ReportsTab(QWidget):
         self.report_history_table.setRowCount(len(rows))
         for i, item in enumerate(rows):
             row_data = to_report_history_view_row(item)
+            row_bg = self._verification_background(row_data.verification_text)
             values = [
                 row_data.report_run_id,
                 row_data.report_type,
@@ -111,11 +123,22 @@ class ReportsTab(QWidget):
             ]
             for column, value in enumerate(values):
                 table_item = QTableWidgetItem(str(value))
+                if row_bg is not None:
+                    table_item.setBackground(QBrush(row_bg))
                 if column == 7:
                     table_item.setToolTip(str(value))
                 self.report_history_table.setItem(i, column, table_item)
         resize_columns_to_content(self.report_history_table)
         self._apply_report_history_column_widths()
+
+    @staticmethod
+    def _verification_background(verification_text: str) -> QColor | None:
+        text = verification_text.lower()
+        if "ok" in text or ("совпадает" in text and "не совп" not in text):
+            return VERIFY_OK_BG
+        if "не совп" in text or "ошибка" in text or "не найден" in text:
+            return VERIFY_FAIL_BG
+        return None
 
     def _clear_report_history_filters(self) -> None:
         self.report_type_filter.setCurrentIndex(0)
