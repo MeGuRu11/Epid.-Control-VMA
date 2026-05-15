@@ -307,6 +307,32 @@ class AnalyticsRepository:
             "by_type": by_type,
         }
 
+    def get_ismp_by_department(
+        self,
+        session: Session,
+        date_from: date | None,
+        date_to: date | None,
+    ) -> list[tuple[str, int]]:
+        stmt = (
+            select(
+                Department.name.label("dept_name"),
+                func.count(IsmpCase.id).label("ismp_count"),
+            )
+            .select_from(IsmpCase)
+            .join(EmrCase, EmrCase.id == IsmpCase.emr_case_id)
+            .join(Department, Department.id == EmrCase.department_id)
+            .group_by(Department.name)
+            .order_by(func.count(IsmpCase.id).desc())
+        )
+        if date_from:
+            stmt = stmt.where(IsmpCase.start_date >= date_from)
+        if date_to:
+            stmt = stmt.where(IsmpCase.start_date <= date_to)
+        return [
+            (str(row.dept_name), int(row.ismp_count) if row.ismp_count is not None else 0)
+            for row in session.execute(stmt).all()
+        ]
+
     def search_samples(
         self,
         session: Session,

@@ -73,6 +73,9 @@ class _AnalyticsServiceStub:
         self.ismp_args = (date_from, date_to, department_id)
         return {}
 
+    def get_ismp_by_department(self, _date_from: date | None, _date_to: date | None) -> list[tuple[str, int]]:
+        return []
+
     def get_department_summary(
         self,
         _date_from: date | None,
@@ -335,3 +338,21 @@ def test_drill_down_signal_connected_to_tabs(qtbot: Any) -> None:
     assert view._tabs.currentIndex() == TAB_MICROBIOLOGY
     assert view._current_request is not None
     assert view._current_request.patient_name == "Иванов"
+
+
+def test_ismp_tab_has_five_kpi_cards(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.kpi_card import KpiCard
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert len(view._ismp_tab.findChildren(KpiCard)) == 5
+
+
+def test_ismp_tab_has_donut_chart(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.donut_chart import DonutChart
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view._ismp_tab.findChild(DonutChart) is not None

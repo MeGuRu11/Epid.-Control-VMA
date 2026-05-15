@@ -36,6 +36,9 @@ class AnalyticsController:
             request.department_id,
         )
 
+    def get_ismp_by_department(self, request: AnalyticsSearchRequest) -> list[tuple[str, int]]:
+        return self.analytics_service.get_ismp_by_department(request.date_from, request.date_to)
+
     def get_department_summary(self, request: AnalyticsSearchRequest) -> list[dict[str, Any]]:
         return self.analytics_service.get_department_summary(
             request.date_from,

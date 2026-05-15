@@ -638,6 +638,34 @@ def _build_qss(settings: Settings) -> str:
         border-color: #E18A85;
         color: #991B1B;
     }}
+    QLabel#donutLegendDot {{
+        font-size: 14px;
+        font-weight: 700;
+    }}
+    QLabel#donutLegendText {{
+        font-size: 11px;
+        color: {COL["text"]};
+    }}
+    QWidget#ismpDeptBarRow {{
+        background: transparent;
+    }}
+    QLabel#ismpDeptName {{
+        font-size: 11px;
+        color: {COL["text"]};
+    }}
+    QLabel#ismpDeptCount {{
+        font-size: 11px;
+        color: {COL["text_muted"]};
+    }}
+    QProgressBar#ismpDeptBar {{
+        background: {COL["surface2"]};
+        border: none;
+        border-radius: 4px;
+    }}
+    QProgressBar#ismpDeptBar::chunk {{
+        background: {COL["accent"]};
+        border-radius: 4px;
+    }}
     QGroupBox#patientCard {{
         background: rgba(255, 249, 242, 0.72);
         border: 1px solid {COL["border"]};

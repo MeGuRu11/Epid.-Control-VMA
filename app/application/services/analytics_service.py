@@ -294,3 +294,15 @@ class AnalyticsService:
                 }
 
         return self._cached_call("get_ismp_metrics", payload, _load)
+
+    def get_ismp_by_department(self, date_from: date | None, date_to: date | None) -> list[tuple[str, int]]:
+        payload = {
+            "date_from": date_from,
+            "date_to": date_to,
+        }
+
+        def _load() -> list[tuple[str, int]]:
+            with self.session_factory() as session:
+                return self.repo.get_ismp_by_department(session, date_from, date_to)
+
+        return self._cached_call("get_ismp_by_department", payload, _load)
