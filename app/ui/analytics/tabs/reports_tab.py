@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QComboBox,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -20,6 +19,8 @@ from app.ui.analytics.report_history_helpers import (
     report_history_column_widths,
     to_report_history_view_row,
 )
+from app.ui.analytics.view_utils import make_section_frame
+from app.ui.analytics.widgets.empty_state import EmptyState
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error
 from app.ui.widgets.table_utils import (
@@ -47,8 +48,7 @@ class ReportsTab(QWidget):
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        history_box = QGroupBox("История отчётов")
-        history_layout = QVBoxLayout(history_box)
+        history_box, history_layout = make_section_frame("История отчётов")
 
         filter_row = QHBoxLayout()
         self.report_type_filter = QComboBox()
@@ -89,6 +89,9 @@ class ReportsTab(QWidget):
         self.report_history_table.setAlternatingRowColors(True)
         self.report_history_table.setMinimumHeight(260)
         set_table_read_only(self.report_history_table)
+        self._empty_state = EmptyState("История отчётов пуста.", "Здесь появятся сформированные отчёты.")
+        self._empty_state.setVisible(False)
+        history_layout.addWidget(self._empty_state)
         history_layout.addWidget(self.report_history_table)
         self._apply_report_history_column_widths()
 
@@ -108,6 +111,8 @@ class ReportsTab(QWidget):
 
         self.report_history_table.clearContents()
         self.report_history_table.setRowCount(len(rows))
+        self._empty_state.setVisible(len(rows) == 0)
+        self.report_history_table.setVisible(len(rows) > 0)
         for i, item in enumerate(rows):
             row_data = to_report_history_view_row(item)
             row_bg = self._verification_background(row_data.verification_text)

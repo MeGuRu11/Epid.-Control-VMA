@@ -356,3 +356,57 @@ def test_ismp_tab_has_donut_chart(qtbot: Any) -> None:
     qtbot.addWidget(view)
 
     assert view._ismp_tab.findChild(DonutChart) is not None
+
+
+def test_analytics_view_v2_uses_section_frames_not_group_boxes(qtbot: Any) -> None:
+    from PySide6.QtWidgets import QGroupBox
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view.findChildren(QGroupBox) == []
+
+
+def test_overview_tab_has_empty_state_widget(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view._overview_tab.findChild(EmptyState) is not None
+
+
+def test_microbiology_tab_has_empty_state_widget(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view._microbiology_tab.findChild(EmptyState) is not None
+
+
+def test_ismp_tab_has_empty_state_widget(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view._ismp_tab.findChild(EmptyState) is not None
+
+
+def test_search_tab_has_empty_state_widget(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view._search_tab.findChild(EmptyState) is not None
+
+
+def test_reports_tab_has_empty_state_widget(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    assert view._reports_tab.findChild(EmptyState) is not None

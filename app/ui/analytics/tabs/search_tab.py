@@ -8,7 +8,6 @@ from PySide6.QtGui import QBrush, QColor, QResizeEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -20,7 +19,8 @@ from PySide6.QtWidgets import (
 )
 
 from app.application.reporting.formatters import format_growth_flag
-from app.ui.analytics.view_utils import format_analytics_datetime
+from app.ui.analytics.view_utils import format_analytics_datetime, make_section_frame
+from app.ui.analytics.widgets.empty_state import EmptyState
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import show_error, show_info, show_warning
@@ -90,8 +90,8 @@ class SearchTab(QWidget):
         saved_container_layout = QVBoxLayout(self.saved_filters_container)
         saved_container_layout.setContentsMargins(0, 0, 0, 0)
 
-        saved_box = QGroupBox("Сохранённые фильтры")
-        saved_layout = QHBoxLayout(saved_box)
+        saved_box, saved_content_layout = make_section_frame("Сохранённые фильтры")
+        saved_layout = QHBoxLayout()
         self.saved_filter_select = QComboBox()
         self.saved_filter_select.addItem("Выбрать", None)
         connect_combo_autowidth(self.saved_filter_select)
@@ -109,6 +109,7 @@ class SearchTab(QWidget):
         saved_layout.addWidget(QLabel("Название"))
         saved_layout.addWidget(self.filter_name)
         saved_layout.addWidget(save_filter_btn)
+        saved_content_layout.addLayout(saved_layout)
         saved_container_layout.addWidget(saved_box)
         self.saved_filters_container.setVisible(False)
         content_layout.addWidget(self.saved_filters_container)
@@ -167,9 +168,11 @@ class SearchTab(QWidget):
         summary_row.addStretch()
         content_layout.addLayout(summary_row)
 
-    def _build_results_box(self) -> QGroupBox:
-        results_box = QGroupBox("Результаты")
-        results_layout = QVBoxLayout(results_box)
+    def _build_results_box(self) -> QWidget:
+        results_box, results_layout = make_section_frame("Результаты")
+        self._empty_state = EmptyState("По запросу ничего не найдено.", "Попробуйте изменить параметры поиска.")
+        self._empty_state.setVisible(False)
+        results_layout.addWidget(self._empty_state)
         self.table = QTableWidget(0, 10)
         self.table.setHorizontalHeaderLabels(
             [
@@ -213,6 +216,9 @@ class SearchTab(QWidget):
         total = int(agg.get("total", 0))
         positives = int(agg.get("positives", 0))
         positive_share = float(agg.get("positive_share", 0.0))
+        has_data = total > 0
+        self._empty_state.setVisible(not has_data)
+        self.table.setVisible(has_data)
         self.summary_total.setText(f"Итого: {total}")
         self.summary_positive.setText(f"Положительных: {positives}")
         self.summary_share.setText(f"Доля: {positive_share * 100:.1f}%")

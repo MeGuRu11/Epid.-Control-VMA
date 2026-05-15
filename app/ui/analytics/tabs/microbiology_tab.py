@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from PySide6.QtWidgets import QGroupBox, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.ui.analytics.charts import TopMicrobesChart
-from app.ui.analytics.view_utils import build_top_microbe_chart_items
+from app.ui.analytics.view_utils import build_top_microbe_chart_items, make_section_frame
+from app.ui.analytics.widgets.empty_state import EmptyState
 from app.ui.analytics.widgets.heatmap import Heatmap
 from app.ui.analytics.widgets.quick_filter_chips import QuickFilterChips
 from app.ui.analytics.widgets.resistance_grid import ResistanceGrid
@@ -27,6 +28,9 @@ class MicrobiologyTab(QWidget):
         self._last_request = request
         agg = self.controller.get_aggregates(request)
         top_microbes = cast(list[tuple[str, int]], agg.get("top_microbes", []))
+        has_data = int(agg.get("positives", 0)) > 0 or bool(top_microbes)
+        self._empty_state.setVisible(not has_data)
+        self._content_widget.setVisible(has_data)
         total_microbe_isolations = int(
             agg.get("total_microbe_isolations") or sum(count for _name, count in top_microbes)
         )
@@ -62,8 +66,16 @@ class MicrobiologyTab(QWidget):
         self._chips.filter_changed.connect(self.refresh)
         layout.addWidget(self._chips)
 
-        top_box = QGroupBox("Топ микроорганизмов")
-        top_layout = QVBoxLayout(top_box)
+        self._empty_state = EmptyState("За выбранный период нет положительных проб.")
+        self._empty_state.setVisible(False)
+        layout.addWidget(self._empty_state)
+
+        self._content_widget = QWidget()
+        content_layout = QVBoxLayout(self._content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(12)
+
+        top_box, top_layout = make_section_frame("Топ микроорганизмов")
         self.chart = TopMicrobesChart()
         self.chart.setMinimumHeight(340)
         top_layout.addWidget(self.chart)
@@ -75,22 +87,21 @@ class MicrobiologyTab(QWidget):
         self.top_table.setMinimumHeight(220)
         set_table_read_only(self.top_table)
         top_layout.addWidget(self.top_table)
-        layout.addWidget(top_box)
+        content_layout.addWidget(top_box)
 
-        heatmap_box = QGroupBox("Отделения × микроорганизмы")
-        heatmap_layout = QVBoxLayout(heatmap_box)
+        heatmap_box, heatmap_layout = make_section_frame("Отделения × микроорганизмы")
         self._heatmap = Heatmap()
         self._heatmap.setMinimumHeight(260)
         self._heatmap.cell_clicked.connect(self._on_heatmap_cell_clicked)
         heatmap_layout.addWidget(self._heatmap)
-        layout.addWidget(heatmap_box)
+        content_layout.addWidget(heatmap_box)
 
-        resistance_box = QGroupBox("Паттерн резистентности")
-        resistance_layout = QVBoxLayout(resistance_box)
+        resistance_box, resistance_layout = make_section_frame("Паттерн резистентности")
         self._resistance_grid = ResistanceGrid()
         self._resistance_grid.setMinimumHeight(220)
         resistance_layout.addWidget(self._resistance_grid)
-        layout.addWidget(resistance_box)
+        content_layout.addWidget(resistance_box)
+        layout.addWidget(self._content_widget)
         layout.addStretch()
 
     def _material_type_ids(self) -> dict[str, int]:

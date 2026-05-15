@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, cast
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
-    QGroupBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -18,7 +18,12 @@ from PySide6.QtWidgets import (
 from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping
 from app.ui.analytics.charts import TopMicrobesChart, TrendChart
 from app.ui.analytics.tabs import TAB_ISMP, TAB_MICROBIOLOGY
-from app.ui.analytics.view_utils import build_top_microbe_chart_items, build_trend_chart_items
+from app.ui.analytics.view_utils import (
+    build_top_microbe_chart_items,
+    build_trend_chart_items,
+    make_section_frame,
+)
+from app.ui.analytics.widgets.empty_state import EmptyState
 from app.ui.analytics.widgets.kpi_card import KpiCard
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.table_utils import (
@@ -52,6 +57,9 @@ class OverviewTab(QWidget):
         self._last_request = request
         self.controller.clear_cache()
         agg = self.controller.get_aggregates(request)
+        has_data = int(agg.get("total", 0)) > 0
+        self._empty_state.setVisible(not has_data)
+        self._content_widget.setVisible(has_data)
         ismp = self.controller.get_ismp_metrics(request)
         compare = self.controller.compare_periods(request, self._compare_days())
         trend_rows = self.controller.get_trend(request)
@@ -65,16 +73,27 @@ class OverviewTab(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
-        kpi_row = QHBoxLayout()
-        kpi_row.setSpacing(12)
-        kpi_row.addWidget(self._kpi_hosp)
-        kpi_row.addWidget(self._kpi_ismp)
-        kpi_row.addWidget(self._kpi_pos)
-        kpi_row.addWidget(self._kpi_prev)
-        layout.addLayout(kpi_row)
-        self._build_summary_row(layout)
-        layout.addWidget(self._build_dashboard_box())
-        layout.addWidget(self._build_top_box())
+        self._empty_state = EmptyState(
+            "За выбранный период данных нет.",
+            "Расширьте период или сбросьте фильтры.",
+        )
+        self._empty_state.setVisible(False)
+        layout.addWidget(self._empty_state)
+
+        self._content_widget = QWidget()
+        content_layout = QVBoxLayout(self._content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(12)
+        kpi_grid = QGridLayout()
+        kpi_grid.setSpacing(12)
+        for column, card in enumerate((self._kpi_hosp, self._kpi_ismp, self._kpi_pos, self._kpi_prev)):
+            kpi_grid.addWidget(card, 0, column)
+            kpi_grid.setColumnStretch(column, 1)
+        content_layout.addLayout(kpi_grid)
+        self._build_summary_row(content_layout)
+        content_layout.addWidget(self._build_dashboard_box())
+        content_layout.addWidget(self._build_top_box())
+        layout.addWidget(self._content_widget)
         layout.addStretch()
 
     def _build_summary_row(self, content_layout: QVBoxLayout) -> None:
@@ -92,9 +111,8 @@ class OverviewTab(QWidget):
         summary_row.addStretch()
         content_layout.addLayout(summary_row)
 
-    def _build_dashboard_box(self) -> QGroupBox:
-        box = QGroupBox("Сводка")
-        dashboard_layout = QVBoxLayout(box)
+    def _build_dashboard_box(self) -> QWidget:
+        box, dashboard_layout = make_section_frame("Сводка")
         controls = QHBoxLayout()
         self.compare_period = QComboBox()
         self.compare_period.addItem("Неделя", 7)
@@ -138,9 +156,8 @@ class OverviewTab(QWidget):
         dashboard_layout.addWidget(self.trend_chart)
         return box
 
-    def _build_top_box(self) -> QGroupBox:
-        top_box = QGroupBox("Топ микроорганизмов")
-        top_layout = QVBoxLayout(top_box)
+    def _build_top_box(self) -> QWidget:
+        top_box, top_layout = make_section_frame("Топ микроорганизмов")
         self.chart = TopMicrobesChart()
         self.chart.setMinimumHeight(340)
         top_layout.addWidget(self.chart)

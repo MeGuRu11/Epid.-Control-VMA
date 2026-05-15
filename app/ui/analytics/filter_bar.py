@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QGridLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -19,7 +18,11 @@ from PySide6.QtWidgets import (
 
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.domain.constants import MilitaryCategory
-from app.ui.analytics.view_utils import normalize_date_range, quick_period_bounds
+from app.ui.analytics.view_utils import (
+    make_section_frame,
+    normalize_date_range,
+    quick_period_bounds,
+)
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
@@ -149,8 +152,7 @@ class FilterBar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        self.filters_box = QGroupBox("Параметры поиска")
-        filters_layout = QVBoxLayout(self.filters_box)
+        self.filters_box, filters_layout = make_section_frame("Параметры поиска")
         filters_layout.setSpacing(10)
         filters_layout.addLayout(self._build_quick_period_row())
         filters_layout.addLayout(self._build_primary_grid())

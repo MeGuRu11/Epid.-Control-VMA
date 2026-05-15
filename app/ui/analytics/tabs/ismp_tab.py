@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtWidgets import (
-    QGroupBox,
+    QGridLayout,
     QHBoxLayout,
     QTableWidget,
     QTableWidgetItem,
@@ -11,7 +11,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.analytics.view_utils import make_section_frame
 from app.ui.analytics.widgets.donut_chart import DonutChart, IsmpDepartmentBar
+from app.ui.analytics.widgets.empty_state import EmptyState
 from app.ui.analytics.widgets.kpi_card import KpiCard
 from app.ui.widgets.table_utils import resize_columns_to_content, set_table_read_only
 
@@ -30,6 +32,9 @@ class IsmpTab(QWidget):
     def refresh(self, request: AnalyticsSearchRequest) -> None:
         self._last_request = request
         data = self.controller.get_ismp_metrics(request)
+        has_data = int(data.get("ismp_cases", 0)) > 0
+        self._empty_state.setVisible(not has_data)
+        self._content_widget.setVisible(has_data)
         department_data = self.controller.get_ismp_by_department(request)
         self._update_kpi(data)
         self._update_donut(data)
@@ -46,31 +51,41 @@ class IsmpTab(QWidget):
         self._kpi_dens = KpiCard("Плотность ‰ к.дн.", "П", "calc", "negative", show_sparkline=False)
         self._kpi_prev = KpiCard("Превалентность", "%", "calc", "negative", show_sparkline=False)
 
-        kpi_row = QHBoxLayout()
-        kpi_row.setSpacing(12)
-        for card in (self._kpi_total, self._kpi_ismp, self._kpi_inc, self._kpi_dens, self._kpi_prev):
-            kpi_row.addWidget(card)
-        layout.addLayout(kpi_row)
+        self._empty_state = EmptyState(
+            "Случаев ИСМП в выбранном периоде не зарегистрировано.",
+            "Это позитивный результат.",
+        )
+        self._empty_state.setVisible(False)
+        layout.addWidget(self._empty_state)
+
+        self._content_widget = QWidget()
+        content_layout = QVBoxLayout(self._content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(12)
+
+        kpi_grid = QGridLayout()
+        kpi_grid.setSpacing(12)
+        for column, card in enumerate((self._kpi_total, self._kpi_ismp, self._kpi_inc, self._kpi_dens, self._kpi_prev)):
+            kpi_grid.addWidget(card, 0, column)
+            kpi_grid.setColumnStretch(column, 1)
+        content_layout.addLayout(kpi_grid)
 
         charts_row = QHBoxLayout()
         charts_row.setSpacing(16)
 
-        donut_box = QGroupBox("Распределение по типам ИСМП")
-        donut_layout = QVBoxLayout(donut_box)
+        donut_box, donut_layout = make_section_frame("Распределение по типам ИСМП")
         self._donut = DonutChart()
         donut_layout.addWidget(self._donut)
         charts_row.addWidget(donut_box, 1)
 
-        department_box = QGroupBox("По отделениям")
-        department_layout = QVBoxLayout(department_box)
+        department_box, department_layout = make_section_frame("По отделениям")
         self._dept_bar = IsmpDepartmentBar()
         department_layout.addWidget(self._dept_bar)
         charts_row.addWidget(department_box, 1)
 
-        layout.addLayout(charts_row)
+        content_layout.addLayout(charts_row)
 
-        table_box = QGroupBox("Типы ИСМП")
-        table_layout = QVBoxLayout(table_box)
+        table_box, table_layout = make_section_frame("Типы ИСМП")
         self.ismp_table = QTableWidget(0, 2)
         self.ismp_table.setHorizontalHeaderLabels(["Тип ИСМП", "Количество"])
         self.ismp_table.horizontalHeader().setStretchLastSection(True)
@@ -79,7 +94,8 @@ class IsmpTab(QWidget):
         self.ismp_table.setMinimumHeight(140)
         set_table_read_only(self.ismp_table)
         table_layout.addWidget(self.ismp_table)
-        layout.addWidget(table_box)
+        content_layout.addWidget(table_box)
+        layout.addWidget(self._content_widget)
         layout.addStretch()
 
     def _update_kpi(self, data: dict[str, Any]) -> None:

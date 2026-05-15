@@ -153,6 +153,32 @@ def _build_qss(settings: Settings) -> str:
         font-size: 16px;
         font-weight: 700;
     }}
+    QFrame#sectionFrame {{
+        background: transparent;
+        border: none;
+        border-top: 1px solid {COL["border_soft"]};
+        padding-top: 8px;
+    }}
+    QFrame#sectionFrame QLabel#sectionTitle {{
+        font-size: 13px;
+        font-weight: 600;
+        color: {COL["text"]};
+        padding-bottom: 4px;
+    }}
+    QFrame#emptyState {{
+        background: {COL["surface2"]};
+        border: 1px dashed {COL["border_soft"]};
+        border-radius: 12px;
+        padding: 24px;
+    }}
+    QLabel#emptyStateText {{
+        font-size: 13px;
+        color: {COL["muted"]};
+    }}
+    QLabel#emptyStateHint {{
+        font-size: 12px;
+        color: {COL["text_muted"]};
+    }}
     QLabel#muted, QLabel#helperText {{
         color: {COL["text_muted"]};
     }}

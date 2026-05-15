@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta
 
+from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
+
 from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping, group_trend_rows
 
 
@@ -26,6 +28,31 @@ def format_analytics_datetime(value: date | datetime | None) -> str:
     if isinstance(value, datetime):
         return value.strftime("%d.%m.%Y %H:%M")
     return value.strftime("%d.%m.%Y")
+
+
+def make_section_frame(title: str, parent: QWidget | None = None) -> tuple[QFrame, QVBoxLayout]:
+    """
+    Создать секцию Analytics v2 с заголовком.
+
+    Возвращает контейнер и layout для содержимого.
+    """
+    frame = QFrame(parent)
+    frame.setObjectName("sectionFrame")
+
+    title_label = QLabel(title)
+    title_label.setObjectName("sectionTitle")
+
+    layout = QVBoxLayout(frame)
+    layout.setContentsMargins(0, 0, 0, 8)
+    layout.setSpacing(8)
+    layout.addWidget(title_label)
+
+    content_layout = QVBoxLayout()
+    content_layout.setContentsMargins(0, 0, 0, 0)
+    content_layout.setSpacing(6)
+    layout.addLayout(content_layout)
+
+    return frame, content_layout
 
 
 def format_day_label(value: object) -> str:
