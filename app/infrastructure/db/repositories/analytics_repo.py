@@ -356,6 +356,13 @@ class AnalyticsRepository:
             .limit(1)
             .scalar_subquery()
         )
+        ris_label = (
+            select(LabAbxSusceptibility.ris)
+            .where(LabAbxSusceptibility.lab_sample_id == LabSample.id)
+            .order_by(LabAbxSusceptibility.id.asc())
+            .limit(1)
+            .scalar_subquery()
+        )
         stmt = (
             select(
                 LabSample,
@@ -365,6 +372,7 @@ class AnalyticsRepository:
                 RefMaterialType,
                 micro_label.label("microorganism"),
                 abx_label.label("antibiotic"),
+                ris_label.label("ris"),
             )
             .select_from(LabSample)
             .join(filtered, filtered.c.sample_id == LabSample.id)

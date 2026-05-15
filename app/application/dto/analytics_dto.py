@@ -32,4 +32,5 @@ class AnalyticsSampleRow(BaseModel):
     material_type: str | None = None
     microorganism: str | None = None
     antibiotic: str | None = None
+    ris: str | None = None
     growth_flag: int | None = None

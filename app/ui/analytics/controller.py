@@ -62,6 +62,62 @@ class AnalyticsController:
             patient_category=request.patient_category,
         )
 
+    def get_heatmap_data(
+        self,
+        request: AnalyticsSearchRequest,
+        top_n: int = 10,
+    ) -> tuple[dict[str, dict[str, int]], list[str]]:
+        rows = self.search(request)
+        matrix: dict[str, dict[str, int]] = {}
+        dept_totals: dict[str, int] = {}
+        micro_totals: dict[str, int] = {}
+
+        for row in rows:
+            if row.growth_flag != 1 or not row.department_name or not row.microorganism:
+                continue
+            dept = str(row.department_name)
+            micro = str(row.microorganism)
+            dept_map = matrix.setdefault(dept, {})
+            dept_map[micro] = dept_map.get(micro, 0) + 1
+            dept_totals[dept] = dept_totals.get(dept, 0) + 1
+            micro_totals[micro] = micro_totals.get(micro, 0) + 1
+
+        top_depts = sorted(dept_totals, key=dept_totals.__getitem__, reverse=True)[:top_n]
+        top_micros = sorted(micro_totals, key=micro_totals.__getitem__, reverse=True)[:top_n]
+        return (
+            {
+                dept: {micro: matrix[dept].get(micro, 0) for micro in top_micros}
+                for dept in top_depts
+            },
+            top_micros,
+        )
+
+    def get_resistance_data(
+        self,
+        request: AnalyticsSearchRequest,
+        top_n: int = 10,
+    ) -> dict[str, dict[str, dict[str, int]]]:
+        rows = self.search(request)
+        matrix: dict[str, dict[str, dict[str, int]]] = {}
+        micro_totals: dict[str, int] = {}
+
+        for row in rows:
+            if not row.microorganism or not row.antibiotic or not row.ris:
+                continue
+            ris = str(row.ris).upper()
+            if ris not in {"S", "I", "R"}:
+                continue
+            micro = str(row.microorganism)
+            antibiotic = str(row.antibiotic)
+            micro_map = matrix.setdefault(micro, {})
+            cell = micro_map.setdefault(antibiotic, {"S": 0, "I": 0, "R": 0, "total": 0})
+            cell[ris] += 1
+            cell["total"] += 1
+            micro_totals[micro] = micro_totals.get(micro, 0) + 1
+
+        top_micros = sorted(micro_totals, key=micro_totals.__getitem__, reverse=True)[:top_n]
+        return {micro: matrix[micro] for micro in top_micros if micro in matrix}
+
     def list_saved_filters(self) -> list[Any]:
         return self.saved_filter_service.list_filters("analytics")
 

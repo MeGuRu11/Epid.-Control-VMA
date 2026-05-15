@@ -120,7 +120,7 @@ class AnalyticsService:
             )
 
             result_map: dict[int, AnalyticsSampleRow] = {}
-            for sample, patient, _case, dept, material, micro, abx in rows:
+            for sample, patient, _case, dept, material, micro, abx, ris_val in rows:
                 if sample.id not in result_map:
                     result_map[sample.id] = AnalyticsSampleRow(
                         lab_sample_id=sample.id,
@@ -132,6 +132,7 @@ class AnalyticsService:
                         material_type=f"{material.code} - {material.name}" if material else None,
                         microorganism=None,
                         antibiotic=None,
+                        ris=ris_val if isinstance(ris_val, str) else None,
                         growth_flag=sample.growth_flag,
                     )
                 row = result_map[sample.id]
@@ -151,7 +152,7 @@ class AnalyticsService:
     def get_aggregates_from_rows(self, rows: list[tuple]) -> dict:
         sample_flags: dict[int, int | None] = {}
         micro_counts: dict[str, int] = {}
-        for sample, _patient, _case, _dept, _material, micro, _abx in rows:
+        for sample, _patient, _case, _dept, _material, micro, _abx, *_rest in rows:
             if sample.id not in sample_flags:
                 sample_flags[sample.id] = sample.growth_flag
             if micro:

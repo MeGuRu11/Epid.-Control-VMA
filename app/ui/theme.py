@@ -578,6 +578,66 @@ def _build_qss(settings: Settings) -> str:
         font-weight: 500;
         color: {COL["muted"]};
     }}
+    QPushButton#quickFilterChip {{
+        background: {COL["surface2"]};
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 14px;
+        padding: 4px 12px;
+        font-size: 12px;
+        color: {COL["text"]};
+    }}
+    QPushButton#quickFilterChip:hover {{
+        border-color: {COL["accent_border"]};
+    }}
+    QPushButton#quickFilterChip:checked {{
+        background: {COL["accent"]};
+        border-color: {COL["accent_border"]};
+        color: #FFFFFF;
+    }}
+    QScrollArea#heatmapScrollArea {{
+        background: transparent;
+        border: none;
+    }}
+    QWidget#heatmapGrid {{
+        background: transparent;
+    }}
+    QLabel#heatmapHeaderLabel {{
+        color: {COL["text_muted"]};
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px;
+    }}
+    QLabel#heatmapDeptLabel {{
+        color: {COL["text"]};
+        font-size: 11px;
+        padding: 2px 4px;
+    }}
+    QLabel#heatmapCell {{
+        border-radius: 4px;
+        border: 1px solid transparent;
+        font-size: 11px;
+        font-weight: 500;
+    }}
+    QLabel#heatmapCell[tone="empty"] {{
+        background: #F5F3EF;
+        border-color: {COL["border_soft"]};
+        color: #AAAAAA;
+    }}
+    QLabel#heatmapCell[tone="low"] {{
+        background: #EAF3DE;
+        border-color: #D1E5B9;
+        color: #3B6D11;
+    }}
+    QLabel#heatmapCell[tone="medium"] {{
+        background: #FEF3C7;
+        border-color: #F4D58D;
+        color: #92400E;
+    }}
+    QLabel#heatmapCell[tone="high"] {{
+        background: #FECACA;
+        border-color: #E18A85;
+        color: #991B1B;
+    }}
     QGroupBox#patientCard {{
         background: rgba(255, 249, 242, 0.72);
         border: 1px solid {COL["border"]};
