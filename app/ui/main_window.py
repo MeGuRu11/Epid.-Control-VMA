@@ -28,6 +28,7 @@ from app.config import settings
 from app.container import Container
 from app.ui.admin.user_admin_view import UserAdminView
 from app.ui.analytics.analytics_view import AnalyticsSearchView
+from app.ui.analytics.analytics_view_v2 import AnalyticsViewV2
 from app.ui.emz.emz_form import EmzForm
 from app.ui.form100_v2.form100_view import Form100ViewV2
 from app.ui.home.home_view import HomeView
@@ -452,10 +453,10 @@ class MainWindow(QMainWindow):
             on_data_changed=self._notify_data_changed,
             on_open_form100=self._open_form100_from_emk,
         )
+        self._analytics_view: AnalyticsSearchView | AnalyticsViewV2
         if self._use_analytics_v2:
-            # TODO: S4.2 Этап 1 — заменить на AnalyticsViewV2.
-            # Пока v2 не готов, флаг ведёт на текущую Аналитику v1.
-            self._analytics_view = AnalyticsSearchView(
+            logger.info("Analytics v2 UI enabled via user preferences")
+            self._analytics_view = AnalyticsViewV2(
                 analytics_service=self.container.analytics_service,
                 reference_service=self.container.reference_service,
                 saved_filter_service=self.container.saved_filter_service,
