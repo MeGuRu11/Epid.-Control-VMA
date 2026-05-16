@@ -292,22 +292,31 @@ def _apply_initial_window_size(
 ) -> None:
     from app.application.dto.user_preferences_dto import UserPreferences
 
+    def _force_relayout(w: QMainWindow) -> None:
+        # Qt оптимизирует resize() с тем же размером как no-op и не шлёт
+        # resizeEvent. Делаем +1/-1 чтобы реально пробросить resizeEvent
+        # по всему дереву виджетов и заставить дочерние layouts
+        # пересчитать SizePolicy под фактический maximized размер.
+        if not w.isVisible():
+            return
+        sz = w.size()
+        w.resize(sz.width() + 1, sz.height() + 1)
+        w.resize(sz)
+
     # Если в настройках указан maximized — не трогаем геометрию вообще.
     # Qt сам применит maximized state корректно через showMaximized().
     # Без этого setGeometry() ниже может сломать maximized и привести
     # к borderless-режиму без декораций на Windows.
     if isinstance(prefs, UserPreferences) and prefs.window_initial_state == "maximized":
         # Принудительно прокидываем resizeEvent через всё дерево виджетов.
-        # Без этого после showMaximized() дочерние layouts могут использовать
-        # начальные (не-maximized) размеры до тех пор, пока пользователь
-        # вручную не изменит размер окна.
-        QTimer.singleShot(0, lambda: window.resize(window.size()))
+        # Delay 50ms — чтобы Qt успел применить maximized state до relayout.
+        QTimer.singleShot(50, lambda: _force_relayout(window))
         return
 
     # Runtime-страховка: если по любой причине окно уже максимизировано/fullscreen —
     # тоже не трогаем.
     if window.isMaximized() or window.isFullScreen():
-        QTimer.singleShot(0, lambda: window.resize(window.size()))
+        QTimer.singleShot(50, lambda: _force_relayout(window))
         return
 
     screen = _resolve_initial_screen(window, app)
