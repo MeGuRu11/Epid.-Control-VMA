@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QWidg
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.ui.analytics.charts import TopMicrobesChart
 from app.ui.analytics.view_utils import build_top_microbe_chart_items, make_section_frame
-from app.ui.analytics.widgets.empty_state import EmptyState
+from app.ui.analytics.widgets.empty_state import CurrentWidgetStack, make_inline_placeholder
 from app.ui.analytics.widgets.heatmap import Heatmap
 from app.ui.analytics.widgets.quick_filter_chips import QuickFilterChips
 from app.ui.analytics.widgets.resistance_grid import ResistanceGrid
@@ -28,9 +28,6 @@ class MicrobiologyTab(QWidget):
         self._last_request = request
         agg = self.controller.get_aggregates(request)
         top_microbes = cast(list[tuple[str, int]], agg.get("top_microbes", []))
-        has_data = int(agg.get("positives", 0)) > 0 or bool(top_microbes)
-        self._empty_state.setVisible(not has_data)
-        self._content_widget.setVisible(has_data)
         total_microbe_isolations = int(
             agg.get("total_microbe_isolations") or sum(count for _name, count in top_microbes)
         )
@@ -39,6 +36,7 @@ class MicrobiologyTab(QWidget):
             total_microbe_isolations=total_microbe_isolations,
         )
         self.chart.update_data(chart_items)
+        self._top_chart_stack.setCurrentWidget(self.chart if top_microbes else self._top_chart_empty)
         self.top_table.clearContents()
         self.top_table.setRowCount(len(top_microbes))
         for idx, (name, count) in enumerate(top_microbes):
@@ -50,9 +48,19 @@ class MicrobiologyTab(QWidget):
 
         matrix, ordered_micros = self.controller.get_heatmap_data(request)
         self._heatmap.set_data(matrix, ordered_micros)
+        has_heatmap = bool(matrix) and bool(ordered_micros)
+        self._heatmap_stack.setCurrentWidget(self._heatmap if has_heatmap else self._heatmap_empty)
 
         resistance = self.controller.get_resistance_data(request)
-        self._resistance_grid.set_data(resistance)
+        has_resistance = any(
+            cell.get("total", 0) >= 5
+            for antibiotics in resistance.values()
+            for cell in antibiotics.values()
+        )
+        self._resistance_grid.set_data(resistance if has_resistance else {})
+        self._resistance_stack.setCurrentWidget(
+            self._resistance_grid if has_resistance else self._resistance_empty
+        )
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -66,19 +74,20 @@ class MicrobiologyTab(QWidget):
         self._chips.filter_changed.connect(self.refresh)
         layout.addWidget(self._chips)
 
-        self._empty_state = EmptyState("За выбранный период нет положительных проб.")
-        self._empty_state.setVisible(False)
-        layout.addWidget(self._empty_state)
-
         self._content_widget = QWidget()
         content_layout = QVBoxLayout(self._content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(12)
 
         top_box, top_layout = make_section_frame("Топ микроорганизмов")
+        self._top_chart_stack = CurrentWidgetStack()
         self.chart = TopMicrobesChart()
         self.chart.setMinimumHeight(340)
-        top_layout.addWidget(self.chart)
+        self._top_chart_stack.addWidget(self.chart)
+        self._top_chart_empty = make_inline_placeholder("Нет данных за период")
+        self._top_chart_stack.addWidget(self._top_chart_empty)
+        self._top_chart_stack.setCurrentWidget(self._top_chart_empty)
+        top_layout.addWidget(self._top_chart_stack)
         self.top_table = QTableWidget(0, 3)
         self.top_table.setHorizontalHeaderLabels(["Микроорганизм", "Количество", "Доля"])
         self.top_table.horizontalHeader().setStretchLastSection(True)
@@ -93,13 +102,25 @@ class MicrobiologyTab(QWidget):
         self._heatmap = Heatmap()
         self._heatmap.setMinimumHeight(260)
         self._heatmap.cell_clicked.connect(self._on_heatmap_cell_clicked)
-        heatmap_layout.addWidget(self._heatmap)
+        self._heatmap_stack = CurrentWidgetStack()
+        self._heatmap_stack.addWidget(self._heatmap)
+        self._heatmap_empty = make_inline_placeholder("Нет данных за период")
+        self._heatmap_stack.addWidget(self._heatmap_empty)
+        self._heatmap_stack.setCurrentWidget(self._heatmap_empty)
+        heatmap_layout.addWidget(self._heatmap_stack)
         content_layout.addWidget(heatmap_box)
 
         resistance_box, resistance_layout = make_section_frame("Паттерн резистентности")
         self._resistance_grid = ResistanceGrid()
         self._resistance_grid.setMinimumHeight(220)
-        resistance_layout.addWidget(self._resistance_grid)
+        self._resistance_stack = CurrentWidgetStack()
+        self._resistance_stack.addWidget(self._resistance_grid)
+        self._resistance_empty = make_inline_placeholder(
+            "Недостаточно данных для анализа резистентности (нужно ≥5 проб с антибиограммой)"
+        )
+        self._resistance_stack.addWidget(self._resistance_empty)
+        self._resistance_stack.setCurrentWidget(self._resistance_empty)
+        resistance_layout.addWidget(self._resistance_stack)
         content_layout.addWidget(resistance_box)
         layout.addWidget(self._content_widget)
         layout.addStretch()

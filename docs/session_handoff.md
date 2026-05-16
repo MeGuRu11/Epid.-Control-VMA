@@ -1,57 +1,67 @@
-# Сессия 2026-05-16 — HomeView first maximized layout
+# Сессия 2026-05-17 — Analytics empty states, ExitDialog, HomeView tab-switch regression
 
 ## Текущее состояние
 
-- Исправлен дефект первого maximized-показа `HomeView`: огромные вертикальные зазоры больше не появляются.
+- Реализованы три UI-фикса в рамках одного изменения.
 - Рабочий репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
-- HEAD перед началом задачи: `f379183 fix: prevent hero/utility cards from stretching vertically on large screens`.
-- Коммит к созданию: `fix: HomeView layout correctly recalculates on first maximized show`.
-
-## Корневая причина
-
-- `HomeView.showEvent` и `resizeEvent` вызывались при первом запуске, то есть проблема была не в пропущенном resize.
-- Стандартный `QStackedWidget` внутри `TransitionStack` считал `minimumSizeHint/sizeHint` по всем страницам.
-- Скрытая `AnalyticsViewV2` имела `minimumSizeHint = 957×1820`, поэтому первый `showMaximized()` получал завышенный минимум и отдавал `HomeView` высоту `1820`.
-- После ручного minimize/maximize Windows пересчитывал геометрию как `1707×815`, и layout становился компактным.
+- Коммит к созданию: `fix: Analytics v2 empty states, ExitDialog centering, HomeView regression on tab switch`.
+- Временные diagnostic `print(...)` удалены.
 
 ## Что сделано
 
-- `TransitionStack.sizeHint()` и `TransitionStack.minimumSizeHint()` теперь возвращают размер текущей страницы, а не максимум по скрытым страницам.
-- При `setCurrentWidgetAnimated(...)` вызывается `updateGeometry()`, чтобы parent layout видел новый контракт размера при переключении страниц.
-- Добавлен regression-тест в `tests/unit/test_transition_stack.py`: текущий `HomeView` не должен наследовать минимальную высоту скрытой высокой страницы.
-- Убраны временные diagnostic `print(...)` из `HomeView`.
-- Для зелёного full-suite синхронизированы pre-existing тесты:
-  - `_DummyWindow` в `test_main_window_initial_size.py` поддерживает `isMaximized()` / `isFullScreen()`;
-  - `test_user_preferences_dto.py` ожидает актуальный дефолт `window_initial_state = "maximized"`;
-  - `test_main_window_ui_shell.py` допускает 4px offscreen-расхождения выравнивания logout из-за Qt font metrics.
-- Скриншоты после фикса:
-  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\home_first_maximized_fixed.png`;
-  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\home_after_manual_resize_fixed.png`.
+- `Analytics v2` больше не скрывает KPI, фильтры и структуру вкладок за полноэкранным `EmptyState` при пустой БД.
+- Для пустых графиков, heatmap, resistance grid и таблиц добавлены inline placeholders через `make_inline_placeholder(...)`.
+- Добавлен `CurrentWidgetStack`: inline stack отдаёт size hint только текущей страницы, поэтому скрытые графики/таблицы не раздувают layout.
+- `OverviewTab`, `MicrobiologyTab`, `IsmpTab` используют inline placeholders; `SearchTab` и `ReportsTab` не менялись по поведению.
+- Тяжёлые вкладки Analytics (`Overview`, `Microbiology`, `ISMP`) обёрнуты в scroll area, поэтому `AnalyticsViewV2` не поднимает minimum height главного окна до высоты содержимого.
+- `TransitionStack` инвалидирует layout и обновляет геометрию текущей страницы при `setCurrentIndex(...)`, `setCurrentWidget(...)` и animated switch.
+- `confirm_exit(...)` и `confirm_logout(...)` центрируют диалог относительно parent перед `exec()`.
+- Добавлены regression-тесты на пустые состояния Analytics, позицию dialog и сброс геометрии `TransitionStack`.
+- Сняты скриншоты после фикса:
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_empty_overview.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_empty_microbiology.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_empty_ismp.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_empty_search.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_empty_reports.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\exit_confirm_centered.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\home_after_analytics_return_fixed.png`.
+
+## Корневые причины
+
+- `Overview`, `Microbiology`, `ISMP` скрывали весь контент при отсутствии данных, из-за чего KPI и структура аналитики исчезали.
+- Обычный `QStackedWidget` в inline-секциях учитывал size hints скрытых тяжёлых страниц.
+- `AnalyticsViewV2` отдавал высокий minimum size hint вверх по дереву layout и после переключения мог увеличивать высоту главного окна.
+- `TransitionStack` не обновлял геометрию новой текущей страницы на всех путях переключения.
+- Exit/Logout dialogs полагались на дефолтное позиционирование Qt.
 
 ## Проверки
 
-- RED: targeted `TransitionStack` regression сначала падал на высоте скрытой страницы `1820`.
-- `python -m pytest tests\unit\test_transition_stack.py -q --tb=short` — pass (`3 passed`).
-- GUI-диагностика полного `MainWindow` после фикса:
-  - первый maximized: `window = 1707×897`, `HomeView = 1707×815`, hero `1261×250`, stats `1675×296`;
-  - после manual resize/maximize: те же размеры.
+- RED targeted-тесты до фикса падали на отсутствующих inline placeholders, нецентрированном dialog и отсутствии `updateGeometry()` при switch.
+- `python -m pytest tests/unit/test_analytics_v2_empty_states.py tests/unit/test_analytics_chart_data.py tests/unit/test_analytics_v2_structure.py tests/unit/test_exit_dialog_position.py tests/unit/test_transition_stack.py -q --tb=short` — pass (`60 passed`).
 - `ruff check app tests` — pass.
-- `python -m mypy app tests` — pass (`380 source files`).
+- `python -m mypy app tests` — pass (`382 source files`).
 - `python scripts/check_architecture.py` — pass.
-- `python -m pytest -q --tb=short` — pass (`775 passed`, `3 warnings`).
+- `python -m pytest -q --tb=short` — pass (`784 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
 
 ## Открытые вопросы / блокеры
 
 - Блокеров нет.
-- В `pytest` остаются существующие предупреждения `reportlab`, `pytest_asyncio` и невозможность записи `pytest_cache_local` из-под sandbox-пользователя; на результат тестов не влияет.
+- В полном pytest остаются существующие предупреждения `pytest_asyncio`, `reportlab` и warning cache permissions; на результат тестов не влияют.
 
 ## Ключевые файлы
 
+- `app/ui/analytics/analytics_view_v2.py`
+- `app/ui/analytics/tabs/overview_tab.py`
+- `app/ui/analytics/tabs/microbiology_tab.py`
+- `app/ui/analytics/tabs/ismp_tab.py`
+- `app/ui/analytics/widgets/empty_state.py`
+- `app/ui/theme.py`
+- `app/ui/widgets/logout_dialog.py`
 - `app/ui/widgets/transition_stack.py`
+- `tests/unit/test_analytics_v2_empty_states.py`
+- `tests/unit/test_analytics_v2_structure.py`
+- `tests/unit/test_exit_dialog_position.py`
 - `tests/unit/test_transition_stack.py`
-- `tests/unit/test_main_window_initial_size.py`
-- `tests/unit/test_main_window_ui_shell.py`
-- `tests/unit/test_user_preferences_dto.py`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`

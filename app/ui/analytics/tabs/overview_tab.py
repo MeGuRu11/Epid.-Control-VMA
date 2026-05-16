@@ -23,7 +23,7 @@ from app.ui.analytics.view_utils import (
     build_trend_chart_items,
     make_section_frame,
 )
-from app.ui.analytics.widgets.empty_state import EmptyState
+from app.ui.analytics.widgets.empty_state import CurrentWidgetStack, make_inline_placeholder
 from app.ui.analytics.widgets.kpi_card import KpiCard
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.table_utils import (
@@ -57,9 +57,6 @@ class OverviewTab(QWidget):
         self._last_request = request
         self.controller.clear_cache()
         agg = self.controller.get_aggregates(request)
-        has_data = int(agg.get("total", 0)) > 0
-        self._empty_state.setVisible(not has_data)
-        self._content_widget.setVisible(has_data)
         ismp = self.controller.get_ismp_metrics(request)
         compare = self.controller.compare_periods(request, self._compare_days())
         trend_rows = self.controller.get_trend(request)
@@ -73,13 +70,6 @@ class OverviewTab(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
-        self._empty_state = EmptyState(
-            "За выбранный период данных нет.",
-            "Расширьте период или сбросьте фильтры.",
-        )
-        self._empty_state.setVisible(False)
-        layout.addWidget(self._empty_state)
-
         self._content_widget = QWidget()
         content_layout = QVBoxLayout(self._content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
@@ -148,19 +138,34 @@ class OverviewTab(QWidget):
         self.department_table.setAlternatingRowColors(True)
         self.department_table.setMinimumHeight(240)
         set_table_read_only(self.department_table)
-        dashboard_layout.addWidget(self.department_table)
+        self._department_stack = CurrentWidgetStack()
+        self._department_stack.addWidget(self.department_table)
+        self._department_empty = make_inline_placeholder("Нет данных за выбранный период")
+        self._department_stack.addWidget(self._department_empty)
+        self._department_stack.setCurrentWidget(self._department_empty)
+        dashboard_layout.addWidget(self._department_stack)
 
         dashboard_layout.addWidget(QLabel("Тренд по периодам"))
+        self._trend_stack = CurrentWidgetStack()
         self.trend_chart = TrendChart()
         self.trend_chart.setMinimumHeight(340)
-        dashboard_layout.addWidget(self.trend_chart)
+        self._trend_stack.addWidget(self.trend_chart)
+        self._trend_empty = make_inline_placeholder("Нет данных за выбранный период")
+        self._trend_stack.addWidget(self._trend_empty)
+        self._trend_stack.setCurrentWidget(self._trend_empty)
+        dashboard_layout.addWidget(self._trend_stack)
         return box
 
     def _build_top_box(self) -> QWidget:
         top_box, top_layout = make_section_frame("Топ микроорганизмов")
+        self._top_chart_stack = CurrentWidgetStack()
         self.chart = TopMicrobesChart()
         self.chart.setMinimumHeight(340)
-        top_layout.addWidget(self.chart)
+        self._top_chart_stack.addWidget(self.chart)
+        self._top_chart_empty = make_inline_placeholder("Нет данных за выбранный период")
+        self._top_chart_stack.addWidget(self._top_chart_empty)
+        self._top_chart_stack.setCurrentWidget(self._top_chart_empty)
+        top_layout.addWidget(self._top_chart_stack)
         self.top_table = QTableWidget(0, 3)
         self.top_table.setHorizontalHeaderLabels(["Микроорганизм", "Количество", "Доля"])
         self.top_table.horizontalHeader().setStretchLastSection(True)
@@ -168,7 +173,12 @@ class OverviewTab(QWidget):
         self.top_table.setAlternatingRowColors(True)
         self.top_table.setMinimumHeight(220)
         set_table_read_only(self.top_table)
-        top_layout.addWidget(self.top_table)
+        self._top_table_stack = CurrentWidgetStack()
+        self._top_table_stack.addWidget(self.top_table)
+        self._top_table_empty = make_inline_placeholder("Нет данных за выбранный период")
+        self._top_table_stack.addWidget(self._top_table_empty)
+        self._top_table_stack.setCurrentWidget(self._top_table_empty)
+        top_layout.addWidget(self._top_table_stack)
         return top_box
 
     def _refresh_last(self) -> None:
@@ -180,6 +190,18 @@ class OverviewTab(QWidget):
 
     def _selected_time_grouping(self) -> TimeGrouping:
         return coerce_time_grouping(self.time_grouping.currentData())
+
+    def _set_stack_content(
+        self,
+        stack: CurrentWidgetStack,
+        content: object,
+        empty: QWidget,
+        has_data: bool,
+    ) -> None:
+        if has_data and isinstance(content, QWidget) and stack.indexOf(content) >= 0:
+            stack.setCurrentWidget(content)
+        else:
+            stack.setCurrentWidget(empty)
 
     def _update_kpi(
         self,
@@ -241,11 +263,13 @@ class OverviewTab(QWidget):
         self.summary_positive.setText(f"Положительных: {positives}")
         self.summary_share.setText(f"Доля: {positive_share * 100:.1f}%")
         self.chart.update_data(chart_items)
+        self._set_stack_content(self._top_chart_stack, self.chart, self._top_chart_empty, bool(top_microbes))
         self._apply_top_table(top_microbes, chart_items)
 
     def _apply_top_table(self, top_microbes: list[tuple[str, int]], chart_items: list[tuple[str, float]]) -> None:
         self.top_table.clearContents()
         self.top_table.setRowCount(len(top_microbes))
+        self._top_table_stack.setCurrentWidget(self.top_table if top_microbes else self._top_table_empty)
         for idx, (name, count) in enumerate(top_microbes):
             self.top_table.setItem(idx, 0, QTableWidgetItem(name))
             self.top_table.setItem(idx, 1, QTableWidgetItem(str(count)))
@@ -256,6 +280,7 @@ class OverviewTab(QWidget):
     def _apply_department_summary(self, rows: list[dict[str, Any]]) -> None:
         self.department_table.clearContents()
         self.department_table.setRowCount(len(rows))
+        self._department_stack.setCurrentWidget(self.department_table if rows else self._department_empty)
         for row_index, row in enumerate(rows):
             total = int(row.get("total", 0))
             positives = int(row.get("positives", 0))
@@ -279,6 +304,7 @@ class OverviewTab(QWidget):
             grouping=self._selected_time_grouping(),
         )
         self.trend_chart.update_data(chart_items)
+        self._set_stack_content(self._trend_stack, self.trend_chart, self._trend_empty, bool(rows))
 
     def _apply_compare(self, compare: dict[str, Any] | None) -> None:
         if not compare:

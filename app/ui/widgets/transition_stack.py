@@ -34,13 +34,31 @@ class TransitionStack(QStackedWidget):
             hint = QSize(0, 0)
         return hint.expandedTo(current.minimumSize())
 
+    def _refresh_current_geometry(self) -> None:
+        current = self.currentWidget()
+        if current is not None:
+            current.updateGeometry()
+            layout = current.layout()
+            if layout is not None:
+                layout.invalidate()
+                layout.activate()
+        self.updateGeometry()
+
+    def setCurrentIndex(self, index: int) -> None:  # noqa: N802
+        super().setCurrentIndex(index)
+        self._refresh_current_geometry()
+
+    def setCurrentWidget(self, widget: QWidget) -> None:  # noqa: N802
+        super().setCurrentWidget(widget)
+        self._refresh_current_geometry()
+
     def setCurrentWidgetAnimated(self, widget: QWidget, direction: int = 1) -> None:  # noqa: N802
         _ = direction
         if widget is self.currentWidget():
+            self._refresh_current_geometry()
             return
         if not self._animations_enabled:
             self.setCurrentWidget(widget)
-            self.updateGeometry()
             return
         if self._busy:
             self._queued = (widget, direction)
@@ -50,7 +68,6 @@ class TransitionStack(QStackedWidget):
         self._queued = None
 
         self.setCurrentWidget(widget)
-        self.updateGeometry()
         effect = self._ensure_opacity_effect(widget)
         effect.setOpacity(0.0)
 

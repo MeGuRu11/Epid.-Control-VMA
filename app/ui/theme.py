@@ -179,6 +179,13 @@ def _build_qss(settings: Settings) -> str:
         font-size: 12px;
         color: {COL["text_muted"]};
     }}
+    QLabel#inlinePlaceholder {{
+        color: {COL["muted"]};
+        font-size: 12px;
+        padding: 20px;
+        background: {COL["surface2"]};
+        border-radius: 8px;
+    }}
     QLabel#muted, QLabel#helperText {{
         color: {COL["text_muted"]};
     }}

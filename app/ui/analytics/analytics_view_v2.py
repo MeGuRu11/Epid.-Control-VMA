@@ -2,10 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QLabel,
+    QScrollArea,
+    QSizePolicy,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from app.ui.analytics.controller import AnalyticsController
 from app.ui.analytics.filter_bar import FilterBar
+from app.ui.analytics.tabs import TAB_REPORTS, TAB_SEARCH
 from app.ui.analytics.tabs.ismp_tab import IsmpTab
 from app.ui.analytics.tabs.microbiology_tab import MicrobiologyTab
 from app.ui.analytics.tabs.overview_tab import OverviewTab
@@ -71,21 +81,41 @@ class AnalyticsViewV2(QWidget):
         layout.addWidget(self._filter_bar)
 
         self._tabs = QTabWidget()
+        self._tabs.setMinimumHeight(360)
+        self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
         self._overview_tab = OverviewTab(self._controller)
         self._microbiology_tab = MicrobiologyTab(self._controller)
         self._ismp_tab = IsmpTab(self._controller)
         self._search_tab = SearchTab(self._controller, self.session)
         self._reports_tab = ReportsTab(self._controller)
+        self._tab_pages = [
+            self._overview_tab,
+            self._microbiology_tab,
+            self._ismp_tab,
+            self._search_tab,
+            self._reports_tab,
+        ]
         self._overview_tab.drill_down_requested.connect(self._tabs.setCurrentIndex)
         self._search_tab.saved_filter_applied.connect(self._filter_bar.set_request_payload)
 
-        self._tabs.addTab(self._overview_tab, "Обзор")
-        self._tabs.addTab(self._microbiology_tab, "Микробиология")
-        self._tabs.addTab(self._ismp_tab, "ИСМП")
+        self._tabs.addTab(self._scrollable_tab(self._overview_tab), "Обзор")
+        self._tabs.addTab(self._scrollable_tab(self._microbiology_tab), "Микробиология")
+        self._tabs.addTab(self._scrollable_tab(self._ismp_tab), "ИСМП")
         self._tabs.addTab(self._search_tab, "Поиск")
         self._tabs.addTab(self._reports_tab, "Отчёты")
         self._tabs.currentChanged.connect(lambda _index: self._refresh_current_tab())
         layout.addWidget(self._tabs)
+
+    def _scrollable_tab(self, page: QWidget) -> QScrollArea:
+        scroll_area = QScrollArea()
+        scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        scroll_area.setWidget(page)
+        return scroll_area
 
     def _on_filters_changed(self, request: AnalyticsSearchRequest) -> None:
         self._current_request = request
@@ -93,12 +123,13 @@ class AnalyticsViewV2(QWidget):
             self._refresh_current_tab()
 
     def _refresh_current_tab(self) -> None:
-        current = self._tabs.currentWidget()
-        if current is self._reports_tab:
+        current_index = self._tabs.currentIndex()
+        current = self._tab_pages[current_index]
+        if current_index == TAB_REPORTS:
             self._reports_tab.refresh()
             return
         request = self._current_request or self._filter_bar.request()
-        if current is self._search_tab:
+        if current_index == TAB_SEARCH:
             self._search_tab.run_search(request)
             return
         if hasattr(current, "refresh"):

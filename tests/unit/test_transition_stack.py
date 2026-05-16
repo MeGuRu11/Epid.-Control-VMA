@@ -4,12 +4,44 @@ from types import SimpleNamespace
 from typing import cast
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QLabel, QWidget
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.services.dashboard_service import DashboardService
 from app.ui.home.home_view import HomeView
 from app.ui.widgets.transition_stack import TransitionStack
+
+
+class _LayoutProbe(QVBoxLayout):
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.invalidated = False
+        self.activated = False
+
+    def invalidate(self) -> None:
+        self.invalidated = True
+        super().invalidate()
+
+    def activate(self) -> bool:
+        self.activated = True
+        return super().activate()
+
+    def reset(self) -> None:
+        self.invalidated = False
+        self.activated = False
+
+
+class _GeometryProbe(QWidget):
+    def __init__(self, minimum_size: QSize) -> None:
+        super().__init__()
+        self.update_geometry_calls = 0
+        self.probe_layout = _LayoutProbe(self)
+        self.probe_layout.addWidget(QLabel("probe"))
+        self.setMinimumSize(minimum_size)
+
+    def updateGeometry(self) -> None:  # noqa: N802
+        self.update_geometry_calls += 1
+        super().updateGeometry()
 
 
 def test_transition_stack_switches_immediately_when_animation_disabled(qapp) -> None:
@@ -70,4 +102,25 @@ def test_transition_stack_uses_current_home_page_minimum_size_for_initial_layout
     stack.setCurrentWidget(current)
 
     assert stack.minimumSizeHint().height() == current.minimumSizeHint().height()
+    assert stack.minimumSizeHint().height() < inactive_tall.minimumSize().height()
+
+
+def test_transition_stack_resets_geometry_on_switch(qapp) -> None:
+    stack = TransitionStack(animations_enabled=False)
+    inactive_tall = QWidget()
+    inactive_tall.setMinimumSize(QSize(960, 1820))
+    current = _GeometryProbe(QSize(420, 320))
+
+    stack.addWidget(inactive_tall)
+    stack.addWidget(current)
+    stack.setCurrentWidget(inactive_tall)
+    current.update_geometry_calls = 0
+    current.probe_layout.reset()
+
+    stack.setCurrentIndex(1)
+
+    assert stack.currentWidget() is current
+    assert current.update_geometry_calls >= 1
+    assert current.probe_layout.invalidated is True
+    assert current.probe_layout.activated is True
     assert stack.minimumSizeHint().height() < inactive_tall.minimumSize().height()

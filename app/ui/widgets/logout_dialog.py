@@ -113,13 +113,26 @@ class ExitConfirmDialog(QDialog):
         root.addLayout(actions)
 
 
+def _center_dialog_on_parent(dialog: QDialog, parent: QWidget | None) -> None:
+    if parent is None:
+        return
+    dialog.show()
+    parent_geom = parent.geometry()
+    dialog.move(
+        parent_geom.x() + (parent_geom.width() - dialog.width()) // 2,
+        parent_geom.y() + (parent_geom.height() - dialog.height()) // 2,
+    )
+
+
 def confirm_logout(parent: QWidget | None = None) -> bool:
     """Показать подтверждение выхода и вернуть True при подтверждении."""
     dialog = LogoutConfirmDialog(parent)
+    _center_dialog_on_parent(dialog, parent)
     return dialog.exec() == QDialog.DialogCode.Accepted
 
 
 def confirm_exit(parent: QWidget | None = None) -> bool:
     """Показать подтверждение закрытия и вернуть True при подтверждении."""
     dialog = ExitConfirmDialog(parent)
+    _center_dialog_on_parent(dialog, parent)
     return dialog.exec() == QDialog.DialogCode.Accepted

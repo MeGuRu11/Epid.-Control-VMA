@@ -231,6 +231,15 @@ def test_analytics_view_v2_has_activate_view_method(qtbot: Any) -> None:
     assert view._default_analytics_loaded is True
 
 
+def test_analytics_view_v2_empty_data_does_not_force_tall_window(qtbot: Any) -> None:
+    view = _build_view()
+    qtbot.addWidget(view)
+
+    view.activate_view()
+
+    assert view.minimumSizeHint().height() < 900
+
+
 def test_analytics_controller_search_delegates_to_service() -> None:
     from app.ui.analytics.controller import AnalyticsController
 
@@ -367,31 +376,40 @@ def test_analytics_view_v2_uses_section_frames_not_group_boxes(qtbot: Any) -> No
     assert view.findChildren(QGroupBox) == []
 
 
-def test_overview_tab_has_empty_state_widget(qtbot: Any) -> None:
+def test_overview_tab_uses_inline_placeholders(qtbot: Any) -> None:
+    from PySide6.QtWidgets import QLabel
+
     from app.ui.analytics.widgets.empty_state import EmptyState
 
     view = _build_view()
     qtbot.addWidget(view)
 
-    assert view._overview_tab.findChild(EmptyState) is not None
+    assert view._overview_tab.findChild(EmptyState) is None
+    assert view._overview_tab.findChildren(QLabel, "inlinePlaceholder")
 
 
-def test_microbiology_tab_has_empty_state_widget(qtbot: Any) -> None:
+def test_microbiology_tab_uses_inline_placeholders(qtbot: Any) -> None:
+    from PySide6.QtWidgets import QLabel
+
     from app.ui.analytics.widgets.empty_state import EmptyState
 
     view = _build_view()
     qtbot.addWidget(view)
 
-    assert view._microbiology_tab.findChild(EmptyState) is not None
+    assert view._microbiology_tab.findChild(EmptyState) is None
+    assert view._microbiology_tab.findChildren(QLabel, "inlinePlaceholder")
 
 
-def test_ismp_tab_has_empty_state_widget(qtbot: Any) -> None:
+def test_ismp_tab_uses_inline_placeholders(qtbot: Any) -> None:
+    from PySide6.QtWidgets import QLabel
+
     from app.ui.analytics.widgets.empty_state import EmptyState
 
     view = _build_view()
     qtbot.addWidget(view)
 
-    assert view._ismp_tab.findChild(EmptyState) is not None
+    assert view._ismp_tab.findChild(EmptyState) is None
+    assert view._ismp_tab.findChildren(QLabel, "inlinePlaceholder")
 
 
 def test_search_tab_has_empty_state_widget(qtbot: Any) -> None:
