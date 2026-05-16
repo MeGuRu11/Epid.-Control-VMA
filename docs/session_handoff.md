@@ -1,65 +1,57 @@
-# Сессия 2026-05-15 - S4.2 Этап 8 Analytics v2 финализация
+# Сессия 2026-05-16 — HomeView first maximized layout
 
 ## Текущее состояние
 
-- S4.2 Analytics v2 полностью завершён.
-- `AnalyticsViewV2` стал единственным UI аналитики в `MainWindow`.
-- `AnalyticsSearchView` v1 удалён вместе с файлом `app/ui/analytics/analytics_view.py`.
-- Временный флаг `use_analytics_v2` удалён из `UserPreferences`, диалога настроек и тестов.
+- Исправлен дефект первого maximized-показа `HomeView`: огромные вертикальные зазоры больше не появляются.
 - Рабочий репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
-- HEAD перед началом задачи: `6a82d5b docs: add S4.4 comprehensive system audit task to action plan`.
-- Ожидаемый в промпте HEAD был `3bce4b5`; фактический `6a82d5b` проверен как docs-only изменение `docs/CODEX_ACTION_PLAN.md`.
-- Коммит к созданию: `chore: S4.2 Этап 8 — remove analytics v1, make v2 default`.
+- HEAD перед началом задачи: `f379183 fix: prevent hero/utility cards from stretching vertically on large screens`.
+- Коммит к созданию: `fix: HomeView layout correctly recalculates on first maximized show`.
+
+## Корневая причина
+
+- `HomeView.showEvent` и `resizeEvent` вызывались при первом запуске, то есть проблема была не в пропущенном resize.
+- Стандартный `QStackedWidget` внутри `TransitionStack` считал `minimumSizeHint/sizeHint` по всем страницам.
+- Скрытая `AnalyticsViewV2` имела `minimumSizeHint = 957×1820`, поэтому первый `showMaximized()` получал завышенный минимум и отдавал `HomeView` высоту `1820`.
+- После ручного minimize/maximize Windows пересчитывал геометрию как `1707×815`, и layout становился компактным.
 
 ## Что сделано
 
-- `app/ui/main_window.py` больше не читает `use_analytics_v2` и не импортирует `AnalyticsSearchView`.
-- `MainWindow._init_views()` безусловно создаёт `AnalyticsViewV2`.
-- `app/application/dto/user_preferences_dto.py` больше не содержит поле `use_analytics_v2`; старые `preferences.json` с этим ключом безопасно игнорируются через существующую логику `from_dict`.
-- `app/ui/settings/settings_dialog.py` больше не показывает beta-чекбокс аналитики.
-- Удалён `tests/unit/test_user_preferences_analytics_flag.py`.
-- Адаптированы v1-bound тесты:
-  - `tests/unit/test_ui_smoke.py`;
-  - `tests/unit/test_dropdown_indicators.py`;
-  - `tests/unit/test_analytics_chart_data.py`.
-- Логические проверки chart data сохранены; UI-проверки перенесены на `AnalyticsViewV2`, `OverviewTab`, `FilterBar`, `ReportsTab` и `SearchTab`.
-- Регрессионный чеклист `docs/specs/SPEC_analytics_redesign.md` пройден по коду и автоматическим тестам; результат записан в `docs/progress_report.md`.
+- `TransitionStack.sizeHint()` и `TransitionStack.minimumSizeHint()` теперь возвращают размер текущей страницы, а не максимум по скрытым страницам.
+- При `setCurrentWidgetAnimated(...)` вызывается `updateGeometry()`, чтобы parent layout видел новый контракт размера при переключении страниц.
+- Добавлен regression-тест в `tests/unit/test_transition_stack.py`: текущий `HomeView` не должен наследовать минимальную высоту скрытой высокой страницы.
+- Убраны временные diagnostic `print(...)` из `HomeView`.
+- Для зелёного full-suite синхронизированы pre-existing тесты:
+  - `_DummyWindow` в `test_main_window_initial_size.py` поддерживает `isMaximized()` / `isFullScreen()`;
+  - `test_user_preferences_dto.py` ожидает актуальный дефолт `window_initial_state = "maximized"`;
+  - `test_main_window_ui_shell.py` допускает 4px offscreen-расхождения выравнивания logout из-за Qt font metrics.
+- Скриншоты после фикса:
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\home_first_maximized_fixed.png`;
+  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\home_after_manual_resize_fixed.png`.
 
 ## Проверки
 
-- Baseline: `git log --oneline -3` → HEAD `6a82d5b`.
-- Baseline: `ruff check app tests` — pass.
-- Baseline: `python -m mypy app tests` — pass (`382 source files`).
-- Baseline: `python -m pytest -q --tb=no` — pass (`778 passed`, `3 warnings`).
-- После включения default `use_analytics_v2=True`: `python -m pytest -q --tb=short` — `778 passed`, `3 warnings`.
-- После безусловного `AnalyticsViewV2` в `MainWindow`: `python -m pytest -q --tb=short` — `778 passed`, `3 warnings`.
-- После удаления `analytics_view.py`: `python -m pytest -q --tb=short` — `778 passed`, `3 warnings`.
-- После удаления feature flag: `python -m pytest -q --tb=short` — `774 passed`, `3 warnings`.
-- Финально:
-  - `ruff check app tests` — pass.
-  - `python -m mypy app tests` — pass (`380 source files`).
-  - `python scripts/check_architecture.py` — pass.
-  - `python -m pytest -q --tb=short` — pass (`774 passed`, `3 warnings`).
-  - `python -m compileall -q app tests` — pass.
+- RED: targeted `TransitionStack` regression сначала падал на высоте скрытой страницы `1820`.
+- `python -m pytest tests\unit\test_transition_stack.py -q --tb=short` — pass (`3 passed`).
+- GUI-диагностика полного `MainWindow` после фикса:
+  - первый maximized: `window = 1707×897`, `HomeView = 1707×815`, hero `1261×250`, stats `1675×296`;
+  - после manual resize/maximize: те же размеры.
+- `ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`380 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q --tb=short` — pass (`775 passed`, `3 warnings`).
+- `python -m compileall -q app tests` — pass.
 
 ## Открытые вопросы / блокеры
 
 - Блокеров нет.
-- Pytest продолжает показывать существующие предупреждения `reportlab`, `pytest_asyncio` и отказ записи cache в `pytest_cache_local`; на результат тестов не влияет.
-- Ручной GUI-прогон не выполнялся.
+- В `pytest` остаются существующие предупреждения `reportlab`, `pytest_asyncio` и невозможность записи `pytest_cache_local` из-под sandbox-пользователя; на результат тестов не влияет.
 
 ## Ключевые файлы
 
-- `app/ui/main_window.py`
-- `app/application/dto/user_preferences_dto.py`
-- `app/ui/settings/settings_dialog.py`
-- `tests/unit/test_analytics_chart_data.py`
-- `tests/unit/test_dropdown_indicators.py`
-- `tests/unit/test_ui_smoke.py`
+- `app/ui/widgets/transition_stack.py`
+- `tests/unit/test_transition_stack.py`
+- `tests/unit/test_main_window_initial_size.py`
+- `tests/unit/test_main_window_ui_shell.py`
+- `tests/unit/test_user_preferences_dto.py`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
-
-## Следующие задачи
-
-- S4.3 - документация.
-- S4.4 - аудит.

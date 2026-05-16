@@ -79,6 +79,12 @@ class _DummyWindow:
     def isVisible(self) -> bool:  # noqa: N802
         return self._visible
 
+    def isMaximized(self) -> bool:  # noqa: N802
+        return False
+
+    def isFullScreen(self) -> bool:  # noqa: N802
+        return False
+
 
 class _DummyApp:
     def __init__(

@@ -73,7 +73,7 @@ def test_invalid_animation_policy_falls_back_to_default() -> None:
 
 def test_invalid_window_state_falls_back_to_default() -> None:
     prefs = UserPreferences.from_dict({"window_initial_state": "spinning"})
-    assert prefs.window_initial_state == "last"
+    assert prefs.window_initial_state == "maximized"
 
 
 def test_invalid_backup_frequency_falls_back_to_default() -> None:

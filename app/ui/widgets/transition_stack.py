@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QTimer
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSize, QTimer
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QStackedLayout, QStackedWidget, QWidget
 
 
@@ -19,12 +19,28 @@ class TransitionStack(QStackedWidget):
     def set_animations_enabled(self, enabled: bool) -> None:
         self._animations_enabled = enabled
 
+    def sizeHint(self) -> QSize:  # noqa: N802
+        current = self.currentWidget()
+        if current is None:
+            return super().sizeHint()
+        return current.sizeHint().expandedTo(current.minimumSize())
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802
+        current = self.currentWidget()
+        if current is None:
+            return super().minimumSizeHint()
+        hint = current.minimumSizeHint()
+        if not hint.isValid():
+            hint = QSize(0, 0)
+        return hint.expandedTo(current.minimumSize())
+
     def setCurrentWidgetAnimated(self, widget: QWidget, direction: int = 1) -> None:  # noqa: N802
         _ = direction
         if widget is self.currentWidget():
             return
         if not self._animations_enabled:
             self.setCurrentWidget(widget)
+            self.updateGeometry()
             return
         if self._busy:
             self._queued = (widget, direction)
@@ -34,6 +50,7 @@ class TransitionStack(QStackedWidget):
         self._queued = None
 
         self.setCurrentWidget(widget)
+        self.updateGeometry()
         effect = self._ensure_opacity_effect(widget)
         effect.setOpacity(0.0)
 
@@ -65,4 +82,3 @@ class TransitionStack(QStackedWidget):
         self._queued = None
         if queued:
             QTimer.singleShot(0, lambda: self.setCurrentWidgetAnimated(*queued))
-

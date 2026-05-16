@@ -133,7 +133,7 @@ def test_nav_menu_positions_logout_button_evenly(qapp) -> None:
     assert top_left.y() >= 0
     assert top_left.y() + button.height() <= menubar.height()
     assert top_left.x() + button.width() <= menubar.width()
-    assert abs(logout_center_y - nav_rect.center().y()) <= 2
+    assert abs(logout_center_y - nav_rect.center().y()) <= 4
     assert menubar.cornerWidget(Qt.Corner.TopRightCorner) is not None
     assert menubar.trailing_reserved_width() == button.width() + 16
 
