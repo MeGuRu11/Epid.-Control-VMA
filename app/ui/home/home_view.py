@@ -408,8 +408,11 @@ class HomeView(QWidget):
         )
         self._hero_layout.setDirection(direction)
         if direction == QBoxLayout.Direction.LeftToRight:
-            self._hero_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-            self._utility_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+            # По вертикали — Preferred (а не Expanding), чтобы на широких/высоких
+            # экранах карточки не растягивались на всю высоту и не создавали
+            # огромные зазоры между внутренними секциями.
+            self._hero_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            self._utility_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         else:
             self._hero_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             self._utility_card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
