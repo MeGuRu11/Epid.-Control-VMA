@@ -297,11 +297,17 @@ def _apply_initial_window_size(
     # Без этого setGeometry() ниже может сломать maximized и привести
     # к borderless-режиму без декораций на Windows.
     if isinstance(prefs, UserPreferences) and prefs.window_initial_state == "maximized":
+        # Принудительно прокидываем resizeEvent через всё дерево виджетов.
+        # Без этого после showMaximized() дочерние layouts могут использовать
+        # начальные (не-maximized) размеры до тех пор, пока пользователь
+        # вручную не изменит размер окна.
+        QTimer.singleShot(0, lambda: window.resize(window.size()))
         return
 
     # Runtime-страховка: если по любой причине окно уже максимизировано/fullscreen —
     # тоже не трогаем.
     if window.isMaximized() or window.isFullScreen():
+        QTimer.singleShot(0, lambda: window.resize(window.size()))
         return
 
     screen = _resolve_initial_screen(window, app)
