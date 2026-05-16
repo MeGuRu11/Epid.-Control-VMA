@@ -292,6 +292,12 @@ def _apply_initial_window_size(
 ) -> None:
     from app.application.dto.user_preferences_dto import UserPreferences
 
+    # Если окно уже максимизировано или fullscreen — не переопределять геометрию.
+    # Иначе setGeometry() ниже сломает maximized-состояние и на Windows может
+    # перевести окно в borderless-режим без декораций (кнопок управления).
+    if window.isMaximized() or window.isFullScreen():
+        return
+
     screen = _resolve_initial_screen(window, app)
     if not screen:
         return
