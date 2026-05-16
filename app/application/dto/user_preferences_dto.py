@@ -42,7 +42,7 @@ class UserPreferences:
 
     # --- Окно ---
     remember_window_geometry: bool = True
-    window_initial_state: WindowInitialState = "last"
+    window_initial_state: WindowInitialState = "maximized"
     last_window_geometry: tuple[int, int, int, int] | None = None  # (x, y, w, h)
 
     # --- Папки экспорта/импорта ---

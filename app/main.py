@@ -292,9 +292,15 @@ def _apply_initial_window_size(
 ) -> None:
     from app.application.dto.user_preferences_dto import UserPreferences
 
-    # Если окно уже максимизировано или fullscreen — не переопределять геометрию.
-    # Иначе setGeometry() ниже сломает maximized-состояние и на Windows может
-    # перевести окно в borderless-режим без декораций (кнопок управления).
+    # Если в настройках указан maximized — не трогаем геометрию вообще.
+    # Qt сам применит maximized state корректно через showMaximized().
+    # Без этого setGeometry() ниже может сломать maximized и привести
+    # к borderless-режиму без декораций на Windows.
+    if isinstance(prefs, UserPreferences) and prefs.window_initial_state == "maximized":
+        return
+
+    # Runtime-страховка: если по любой причине окно уже максимизировано/fullscreen —
+    # тоже не трогаем.
     if window.isMaximized() or window.isFullScreen():
         return
 
@@ -308,6 +314,13 @@ def _apply_initial_window_size(
         saved = prefs.last_window_geometry
         if saved is not None and prefs.remember_window_geometry:
             sx, sy, sw, sh = saved
+            # Если сохранённый размер близок к полному экрану (>= 95% доступной
+            # области по обеим осям) — пользователь явно работал в развёрнутом
+            # окне. Восстанавливаем как maximized, а не через setGeometry,
+            # чтобы не уйти в borderless-режим без декораций.
+            if sw >= int(available.width() * 0.95) and sh >= int(available.height() * 0.95):
+                window.showMaximized()
+                return
             min_size = window.minimumSizeHint()
             sw = max(min_size.width(), min(available.width(), sw))
             sh = max(min_size.height(), min(available.height(), sh))
