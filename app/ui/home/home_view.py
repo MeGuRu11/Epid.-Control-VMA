@@ -221,6 +221,24 @@ class HomeView(QWidget):
         self._reflow_hero_meta_cards()
         self._reflow_summary_cards()
 
+    def showEvent(self, event) -> None:  # noqa: N802
+        super().showEvent(event)
+        # В __init__ виджет ещё не имел реального размера от родителя, поэтому
+        # вызовы _apply_hero_layout() / _reflow_*() из __init__ могли быть
+        # выполнены с initial-размером. После showEvent виджет получил
+        # фактический размер от parent layout — пересчитываем заново.
+        # Defer через QTimer чтобы дать parent layout время дораспределить
+        # пространство (особенно важно при первом показе maximized окна).
+        QTimer.singleShot(0, self._recalculate_layout_after_show)
+
+    def _recalculate_layout_after_show(self) -> None:
+        """Повторный расчёт адаптивного layout после получения реального размера."""
+        if not self.isVisible():
+            return
+        self._apply_hero_layout()
+        self._reflow_hero_meta_cards()
+        self._reflow_summary_cards()
+
     def minimumSizeHint(self) -> QSize:  # noqa: N802
         hint = super().minimumSizeHint()
         if not hasattr(self, "_hero_card") or not hasattr(self, "_utility_card"):
