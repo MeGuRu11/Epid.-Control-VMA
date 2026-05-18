@@ -30,7 +30,7 @@ class QuickFilterChips(QWidget):
 
     def __init__(
         self,
-        base_request_getter: Callable[[], AnalyticsSearchRequest],
+        base_request_getter: Callable[[], AnalyticsSearchRequest | None],
         material_type_ids: dict[str, int] | None = None,
         parent: QWidget | None = None,
     ) -> None:
@@ -38,6 +38,9 @@ class QuickFilterChips(QWidget):
         self._get_base = base_request_getter
         self._material_type_ids = {key.lower(): value for key, value in (material_type_ids or {}).items()}
         self._chips: list[QuickFilterChip] = []
+        self._material_chip_indices = [
+            index for index, (_label, overrides) in enumerate(self._CHIPS) if "material_type_name" in overrides
+        ]
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -58,20 +61,44 @@ class QuickFilterChips(QWidget):
             del blocker
 
     def _on_toggled(self, _checked: bool) -> None:
+        sender = self.sender()
+        if isinstance(sender, QuickFilterChip):
+            sender_idx = self._chips.index(sender)
+            if sender_idx in self._material_chip_indices and sender.isChecked():
+                for idx in self._material_chip_indices:
+                    if idx == sender_idx:
+                        continue
+                    blocker = QSignalBlocker(self._chips[idx])
+                    self._chips[idx].setChecked(False)
+                    del blocker
+
         request = self._get_base()
+        if request is None:
+            return
+
         updates: dict[str, object] = {}
+        has_growth_chip = False
+        has_material_chip = False
+
         for chip, (_label, overrides) in zip(self._chips, self._CHIPS, strict=True):
             if not chip.isChecked():
                 continue
             if "growth_flag" in overrides:
                 updates["growth_flag"] = overrides["growth_flag"]
+                has_growth_chip = True
             material_name = overrides.get("material_type_name")
             if isinstance(material_name, str):
                 material_id = self._resolve_material_type_id(material_name)
                 if material_id is not None:
                     updates["material_type_id"] = material_id
-        if updates:
-            request = request.model_copy(update=updates)
+                    has_material_chip = True
+
+        if not has_growth_chip:
+            updates["growth_flag"] = None
+        if not has_material_chip:
+            updates["material_type_id"] = None
+
+        request = request.model_copy(update=updates)
         self.filter_changed.emit(request)
 
     def _resolve_material_type_id(self, label: str) -> int | None:

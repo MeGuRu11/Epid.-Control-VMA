@@ -21,11 +21,23 @@ class MicrobiologyTab(QWidget):
     def __init__(self, controller: AnalyticsController, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.controller = controller
-        self._last_request = AnalyticsSearchRequest()
+        self._base_request: AnalyticsSearchRequest | None = None
+        self._last_request: AnalyticsSearchRequest | None = None
         self._build_ui()
 
     def refresh(self, request: AnalyticsSearchRequest) -> None:
+        self._base_request = request
         self._last_request = request
+        self._load_data(request)
+
+    def _refresh_with_chips(self, request: AnalyticsSearchRequest) -> None:
+        self._last_request = request
+        self._load_data(request)
+
+    def _load_data(self, request: AnalyticsSearchRequest | None) -> None:
+        if request is None:
+            return
+
         agg = self.controller.get_aggregates(request)
         top_microbes = cast(list[tuple[str, int]], agg.get("top_microbes", []))
         total_microbe_isolations = int(
@@ -68,10 +80,10 @@ class MicrobiologyTab(QWidget):
         layout.setSpacing(12)
 
         self._chips = QuickFilterChips(
-            base_request_getter=lambda: self._last_request,
+            base_request_getter=lambda: self._base_request,
             material_type_ids=self._material_type_ids(),
         )
-        self._chips.filter_changed.connect(self.refresh)
+        self._chips.filter_changed.connect(self._refresh_with_chips)
         layout.addWidget(self._chips)
 
         self._content_widget = QWidget()

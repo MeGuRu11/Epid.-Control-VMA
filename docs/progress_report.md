@@ -7287,3 +7287,35 @@ Window title, кнопки, внутренние ключи — не трону�
   - `python -m compileall -q app tests` — pass.
 - README-only amend:
   - `git diff --check` — pass.
+
+---
+
+## 2026-05-18 — fix: QuickFilterChips — filter accumulation and mutually exclusive material chips
+
+**Коммит:** `fix: QuickFilterChips — filter accumulation and mutually exclusive material chips`
+**Статус:** готово к коммиту
+
+- Исправлена корневая причина накопления быстрых фильтров во вкладке `Микробиология`:
+  - `MicrobiologyTab` теперь хранит `_base_request` отдельно от `_last_request`;
+  - `_base_request` обновляется только при refresh из общей панели фильтров;
+  - chip-toggle обновляет только `_last_request` и загружает данные через общий `_load_data()`.
+- `QuickFilterChips` теперь:
+  - явно сбрасывает `growth_flag` и `material_type_id`, если соответствующий chip не активен;
+  - поддерживает `base_request_getter`, который временно возвращает `None`;
+  - делает material-чипы взаимоисключающими через `QSignalBlocker`.
+- Добавлены regression-тесты:
+  - снятие chip сбрасывает связанный фильтр;
+  - `Только из крови` и `Только из ран` не могут быть активны одновременно;
+  - исходный base request не мутируется при chip-toggle;
+  - `MicrobiologyTab._base_request` не загрязняется chip-фильтрами.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_quick_filter_chips.py -q --tb=short` — `3 failed`, `4 passed`.
+- GREEN targeted: `python -m pytest tests/unit/test_quick_filter_chips.py -q --tb=short` — `7 passed`, `2 warnings`.
+- `ruff check app tests` — pass (`All checks passed!`).
+- `python -m mypy app tests` — pass (`384 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest tests/unit/test_quick_filter_chips.py -v` — pass (`7 passed`, `2 warnings`).
+- `python -m pytest -q --tb=short` — pass (`795 passed`, `3 warnings`).
+- `python -m compileall -q app tests` — pass.
