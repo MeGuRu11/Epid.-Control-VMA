@@ -35,8 +35,9 @@ def test_seed_demo_data_creates_analytics_dataset(tmp_path: Path) -> None:
 
         assert stats.patients == 5
         assert stats.emr_cases == 15
-        assert stats.lab_samples == 35
-        assert stats.positive_lab_samples == 24
+        assert stats.lab_samples == 58
+        assert stats.positive_lab_samples == 47
+        assert stats.resistance_anchor_samples == 23
         assert stats.ismp_cases == 4
         assert stats.sanitary_samples == 8
 
@@ -63,7 +64,8 @@ def test_seed_demo_data_creates_analytics_dataset(tmp_path: Path) -> None:
             str(row.full_name): int(row[1]) for row in sample_count_rows
         }
         assert len(sample_counts_by_patient) == 5
-        assert set(sample_counts_by_patient.values()) == {7}
+        assert min(sample_counts_by_patient.values()) >= 7
+        assert sum(sample_counts_by_patient.values()) == stats.lab_samples
 
         departments_with_samples = set(
             session.scalars(
@@ -141,9 +143,64 @@ def test_seed_clear_removes_only_demo_data(tmp_path: Path) -> None:
             select(func.count(models.Patient.id)).where(models.Patient.full_name == "Контрольный Пациент")
         )
 
-        assert demo_labs == stats.lab_samples == 35
+        assert demo_labs == stats.lab_samples == 58
         assert real_labs == 1
         assert real_patients == 1
         assert id_store.exists()
+    finally:
+        session.close()
+
+
+def test_seed_demo_data_creates_resistance_anchor_pairs(tmp_path: Path) -> None:
+    session = _make_session(tmp_path)
+    try:
+        stats = seed(session, id_store_path=tmp_path / "seed_demo_ids.json")
+        session.commit()
+
+        anchor_counts = {
+            (str(row.microbe_code), str(row.antibiotic_code), str(row.ris)): int(row.count_value)
+            for row in session.execute(
+                select(
+                    models.RefMicroorganism.code.label("microbe_code"),
+                    models.RefAntibiotic.code.label("antibiotic_code"),
+                    models.LabAbxSusceptibility.ris.label("ris"),
+                    func.count(models.LabSample.id).label("count_value"),
+                )
+                .select_from(models.LabSample)
+                .join(
+                    models.LabMicrobeIsolation,
+                    models.LabMicrobeIsolation.lab_sample_id == models.LabSample.id,
+                )
+                .join(
+                    models.RefMicroorganism,
+                    models.RefMicroorganism.id == models.LabMicrobeIsolation.microorganism_id,
+                )
+                .join(
+                    models.LabAbxSusceptibility,
+                    models.LabAbxSusceptibility.lab_sample_id == models.LabSample.id,
+                )
+                .join(
+                    models.RefAntibiotic,
+                    models.RefAntibiotic.id == models.LabAbxSusceptibility.antibiotic_id,
+                )
+                .where(models.LabSample.lab_no.like("DEMO-LAB-%-R%"))
+                .group_by(
+                    models.RefMicroorganism.code,
+                    models.RefAntibiotic.code,
+                    models.LabAbxSusceptibility.ris,
+                )
+            ).all()
+        }
+
+        assert stats.resistance_anchor_samples == 23
+        assert anchor_counts == {
+            ("ECOL", "AMP", "R"): 6,
+            ("ECOL", "AMP", "I"): 1,
+            ("ECOL", "CIP", "S"): 5,
+            ("ECOL", "CIP", "I"): 1,
+            ("KPNE", "MEM", "R"): 3,
+            ("KPNE", "MEM", "I"): 2,
+            ("SAUR", "VAN", "S"): 5,
+        }
     finally:
         session.close()

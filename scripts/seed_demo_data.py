@@ -62,6 +62,7 @@ class SeedStats:
     emr_cases: int
     lab_samples: int
     positive_lab_samples: int
+    resistance_anchor_samples: int
     ismp_cases: int
     sanitary_samples: int
 
@@ -159,6 +160,12 @@ _SANITARY_OBJECTS = (
 )
 
 _RIS_WEIGHTS = ("R", "R", "R", "R", "I", "I", "I", "S", "S", "S")
+_RESISTANCE_ANCHORS = (
+    ("ECOL", "E. coli", "AMP", "Ампициллин", ("R", "R", "R", "R", "I", "R", "R")),
+    ("ECOL", "E. coli", "CIP", "Ципрофлоксацин", ("S", "S", "S", "S", "I", "S")),
+    ("SAUR", "S. aureus", "VAN", "Ванкомицин", ("S", "S", "S", "S", "S")),
+    ("KPNE", "K. pneumoniae", "MEM", "Меропенем", ("R", "R", "I", "R", "I")),
+)
 _DEMO_ID_STORE = DATA_DIR / "seed_demo_ids.json"
 
 
@@ -489,6 +496,74 @@ def _create_lab_samples(
     return sample_count, positive_count
 
 
+def _create_resistance_anchor_samples(
+    session: Session,
+    *,
+    demo_cases: Sequence[DemoCase],
+    materials: dict[str, RefMaterialType],
+    microbes: dict[str, RefMicroorganism],
+    antibiotics: dict[str, RefAntibiotic],
+    today: date,
+    run_tag: str,
+    rng: random.Random,
+) -> int:
+    cases_by_patient: dict[int, list[DemoCase]] = {}
+    for demo_case in demo_cases:
+        patient_id = cast(int | None, demo_case.case.patient_id)
+        if patient_id is None:
+            continue
+        cases_by_patient.setdefault(patient_id, []).append(demo_case)
+
+    if not cases_by_patient:
+        return 0
+
+    blood = materials["BLD"]
+    patient_ids = sorted(cases_by_patient)
+    anchor_count = 0
+
+    for microbe_code, _microbe_name, antibiotic_code, _antibiotic_name, ris_values in _RESISTANCE_ANCHORS:
+        microbe = microbes[microbe_code]
+        antibiotic = antibiotics[antibiotic_code]
+        for ris in ris_values:
+            patient_id = rng.choice(patient_ids)
+            demo_case = rng.choice(cases_by_patient[patient_id])
+            anchor_count += 1
+            taken_date = _sample_date_for_case(demo_case, today, rng)
+            sample = LabSample(
+                patient_id=demo_case.case.patient_id,
+                emr_case_id=demo_case.case.id,
+                lab_no=f"DEMO-LAB-{run_tag}-R{anchor_count:03d}",
+                material_type_id=blood.id,
+                material_location="отделение",
+                medium="агар",
+                study_kind="primary",
+                ordered_at=_as_dt(taken_date, hour=8),
+                taken_at=_as_dt(taken_date, hour=9),
+                delivered_at=_as_dt(taken_date, hour=11),
+                growth_result_at=_as_dt(min(today, taken_date + timedelta(days=1)), hour=12),
+                growth_flag=1,
+                colony_desc="рост микрофлоры",
+                microscopy="лейкоциты, бактерии",
+                cfu="10^5",
+                qc_status="valid",
+            )
+            session.add(sample)
+            session.flush()
+            session.add(LabMicrobeIsolation(lab_sample_id=sample.id, microorganism_id=microbe.id))
+            session.add(
+                LabAbxSusceptibility(
+                    lab_sample_id=sample.id,
+                    antibiotic_id=antibiotic.id,
+                    group_id=antibiotic.group_id,
+                    ris=ris,
+                    method="disk",
+                )
+            )
+
+    session.flush()
+    return anchor_count
+
+
 def _create_ismp_cases(session: Session, *, demo_cases: Sequence[DemoCase], rng: random.Random) -> int:
     eligible = [
         demo_case
@@ -593,6 +668,18 @@ def seed(session: Session, *, clear: bool = False, id_store_path: Path | None = 
         run_tag=run_tag,
         rng=rng,
     )
+    resistance_anchor_samples = _create_resistance_anchor_samples(
+        session,
+        demo_cases=demo_cases,
+        materials=materials,
+        microbes=microbes,
+        antibiotics=antibiotics,
+        today=today,
+        run_tag=run_tag,
+        rng=rng,
+    )
+    lab_samples += resistance_anchor_samples
+    positive_lab_samples += resistance_anchor_samples
     ismp_cases = _create_ismp_cases(session, demo_cases=demo_cases, rng=rng)
     sanitary_samples = _create_sanitary_samples(
         session,
@@ -609,6 +696,7 @@ def seed(session: Session, *, clear: bool = False, id_store_path: Path | None = 
         emr_cases=len(demo_cases),
         lab_samples=lab_samples,
         positive_lab_samples=positive_lab_samples,
+        resistance_anchor_samples=resistance_anchor_samples,
         ismp_cases=ismp_cases,
         sanitary_samples=sanitary_samples,
     )
@@ -621,6 +709,8 @@ def _format_stats(stats: SeedStats) -> str:
         f"  ЭМЗ / госпитализаций: {stats.emr_cases}\n"
         f"  Лабораторных проб: {stats.lab_samples} "
         f"(из них положительных: {stats.positive_lab_samples})\n"
+        f"  Resistance anchors: {stats.resistance_anchor_samples} доп. проб "
+        f"({len(_RESISTANCE_ANCHORS)} пары микроорганизм×антибиотик)\n"
         f"  ИСМП случаев: {stats.ismp_cases}\n"
         f"  Санитарных проб: {stats.sanitary_samples}"
     )

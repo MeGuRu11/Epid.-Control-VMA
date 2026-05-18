@@ -7319,3 +7319,41 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m pytest tests/unit/test_quick_filter_chips.py -v` — pass (`7 passed`, `2 warnings`).
 - `python -m pytest -q --tb=short` — pass (`795 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
+
+---
+
+## 2026-05-18 — feat: seed resistance anchors for analytics resistance pattern testing
+
+**Коммит:** `feat: seed resistance anchors for analytics resistance pattern testing`
+**Статус:** готово к коммиту
+
+- В `scripts/seed_demo_data.py` добавлен блок resistance anchors:
+  - `ECOL × AMP`: 7 дополнительных проб, преобладает `R`;
+  - `ECOL × CIP`: 6 дополнительных проб, преобладает `S`;
+  - `SAUR × VAN`: 5 дополнительных проб, `S`;
+  - `KPNE × MEM`: 5 дополнительных проб, пограничный профиль `R/I`.
+- Anchor-пробы:
+  - создаются как положительные `LabSample` с `lab_no` вида `DEMO-LAB-<run>-R###`;
+  - используют материал `BLD`;
+  - получают одну изоляцию микроорганизма и одну строку `LabAbxSusceptibility` с заданным RIS.
+- `SeedStats` и консольный вывод дополнены полем `resistance_anchor_samples`.
+- Обновлены seed-тесты:
+  - общий объём теперь `58` лабпроб и `47` положительных проб;
+  - отдельный тест проверяет точное RIS-распределение anchor-пар.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_seed_demo_data.py -q --tb=short` — `3 failed`.
+- GREEN targeted: `python -m pytest tests/unit/test_seed_demo_data.py -q --tb=short` — `3 passed`, `2 warnings`.
+- `ruff check scripts/seed_demo_data.py` — pass (`All checks passed!`).
+- `python -m mypy scripts/seed_demo_data.py --ignore-missing-imports` — pass.
+- `python scripts/seed_demo_data.py --help` — pass.
+- `python scripts/seed_demo_data.py --clear` — pass.
+- `python scripts/seed_demo_data.py` — pass, printed `Resistance anchors: 23 доп. проб (4 пары микроорганизм×антибиотик)`.
+- Real DB anchor verification:
+  - `ECOL × AMP`: `R=6`, `I=1`;
+  - `ECOL × CIP`: `S=5`, `I=1`;
+  - `KPNE × MEM`: `R=3`, `I=2`;
+  - `SAUR × VAN`: `S=5`.
+- `python -m pytest -q --tb=short` — pass (`796 passed`, `3 warnings`).
+- `python -m compileall -q app tests scripts` — pass.
