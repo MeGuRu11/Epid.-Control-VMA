@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from PySide6.QtCore import Signal
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.application.reporting.formatters import format_date, format_datetime
 from app.ui.analytics.chart_data import TimeGrouping, coerce_time_grouping
 from app.ui.analytics.charts import TopMicrobesChart, TrendChart
 from app.ui.analytics.tabs import TAB_ISMP, TAB_MICROBIOLOGY
@@ -35,6 +37,17 @@ from app.ui.widgets.table_utils import (
 if TYPE_CHECKING:
     from app.application.dto.analytics_dto import AnalyticsSearchRequest
     from app.ui.analytics.controller import AnalyticsController
+
+
+def _fmt_last_date(value: object) -> str:
+    """Format DB date/datetime values for the department summary table."""
+    if value is None:
+        return "—"
+    if isinstance(value, datetime | str):
+        return format_datetime(value)
+    if isinstance(value, date):
+        return format_date(value)
+    return str(value)
 
 
 class OverviewTab(QWidget):
@@ -290,7 +303,7 @@ class OverviewTab(QWidget):
                 str(total),
                 str(positives),
                 f"{share:.1f}%",
-                str(row.get("last_date") or row.get("latest_date") or ""),
+                _fmt_last_date(row.get("last_date") or row.get("latest_date")),
             ]
             for column, value in enumerate(values):
                 self.department_table.setItem(row_index, column, QTableWidgetItem(value))

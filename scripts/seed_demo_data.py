@@ -13,20 +13,22 @@ cleared.
 from __future__ import annotations
 
 import argparse
+import json
 import random
 import sys
 from collections.abc import Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.config import DB_FILE  # noqa: E402
+from app.config import DATA_DIR, DB_FILE  # noqa: E402
 from app.domain.constants import IsmpType  # noqa: E402
 from app.infrastructure.db.models_sqlalchemy import (  # noqa: E402
     Department,
@@ -143,11 +145,11 @@ _ABX_GROUPS = {
 }
 
 _ABX = [
-    {"code": "AMP", "name": "Ампициллин", "group_code": "PEN", "ris": "R"},
-    {"code": "CRO", "name": "Цефтриаксон", "group_code": "CEF", "ris": "S"},
-    {"code": "CIP", "name": "Ципрофлоксацин", "group_code": "FQ", "ris": "I"},
-    {"code": "MEM", "name": "Меропенем", "group_code": "CARB", "ris": "S"},
-    {"code": "VAN", "name": "Ванкомицин", "group_code": "GLY", "ris": "S"},
+    {"code": "AMP", "name": "Ампициллин", "group_code": "PEN"},
+    {"code": "CRO", "name": "Цефтриаксон", "group_code": "CEF"},
+    {"code": "CIP", "name": "Ципрофлоксацин", "group_code": "FQ"},
+    {"code": "MEM", "name": "Меропенем", "group_code": "CARB"},
+    {"code": "VAN", "name": "Ванкомицин", "group_code": "GLY"},
 ]
 
 _SANITARY_OBJECTS = (
@@ -155,6 +157,9 @@ _SANITARY_OBJECTS = (
     "Смыв со стола",
     "Поверхность медоборудования",
 )
+
+_RIS_WEIGHTS = ("R", "R", "R", "R", "I", "I", "I", "S", "S", "S")
+_DEMO_ID_STORE = DATA_DIR / "seed_demo_ids.json"
 
 
 def _as_dt(value: date, *, hour: int = 9, minute: int = 0) -> datetime:
@@ -165,26 +170,105 @@ def _parse_date(value: str) -> date:
     return date.fromisoformat(value)
 
 
-def _clear_data(session: Session) -> None:
-    for model in (
-        SanAbxSusceptibility,
-        SanPhagePanelResult,
-        SanMicrobeIsolation,
-        SanitarySample,
-        LabAbxSusceptibility,
-        LabPhagePanelResult,
-        LabMicrobeIsolation,
-        LabSample,
-        IsmpCase,
-        EmrAntibioticCourse,
-        EmrIntervention,
-        EmrDiagnosis,
-        EmrCaseVersion,
-        EmrCase,
-        Patient,
-    ):
-        session.execute(delete(model))
+def _load_demo_patient_ids(id_store_path: Path | None) -> set[int]:
+    if id_store_path is None or not id_store_path.exists():
+        return set()
+    try:
+        payload: Any = json.loads(id_store_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    if not isinstance(payload, dict):
+        return set()
+    raw_ids = payload.get("patient_ids", [])
+    if not isinstance(raw_ids, list):
+        return set()
+    patient_ids: set[int] = set()
+    for raw_id in raw_ids:
+        try:
+            patient_ids.add(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+    return patient_ids
+
+
+def _write_demo_ids(session: Session, id_store_path: Path | None, *, run_tag: str) -> None:
+    if id_store_path is None:
+        return
+    case_ids = list(
+        session.scalars(select(EmrCase.id).where(EmrCase.hospital_case_no.like(f"DEMO-{run_tag}-%"))).all()
+    )
+    lab_ids = list(
+        session.scalars(select(LabSample.id).where(LabSample.lab_no.like(f"DEMO-LAB-{run_tag}-%"))).all()
+    )
+    sanitary_ids = list(
+        session.scalars(
+            select(SanitarySample.id).where(SanitarySample.lab_no.like(f"DEMO-SAN-{run_tag}-%"))
+        ).all()
+    )
+    patient_ids = set(
+        session.scalars(select(EmrCase.patient_id).where(EmrCase.id.in_(case_ids))).all()
+    )
+    patient_ids.update(session.scalars(select(LabSample.patient_id).where(LabSample.id.in_(lab_ids))).all())
+    payload = {
+        "run_tag": run_tag,
+        "patient_ids": sorted(int(patient_id) for patient_id in patient_ids if patient_id is not None),
+        "emr_case_ids": [int(case_id) for case_id in case_ids if case_id is not None],
+        "lab_sample_ids": [int(sample_id) for sample_id in lab_ids if sample_id is not None],
+        "sanitary_sample_ids": [int(sample_id) for sample_id in sanitary_ids if sample_id is not None],
+    }
+    id_store_path.parent.mkdir(parents=True, exist_ok=True)
+    id_store_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _clear_data(session: Session, *, id_store_path: Path | None = None) -> None:
+    patient_ids = _load_demo_patient_ids(id_store_path)
+    patient_ids.update(
+        int(patient_id)
+        for patient_id in session.scalars(
+            select(LabSample.patient_id).where(LabSample.lab_no.like("DEMO-%"))
+        ).all()
+        if patient_id is not None
+    )
+    patient_ids.update(
+        int(patient_id)
+        for patient_id in session.scalars(
+            select(EmrCase.patient_id).where(EmrCase.hospital_case_no.like("DEMO-%"))
+        ).all()
+        if patient_id is not None
+    )
+
+    demo_lab_ids = select(LabSample.id).where(LabSample.lab_no.like("DEMO-%"))
+    demo_sanitary_ids = select(SanitarySample.id).where(SanitarySample.lab_no.like("DEMO-%"))
+    demo_case_ids = select(EmrCase.id).where(EmrCase.hospital_case_no.like("DEMO-%"))
+    demo_version_ids = select(EmrCaseVersion.id).where(EmrCaseVersion.emr_case_id.in_(demo_case_ids))
+
+    session.execute(delete(SanAbxSusceptibility).where(SanAbxSusceptibility.sanitary_sample_id.in_(demo_sanitary_ids)))
+    session.execute(delete(SanPhagePanelResult).where(SanPhagePanelResult.sanitary_sample_id.in_(demo_sanitary_ids)))
+    session.execute(delete(SanMicrobeIsolation).where(SanMicrobeIsolation.sanitary_sample_id.in_(demo_sanitary_ids)))
+    session.execute(delete(SanitarySample).where(SanitarySample.lab_no.like("DEMO-%")))
+
+    session.execute(delete(LabAbxSusceptibility).where(LabAbxSusceptibility.lab_sample_id.in_(demo_lab_ids)))
+    session.execute(delete(LabPhagePanelResult).where(LabPhagePanelResult.lab_sample_id.in_(demo_lab_ids)))
+    session.execute(delete(LabMicrobeIsolation).where(LabMicrobeIsolation.lab_sample_id.in_(demo_lab_ids)))
+    session.execute(delete(LabSample).where(LabSample.lab_no.like("DEMO-%")))
+
+    session.execute(delete(IsmpCase).where(IsmpCase.emr_case_id.in_(demo_case_ids)))
+    session.execute(delete(EmrAntibioticCourse).where(EmrAntibioticCourse.emr_case_version_id.in_(demo_version_ids)))
+    session.execute(delete(EmrIntervention).where(EmrIntervention.emr_case_version_id.in_(demo_version_ids)))
+    session.execute(delete(EmrDiagnosis).where(EmrDiagnosis.emr_case_version_id.in_(demo_version_ids)))
+    session.execute(delete(EmrCaseVersion).where(EmrCaseVersion.emr_case_id.in_(demo_case_ids)))
+    session.execute(delete(EmrCase).where(EmrCase.hospital_case_no.like("DEMO-%")))
+
     session.flush()
+    for patient_id in sorted(patient_ids):
+        has_cases = session.scalar(select(EmrCase.id).where(EmrCase.patient_id == patient_id).limit(1))
+        has_samples = session.scalar(select(LabSample.id).where(LabSample.patient_id == patient_id).limit(1))
+        if has_cases is None and has_samples is None:
+            session.execute(delete(Patient).where(Patient.id == patient_id))
+    session.flush()
+    if id_store_path is not None:
+        with suppress(FileNotFoundError):
+            id_store_path.unlink()
 
 
 def _get_or_create_departments(session: Session) -> dict[str, Department]:
@@ -287,48 +371,49 @@ def _create_emr_cases(
     rng: random.Random,
 ) -> list[DemoCase]:
     cases: list[DemoCase] = []
-    department_cycle = [departments[name] for name in _DEPARTMENT_NAMES]
+    patient_department_names = ("Терапия", "Хирургия", "Реанимация (ОРИТ)", "Неврология", "Терапия")
     icd_codes = list(icd10_refs)
 
-    for index in range(12):
-        patient = patients[index % len(patients)]
-        department = department_cycle[index % len(department_cycle)]
-        admission_date = today - timedelta(days=rng.randint(3, 88))
-        length_of_stay = rng.randint(4, 18)
-        outcome_date = min(today, admission_date + timedelta(days=length_of_stay))
-        case = EmrCase(
-            patient_id=patient.id,
-            hospital_case_no=f"DEMO-{run_tag}-{index + 1:03d}",
-            department_id=department.id,
-        )
-        session.add(case)
-        session.flush()
-
-        version = EmrCaseVersion(
-            emr_case_id=case.id,
-            version_no=1,
-            valid_from=_as_dt(admission_date, hour=8),
-            is_current=True,
-            admission_date=_as_dt(admission_date, hour=9),
-            outcome_date=_as_dt(outcome_date, hour=12),
-            outcome_type="discharge",
-            severity=("mild", "moderate", "severe")[index % 3],
-            sofa_score=index % 8,
-            length_of_stay_days=max(1, (outcome_date - admission_date).days),
-        )
-        session.add(version)
-        session.flush()
-
-        diagnosis_code = icd_codes[index % len(icd_codes)]
-        session.add(
-            EmrDiagnosis(
-                emr_case_version_id=version.id,
-                kind="admission",
-                icd10_code=diagnosis_code,
-                free_text=cast(str, icd10_refs[diagnosis_code].title),
+    for patient_index, patient in enumerate(patients):
+        department = departments[patient_department_names[patient_index % len(patient_department_names)]]
+        for case_offset in range(3):
+            index = len(cases)
+            admission_date = today - timedelta(days=rng.randint(3, 88))
+            length_of_stay = rng.randint(4, 18)
+            outcome_date = min(today, admission_date + timedelta(days=length_of_stay))
+            case = EmrCase(
+                patient_id=patient.id,
+                hospital_case_no=f"DEMO-{run_tag}-{index + 1:03d}",
+                department_id=department.id,
             )
-        )
-        cases.append(DemoCase(case=case, version=version, department=department))
+            session.add(case)
+            session.flush()
+
+            version = EmrCaseVersion(
+                emr_case_id=case.id,
+                version_no=1,
+                valid_from=_as_dt(admission_date, hour=8),
+                is_current=True,
+                admission_date=_as_dt(admission_date, hour=9),
+                outcome_date=_as_dt(outcome_date, hour=12),
+                outcome_type="discharge",
+                severity=("mild", "moderate", "severe")[case_offset % 3],
+                sofa_score=index % 8,
+                length_of_stay_days=max(1, (outcome_date - admission_date).days),
+            )
+            session.add(version)
+            session.flush()
+
+            diagnosis_code = icd_codes[index % len(icd_codes)]
+            session.add(
+                EmrDiagnosis(
+                    emr_case_version_id=version.id,
+                    kind="admission",
+                    icd10_code=diagnosis_code,
+                    free_text=cast(str, icd10_refs[diagnosis_code].title),
+                )
+            )
+            cases.append(DemoCase(case=case, version=version, department=department))
     session.flush()
     return cases
 
@@ -357,12 +442,12 @@ def _create_lab_samples(
     positive_count = 0
 
     for case_index, demo_case in enumerate(demo_cases):
-        samples_for_case = 3 if case_index < 4 else 2
+        samples_for_case = (3, 2, 2)[case_index % 3]
         for _ in range(samples_for_case):
             sample_count += 1
             material = material_refs[(sample_count - 1) % len(material_refs)]
             taken_date = _sample_date_for_case(demo_case, today, rng)
-            positive = sample_count % 10 not in {0, 8, 9}
+            positive = sample_count % 6 not in {0, 5}
             sample = LabSample(
                 patient_id=demo_case.case.patient_id,
                 emr_case_id=demo_case.case.id,
@@ -388,14 +473,15 @@ def _create_lab_samples(
                 positive_count += 1
                 microbe = microbe_refs[(sample_count - 1) % len(microbe_refs)]
                 session.add(LabMicrobeIsolation(lab_sample_id=sample.id, microorganism_id=microbe.id))
-                for abx_item in _ABX:
+                for abx_index, abx_item in enumerate(_ABX):
                     antibiotic = antibiotics[abx_item["code"]]
+                    ris = _RIS_WEIGHTS[((positive_count - 1) * len(_ABX) + abx_index) % len(_RIS_WEIGHTS)]
                     session.add(
                         LabAbxSusceptibility(
                             lab_sample_id=sample.id,
                             antibiotic_id=antibiotic.id,
                             group_id=antibiotic.group_id,
-                            ris=abx_item["ris"],
+                            ris=ris,
                             method="disk",
                         )
                     )
@@ -442,7 +528,7 @@ def _create_sanitary_samples(
 ) -> int:
     department_refs = list(departments.values())
     microbe_refs = list(microbes.values())
-    for index in range(7):
+    for index in range(8):
         department = department_refs[index % len(department_refs)]
         taken_date = today - timedelta(days=rng.randint(1, 88))
         non_compliant = index % 3 == 0
@@ -467,14 +553,14 @@ def _create_sanitary_samples(
             microbe = microbe_refs[index % len(microbe_refs)]
             session.add(SanMicrobeIsolation(sanitary_sample_id=sample.id, microorganism_id=microbe.id))
     session.flush()
-    return 7
+    return 8
 
 
-def seed(session: Session, *, clear: bool = False) -> SeedStats:
+def seed(session: Session, *, clear: bool = False, id_store_path: Path | None = None) -> SeedStats:
     """Fill the current database session with demo analytics data."""
 
     if clear:
-        _clear_data(session)
+        _clear_data(session, id_store_path=id_store_path)
 
     rng = random.Random(20260518)
     now = datetime.now(UTC)
@@ -516,6 +602,7 @@ def seed(session: Session, *, clear: bool = False) -> SeedStats:
         run_tag=run_tag,
         rng=rng,
     )
+    _write_demo_ids(session, id_store_path, run_tag=run_tag)
 
     return SeedStats(
         patients=len(patients),
@@ -529,7 +616,7 @@ def seed(session: Session, *, clear: bool = False) -> SeedStats:
 
 def _format_stats(stats: SeedStats) -> str:
     return (
-        "✓ Seed завершён:\n"
+        "OK Seed завершён:\n"
         f"  Пациентов: {stats.patients}\n"
         f"  ЭМЗ / госпитализаций: {stats.emr_cases}\n"
         f"  Лабораторных проб: {stats.lab_samples} "
@@ -553,15 +640,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--clear",
         action="store_true",
-        help="Очистить данные пациентов/ЭМЗ/лабпроб/ИСМП/санпроб перед заполнением.",
+        help="Очистить только demo-данные пациентов/ЭМЗ/лабпроб/ИСМП/санпроб и выйти.",
     )
     args = parser.parse_args(argv)
 
     with session_scope() as session:
-        stats = seed(session, clear=bool(args.clear))
+        if args.clear:
+            _clear_data(session, id_store_path=_DEMO_ID_STORE)
+            stats = None
+        else:
+            stats = seed(session, clear=True, id_store_path=_DEMO_ID_STORE)
 
     print(f"База данных: {DB_FILE}")
-    print(_format_stats(stats))
+    if stats is None:
+        print("OK Demo-данные очищены.")
+    else:
+        print(_format_stats(stats))
     return 0
 
 

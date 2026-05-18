@@ -7199,3 +7199,47 @@ Window title, кнопки, внутренние ключи — не трону�
 - Analytics verification after real DB seed:
   - `total=56`, `positives=42`, `top_microbes=5`, `ismp_total=8`, `ismp_types=4`, `departments=4`, `trend_days=23`.
   - Note: the real DB has two demo batches because the first run committed successfully and then failed only while printing `✓` under cp1251; the stdout encoding fix made the second run exit cleanly.
+
+---
+
+## 2026-05-18 — fix: seed diversity, date format in summary table, seed --clear cleanup
+
+**Commit:** `fix: seed diversity, date format in summary table, seed --clear cleanup`
+**Status:** ready to commit
+
+- Updated `scripts/seed_demo_data.py`:
+  - `--clear` now removes only demo rows and exits.
+  - Normal seed run first clears existing demo rows, then creates one fresh demo batch.
+  - Demo cleanup is scoped by `DEMO-` lab/case prefixes plus `DATA_DIR/seed_demo_ids.json`; non-demo patient/case/sample rows are preserved.
+  - Seed data now creates 5 patients, 15 EMR/hospitalizations, 35 lab samples, 24 positive samples, 4 ISMP cases, and 8 sanitary samples.
+  - All 5 patients receive lab samples; real DB verification showed 7 samples per patient.
+  - All 4 requested departments are represented.
+  - RIS values now cycle through weighted R/I/S distribution instead of fixed antibiotic defaults.
+  - Console summary now uses `OK Seed завершён` instead of the Windows-problematic check mark.
+- Updated `OverviewTab` department summary formatting:
+  - `last_date` / `latest_date` now goes through reporting formatters and displays as `dd.mm.yyyy HH:MM`.
+- Added/expanded regression tests:
+  - seed diversity and scoped cleanup;
+  - department summary date formatting.
+
+### Checks
+
+- RED: `python -m pytest tests/unit/test_seed_demo_data.py tests/unit/test_analytics_v2_empty_states.py::test_overview_department_summary_formats_last_date -q --tb=short` — `3 failed`.
+- GREEN targeted: same command — `3 passed`, `2 warnings`.
+- `python scripts/seed_demo_data.py --clear` — pass, printed `OK Demo-данные очищены.`
+- `python scripts/seed_demo_data.py` — pass, printed:
+  - patients: `5`;
+  - EMR/hospitalizations: `15`;
+  - lab samples: `35`, positives: `24`;
+  - ISMP cases: `4`;
+  - sanitary samples: `8`.
+- Real DB verification after clear + seed:
+  - demo lab samples: `35`;
+  - patients: `5`, each with `7` samples;
+  - departments represented: `4`;
+  - RIS values: `R=48`, `I=36`, `S=36`.
+- `ruff check app tests scripts/seed_demo_data.py` — pass.
+- `python -m mypy app tests --ignore-missing-imports` — pass (`384 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q --tb=short` — pass (`791 passed`, `3 warnings`).
+- `python -m compileall -q app tests` — pass.

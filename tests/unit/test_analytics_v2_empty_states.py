@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -98,6 +98,29 @@ def test_overview_trend_shows_placeholder_when_empty(qtbot: Any, qapp: Any) -> N
     assert tab._trend_stack.currentWidget() is tab._trend_empty
     assert tab._trend_empty.objectName() == "inlinePlaceholder"
     assert tab._trend_empty.isVisibleTo(tab)
+
+
+def test_overview_department_summary_formats_last_date(qtbot: Any) -> None:
+    from app.ui.analytics.tabs.overview_tab import OverviewTab
+
+    tab = OverviewTab(_EmptyAnalyticsController())  # type: ignore[arg-type]
+    qtbot.addWidget(tab)
+
+    tab._apply_department_summary(
+        [
+            {
+                "department_name": "Терапия",
+                "total": 3,
+                "positives": 1,
+                "positive_share": 1 / 3,
+                "last_date": datetime(2026, 5, 11, 9, 0, 0, tzinfo=UTC),
+            }
+        ]
+    )
+
+    item = tab.department_table.item(0, 4)
+    assert item is not None
+    assert item.text() == "11.05.2026 09:00"
 
 
 def test_ismp_kpi_cards_visible_when_no_data(qtbot: Any, qapp: Any) -> None:
