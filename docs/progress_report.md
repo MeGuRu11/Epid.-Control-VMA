@@ -7273,6 +7273,10 @@ Window title, кнопки, внутренние ключи — не трону�
 - Обновлён `CHANGELOG.md`:
   - `[Unreleased]` заменён на `[1.1.0] — 2026-05-18`;
   - записи составлены по реальным последним коммитам и `progress_report`.
+- Обновлён `README.md`:
+  - добавлена версия документации `1.1.0`;
+  - краткое описание приведено к Analytics v2;
+  - добавлены команды `scripts/seed_demo_data.py` и ссылка на `CHANGELOG.md`.
 
 ### Проверки
 
@@ -7281,3 +7285,5 @@ Window title, кнопки, внутренние ключи — не трону�
   - `python -m mypy app tests` — pass (`384 source files`);
   - `python -m pytest -q --tb=no` — pass (`791 passed`, `3 warnings`);
   - `python -m compileall -q app tests` — pass.
+- README-only amend:
+  - `git diff --check` — pass.

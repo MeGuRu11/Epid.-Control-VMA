@@ -35,6 +35,9 @@
 - `CHANGELOG.md`
   - `[Unreleased]` заменён на `[1.1.0] — 2026-05-18`.
   - Записи составлены по реальным последним коммитам и `progress_report`.
+- `README.md`
+  - Добавлена версия документации `1.1.0`.
+  - Описание системы, раздела `Аналитика`, demo-seed команд и ссылок приведено к релизу v1.1.0.
 - `docs/progress_report.md`
   - Добавлена запись по текущей документационной задаче.
 
@@ -45,6 +48,8 @@
   - `python -m mypy app tests` — pass (`384 source files`).
   - `python -m pytest -q --tb=no` — pass (`791 passed`, `3 warnings`).
   - `python -m compileall -q app tests` — pass.
+- README-only amend:
+  - `git diff --check` — pass.
 
 ## Примечания
 
