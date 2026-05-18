@@ -856,7 +856,12 @@ class SanitaryDashboard(QWidget):
         self._add_list_item_widget(item, card)
 
     def _add_list_item_widget(self, item: QListWidgetItem, card: QWidget) -> None:
+        # adjustSize() принудительно вычисляет размер виджета без parent/show.
+        # Без этого sizeHint() возвращает (-1,-1) и карточка невидима.
+        card.adjustSize()
         hint = card.sizeHint().expandedTo(card.minimumSizeHint())
+        if hint.height() <= 0:
+            hint.setHeight(80)
         item.setSizeHint(hint)
         self.list_widget.addItem(item)
         self.list_widget.setItemWidget(item, card)
