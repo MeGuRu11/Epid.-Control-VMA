@@ -74,15 +74,17 @@ class AnalyticsViewV2(QWidget):
 
         title = QLabel("Поиск и аналитика")
         title.setObjectName("pageTitle")
+        title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         layout.addWidget(title)
 
         self._filter_bar = FilterBar(reference_service=reference_service)
+        self._filter_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._filter_bar.filters_changed.connect(self._on_filters_changed)
         layout.addWidget(self._filter_bar)
 
         self._tabs = QTabWidget()
         self._tabs.setMinimumHeight(360)
-        self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
+        self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._overview_tab = OverviewTab(self._controller)
         self._microbiology_tab = MicrobiologyTab(self._controller)
         self._ismp_tab = IsmpTab(self._controller)
@@ -104,7 +106,7 @@ class AnalyticsViewV2(QWidget):
         self._tabs.addTab(self._search_tab, "Поиск")
         self._tabs.addTab(self._reports_tab, "Отчёты")
         self._tabs.currentChanged.connect(lambda _index: self._refresh_current_tab())
-        layout.addWidget(self._tabs)
+        layout.addWidget(self._tabs, 1)
 
     def _scrollable_tab(self, page: QWidget) -> QScrollArea:
         scroll_area = QScrollArea()

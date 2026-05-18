@@ -7075,3 +7075,61 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python scripts/check_architecture.py` — pass.
 - `python -m pytest -q --tb=short` — pass (`784 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
+
+---
+
+## 2026-05-18 — fix: AnalyticsViewV2 vertical layout — title not stretched, tabs take remaining space
+
+**Коммит:** `fix: AnalyticsViewV2 vertical layout — title not stretched, tabs take remaining space`
+**Статус:** готово к коммиту
+
+- Диагностика воспроизвела дефект внутри самого `AnalyticsViewV2`: при wide/maximized размере `1707×815` заголовок получал высоту `253px`, `FilterBar` тоже `253px`, а `QTabWidget` оставался с `stretch = 0` и vertical policy `Ignored`.
+- Корневая причина: главный `QVBoxLayout` не имел явной растягиваемой контентной зоны, поэтому Qt распределял вертикальное пространство между `QLabel` заголовка, `FilterBar` и tabs. Визуально это давало большой зазор между «Поиск и аналитика» и «Параметры поиска».
+- Заголовку задан явный horizontal `Expanding` / vertical `Preferred`.
+- `FilterBar` задан horizontal `Expanding` / vertical `Preferred`.
+- `_tabs` переведён с vertical `Ignored` на `Expanding` и добавлен в главный layout со `stretch=1`.
+- Временные diagnostic `print(...)` из `AnalyticsViewV2` удалены.
+- Добавлен `tests/unit/test_analytics_v2_layout.py`:
+  - проверяет, что заголовок и filter-bar остаются компактными на wide-размере;
+  - проверяет, что `_tabs` получает stretch и vertical `Expanding`.
+
+### Диагностика
+
+- До фикса:
+  - `AnalyticsViewV2 = 1707×815`;
+  - layout stretches: `[0, 0, 0]`;
+  - title geometry: `QRect(16, 16, 1675, 253)`;
+  - filter geometry: `QRect(16, 281, 1675, 253)`;
+  - tabs geometry: `QRect(16, 546, 1675, 360)`.
+- После фикса на том же размере:
+  - layout stretches: `[0, 0, 1]`;
+  - title geometry: `QRect(16, 16, 1675, 12)` в offscreen / `30px` в native theme;
+  - filter geometry: `QRect(16, 40, 1675, 147)` в offscreen / `219px` в native theme;
+  - tabs geometry: `QRect(16, 199, 1675, 600)` в offscreen / `592px` в native theme.
+- После manual resize down/up координаты совпали с первым показом.
+- После `Home → Analytics → Home → Analytics` координаты совпали с первым показом.
+
+### Скриншоты
+
+- `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_v2_first_maximized_layout_fixed_native.png`
+- `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_v2_after_home_switch_layout_fixed_native.png`
+- `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_v2_after_manual_resize_layout_fixed_native.png`
+
+### Изменённые файлы
+
+- `app/ui/analytics/analytics_view_v2.py`
+- `tests/unit/test_analytics_v2_layout.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_analytics_v2_layout.py -q --tb=short` — `2 failed`: title height `253px` вместо compact height, tabs stretch `0`.
+- GREEN targeted: `python -m pytest tests/unit/test_analytics_v2_layout.py -q --tb=short` — `2 passed`.
+- `python -m pytest tests/unit/test_analytics_v2_layout.py -v` — `2 passed`.
+- `python -m pytest tests/unit/test_analytics_v2_layout.py tests/unit/test_analytics_v2_structure.py -q --tb=short` — `23 passed`.
+- `ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`383 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q --tb=short` — pass (`786 passed`, `3 warnings`).
+- `python -m compileall -q app tests` — pass.
