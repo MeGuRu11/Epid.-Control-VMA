@@ -59,6 +59,18 @@ def test_kpi_card_without_sparkline_has_no_widget(qtbot: Any) -> None:
     assert card.findChild(Sparkline) is None
 
 
+def test_kpi_card_without_sparkline_hides_trend_indicator(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.kpi_card import KpiCard
+
+    card = KpiCard("Случаев ИСМП", "И", "negative", "negative", show_sparkline=False)
+    qtbot.addWidget(card)
+
+    card.set_trend(2, 1)
+    card.clear_trend()
+
+    assert card._trend.isHidden()
+
+
 def test_kpi_card_set_sparkline_data_does_not_raise(qtbot: Any) -> None:
     from app.ui.analytics.widgets.kpi_card import KpiCard
 

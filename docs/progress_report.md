@@ -7133,3 +7133,29 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python scripts/check_architecture.py` — pass.
 - `python -m pytest -q --tb=short` — pass (`786 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
+
+---
+
+## 2026-05-18 — fix: Analytics KPI red underline and placeholder text clipping in search tab
+
+**Commit:** `fix: Analytics KPI red underline and placeholder text clipping in search tab`
+**Status:** ready to commit
+
+- Diagnosed the red horizontal mark on `negative` KPI cards with `show_sparkline=False`.
+- `KpiCard` did not create `Sparkline` for those cards, and `theme.py` had no KPI border/underline rule; the remaining visual artifact came from the always-present `TrendIndicator` dash/line in no-sparkline KPI cards.
+- `KpiCard` now hides and omits the trend indicator from the value row when `show_sparkline=False`; `set_trend()` and `clear_trend()` become no-ops for those compact KPI cards.
+- `EmptyState` now reserves enough vertical room for wrapped hint text and uses vertical `MinimumExpanding`, preventing clipped two-line placeholders in the search tab.
+- Added regression coverage in:
+  - `tests/unit/test_kpi_card.py`
+  - `tests/unit/test_empty_state.py`
+
+### Checks
+
+- RED: `python -m pytest tests/unit/test_kpi_card.py::test_kpi_card_without_sparkline_hides_trend_indicator tests/unit/test_empty_state.py::test_empty_state_with_hint_has_room_for_wrapped_text -q --tb=short` — `2 failed`.
+- GREEN targeted: same command — `2 passed`.
+- `python -m pytest tests/unit/test_kpi_card.py tests/unit/test_empty_state.py tests/unit/test_analytics_v2_empty_states.py tests/unit/test_analytics_v2_structure.py -q --tb=short` — `37 passed`, `2 warnings`.
+- `ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`383 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q --tb=short` — pass (`788 passed`, `3 warnings`).
+- `python -m compileall -q app tests` — pass.

@@ -1,63 +1,45 @@
-# Сессия 2026-05-18 — AnalyticsViewV2 vertical layout
+# Session 2026-05-18 — UI fixes and demo seed data
 
-## Текущее состояние
+## Current State
 
-- Исправлен вертикальный layout `AnalyticsViewV2` на wide/maximized размере.
-- Рабочий репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
-- Коммит к созданию: `fix: AnalyticsViewV2 vertical layout — title not stretched, tabs take remaining space`.
-- Временные diagnostic `print(...)` удалены.
+- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Existing branch state before this task: `main` was already ahead of `origin/main` by one commit (`8561469`, AnalyticsViewV2 vertical layout).
+- UI fix work is ready for the first requested commit:
+  - `KpiCard` hides the trend indicator when `show_sparkline=False`, removing the red-looking dash/line from negative KPI cards without sparklines.
+  - `EmptyState` now has enough minimum height and `MinimumExpanding` vertical policy for wrapped search placeholders.
+- Next work after the first commit: create `scripts/seed_demo_data.py` as a separate second commit.
 
-## Корневая причина
+## Root Cause
 
-- `AnalyticsViewV2._build_ui()` добавлял `title`, `FilterBar` и `_tabs` в `QVBoxLayout` без stretch-фактора.
-- `_tabs` имел vertical policy `Ignored`, поэтому не был явной единственной зоной, которая забирает свободную высоту.
-- На wide/maximized размере Qt распределял высоту между верхними виджетами: title и filter-bar растягивались до `253px`, создавая большой зазор сверху.
+- KPI cards `СЛУЧАЕВ ИСМП` and `ПРЕВАЛЕНТНОСТЬ` had `metric_kind="negative"` and `show_sparkline=False`.
+- Runtime diagnostics showed:
+  - `_sparkline` was `None`;
+  - KPI labels had empty inline styles;
+  - `theme.py` did not define KPI underline or border rules;
+  - the only remaining horizontal visual was the always-created `TrendIndicator`.
+- Search empty state clipping came from `EmptyState` lacking an explicit minimum height and using the default vertical sizing policy while holding wrapped labels.
 
-## Что сделано
+## Changed Files
 
-- `QLabel#pageTitle` получил explicit size policy: horizontal `Expanding`, vertical `Preferred`.
-- `FilterBar` получил explicit size policy: horizontal `Expanding`, vertical `Preferred`.
-- `_tabs` получил vertical `Expanding` вместо `Ignored`.
-- `_tabs` добавлен в главный layout как `layout.addWidget(self._tabs, 1)`.
-- Добавлен regression test file `tests/unit/test_analytics_v2_layout.py`.
-- Сняты native Qt screenshots:
-  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_v2_first_maximized_layout_fixed_native.png`;
-  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_v2_after_home_switch_layout_fixed_native.png`;
-  - `C:\Users\user\Desktop\Program\Epid_System_Codex\screenshots\analytics_v2_after_manual_resize_layout_fixed_native.png`.
+- `app/ui/analytics/widgets/kpi_card.py`
+- `app/ui/analytics/widgets/empty_state.py`
+- `tests/unit/test_kpi_card.py`
+- `tests/unit/test_empty_state.py`
+- `docs/progress_report.md`
+- `docs/session_handoff.md`
 
-## Диагностика
+## Verification
 
-- До фикса при `AnalyticsViewV2 = 1707×815`:
-  - layout stretches: `[0, 0, 0]`;
-  - title: `QRect(16, 16, 1675, 253)`;
-  - filter: `QRect(16, 281, 1675, 253)`;
-  - tabs: `QRect(16, 546, 1675, 360)`.
-- После фикса:
-  - layout stretches: `[0, 0, 1]`;
-  - native first open: title `QRect(16, 16, 1675, 30)`, filter `QRect(16, 58, 1675, 219)`, tabs `QRect(16, 289, 1675, 592)`;
-  - `Home → Analytics → Home → Analytics`: те же координаты;
-  - manual resize down/up: те же координаты.
-
-## Проверки
-
-- RED: `python -m pytest tests/unit/test_analytics_v2_layout.py -q --tb=short` — `2 failed`.
-- GREEN: `python -m pytest tests/unit/test_analytics_v2_layout.py -q --tb=short` — `2 passed`.
-- `python -m pytest tests/unit/test_analytics_v2_layout.py -v` — `2 passed`.
-- `python -m pytest tests/unit/test_analytics_v2_layout.py tests/unit/test_analytics_v2_structure.py -q --tb=short` — `23 passed`.
+- RED: `python -m pytest tests/unit/test_kpi_card.py::test_kpi_card_without_sparkline_hides_trend_indicator tests/unit/test_empty_state.py::test_empty_state_with_hint_has_room_for_wrapped_text -q --tb=short` — `2 failed`.
+- GREEN targeted: same command — `2 passed`.
+- `python -m pytest tests/unit/test_kpi_card.py tests/unit/test_empty_state.py tests/unit/test_analytics_v2_empty_states.py tests/unit/test_analytics_v2_structure.py -q --tb=short` — `37 passed`, `2 warnings`.
 - `ruff check app tests` — pass.
 - `python -m mypy app tests` — pass (`383 source files`).
 - `python scripts/check_architecture.py` — pass.
-- `python -m pytest -q --tb=short` — pass (`786 passed`, `3 warnings`).
+- `python -m pytest -q --tb=short` — pass (`788 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
 
-## Открытые вопросы / блокеры
+## Notes
 
-- Блокеров нет.
-- В полном pytest остаются существующие warnings `pytest_asyncio`, `reportlab` и cache permissions; на результат тестов не влияют.
-
-## Ключевые файлы
-
-- `app/ui/analytics/analytics_view_v2.py`
-- `tests/unit/test_analytics_v2_layout.py`
-- `docs/progress_report.md`
-- `docs/session_handoff.md`
+- Full pytest warnings are existing environment/library warnings: `pytest_asyncio`, `reportlab`, and pytest cache permission warnings.
+- No temporary diagnostic prints remain.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel, QSizePolicy
 
 
 def test_empty_state_instantiates(qtbot: Any) -> None:
@@ -36,3 +36,16 @@ def test_empty_state_visible_by_default(qtbot: Any) -> None:
     state.show()
 
     assert state.isVisible()
+
+
+def test_empty_state_with_hint_has_room_for_wrapped_text(qtbot: Any) -> None:
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    state = EmptyState("No results found for this query.", "Try changing the search filters.")
+    qtbot.addWidget(state)
+
+    assert state.minimumHeight() >= 100
+    assert state.sizePolicy().verticalPolicy() == QSizePolicy.Policy.MinimumExpanding
+    label_widgets = cast(list[QLabel], state.findChildren(QLabel))
+    for label in label_widgets:
+        assert label.wordWrap()

@@ -14,8 +14,18 @@ class EmptyState(QWidget):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self.setMinimumHeight(104)
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.MinimumExpanding,
+        )
         frame = QFrame()
         frame.setObjectName("emptyState")
+        frame.setMinimumHeight(104)
+        frame.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.MinimumExpanding,
+        )
 
         msg_label = QLabel(message)
         msg_label.setObjectName("emptyStateText")

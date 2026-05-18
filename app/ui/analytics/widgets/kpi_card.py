@@ -38,14 +38,17 @@ class KpiCard(QFrame):
         self._value = QLabel("—")
         self._value.setObjectName("kpiValue")
 
-        self._trend = TrendIndicator(metric_kind=metric_kind)
+        self._show_trend = show_sparkline
+        self._trend = TrendIndicator(metric_kind=metric_kind, parent=self)
+        self._trend.setVisible(self._show_trend)
         self._sparkline: Sparkline | None = Sparkline() if show_sparkline else None
 
         value_row = QHBoxLayout()
         value_row.setContentsMargins(0, 0, 0, 0)
         value_row.setSpacing(8)
         value_row.addWidget(self._value, 1)
-        value_row.addWidget(self._trend, 0)
+        if self._show_trend:
+            value_row.addWidget(self._trend, 0)
 
         body = QVBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
@@ -65,10 +68,12 @@ class KpiCard(QFrame):
         self._value.setText(text)
 
     def set_trend(self, current: float | int, previous: float | int | None) -> None:
-        self._trend.set_change(current, previous)
+        if self._show_trend:
+            self._trend.set_change(current, previous)
 
     def clear_trend(self) -> None:
-        self._trend.clear_trend()
+        if self._show_trend:
+            self._trend.clear_trend()
 
     def set_sparkline_data(self, values: list[float | int]) -> None:
         """Передать данные для мини-графика."""
