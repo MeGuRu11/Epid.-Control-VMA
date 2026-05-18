@@ -7159,3 +7159,43 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python scripts/check_architecture.py` — pass.
 - `python -m pytest -q --tb=short` — pass (`788 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
+
+---
+
+## 2026-05-18 — feat: add seed_demo_data.py script for testing analytics with sample data
+
+**Commit:** `feat: add seed_demo_data.py script for testing analytics with sample data`
+**Status:** ready to commit
+
+- Added `scripts/seed_demo_data.py`.
+- The script seeds realistic demo data for the last 90 days:
+  - 5 patients;
+  - 4 departments;
+  - 12 EMR/hospitalization cases with current versions and ICD-10 diagnoses;
+  - 28 lab samples, including 21 positive samples with microbe isolations and antibiotic RIS rows;
+  - 4 ISMP cases in ICU/surgery departments;
+  - 7 sanitary samples.
+- `--clear` clears only patient/EMR/lab/ISMP/sanitary domain tables before seeding. Users, references, and settings are not deleted.
+- Added `tests/unit/test_seed_demo_data.py` to verify the seeded graph on a temporary SQLite database.
+- Fixed Windows console output by reconfiguring stdout to UTF-8 before printing the requested `✓ Seed завершён` line.
+
+### Checks
+
+- RED: `python -m pytest tests/unit/test_seed_demo_data.py -q --tb=short` — import failed because `scripts.seed_demo_data` did not exist.
+- GREEN: `python -m pytest tests/unit/test_seed_demo_data.py -q --tb=short` — `1 passed`, `2 warnings`.
+- `ruff check scripts/seed_demo_data.py` — pass.
+- `python -m mypy scripts/seed_demo_data.py --ignore-missing-imports` — pass.
+- `python scripts/seed_demo_data.py --help` — pass.
+- `python scripts/seed_demo_data.py` — pass, printed:
+  - patients: `5`;
+  - EMR/hospitalizations: `12`;
+  - lab samples: `28`, positives: `21`;
+  - ISMP cases: `4`;
+  - sanitary samples: `7`.
+- `python -m mypy app tests` — pass (`384 source files`).
+- `ruff check app tests scripts/seed_demo_data.py` — pass.
+- `python scripts/check_architecture.py` — pass.
+- `python -m compileall -q scripts/seed_demo_data.py tests/unit/test_seed_demo_data.py` — pass.
+- Analytics verification after real DB seed:
+  - `total=56`, `positives=42`, `top_microbes=5`, `ismp_total=8`, `ismp_types=4`, `departments=4`, `trend_days=23`.
+  - Note: the real DB has two demo batches because the first run committed successfully and then failed only while printing `✓` under cp1251; the stdout encoding fix made the second run exit cleanly.
