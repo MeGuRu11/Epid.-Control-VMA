@@ -1,52 +1,53 @@
-# Session 2026-05-18 — seed diversity and overview date formatting
+# Сессия 2026-05-18 — обновление документации v1.1.0
 
-## Current State
+## Текущее состояние
 
-- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
-- Branch `main` was already ahead of `origin/main`; earlier commits in this session:
-  - `ebb7148 fix: Analytics KPI red underline and placeholder text clipping in search tab`
-  - `56c0df1 feat: add seed_demo_data.py script for testing analytics with sample data`
-- Current pending commit:
-  - `fix: seed diversity, date format in summary table, seed --clear cleanup`
+- Репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Задача: `S4.3 — Обновление документации для версии 1.1.0`.
+- Готовится коммит:
+  - `docs: update documentation and CHANGELOG for v1.1.0`
+- Код не менялся; в этой сессии изменены только документация и `CHANGELOG.md`.
 
-## Changes
+## Онбординг
 
-- `scripts/seed_demo_data.py`
-  - `--clear` now only clears demo data and exits.
-  - Normal run clears existing demo data before creating one new batch.
-  - Cleanup is scoped by `DEMO-` lab/case prefixes plus `DATA_DIR/seed_demo_ids.json`; non-demo rows are preserved.
-  - Seed output now uses ASCII prefix `OK` instead of `✓`.
-  - Seed creates 5 patients, 15 EMR cases, 35 lab samples, 24 positive samples, 4 ISMP cases, and 8 sanitary samples.
-  - Lab samples are evenly distributed: 7 samples per demo patient.
-  - All requested departments are represented.
-  - RIS rows use weighted R/I/S cycling.
-- `app/ui/analytics/tabs/overview_tab.py`
-  - Department summary `last_date` / `latest_date` now formats through reporting formatters as `dd.mm.yyyy HH:MM`.
-- Tests updated:
-  - `tests/unit/test_seed_demo_data.py`
-  - `tests/unit/test_analytics_v2_empty_states.py`
+- Прочитаны:
+  - `AGENTS.md`
+  - `docs/context.md`
+  - `docs/session_handoff.md`
+  - последние записи `docs/progress_report.md`
+  - `git log --oneline -20`
+- Baseline до правок документации:
+  - `ruff check app tests` — pass.
+  - `python -m mypy app tests` — pass (`384 source files`).
+  - `python -m pytest -q --tb=no` — pass (`791 passed`, `3 warnings`).
 
-## Verification
+## Изменения
 
-- RED: `python -m pytest tests/unit/test_seed_demo_data.py tests/unit/test_analytics_v2_empty_states.py::test_overview_department_summary_formats_last_date -q --tb=short` — `3 failed`.
-- GREEN targeted: same command — `3 passed`, `2 warnings`.
-- Real DB commands:
-  - `python scripts/seed_demo_data.py --clear` — pass, printed `OK Demo-данные очищены.`
-  - `python scripts/seed_demo_data.py` — pass, printed `5 / 15 / 35 / 24 / 4 / 8` stats.
-- Real DB verification:
-  - demo lab samples: `35`;
-  - demo patients: `5`, each with `7` lab samples;
-  - departments represented: `4`;
-  - RIS counts: `R=48`, `I=36`, `S=36`.
-- Quality gate:
-  - `ruff check app tests scripts/seed_demo_data.py` — pass.
-  - `python -m mypy app tests --ignore-missing-imports` — pass (`384 source files`).
-  - `python scripts/check_architecture.py` — pass.
-  - `python -m pytest -q --tb=short` — pass (`791 passed`, `3 warnings`).
+- `docs/user_guide.md`
+  - Раздел 9 переписан под Analytics v2 с 5 вкладками.
+  - В раздел 14 добавлен сценарий подтверждения закрытия приложения (`✗` / `Alt+F4`).
+- `docs/tech_guide.md`
+  - В раздел 6.3 добавлена карта модулей Analytics v2.
+  - Добавлен раздел 16 с новыми модулями v1.1.0: formatters, IdResolver, Analytics widgets, TransitionStack, Bodymap, seed-скрипт.
+- `docs/manual_regression_scenarios.md`
+  - Добавлен регрессионный чек-лист Analytics v2.
+  - Чек-лист включён в порядок релизного прогона.
+- `CHANGELOG.md`
+  - `[Unreleased]` заменён на `[1.1.0] — 2026-05-18`.
+  - Записи составлены по реальным последним коммитам и `progress_report`.
+- `docs/progress_report.md`
+  - Добавлена запись по текущей документационной задаче.
+
+## Проверки
+
+- Финальный quality gate после правок документации:
+  - `ruff check app tests` — pass (`All checks passed!`).
+  - `python -m mypy app tests` — pass (`384 source files`).
+  - `python -m pytest -q --tb=no` — pass (`791 passed`, `3 warnings`).
   - `python -m compileall -q app tests` — pass.
 
-## Notes
+## Примечания
 
-- Existing full pytest warnings remain: `pytest_asyncio`, `reportlab`, and pytest cache permission warnings.
-- Real DB now has one fresh demo batch after the corrected `--clear` + seed sequence.
-- No temporary diagnostic prints remain.
+- В `docs/tech_guide.md` описана фактическая функция `format_datetime(v)`, потому что `format_datetime_local` в кодовой базе отсутствует.
+- В `docs/tech_guide.md` описана текущая семантика seed-скрипта: `--clear` удаляет demo-данные, обычный запуск создаёт свежий demo-набор.
+- Оставшиеся предупреждения pytest относятся к окружению/библиотекам: `reportlab` и невозможность записать pytest cache в локальный каталог.

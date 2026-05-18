@@ -130,13 +130,26 @@ python -m app.main
 - `app/ui/lab/lab_sample_detail.py` — карточка лабораторной пробы.
 - `app/ui/sanitary/sanitary_dashboard.py` — основной экран санитарии: hero-контекст по отделениям, KPI по текущей выборке, filter-card и карточный список отделений.
 - `app/ui/sanitary/sanitary_history.py` — диалог истории санитарных проб с summary-блоком, responsive-фильтрами, карточным списком и доступом к карточке санитарной пробы.
-- `app/ui/analytics/analytics_view.py` — поиск, графики, отчёты, история артефактов.
 - `app/ui/form100_v2/form100_view.py` — список карточек `Form100 V2`.
 - `app/ui/form100_v2/form100_editor.py` — редактор карточки `Form100 V2`.
 - `app/ui/import_export/import_export_view.py` — история обмена.
 - `app/ui/import_export/import_export_wizard.py` — мастер импорта/экспорта.
 - `app/ui/references/reference_view.py` — справочники.
 - `app/ui/admin/user_admin_view.py` — пользователи, аудит, резервные копии.
+
+#### Analytics v2
+
+- `app/ui/analytics/analytics_view_v2.py` — `AnalyticsViewV2`:
+  главный виджет, содержит `FilterBar` + `QTabWidget` с 5 вкладками.
+- `app/ui/analytics/filter_bar.py` — `FilterBar`:
+  sticky-панель фильтров, Signal `filters_changed`.
+- `app/ui/analytics/controller.py` — `AnalyticsController`:
+  dataclass-фасад над сервисами, не Qt-объект.
+- `app/ui/analytics/tabs/overview_tab.py` — вкладка `Обзор`.
+- `app/ui/analytics/tabs/microbiology_tab.py` — вкладка `Микробиология`.
+- `app/ui/analytics/tabs/ismp_tab.py` — вкладка `ИСМП`.
+- `app/ui/analytics/tabs/search_tab.py` — вкладка `Поиск`.
+- `app/ui/analytics/tabs/reports_tab.py` — вкладка `Отчёты`.
 
 ### 6.4 Вспомогательные диалоги
 
@@ -311,3 +324,63 @@ CI-файл:
 3. при изменении архитектурного поведения обновите `docs/tech_guide.md`;
 4. добавьте запись в `docs/progress_report.md`;
 5. обновите `docs/session_handoff.md` перед завершением сессии.
+
+## 16. Новые модули v1.1.0
+
+### 16.1 Форматтеры (`app/application/reporting/formatters.py`)
+
+Единый слой человеко-читаемого форматирования. Используется
+в PDF, XLSX, UI. Не используется в JSON/CSV-экспорте
+(там нужны машинные коды).
+
+Ключевые функции:
+
+- `format_date(v)` — дата в `ДД.ММ.ГГГГ`;
+- `format_datetime(v)` — дата+время в `ДД.ММ.ГГГГ ЧЧ:ММ`;
+- `format_bool(v)` — булево в `Да`/`Нет`/`—`;
+- `format_growth_flag(v)` — рост пробы;
+- `format_percent(v)` — доля в `XX.X%`.
+
+### 16.2 IdResolver (`app/application/reporting/id_resolver.py`)
+
+Резолвер FK→имя с lazy-кешем на один экспорт. Используется
+в CSV/PDF для замены технических ID на читаемые названия
+(отделение, тип материала, создатель).
+
+### 16.3 Виджеты Analytics v2 (`app/ui/analytics/widgets/`)
+
+| Файл | Класс | Описание |
+|------|-------|----------|
+| `kpi_card.py` | `KpiCard` | Карточка KPI: иконка + заголовок + значение + тренд |
+| `trend_indicator.py` | `TrendIndicator` | ▲/▼/— с цветом по `metric_kind` |
+| `sparkline.py` | `Sparkline` | Мини-график 70×28 через QPainter |
+| `heatmap.py` | `Heatmap`, `HeatmapCell` | Матрица отделений × микроорганизмов |
+| `resistance_grid.py` | `ResistanceGrid` | Паттерн резистентности RIS |
+| `quick_filter_chips.py` | `QuickFilterChips` | Быстрые фильтры-чипы |
+| `donut_chart.py` | `DonutChart`, `IsmpDepartmentBar` | Кольцо ИСМП + бары отделений |
+| `empty_state.py` | `EmptyState`, `make_inline_placeholder` | Пустые состояния |
+
+### 16.4 TransitionStack (`app/ui/widgets/transition_stack.py`)
+
+Кастомный `QStackedWidget` — возвращает `sizeHint` только
+текущей страницы (не максимум по всем). Критично для корректного
+layout при maximized-окне когда скрытые страницы имеют большую
+`minimumSizeHint`.
+
+### 16.5 Bodymap (`app/domain/services/`)
+
+- `bodymap_zones.py` — `coordinates_to_zone(x, y)`:
+  маппинг координат на анатомические зоны Form100.
+- `bodymap_geometry.py` — вспомогательные геометрические расчёты.
+
+### 16.6 Seed-скрипт (`scripts/seed_demo_data.py`)
+
+Заполняет БД демонстрационными данными для тестирования аналитики.
+
+```bash
+python scripts/seed_demo_data.py          # добавить демо-данные
+python scripts/seed_demo_data.py --clear  # удалить demo-данные
+```
+
+Создаёт: пациентов, ЭМЗ, лабпробы с RIS, ИСМП-случаи,
+санитарные пробы. Метки демо-данных: `lab_no` начинается с `DEMO-`.

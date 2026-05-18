@@ -7243,3 +7243,41 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python scripts/check_architecture.py` — pass.
 - `python -m pytest -q --tb=short` — pass (`791 passed`, `3 warnings`).
 - `python -m compileall -q app tests` — pass.
+
+---
+
+## 2026-05-18 — docs: update documentation and CHANGELOG for v1.1.0
+
+**Коммит:** `docs: update documentation and CHANGELOG for v1.1.0`
+**Статус:** готово к коммиту
+
+- Выполнен онбординг:
+  - `AGENTS.md`;
+  - `docs/context.md`;
+  - `docs/session_handoff.md`;
+  - последние записи `docs/progress_report.md`;
+  - `git log --oneline -20`.
+- Baseline до правок документации:
+  - `ruff check app tests` — pass;
+  - `python -m mypy app tests` — pass (`384 source files`);
+  - `python -m pytest -q --tb=no` — pass (`791 passed`, `3 warnings`).
+- Обновлён `docs/user_guide.md`:
+  - раздел 9 полностью переписан под Analytics v2 с 5 вкладками и общей панелью фильтров;
+  - раздел 14 дополнен сценарием подтверждения закрытия приложения.
+- Обновлён `docs/tech_guide.md`:
+  - в `6.3` добавлена карта UI-модулей Analytics v2;
+  - добавлен раздел `16. Новые модули v1.1.0`.
+- Обновлён `docs/manual_regression_scenarios.md`:
+  - добавлен регрессионный чек-лист Analytics v2;
+  - чек-лист включён в порядок релизного прогона.
+- Обновлён `CHANGELOG.md`:
+  - `[Unreleased]` заменён на `[1.1.0] — 2026-05-18`;
+  - записи составлены по реальным последним коммитам и `progress_report`.
+
+### Проверки
+
+- Финальный quality gate после правок документации:
+  - `ruff check app tests` — pass (`All checks passed!`);
+  - `python -m mypy app tests` — pass (`384 source files`);
+  - `python -m pytest -q --tb=no` — pass (`791 passed`, `3 warnings`);
+  - `python -m compileall -q app tests` — pass.
