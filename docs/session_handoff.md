@@ -130,3 +130,21 @@
   - `python scripts/check_mojibake.py` - pass;
   - `git diff --check` - pass.
 - Committed locally: `fix: show selected highlight on department card in SanitaryDashboard`.
+
+## Sanitary department card selected highlight hotfix 2
+
+- Current task: make selected card highlight reliable across PySide6 by using inline `setStyleSheet()` directly on `_DepartmentCard`.
+- Implemented:
+  - `_CARD_STYLE_NORMAL` and `_CARD_STYLE_SELECTED` constants in `app/ui/sanitary/sanitary_dashboard.py`;
+  - `_DepartmentCard.set_selected()` now only calls `setStyleSheet(...)`;
+  - removed selected dynamic property and `unpolish/polish/update` from card selection;
+  - `_highlight_selected_card()` centralizes selection styling and is called from `_populate_list`, `_restore_selection`, and `_on_card_clicked`;
+  - `tests/unit/test_sanitary_dashboard.py` checks `styleSheet()` for `border: 2px` instead of `property("selected")`.
+- Verification so far:
+  - RED targeted: `1 failed, 8 passed` on empty selected card `styleSheet()`;
+  - GREEN targeted: `9 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python -m mypy app tests` - pass (`389 source files`);
+  - `python scripts/check_mojibake.py` - pass;
+  - `git diff --check` - pass.
+- Committed locally: `fix: use setStyleSheet for department card selection highlight (reliable cross-platform)`.

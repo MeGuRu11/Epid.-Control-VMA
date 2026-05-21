@@ -281,8 +281,8 @@ def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypa
     assert dashboard._department_context_value.text() == "ОРИТ"
     assert dashboard._context_badge.text() == "Отделение выбрано"
     assert dashboard._quick_open_button.isEnabled() is True
-    assert dashboard._dep_cards[0].property("selected") is True
-    selected_cards = [card for card in dashboard._dep_cards if card.property("selected") is True]
+    assert "border: 2px" in dashboard._dep_cards[0].styleSheet()
+    selected_cards = [card for card in dashboard._dep_cards if "border: 2px" in (card.styleSheet() or "")]
     assert len(selected_cards) == 1
 
     qtbot.mouseDClick(dashboard._dep_cards[0], Qt.MouseButton.LeftButton)

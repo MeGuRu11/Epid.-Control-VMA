@@ -68,6 +68,21 @@ SANITARY_KPI_SPECS = (
     SanitaryKpiSpec("pending", "Без результата", "NR", "ожидают результата", "warning"),
 )
 
+_CARD_STYLE_NORMAL = (
+    "QWidget#listCard {"
+    "  background: #FFF9F2;"
+    "  border: 1px solid #E3D9CF;"
+    "  border-radius: 8px;"
+    "}"
+)
+_CARD_STYLE_SELECTED = (
+    "QWidget#listCard {"
+    "  background: #D6F5F0;"
+    "  border: 2px solid #6FB9AD;"
+    "  border-radius: 8px;"
+    "}"
+)
+
 
 class _DepartmentCard(QWidget):
     """Кликабельная карточка отделения для layout-списка."""
@@ -79,9 +94,8 @@ class _DepartmentCard(QWidget):
         super().__init__(parent)
         self.dep_id = entry.dep_id
         self.dep_name = entry.name
-        self._selected = False
         self.setObjectName("listCard")
-        self.setProperty("selected", False)
+        self.setStyleSheet(_CARD_STYLE_NORMAL)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._build_layout(entry)
@@ -131,13 +145,7 @@ class _DepartmentCard(QWidget):
         layout.addWidget(bottom)
 
     def set_selected(self, selected: bool) -> None:
-        if self._selected == selected:
-            return
-        self._selected = selected
-        self.setProperty("selected", selected)
-        self.style().unpolish(self)
-        self.style().polish(self)
-        self.update()
+        self.setStyleSheet(_CARD_STYLE_SELECTED if selected else _CARD_STYLE_NORMAL)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:
@@ -905,23 +913,27 @@ class SanitaryDashboard(QWidget):
             self._cards_layout.addWidget(card)
             self._dep_cards.append(card)
             self._list_item_widgets.append(card)
+        self._highlight_selected_card()
 
     def _restore_selection(self, department_id: int | None) -> None:
         self._selected_department_id = None
         self._selected_department_name = ""
         for card in self._dep_cards:
-            selected = department_id is not None and card.dep_id == department_id
-            card.set_selected(selected)
-            if selected:
+            if department_id is not None and card.dep_id == department_id:
                 self._selected_department_id = department_id
                 self._selected_department_name = card.dep_name
+                break
+        self._highlight_selected_card()
 
     def _on_card_clicked(self, dep_id: int, dep_name: str) -> None:
         self._selected_department_id = dep_id
         self._selected_department_name = dep_name
-        for card in self._dep_cards:
-            card.set_selected(card.dep_id == dep_id)
+        self._highlight_selected_card()
         self._on_selection_changed_new(dep_id, dep_name)
+
+    def _highlight_selected_card(self) -> None:
+        for card in self._dep_cards:
+            card.set_selected(card.dep_id == self._selected_department_id)
 
     def _on_card_double_clicked(self, dep_id: int, dep_name: str) -> None:
         self._on_card_clicked(dep_id, dep_name)

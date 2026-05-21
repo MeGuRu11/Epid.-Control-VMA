@@ -7497,3 +7497,24 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m mypy app tests` - pass (`389 source files`).
 - `python scripts/check_mojibake.py` - pass.
 - `git diff --check` - pass.
+
+---
+
+## 2026-05-21 - fix: reliable card selection highlight via setStyleSheet
+
+**Коммит:** `fix: use setStyleSheet for department card selection highlight (reliable cross-platform)`
+**Статус:** закоммичено локально
+
+- Замена `unpolish/polish` + dynamic property на прямой `setStyleSheet`.
+- `_CARD_STYLE_NORMAL` / `_CARD_STYLE_SELECTED` константы на hex из палитры проекта.
+- `_highlight_selected_card()` вызывается из `_populate_list`, `_restore_selection` и `_on_card_clicked`.
+- Тест: проверка через `styleSheet()` вместо `property("selected")`.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `1 failed, 8 passed` на пустом `styleSheet()` выбранной карточки.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python scripts/check_mojibake.py` - pass.
+- `git diff --check` - pass.
