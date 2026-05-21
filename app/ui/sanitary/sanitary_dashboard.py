@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import cast
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPainterPath, QPaintEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCheckBox,
@@ -68,18 +68,21 @@ SANITARY_KPI_SPECS = (
     SanitaryKpiSpec("pending", "Без результата", "NR", "ожидают результата", "warning"),
 )
 
+ACCENT_SELECTED = "#2A9D8F"
+ACCENT_NORMAL = "transparent"
+
 
 class _AccentBar(QWidget):
     """Независимая от QSS акцентная полоса выбранной карточки."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._color = QColor("#FFF9F2")
-        self.setFixedWidth(4)
+        self._color = QColor(ACCENT_NORMAL)
+        self.setFixedWidth(6)
         self.setMinimumHeight(20)
 
-    def set_color(self, color: str) -> None:
-        self._color = QColor(color)
+    def set_color(self, hex_color: str) -> None:
+        self._color = QColor(hex_color)
         self.update()
 
     def color_name(self) -> str:
@@ -87,10 +90,22 @@ class _AccentBar(QWidget):
 
     def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802
         super().paintEvent(event)
+        if not self._color.isValid() or self._color.alpha() == 0:
+            return
         painter = QPainter(self)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(self._color)
-        painter.drawRoundedRect(self.rect(), 2, 2)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        path = QPainterPath()
+        rect = self.rect()
+        radius = 3.0
+        path.moveTo(rect.left(), rect.top())
+        path.lineTo(rect.right() - radius, rect.top())
+        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + radius)
+        path.lineTo(rect.right(), rect.bottom() - radius)
+        path.quadTo(rect.right(), rect.bottom(), rect.right() - radius, rect.bottom())
+        path.lineTo(rect.left(), rect.bottom())
+        path.closeSubpath()
+        painter.fillPath(path, self._color)
+        painter.end()
 
 
 class _DepartmentCard(QWidget):
@@ -163,7 +178,7 @@ class _DepartmentCard(QWidget):
         self.set_selected(False)
 
     def set_selected(self, selected: bool) -> None:
-        self._accent_bar.set_color("#6FB9AD" if selected else "#FFF9F2")
+        self._accent_bar.set_color(ACCENT_SELECTED if selected else ACCENT_NORMAL)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:

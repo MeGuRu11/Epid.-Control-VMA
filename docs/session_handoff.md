@@ -203,3 +203,20 @@
   - `python -m mypy app tests` - pass (`389 source files`);
   - `python -m pytest -q` - pass (`809 passed`, `1 warning`).
 - Committed locally: `fix: implement selection highlight via accent bar widget, remove CSS-based approach`.
+
+## Sanitary department card selected highlight hotfix 6
+
+- Current task: make the selected card accent bar more visible.
+- Implemented:
+  - `_AccentBar.setFixedWidth(6)`;
+  - `ACCENT_SELECTED = "#2A9D8F"` and `ACCENT_NORMAL = "transparent"`;
+  - `_AccentBar.paintEvent()` now exits for transparent color, then paints a right-rounded `QPainterPath` with antialiasing;
+  - `_DepartmentCard.set_selected()` uses the new constants;
+  - dashboard selection test checks width `6` and `_color.name() == "#2a9d8f"`.
+- Verification:
+  - RED targeted: failed on old width `4`;
+  - `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python -m mypy app tests` - pass (`389 source files`);
+  - `python -m pytest -q` - pass (`809 passed`, `1 warning`).
+- Committed locally: `fix: increase accent bar width and saturation for visible card selection`.

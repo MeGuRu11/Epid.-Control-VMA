@@ -7585,3 +7585,25 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m ruff check app tests` - pass.
 - `python -m mypy app tests` - pass (`389 source files`).
 - `python -m pytest -q` - pass (`809 passed`, `1 warning`).
+
+---
+
+## 2026-05-21 - fix: stronger sanitary department card accent bar
+
+**Коммит:** `fix: increase accent bar width and saturation for visible card selection`
+**Статус:** закоммичено локально
+
+- `_AccentBar` widened from 4px to 6px.
+- Selected color changed from `#6FB9AD` to saturated teal `#2A9D8F`.
+- Normal state uses transparent accent bar.
+- `_AccentBar.paintEvent()` now draws the bar with antialiasing and rounded right corners only.
+- `_DepartmentCard.set_selected()` now uses `ACCENT_SELECTED` / `ACCENT_NORMAL`.
+- Dashboard selection test now verifies width `6` and `_color.name() == "#2a9d8f"`.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_sanitary_dashboard.py::test_sanitary_dashboard_updates_selection_context_and_opens_history -q --tb=short` - failed on width `4 != 6`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python -m pytest -q` - pass (`809 passed`, `1 warning`).
