@@ -7518,3 +7518,23 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m mypy app tests` - pass (`389 source files`).
 - `python scripts/check_mojibake.py` - pass.
 - `git diff --check` - pass.
+
+---
+
+## 2026-05-21 - fix: remove QSS selector from inline card stylesheet
+
+**Коммит:** `fix: remove QSS selector from card setStyleSheet so highlight applies directly`
+**Статус:** закоммичено локально
+
+- `_CARD_STYLE_NORMAL` и `_CARD_STYLE_SELECTED` заменены на голые CSS-свойства без `QWidget#listCard`.
+- `set_selected()` оставлен на прямом `setStyleSheet(_CARD_STYLE_SELECTED if selected else _CARD_STYLE_NORMAL)`.
+- Тест дополнен проверкой, что inline `styleSheet()` выбранной карточки не содержит `QWidget#listCard`.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `1 failed, 8 passed` на наличии `QWidget#listCard` в inline `styleSheet()`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python scripts/check_mojibake.py` - pass.
+- `git diff --check` - pass.

@@ -148,3 +148,19 @@
   - `python scripts/check_mojibake.py` - pass;
   - `git diff --check` - pass.
 - Committed locally: `fix: use setStyleSheet for department card selection highlight (reliable cross-platform)`.
+
+## Sanitary department card selected highlight hotfix 3
+
+- Current task: remove `QWidget#listCard` selector from `_CARD_STYLE_NORMAL` / `_CARD_STYLE_SELECTED` so `setStyleSheet()` applies directly to the card widget.
+- Implemented:
+  - `_CARD_STYLE_NORMAL` and `_CARD_STYLE_SELECTED` now contain bare CSS properties only;
+  - `set_selected()` remains unchanged;
+  - dashboard test asserts selected card `styleSheet()` has `border: 2px` and does not contain `QWidget#listCard`.
+- Verification:
+  - RED targeted: `1 failed, 8 passed` on selector still present in inline `styleSheet()`;
+  - GREEN targeted: `9 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python -m mypy app tests` - pass (`389 source files`);
+  - `python scripts/check_mojibake.py` - pass;
+  - `git diff --check` - pass.
+- Committed locally: `fix: remove QSS selector from card setStyleSheet so highlight applies directly`.

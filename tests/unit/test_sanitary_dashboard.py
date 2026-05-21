@@ -282,6 +282,7 @@ def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypa
     assert dashboard._context_badge.text() == "Отделение выбрано"
     assert dashboard._quick_open_button.isEnabled() is True
     assert "border: 2px" in dashboard._dep_cards[0].styleSheet()
+    assert "QWidget#listCard" not in dashboard._dep_cards[0].styleSheet()
     selected_cards = [card for card in dashboard._dep_cards if "border: 2px" in (card.styleSheet() or "")]
     assert len(selected_cards) == 1
 

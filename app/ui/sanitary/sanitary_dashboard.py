@@ -69,18 +69,14 @@ SANITARY_KPI_SPECS = (
 )
 
 _CARD_STYLE_NORMAL = (
-    "QWidget#listCard {"
-    "  background: #FFF9F2;"
-    "  border: 1px solid #E3D9CF;"
-    "  border-radius: 8px;"
-    "}"
+    "background: #FFF9F2;"
+    "border: 1px solid #E3D9CF;"
+    "border-radius: 8px;"
 )
 _CARD_STYLE_SELECTED = (
-    "QWidget#listCard {"
-    "  background: #D6F5F0;"
-    "  border: 2px solid #6FB9AD;"
-    "  border-radius: 8px;"
-    "}"
+    "background: #D6F5F0;"
+    "border: 2px solid #6FB9AD;"
+    "border-radius: 8px;"
 )
 
 
