@@ -164,3 +164,20 @@
   - `python scripts/check_mojibake.py` - pass;
   - `git diff --check` - pass.
 - Committed locally: `fix: remove QSS selector from card setStyleSheet so highlight applies directly`.
+
+## Sanitary department card selected highlight hotfix 4
+
+- Current task: selected card should use an accent left border instead of full teal fill, while avoiding style inheritance into child labels.
+- Implemented:
+  - confirmed `_DepartmentCard` has `setObjectName("listCard")`;
+  - `_CARD_STYLE_NORMAL` uses `QWidget#listCard` selector again;
+  - `_CARD_STYLE_SELECTED` uses `background: #F2FCFA`, thin accent border, and `border-left: 4px solid #6FB9AD`;
+  - dashboard selection test checks `border-left: 4px`.
+- Verification so far:
+  - RED targeted: `1 failed, 8 passed` on missing `border-left: 4px`;
+  - GREEN targeted: `9 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python -m mypy app tests` - pass (`389 source files`);
+  - `python scripts/check_mojibake.py` - pass;
+  - `git diff --check` - pass.
+- Committed locally: `fix: selected department card uses left accent border instead of full teal fill`.

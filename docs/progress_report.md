@@ -7538,3 +7538,24 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m mypy app tests` - pass (`389 source files`).
 - `python scripts/check_mojibake.py` - pass.
 - `git diff --check` - pass.
+
+---
+
+## 2026-05-21 - fix: selected department card left accent border
+
+**Коммит:** `fix: selected department card uses left accent border instead of full teal fill`
+**Статус:** закоммичено локально
+
+- Подтверждено, что `_DepartmentCard` сам имеет `objectName("listCard")`.
+- `_CARD_STYLE_NORMAL` возвращён к selector-scoped `QWidget#listCard`, чтобы стиль не наследовали дочерние `QLabel`.
+- `_CARD_STYLE_SELECTED` заменён на мягкий фон, тонкую акцентную рамку и `border-left: 4px solid #6FB9AD`.
+- Тест выбора карточки теперь проверяет `border-left: 4px`.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `1 failed, 8 passed` на отсутствии `border-left: 4px`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python scripts/check_mojibake.py` - pass.
+- `git diff --check` - pass.
