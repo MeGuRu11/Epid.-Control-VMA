@@ -70,3 +70,19 @@
   - `python scripts/check_architecture.py` - pass;
   - `python -m compileall -q app tests scripts` - pass.
 - Committed: `fix: guard nullable Qt items for CI mypy`.
+
+## CI pytest follow-up
+
+- Pushed `c70a831 fix: guard nullable Qt items for CI mypy` to `origin/main`.
+- GitHub Actions run `26212923399` confirmed `Mypy` passes.
+- The same run then failed on `Pytest` because `qtbot` fixture was missing across Qt/UI tests.
+- Root cause: `pytest-qt 4.4.0` is installed locally, but `requirements-dev.txt` did not install `pytest-qt` on the clean CI runner.
+- Added `pytest-qt>=4.4` to `requirements-dev.txt`.
+- Local verification:
+  - `python -m pip install -r requirements-dev.txt` - pass;
+  - `python -m pytest -q --tb=short` - pass (`807 passed`, `1 warning`);
+  - `python -m mypy app tests --no-incremental` - pass (`389 source files`);
+  - `python -m ruff check app tests` - pass;
+  - `python -m compileall -q app tests scripts` - pass;
+  - `python scripts/check_mojibake.py` - pass.
+- Next: push `main` and watch the new Quality Gates run.

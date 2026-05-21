@@ -7418,3 +7418,24 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m ruff check app tests` - pass.
 - `python scripts/check_architecture.py` - pass.
 - `python -m compileall -q app tests scripts` - pass.
+
+---
+
+## 2026-05-21 - fix: install pytest-qt in CI
+
+**Коммит:** `fix: install pytest-qt in CI`
+**Статус:** готово к push
+
+- После push коммита `fix: guard nullable Qt items for CI mypy` GitHub Actions подтвердил, что шаг `Mypy` проходит.
+- Следующий сбой был на шаге `Pytest`: `fixture 'qtbot' not found` для всех Qt/UI tests.
+- Корневая причина: локально установлен `pytest-qt 4.4.0`, но в `requirements-dev.txt` отсутствовала dev-зависимость `pytest-qt`; чистый CI runner не регистрировал fixture `qtbot`.
+- В `requirements-dev.txt` добавлен `pytest-qt>=4.4`.
+
+### Проверки
+
+- `python -m pip install -r requirements-dev.txt` - pass, `pytest-qt>=4.4` satisfied.
+- `python -m pytest -q --tb=short` - pass (`807 passed`, `1 warning`).
+- `python -m mypy app tests --no-incremental` - pass (`389 source files`).
+- `python -m ruff check app tests` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts/check_mojibake.py` - pass.
