@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import cast
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCheckBox,
@@ -68,25 +68,33 @@ SANITARY_KPI_SPECS = (
     SanitaryKpiSpec("pending", "Без результата", "NR", "ожидают результата", "warning"),
 )
 
-_CARD_STYLE_NORMAL = (
-    "QWidget#listCard {"
-    "  background: #FFF9F2;"
-    "  border: 1px solid #E3D9CF;"
-    "  border-radius: 8px;"
-    "}"
-)
-_CARD_STYLE_SELECTED = (
-    "QWidget#listCard {"
-    "  background: #F2FCFA;"
-    "  border: 1px solid #A1E3D8;"
-    "  border-left: 4px solid #6FB9AD;"
-    "  border-radius: 8px;"
-    "}"
-)
+
+class _AccentBar(QWidget):
+    """Независимая от QSS акцентная полоса выбранной карточки."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._color = QColor("#FFF9F2")
+        self.setFixedWidth(4)
+        self.setMinimumHeight(20)
+
+    def set_color(self, color: str) -> None:
+        self._color = QColor(color)
+        self.update()
+
+    def color_name(self) -> str:
+        return self._color.name()
+
+    def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(self._color)
+        painter.drawRoundedRect(self.rect(), 2, 2)
 
 
 class _DepartmentCard(QWidget):
-    """Кликабельная карточка отделения для layout-списка."""
+    """Карточка отделения с акцентной левой полосой при выборе."""
 
     card_clicked = Signal(int, str)
     card_double_clicked = Signal(int, str)
@@ -96,13 +104,20 @@ class _DepartmentCard(QWidget):
         self.dep_id = entry.dep_id
         self.dep_name = entry.name
         self.setObjectName("listCard")
-        self.setStyleSheet(_CARD_STYLE_NORMAL)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._accent_bar: _AccentBar
         self._build_layout(entry)
 
     def _build_layout(self, entry: SanitaryDepartmentEntry) -> None:
-        layout = QVBoxLayout(self)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        self._accent_bar = _AccentBar(self)
+        outer.addWidget(self._accent_bar)
+
+        layout = QVBoxLayout()
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(6)
 
@@ -144,9 +159,11 @@ class _DepartmentCard(QWidget):
         bottom.setObjectName("sanitaryListMeta")
         bottom.setWordWrap(True)
         layout.addWidget(bottom)
+        outer.addLayout(layout, 1)
+        self.set_selected(False)
 
     def set_selected(self, selected: bool) -> None:
-        self.setStyleSheet(_CARD_STYLE_SELECTED if selected else _CARD_STYLE_NORMAL)
+        self._accent_bar.set_color("#6FB9AD" if selected else "#FFF9F2")
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         if event.button() == Qt.MouseButton.LeftButton:

@@ -7559,3 +7559,29 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m mypy app tests` - pass (`389 source files`).
 - `python scripts/check_mojibake.py` - pass.
 - `git diff --check` - pass.
+
+---
+
+## 2026-05-21 - fix: accent bar widget selection highlight
+
+**Коммит:** `fix: implement selection highlight via accent bar widget, remove CSS-based approach`
+**Статус:** закоммичено локально
+
+- Диагностика временным `print` в `_DepartmentCard.set_selected()` подтвердила:
+  - `set_selected` вызывается при клике;
+  - `objectName='listCard'`;
+  - размер карточки ненулевой (`QSize(100, 30)` в offscreen тесте);
+  - временный `background: red` применялся.
+- Удалён CSS-based подход для selected-state карточки.
+- Добавлен `_AccentBar(QWidget)`, который хранит выбранный цвет и рисует левую полосу напрямую в `paintEvent`.
+- `_DepartmentCard` теперь содержит дочерний `_accent_bar`; `set_selected()` меняет только цвет полосы.
+- Тест выбора карточки проверяет `card._accent_bar.color_name() == "#6fb9ad"` и что выбрана ровно одна карточка.
+
+### Проверки
+
+- RED diagnostic/final: targeted тест падал на отсутствии `_accent_bar`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`.
+- `python -m pytest tests/unit/test_ui_no_inline_styles.py -q --tb=short` - `1 passed`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python -m pytest -q` - pass (`809 passed`, `1 warning`).

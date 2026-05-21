@@ -181,3 +181,25 @@
   - `python scripts/check_mojibake.py` - pass;
   - `git diff --check` - pass.
 - Committed locally: `fix: selected department card uses left accent border instead of full teal fill`.
+
+## Sanitary department card selected highlight hotfix 5
+
+- Current task: diagnose selection highlighting, then replace CSS-based card selection with a reliable child accent-bar widget.
+- Diagnostic result from temporary `set_selected` print:
+  - debug output appeared on refresh/click;
+  - `objectName='listCard'`;
+  - selected card size was nonzero (`QSize(100, 30)` in offscreen test);
+  - temporary red background was applied.
+- Implemented:
+  - removed `_CARD_STYLE_NORMAL` / `_CARD_STYLE_SELECTED`;
+  - added `_AccentBar(QWidget)` that paints its own color in `paintEvent`;
+  - `_DepartmentCard` owns `_accent_bar` and `set_selected()` only changes its color;
+  - test now checks `_accent_bar.color_name() == "#6fb9ad"` and one selected card.
+- Verification:
+  - RED final targeted: failed on missing `_accent_bar`;
+  - `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`;
+  - `python -m pytest tests/unit/test_ui_no_inline_styles.py -q --tb=short` - `1 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python -m mypy app tests` - pass (`389 source files`);
+  - `python -m pytest -q` - pass (`809 passed`, `1 warning`).
+- Committed locally: `fix: implement selection highlight via accent bar widget, remove CSS-based approach`.
