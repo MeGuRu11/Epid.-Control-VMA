@@ -1,47 +1,50 @@
-# Сессия 2026-05-18 — seed resistance anchors
+# Сессия 2026-05-21 — S4.5 редизайн диалогов проб
 
 ## Текущее состояние
 
 - Репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
 - Ветка: `main`.
-- Задача: дополнить `scripts/seed_demo_data.py` данными для проверки `ResistanceGrid` в Analytics v2.
+- Задача: выполнить S4.5 — редизайн диалогов `Лабораторная проба` и `Санитарная проба`.
 - Готовится коммит:
-  - `feat: seed resistance anchors for analytics resistance pattern testing`
+  - `feat: S4.5 redesign lab and sanitary sample dialogs with shared panels`
 
 ## Изменения
 
-- `scripts/seed_demo_data.py`
-  - Добавлен блок `_RESISTANCE_ANCHORS` на 23 дополнительные положительные лабораторные пробы.
-  - Anchor-пробы создаются с материалом `BLD`, `growth_flag=1`, `lab_no` вида `DEMO-LAB-<run>-R###`.
-  - Для каждой anchor-пробы создаётся `LabMicrobeIsolation` и одна `LabAbxSusceptibility` с заданным RIS.
-  - `SeedStats` дополнен `resistance_anchor_samples`.
-  - Консольная статистика теперь печатает строку `Resistance anchors: 23 доп. проб (4 пары микроорганизм×антибиотик)`.
-- `tests/unit/test_seed_demo_data.py`
-  - Ожидаемый объём demo seed обновлён до `58` лабпроб и `47` положительных проб.
-  - Добавлен тест точного RIS-распределения anchor-пар:
-    `ECOL×AMP`, `ECOL×CIP`, `SAUR×VAN`, `KPNE×MEM`.
-- `docs/progress_report.md`
-  - Добавлена запись по текущей задаче и проверкам.
+- `app/ui/lab/lab_sample_detail.py`
+  - Диалог переведён на `QTabWidget` с вкладками `Проба`, `Идентификация`, `Чувствительность`, `Контроль качества`.
+  - Header/footer вынесены из scroll-area.
+  - Добавлена inline-валидация `material_type` и `taken_at`.
+- `app/ui/sanitary/sanitary_history.py`
+  - `SanitarySampleDetailDialog` переведён на вкладки `Проба`, `Идентификация`, `Чувствительность`.
+  - Header/footer вынесены из scroll-area.
+  - Добавлена inline-валидация `sampling_point` и `taken_at`.
+- `app/ui/widgets/sample_header.py`
+  - Новый общий header контекста пробы.
+- `app/ui/widgets/susceptibility_panel.py`
+  - Новый общий редактор RIS/MIC и фагов.
+- `app/ui/theme.py`
+  - Добавлены QSS-стили для `sampleHeader`, `sampleTabs`, `sampleSection`, `sampleFooter` и error-state полей.
+- `tests/unit/test_susceptibility_panel.py`
+- `tests/unit/test_lab_sample_detail_dialog.py`
+- `tests/unit/test_sanitary_sample_dialog.py`
+  - Добавлены regression-тесты структуры вкладок, shared panel и inline-валидации.
+- `docs/user_guide.md`, `docs/tech_guide.md`, `docs/CODEX_ACTION_PLAN.md`, `docs/progress_report.md`
+  - Обновлены под S4.5.
 
 ## Проверки
 
-- RED: `python -m pytest tests/unit/test_seed_demo_data.py -q --tb=short` — `3 failed`.
-- GREEN targeted: `python -m pytest tests/unit/test_seed_demo_data.py -q --tb=short` — `3 passed`, `2 warnings`.
-- `ruff check scripts/seed_demo_data.py` — pass (`All checks passed!`).
-- `python -m mypy scripts/seed_demo_data.py --ignore-missing-imports` — pass.
-- `python scripts/seed_demo_data.py --help` — pass.
-- `python scripts/seed_demo_data.py --clear` — pass.
-- `python scripts/seed_demo_data.py` — pass.
-- Real DB anchor verification:
-  - `ECOL × AMP`: `R=6`, `I=1`;
-  - `ECOL × CIP`: `S=5`, `I=1`;
-  - `KPNE × MEM`: `R=3`, `I=2`;
-  - `SAUR × VAN`: `S=5`.
-- `python -m pytest -q --tb=short` — pass (`796 passed`, `3 warnings`).
+- RED: новые тесты сначала падали на отсутствующем `app.ui.widgets.susceptibility_panel`.
+- GREEN targeted: `python -m pytest tests/unit/test_susceptibility_panel.py tests/unit/test_lab_sample_detail_dialog.py tests/unit/test_sanitary_sample_dialog.py -q --tb=short` — `11 passed`.
+- Расширенный targeted: `python -m pytest tests/unit/test_susceptibility_panel.py tests/unit/test_lab_sample_detail_dialog.py tests/unit/test_sanitary_sample_dialog.py tests/unit/test_lab_sample_detail_helpers.py tests/unit/test_sanitary_dashboard.py tests/unit/test_sanitary_sample_payload_service.py -q --tb=short` — `39 passed`.
+- `ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`389 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q --tb=short` — pass (`807 passed`, `1 warning`).
 - `python -m compileall -q app tests scripts` — pass.
+- `python scripts/check_mojibake.py` — pass.
+- `git diff --check` — pass.
 
 ## Примечания
 
-- Реальная demo-БД была очищена и заново заполнена через `python scripts/seed_demo_data.py --clear` и `python scripts/seed_demo_data.py`.
-- GUI-проверку в приложении не выполнял; наличие данных для grid подтверждено SQL-проверкой и seed-тестом.
+- Ручные скриншоты диалогов не снимались; проверка выполнена через unit/UI tests на реальных PySide6-виджетах в offscreen-режиме.
 - Push не выполнялся.

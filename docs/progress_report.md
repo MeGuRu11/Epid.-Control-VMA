@@ -7357,3 +7357,43 @@ Window title, кнопки, внутренние ключи — не трону�
   - `SAUR × VAN`: `S=5`.
 - `python -m pytest -q --tb=short` — pass (`796 passed`, `3 warnings`).
 - `python -m compileall -q app tests scripts` — pass.
+
+---
+
+## 2026-05-21 — feat: S4.5 redesign lab and sanitary sample dialogs with shared panels
+
+**Коммит:** `feat: S4.5 redesign lab and sanitary sample dialogs with shared panels`
+**Статус:** готово к коммиту
+
+- `LabSampleDetailDialog` переведён с вертикального стека `QGroupBox` на вкладки:
+  - `Проба`;
+  - `Идентификация`;
+  - `Чувствительность`;
+  - `Контроль качества`.
+- `SanitarySampleDetailDialog` переведён на вкладки:
+  - `Проба`;
+  - `Идентификация`;
+  - `Чувствительность`.
+- Добавлены shared widgets:
+  - `app/ui/widgets/sample_header.py` — sticky header с контекстом пробы;
+  - `app/ui/widgets/susceptibility_panel.py` — общая панель RIS/MIC и фагов.
+- В обоих диалогах добавлена inline-валидация обязательных полей без `QMessageBox.warning`.
+- `app/ui/theme.py` дополнен стилями `sampleHeader`, `sampleTabs`, `sampleSection`, `sampleFooter` и error-state для полей.
+- Обновлены `docs/user_guide.md`, `docs/tech_guide.md`, `docs/CODEX_ACTION_PLAN.md`.
+- Добавлены unit-тесты:
+  - `tests/unit/test_susceptibility_panel.py`;
+  - `tests/unit/test_lab_sample_detail_dialog.py`;
+  - `tests/unit/test_sanitary_sample_dialog.py`.
+
+### Проверки
+
+- RED: новые тесты диалогов и `SusceptibilityPanel` сначала падали на отсутствующем `app.ui.widgets.susceptibility_panel`.
+- GREEN targeted: `python -m pytest tests/unit/test_susceptibility_panel.py tests/unit/test_lab_sample_detail_dialog.py tests/unit/test_sanitary_sample_dialog.py -q --tb=short` — `11 passed`.
+- Расширенный targeted: `python -m pytest tests/unit/test_susceptibility_panel.py tests/unit/test_lab_sample_detail_dialog.py tests/unit/test_sanitary_sample_dialog.py tests/unit/test_lab_sample_detail_helpers.py tests/unit/test_sanitary_dashboard.py tests/unit/test_sanitary_sample_payload_service.py -q --tb=short` — `39 passed`.
+- `ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`389 source files`).
+- `python scripts/check_architecture.py` — pass.
+- `python -m pytest -q --tb=short` — pass (`807 passed`, `1 warning`).
+- `python -m compileall -q app tests scripts` — pass.
+- `python scripts/check_mojibake.py` — pass.
+- `git diff --check` — pass.

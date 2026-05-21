@@ -1624,12 +1624,39 @@ docs: update user guide, tech guide, regression scenarios and CHANGELOG for v1.1
 
 ---
 
-## S4.4. Комплексный аудит и проверка системы
+## S4.5. Редизайн диалогов «Лабораторная проба» и «Санитарная проба»
 
-**Приоритет:** выполняется после завершения S4.2 (все 8 этапов Analytics v2) и S4.3 (документация).
+**Суть:** заменить длинные вертикальные карточки проб на вкладочный layout с sticky header/footer, двухколоночными секциями и inline-валидацией обязательных полей. Общую логику RIS/MIC и фагов вынести в shared widget.
+
+### Что изменить
+
+| Файл | Что |
+|------|-----|
+| `app/ui/widgets/susceptibility_panel.py` | Общий редактор антибиотик/RIS/MIC/метод и фаг/свободное имя/диаметр |
+| `app/ui/widgets/sample_header.py` | Header контекста пробы |
+| `app/ui/lab/lab_sample_detail.py` | 4 вкладки: `Проба`, `Идентификация`, `Чувствительность`, `Контроль качества` |
+| `app/ui/sanitary/sanitary_history.py` | 3 вкладки в `SanitarySampleDetailDialog` |
+| `app/ui/theme.py` | QSS для `sampleHeader`, `sampleTabs`, `sampleSection`, error-state полей |
+| `tests/unit/*sample*dialog.py` | Тесты структуры вкладок, inline-валидации и shared panel |
+| `docs/user_guide.md`, `docs/tech_guide.md` | Описание новой карточки проб и UI-модулей |
+
+### Conventional commit
+
+```
+feat: S4.5 redesign lab and sanitary sample dialogs with shared panels
+```
+
+**Сложность:** M (один коммит).
+
+
+---
+
+## S4.6. Финальный аудит и код-ревью системы
+
+**Приоритет:** выполняется после завершения S4.2 (Analytics v2), S4.3 (документация) и S4.5 (диалоги проб).
 **Исполнитель:** Claude Opus (анализ и план) + Codex (автоматизированные проверки).
 
-**Суть:** после большого объёма изменений (P0/P1/S4.1/S4.2 — более 30 коммитов) провести полную проверку системы: функциональность, качество кода, целостность данных, соответствие плану, регрессии.
+**Суть:** объединяет прежний S4.4 и финальный code-review перед релизом v1.1.0. После большого объёма изменений (P0/P1/S4.1/S4.2/S4.5) провести полную проверку системы: функциональность, качество кода, целостность данных, соответствие плану, регрессии.
 
 ---
 
@@ -1657,6 +1684,7 @@ docs: update user guide, tech guide, regression scenarios and CHANGELOG for v1.1
 | Аналитика v2 | При `use_analytics_v2=True` — все 5 вкладок, KPI, sparklines, drill-down, heatmap, resistance, donut, color badges |
 | Импорт/Экспорт | Round-trip CSV (экспорт → импорт → нет ошибок), XLSX/PDF с ИСМП-блоком |
 | ИСМП | Блок ИСМП в analytics PDF/XLSX совпадает с данными в UI |
+| Диалоги проб | Лабораторная и санитарная карточки: вкладки, sticky header/footer, inline-валидация, сохранение данных после переключения вкладок |
 | Отчёты | История отчётов, верификация SHA256, открыть/скачать |
 | Exit confirmation | ✗ кнопка, Alt+F4 — показывает диалог; авто-logout — без диалога |
 | Backup | Создание бэкапа, метаданные, audit_log |
@@ -1719,4 +1747,3 @@ chore: comprehensive system audit and regression check for v1.1.0
 ```
 
 **Сложность:** M (один проход, но требует времени на ручные проверки).
-

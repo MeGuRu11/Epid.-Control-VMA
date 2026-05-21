@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QDateTimeEdit,
     QDialog,
     QDialogButtonBox,
-    QFormLayout,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QTableWidget,
-    QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -56,11 +56,9 @@ from app.ui.widgets.datetime_inputs import create_optional_datetime_edit, option
 from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
-from app.ui.widgets.table_utils import (
-    connect_combo_autowidth,
-    connect_combo_resize_on_content,
-    resize_columns_to_content,
-)
+from app.ui.widgets.sample_header import SampleHeader
+from app.ui.widgets.susceptibility_panel import SusceptibilityPanel
+from app.ui.widgets.table_utils import connect_combo_autowidth
 
 _HANDLED_SANITARY_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
@@ -650,30 +648,16 @@ class SanitarySampleDetailDialog(QDialog):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        title = QLabel("Карточка санитарной пробы")
-        title.setObjectName("sectionTitle")
-        scroll = QScrollArea(self)
-        scroll.setWidgetResizable(True)
-        content = QWidget()
-        content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(4, 4, 4, 4)
-        content_layout.setSpacing(12)
-        content_layout.addWidget(title)
+        self.sample_header = SampleHeader(self)
+        self.sample_header.set_sanitary_context(self.sample_id, "")
+        layout.addWidget(self.sample_header)
 
         self.sampling_point = QLineEdit()
         self.room = QLineEdit()
         self.medium = QLineEdit()
         self.taken_at = create_optional_datetime_edit()
         self.delivered_at = create_optional_datetime_edit()
-
-        main_box = QGroupBox("Основные данные")
-        main_form = QFormLayout(main_box)
-        main_form.addRow("Точка отбора", self.sampling_point)
-        main_form.addRow("Помещение", self.room)
-        main_form.addRow("Среда", self.medium)
-        main_form.addRow("Время взятия", self.taken_at)
-        main_form.addRow("Дата доставки", self.delivered_at)
-        content_layout.addWidget(main_box)
+        self.sampling_point.textChanged.connect(self._update_header_context)
 
         self.growth_flag = QComboBox()
         self.growth_flag.addItem("Выбрать", None)
@@ -684,15 +668,6 @@ class SanitarySampleDetailDialog(QDialog):
         self.microscopy = QLineEdit()
         self.cfu = QLineEdit()
 
-        result_box = QGroupBox("Результаты роста")
-        result_form = QFormLayout(result_box)
-        result_form.addRow("Рост", self.growth_flag)
-        result_form.addRow("Результат от", self.growth_result_at)
-        result_form.addRow("Колонии/морфология", self.colony_desc)
-        result_form.addRow("Микроскопия", self.microscopy)
-        result_form.addRow("КОЕ", self.cfu)
-        content_layout.addWidget(result_box)
-
         self.micro_combo = QComboBox()
         self.micro_combo.setEditable(True)
         self.micro_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
@@ -700,54 +675,27 @@ class SanitarySampleDetailDialog(QDialog):
         self.micro_free = QLineEdit()
         self.micro_free.setPlaceholderText("если нет в справочнике")
 
-        micro_box = QGroupBox("Идентификация")
-        micro_form = QFormLayout(micro_box)
-        micro_form.addRow("Микроорганизм", self.micro_combo)
-        micro_form.addRow("Микроорганизм (свободно)", self.micro_free)
-        content_layout.addWidget(micro_box)
+        self.susceptibility_panel = SusceptibilityPanel(
+            antibiotics_service=self.reference_service,
+            phages_service=self.reference_service,
+            parent=self,
+        )
+        self.susc_table = self.susceptibility_panel.susc_table
+        self.phage_table = self.susceptibility_panel.phage_table
 
-        self.susc_table = self._make_table(["Антибиотик", "RIS", "MIC", "Метод"], 1)
-        self._increase_table_height(self.susc_table)
-        self.phage_table = self._make_table(["Фаг", "Свободное имя", "Диаметр"], 1)
-        self._increase_table_height(self.phage_table)
-
-        susc_box = QGroupBox("Чувствительность (RIS/MIC)")
-        susc_layout = QVBoxLayout(susc_box)
-        susc_layout.addWidget(self.susc_table)
-        susc_controls = QHBoxLayout()
-        susc_add_btn = QPushButton("Добавить строку")
-        compact_button(susc_add_btn)
-        susc_add_btn.clicked.connect(self._add_susc_row)
-        susc_del_btn = QPushButton("Удалить строку")
-        compact_button(susc_del_btn)
-        susc_del_btn.clicked.connect(lambda: self._delete_table_row(self.susc_table))
-        susc_controls.addWidget(susc_add_btn)
-        susc_controls.addWidget(susc_del_btn)
-        susc_controls.addStretch()
-        susc_layout.addLayout(susc_controls)
-        content_layout.addWidget(susc_box)
-
-        phage_box = QGroupBox("Панель фагов")
-        phage_layout = QVBoxLayout(phage_box)
-        phage_layout.addWidget(self.phage_table)
-        phage_controls = QHBoxLayout()
-        phage_add_btn = QPushButton("Добавить строку")
-        compact_button(phage_add_btn)
-        phage_add_btn.clicked.connect(self._add_phage_row)
-        phage_del_btn = QPushButton("Удалить строку")
-        compact_button(phage_del_btn)
-        phage_del_btn.clicked.connect(lambda: self._delete_table_row(self.phage_table))
-        phage_controls.addWidget(phage_add_btn)
-        phage_controls.addWidget(phage_del_btn)
-        phage_controls.addStretch()
-        phage_layout.addLayout(phage_controls)
-        content_layout.addWidget(phage_box)
+        self.tabs = QTabWidget(self)
+        self.tabs.setObjectName("sampleTabs")
+        self.tabs.addTab(self._make_tab_scroll(self._build_sample_tab()), "Проба")
+        self.tabs.addTab(self._make_tab_scroll(self._build_identification_tab()), "Идентификация")
+        self.tabs.addTab(self._make_tab_scroll(self._build_susceptibility_tab()), "Чувствительность")
+        layout.addWidget(self.tabs, 1)
 
         self.error_label = QLabel()
         set_status(self.error_label, "", "info")
-        content_layout.addWidget(self.error_label)
+        layout.addWidget(self.error_label)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons.setObjectName("sampleFooter")
         localize_button_box(buttons)
         save_btn = buttons.button(QDialogButtonBox.StandardButton.Save)
         if save_btn:
@@ -756,16 +704,151 @@ class SanitarySampleDetailDialog(QDialog):
         buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Отмена")
         buttons.accepted.connect(self.on_save)
         buttons.rejected.connect(self.reject)
-        content_layout.addWidget(buttons)
-
-        scroll.setWidget(content)
-        layout.addWidget(scroll)
+        layout.addWidget(buttons)
 
         self._load_microbes()
-        self._setup_abx_rows()
-        self._setup_phage_rows()
+        self._setup_validation_hooks()
         if self.sample_id:
             self._load_existing()
+
+    def _build_sample_tab(self) -> QWidget:
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(12)
+
+        main_frame, main_layout = self._make_section("Основные данные")
+        main_grid = QGridLayout()
+        main_grid.setHorizontalSpacing(12)
+        main_grid.setVerticalSpacing(8)
+        self._add_grid_field(main_grid, 0, 0, "Точка отбора", self.sampling_point)
+        self._add_grid_field(main_grid, 0, 1, "Время взятия", self.taken_at)
+        self._add_grid_field(main_grid, 1, 0, "Помещение", self.room)
+        self._add_grid_field(main_grid, 1, 1, "Дата доставки", self.delivered_at)
+        self._add_grid_field(main_grid, 2, 0, "Среда", self.medium)
+        main_grid.setColumnStretch(1, 1)
+        main_grid.setColumnStretch(3, 1)
+        main_layout.addLayout(main_grid)
+        layout.addWidget(main_frame)
+
+        result_frame, result_layout = self._make_section("Результаты роста")
+        result_grid = QGridLayout()
+        result_grid.setHorizontalSpacing(12)
+        result_grid.setVerticalSpacing(8)
+        self._add_grid_field(result_grid, 0, 0, "Рост", self.growth_flag)
+        self._add_grid_field(result_grid, 0, 1, "Результат от", self.growth_result_at)
+        self._add_grid_field(result_grid, 1, 0, "Колонии/морфология", self.colony_desc)
+        self._add_grid_field(result_grid, 1, 1, "КОЕ", self.cfu)
+        self._add_grid_field(result_grid, 2, 0, "Микроскопия", self.microscopy)
+        result_grid.setColumnStretch(1, 1)
+        result_grid.setColumnStretch(3, 1)
+        result_layout.addLayout(result_grid)
+        layout.addWidget(result_frame)
+        layout.addStretch(1)
+        return content
+
+    def _build_identification_tab(self) -> QWidget:
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(12)
+
+        frame, frame_layout = self._make_section("Идентификация")
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(8)
+        self._add_grid_field(grid, 0, 0, "Микроорганизм", self.micro_combo)
+        self._add_grid_field(grid, 0, 1, "Микроорганизм (свободно)", self.micro_free)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(3, 1)
+        frame_layout.addLayout(grid)
+        layout.addWidget(frame)
+        layout.addStretch(1)
+        return content
+
+    def _build_susceptibility_tab(self) -> QWidget:
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(12)
+
+        frame, frame_layout = self._make_section("Чувствительность и фаги")
+        frame_layout.addWidget(self.susceptibility_panel)
+        layout.addWidget(frame)
+        layout.addStretch(1)
+        return content
+
+    def _make_tab_scroll(self, content: QWidget) -> QScrollArea:
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(content)
+        return scroll
+
+    def _make_section(self, title: str) -> tuple[QFrame, QVBoxLayout]:
+        frame = QFrame(self)
+        frame.setObjectName("sampleSection")
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(12, 10, 12, 12)
+        layout.setSpacing(8)
+        title_label = QLabel(title)
+        title_label.setObjectName("sectionTitle")
+        layout.addWidget(title_label)
+        return frame, layout
+
+    def _add_grid_field(
+        self,
+        grid: QGridLayout,
+        row: int,
+        column: int,
+        label_text: str,
+        widget: QWidget,
+    ) -> None:
+        label = QLabel(label_text)
+        label.setObjectName("sampleFieldLabel")
+        label.setBuddy(widget)
+        grid.addWidget(label, row, column * 2)
+        grid.addWidget(widget, row, column * 2 + 1)
+
+    def _setup_validation_hooks(self) -> None:
+        self.sampling_point.textChanged.connect(lambda: self._clear_widget_error(self.sampling_point))
+        self.taken_at.dateTimeChanged.connect(lambda: self._clear_widget_error(self.taken_at))
+
+    def _update_header_context(self) -> None:
+        self.sample_header.set_sanitary_context(self.sample_id, self.sampling_point.text())
+
+    def _set_widget_error(self, widget: QWidget, message: str | None) -> None:
+        widget.setProperty("error", bool(message))
+        widget.setToolTip(message or "")
+        style = widget.style()
+        style.unpolish(widget)
+        style.polish(widget)
+        widget.update()
+
+    def _clear_widget_error(self, widget: QWidget) -> None:
+        if widget.property("error"):
+            self._set_widget_error(widget, None)
+
+    def _clear_validation_errors(self) -> None:
+        for widget in (self.sampling_point, self.taken_at):
+            self._set_widget_error(widget, None)
+
+    def _validate_required_fields(self) -> bool:
+        self._clear_validation_errors()
+        missing = False
+        if not self.sampling_point.text().strip():
+            self._set_widget_error(self.sampling_point, "Обязательное поле: точка отбора")
+            missing = True
+        if self._to_python_datetime(self.taken_at) is None:
+            self._set_widget_error(self.taken_at, "Обязательное поле: время взятия")
+            missing = True
+        if missing:
+            set_status(
+                self.error_label,
+                "Заполните обязательные поля, подсвеченные красным.",
+                "error",
+            )
+        return not missing
 
     def _apply_initial_size(self) -> None:
         app = QApplication.instance()
@@ -858,59 +941,19 @@ class SanitarySampleDetailDialog(QDialog):
             self.micro_combo.setEditText(text)
 
     def _setup_abx_rows(self) -> None:
-        self._abx_list = self.reference_service.list_antibiotics()
-        for row in range(self.susc_table.rowCount()):
-            combo = self._create_abx_combo()
-            self.susc_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_content(self.susc_table, combo, row)
-        resize_columns_to_content(self.susc_table)
+        self.susceptibility_panel._setup_abx_rows()
 
     def _setup_phage_rows(self) -> None:
-        self._phage_list = self.reference_service.list_phages()
-        for row in range(self.phage_table.rowCount()):
-            combo = self._create_phage_combo()
-            self.phage_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_content(self.phage_table, combo, row)
-        resize_columns_to_content(self.phage_table)
+        self.susceptibility_panel._setup_phage_rows()
 
     def _refresh_abx_combos(self, selected_ids: list[int | None]) -> None:
-        self._abx_list = self.reference_service.list_antibiotics()
-        for row in range(self.susc_table.rowCount()):
-            combo = self._create_abx_combo()
-            if row < len(selected_ids) and selected_ids[row] is not None:
-                idx = combo.findData(selected_ids[row])
-                if idx >= 0:
-                    combo.setCurrentIndex(idx)
-            self.susc_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_content(self.susc_table, combo, row)
-        resize_columns_to_content(self.susc_table)
+        self.susceptibility_panel._refresh_abx_combos(selected_ids)
 
     def _refresh_phage_combos(self, selected_ids: list[int | None]) -> None:
-        self._phage_list = self.reference_service.list_phages()
-        for row in range(self.phage_table.rowCount()):
-            combo = self._create_phage_combo()
-            if row < len(selected_ids) and selected_ids[row] is not None:
-                idx = combo.findData(selected_ids[row])
-                if idx >= 0:
-                    combo.setCurrentIndex(idx)
-            self.phage_table.setCellWidget(row, 0, combo)
-            connect_combo_resize_on_content(self.phage_table, combo, row)
-        resize_columns_to_content(self.phage_table)
+        self.susceptibility_panel._refresh_phage_combos(selected_ids)
 
     def refresh_references(self) -> None:
         selected_micro = self.micro_combo.currentData()
-        abx_selected = [
-            cast(QComboBox, combo_widget).currentData()
-            if (combo_widget := self.susc_table.cellWidget(row, 0)) and isinstance(combo_widget, QComboBox)
-            else None
-            for row in range(self.susc_table.rowCount())
-        ]
-        phage_selected = [
-            cast(QComboBox, combo_widget).currentData()
-            if (combo_widget := self.phage_table.cellWidget(row, 0)) and isinstance(combo_widget, QComboBox)
-            else None
-            for row in range(self.phage_table.rowCount())
-        ]
 
         self._load_microbes()
         if selected_micro is not None:
@@ -918,8 +961,7 @@ class SanitarySampleDetailDialog(QDialog):
             if idx >= 0:
                 self.micro_combo.setCurrentIndex(idx)
 
-        self._refresh_abx_combos(abx_selected)
-        self._refresh_phage_combos(phage_selected)
+        self.susceptibility_panel.refresh_references()
 
     def _create_abx_combo(self) -> QComboBox:
         combo = QComboBox()
@@ -936,26 +978,13 @@ class SanitarySampleDetailDialog(QDialog):
         return combo
 
     def _add_susc_row(self) -> None:
-        row = self.susc_table.rowCount()
-        self.susc_table.insertRow(row)
-        combo = self._create_abx_combo()
-        self.susc_table.setCellWidget(row, 0, combo)
-        connect_combo_resize_on_content(self.susc_table, combo, row)
+        self.susceptibility_panel._add_susc_row()
 
     def _add_phage_row(self) -> None:
-        row = self.phage_table.rowCount()
-        self.phage_table.insertRow(row)
-        combo = self._create_phage_combo()
-        self.phage_table.setCellWidget(row, 0, combo)
-        connect_combo_resize_on_content(self.phage_table, combo, row)
+        self.susceptibility_panel._add_phage_row()
 
     def _delete_table_row(self, table: QTableWidget) -> None:
-        if table.rowCount() <= 1:
-            return
-        row = table.currentRow()
-        if row < 0:
-            row = table.rowCount() - 1
-        table.removeRow(row)
+        self.susceptibility_panel._delete_table_row(table)
 
     def _load_existing(self) -> None:
         try:
@@ -965,6 +994,7 @@ class SanitarySampleDetailDialog(QDialog):
             detail = self.sanitary_service.get_detail(sample_id)
             sample = detail["sample"]
             self.sampling_point.setText(sample.sampling_point or "")
+            self.sample_header.set_sanitary_context(sample_id, sample.sampling_point or "")
             self.room.setText(sample.room or "")
             self.medium.setText(sample.medium or "")
             if sample.taken_at:
@@ -988,46 +1018,32 @@ class SanitarySampleDetailDialog(QDialog):
                 if idx >= 0:
                     self.micro_combo.setCurrentIndex(idx)
                 self.micro_free.setText(iso[0].microorganism_free or "")
-            self._fill_susceptibility(detail["susceptibility"])
-            self._fill_phages(detail["phages"])
+            self.susceptibility_panel.set_data(detail["susceptibility"], detail["phages"])
         except _HANDLED_SANITARY_ERRORS as exc:
             set_status(self.error_label, error_text(exc, "Не удалось загрузить пробу"), "error")
 
     def _collect_susceptibility_inputs(self) -> list[SusceptibilityInput]:
-        rows: list[SusceptibilityInput] = []
-        for row in range(self.susc_table.rowCount()):
-            abx_widget = self.susc_table.cellWidget(row, 0)
-            abx_combo = cast(QComboBox, abx_widget) if isinstance(abx_widget, QComboBox) else None
-            ris_item = self.susc_table.item(row, 1)
-            mic_item = self.susc_table.item(row, 2)
-            method_item = self.susc_table.item(row, 3)
-            rows.append(
-                SusceptibilityInput(
-                    row_number=row + 1,
-                    antibiotic_id=abx_combo.currentData() if abx_combo else None,
-                    ris=ris_item.text() if ris_item else None,
-                    mic_text=mic_item.text() if mic_item else None,
-                    method=method_item.text() if method_item else None,
-                )
+        return [
+            SusceptibilityInput(
+                row_number=row.row_number,
+                antibiotic_id=row.antibiotic_id,
+                ris=row.ris,
+                mic_text=row.mic_text,
+                method=row.method,
             )
-        return rows
+            for row in self.susceptibility_panel.get_susceptibility_rows()
+        ]
 
     def _collect_phage_inputs(self) -> list[PhageInput]:
-        rows: list[PhageInput] = []
-        for row in range(self.phage_table.rowCount()):
-            ph_widget = self.phage_table.cellWidget(row, 0)
-            ph_combo = cast(QComboBox, ph_widget) if isinstance(ph_widget, QComboBox) else None
-            free_item = self.phage_table.item(row, 1)
-            dia_item = self.phage_table.item(row, 2)
-            rows.append(
-                PhageInput(
-                    row_number=row + 1,
-                    phage_id=ph_combo.currentData() if ph_combo else None,
-                    phage_free=free_item.text() if free_item else "",
-                    diameter_text=dia_item.text() if dia_item else None,
-                )
+        return [
+            PhageInput(
+                row_number=row.row_number,
+                phage_id=row.phage_id,
+                phage_free=row.phage_free,
+                diameter_text=row.diameter_text,
             )
-        return rows
+            for row in self.susceptibility_panel.get_phage_rows()
+        ]
 
     def _collect_susceptibility(self) -> list[dict]:
         return build_susceptibility_payload(self._collect_susceptibility_inputs())
@@ -1074,6 +1090,8 @@ class SanitarySampleDetailDialog(QDialog):
         if self.actor_id is None:
             set_status(self.error_label, "Не удалось определить пользователя сессии", "error")
             return
+        if not self._validate_required_fields():
+            return
         if self.sample_id is None:
             try:
                 req = build_sanitary_sample_create_request(
@@ -1087,6 +1105,7 @@ class SanitarySampleDetailDialog(QDialog):
                 )
                 resp = self.sanitary_service.create_sample(req, actor_id=self.actor_id)
                 self.sample_id = resp.id
+                self._update_header_context()
                 has_results, result_update = self._build_result_update()
                 if has_results:
                     self.sanitary_service.update_result(self.sample_id, result_update, actor_id=self.actor_id)
@@ -1110,32 +1129,7 @@ class SanitarySampleDetailDialog(QDialog):
                 set_status(self.error_label, error_text(exc, "Не удалось обновить пробу"), "error")
 
     def _fill_susceptibility(self, rows) -> None:
-        self.susc_table.clearContents()
-        self.susc_table.setRowCount(max(len(rows), self.susc_table.rowCount()))
-        self._setup_abx_rows()
-        for idx, r in enumerate(rows):
-            combo_widget = self.susc_table.cellWidget(idx, 0)
-            combo = cast(QComboBox, combo_widget) if isinstance(combo_widget, QComboBox) else None
-            if combo:
-                combo.setCurrentIndex(combo.findData(r.antibiotic_id))
-            self.susc_table.setItem(idx, 1, QTableWidgetItem(r.ris or ""))
-            self.susc_table.setItem(idx, 2, QTableWidgetItem(str(r.mic_mg_l) if r.mic_mg_l is not None else ""))
-            self.susc_table.setItem(idx, 3, QTableWidgetItem(r.method or ""))
-        resize_columns_to_content(self.susc_table)
+        self.susceptibility_panel.set_susceptibility_rows(rows)
 
     def _fill_phages(self, rows) -> None:
-        self.phage_table.clearContents()
-        self.phage_table.setRowCount(max(len(rows), self.phage_table.rowCount()))
-        self._setup_phage_rows()
-        for idx, r in enumerate(rows):
-            combo_widget = self.phage_table.cellWidget(idx, 0)
-            combo = cast(QComboBox, combo_widget) if isinstance(combo_widget, QComboBox) else None
-            if combo:
-                combo.setCurrentIndex(combo.findData(r.phage_id))
-            self.phage_table.setItem(idx, 1, QTableWidgetItem(r.phage_free or ""))
-            self.phage_table.setItem(
-                idx,
-                2,
-                QTableWidgetItem(str(r.lysis_diameter_mm) if r.lysis_diameter_mm is not None else ""),
-            )
-        resize_columns_to_content(self.phage_table)
+        self.susceptibility_panel.set_phage_rows(rows)

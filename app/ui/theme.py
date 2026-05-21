@@ -165,6 +165,62 @@ def _build_qss(settings: Settings) -> str:
         color: {COL["text"]};
         padding-bottom: 4px;
     }}
+    QFrame#sampleHeader {{
+        background: {COL["surface2"]};
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+        border-bottom: 2px solid {COL["accent_border"]};
+    }}
+    QLabel#sampleHeaderTitle {{
+        font-size: 16px;
+        font-weight: 800;
+        color: {COL["text_primary"]};
+    }}
+    QLabel#sampleHeaderMeta,
+    QLabel#sampleFieldLabel {{
+        font-size: 11px;
+        font-weight: 700;
+        color: {COL["text_muted"]};
+    }}
+    QTabWidget#sampleTabs::pane {{
+        border: none;
+        border-top: 1px solid {COL["border_soft"]};
+        background: transparent;
+        padding-top: 8px;
+    }}
+    QTabWidget#sampleTabs QTabBar::tab {{
+        background: {COL["surface"]};
+        border: 1px solid {COL["border"]};
+        border-bottom: none;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        padding: 8px 14px;
+        margin-right: 4px;
+        font-weight: 700;
+    }}
+    QTabWidget#sampleTabs QTabBar::tab:selected {{
+        background: {COL["surface2"]};
+        color: {COL["text_primary"]};
+        border-color: {COL["accent_border"]};
+    }}
+    QFrame#sampleSection {{
+        background: transparent;
+        border: none;
+        border-top: 1px solid {COL["border_soft"]};
+        padding-top: 8px;
+    }}
+    QFrame#sampleSection QLabel#sectionTitle {{
+        font-size: 13px;
+        font-weight: 700;
+        color: {COL["text"]};
+        padding-bottom: 4px;
+    }}
+    QDialogButtonBox#sampleFooter {{
+        background: {COL["surface2"]};
+        border: 1px solid {COL["border_soft"]};
+        border-radius: 10px;
+        padding: 8px;
+    }}
     QFrame#emptyState {{
         background: {COL["surface2"]};
         border: 1px dashed {COL["border_soft"]};
@@ -1384,6 +1440,13 @@ def _build_qss(settings: Settings) -> str:
     QLineEdit:focus, QComboBox:focus, QDateEdit:focus, QDateTimeEdit:focus, QTextEdit:focus, QSpinBox:focus {{
         border: 1px solid {COL["accent_border"]};
         background: {COL["surface2"]};
+    }}
+    QLineEdit[error="true"],
+    QComboBox[error="true"],
+    QDateEdit[error="true"],
+    QDateTimeEdit[error="true"] {{
+        border: 1px solid {COL["error"]};
+        background: {COL["error_bg"]};
     }}
     QFrame#abxComboPopup {{
         background: {COL["surface"]};

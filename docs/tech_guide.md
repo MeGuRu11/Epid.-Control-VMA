@@ -127,9 +127,9 @@ python -m app.main
 - `app/ui/patient/patient_emk_view.py` — поиск и карточка пациента.
 - `app/ui/emz/emz_form.py` — форма ЭМЗ и госпитализации.
 - `app/ui/lab/lab_samples_view.py` — основной экран лаборатории: hero-контекст пациента/госпитализации, KPI-сводка, selector-card, filter-card и карточная рабочая лента проб.
-- `app/ui/lab/lab_sample_detail.py` — карточка лабораторной пробы.
+- `app/ui/lab/lab_sample_detail.py` — карточка лабораторной пробы: sticky header/footer, вкладки `Проба` / `Идентификация` / `Чувствительность` / `Контроль качества`.
 - `app/ui/sanitary/sanitary_dashboard.py` — основной экран санитарии: hero-контекст по отделениям, KPI по текущей выборке, filter-card и карточный список отделений.
-- `app/ui/sanitary/sanitary_history.py` — диалог истории санитарных проб с summary-блоком, responsive-фильтрами, карточным списком и доступом к карточке санитарной пробы.
+- `app/ui/sanitary/sanitary_history.py` — диалог истории санитарных проб с summary-блоком, responsive-фильтрами, карточным списком и доступом к вкладочной карточке санитарной пробы.
 - `app/ui/form100_v2/form100_view.py` — список карточек `Form100 V2`.
 - `app/ui/form100_v2/form100_editor.py` — редактор карточки `Form100 V2`.
 - `app/ui/import_export/import_export_view.py` — история обмена.
@@ -157,6 +157,8 @@ python -m app.main
 - `app/ui/first_run_dialog.py` — создание первого администратора;
 - `app/ui/patient/patient_edit_dialog.py` — редактирование пациента;
 - `app/ui/widgets/case_search_dialog.py` — выбор случая/госпитализации.
+- `app/ui/widgets/sample_header.py` — общий header контекста лабораторной/санитарной пробы.
+- `app/ui/widgets/susceptibility_panel.py` — общий редактор таблиц RIS/MIC и фагов для карточек проб.
 
 ## 7. Карта application-сервисов
 
@@ -367,13 +369,18 @@ CI-файл:
 layout при maximized-окне когда скрытые страницы имеют большую
 `minimumSizeHint`.
 
-### 16.5 Bodymap (`app/domain/services/`)
+### 16.5 Карточки проб (`app/ui/widgets/`)
+
+- `sample_header.py` — `SampleHeader`, sticky header с контекстом лабораторной или санитарной пробы.
+- `susceptibility_panel.py` — `SusceptibilityPanel`, общий редактор двух таблиц: антибиотик/RIS/MIC/метод и фаг/свободное имя/диаметр. Возвращает сервисно-независимые строки, которые диалоги преобразуют в свои payload DTO.
+
+### 16.6 Bodymap (`app/domain/services/`)
 
 - `bodymap_zones.py` — `coordinates_to_zone(x, y)`:
   маппинг координат на анатомические зоны Form100.
 - `bodymap_geometry.py` — вспомогательные геометрические расчёты.
 
-### 16.6 Seed-скрипт (`scripts/seed_demo_data.py`)
+### 16.7 Seed-скрипт (`scripts/seed_demo_data.py`)
 
 Заполняет БД демонстрационными данными для тестирования аналитики.
 
