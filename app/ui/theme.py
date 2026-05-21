@@ -820,6 +820,10 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["border"]};
         border-radius: 8px;
     }}
+    QWidget#listCard[selected="true"] {{
+        background: #e0f2f1;
+        border: 1px solid #4db6ac;
+    }}
     QWidget#sanitaryHistorySummaryCard {{
         background: rgba(255, 249, 242, 0.88);
         border: 1px solid {COL["border_soft"]};

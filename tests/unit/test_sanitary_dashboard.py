@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, QDateTime, QTime
-from PySide6.QtWidgets import QBoxLayout, QLabel, QScrollArea
+from PySide6.QtCore import QDate, QDateTime, Qt, QTime
+from PySide6.QtWidgets import QBoxLayout, QLabel, QListWidget, QScrollArea, QWidget
 
 from app.application.dto.sanitary_dto import SanitarySampleResponse
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
@@ -76,6 +76,14 @@ def _make_sample(
     )
 
 
+def _card_at(dashboard: SanitaryDashboard, index: int) -> QWidget:
+    item = dashboard._cards_layout.itemAt(index)
+    assert item is not None
+    widget = item.widget()
+    assert widget is not None
+    return widget
+
+
 def test_sanitary_dashboard_uses_responsive_hero_and_filter_layouts(qapp) -> None:
     dashboard = SanitaryDashboard(
         sanitary_service=cast(Any, _SanitaryServiceStub({})),
@@ -91,7 +99,11 @@ def test_sanitary_dashboard_uses_responsive_hero_and_filter_layouts(qapp) -> Non
     assert isinstance(dashboard._scroll_area, QScrollArea)
     assert dashboard._scroll_area.widgetResizable()
     assert dashboard._list_card.minimumHeight() >= 380
-    assert dashboard.list_widget.minimumHeight() >= 240
+    assert isinstance(dashboard._list_scroll, QScrollArea)
+    assert dashboard._list_scroll.widgetResizable()
+    assert dashboard._list_scroll.minimumHeight() >= 240
+    assert dashboard._list_scroll.widget() is dashboard._cards_container
+    assert dashboard.findChildren(QListWidget) == []
 
     dashboard.resize(520, 900)
     qapp.processEvents()
@@ -200,9 +212,10 @@ def test_sanitary_dashboard_updates_kpis_summary_and_department_card(qapp) -> No
     assert dashboard._kpi_widgets["pending"].value_label.text() == "1"
     assert dashboard.summary_label.text() == "Найдено 2 отделений • проб 4 • положительных 2"
 
-    first_item = dashboard.list_widget.item(0)
-    first_card = dashboard.list_widget.itemWidget(first_item)
-    assert first_card is not None
+    assert len(dashboard._dep_cards) == 2
+    first_card = dashboard._dep_cards[0]
+    assert first_card.parent() is dashboard._cards_container
+    assert first_card.sizeHint().height() >= 60
 
     title_labels: list[QLabel] = list(first_card.findChildren(QLabel, "cardTitle"))
     badge_labels: list[QLabel] = list(first_card.findChildren(QLabel, "sanitaryStateBadge"))
@@ -214,7 +227,7 @@ def test_sanitary_dashboard_updates_kpis_summary_and_department_card(qapp) -> No
     assert any("Последняя проба: 21.04.2026 11:15" in label.text() for label in meta_labels)
 
 
-def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypatch, qapp) -> None:
+def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypatch, qtbot, qapp) -> None:
     captured: dict[str, Any] = {}
 
     class _DummyHistoryDialog:
@@ -253,20 +266,22 @@ def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypa
         session=cast(Any, SimpleNamespace(user_id=77)),
     )
     dashboard.show()
+    qtbot.addWidget(dashboard)
     qapp.processEvents()
 
     assert dashboard._department_context_value.text() == "Не выбрано"
     assert dashboard._context_badge.text() == "Выберите отделение"
     assert dashboard._quick_open_button.isEnabled() is False
 
-    dashboard.list_widget.setCurrentRow(0)
+    qtbot.mouseClick(dashboard._dep_cards[0], Qt.MouseButton.LeftButton)
     qapp.processEvents()
 
     assert dashboard._department_context_value.text() == "ОРИТ"
     assert dashboard._context_badge.text() == "Отделение выбрано"
     assert dashboard._quick_open_button.isEnabled() is True
+    assert dashboard._dep_cards[0].property("selected") is True
 
-    dashboard._handle_item_double_clicked(dashboard.list_widget.item(0))
+    qtbot.mouseDClick(dashboard._dep_cards[0], Qt.MouseButton.LeftButton)
 
     assert captured["exec_called"] is True
     assert captured["kwargs"]["department_id"] == 1
@@ -344,8 +359,7 @@ def test_sanitary_dashboard_distinguishes_empty_states_and_clears_selection(qapp
     qapp.processEvents()
 
     assert no_data_dashboard._last_empty_state == "no_data"
-    no_data_card = no_data_dashboard.list_widget.itemWidget(no_data_dashboard.list_widget.item(0))
-    assert no_data_card is not None
+    no_data_card = _card_at(no_data_dashboard, 0)
     assert any("Проб пока нет" in label.text() for label in no_data_card.findChildren(QLabel))
 
     filtered_dashboard = SanitaryDashboard(
@@ -373,7 +387,7 @@ def test_sanitary_dashboard_distinguishes_empty_states_and_clears_selection(qapp
     filtered_dashboard.show()
     qapp.processEvents()
 
-    filtered_dashboard.list_widget.setCurrentRow(0)
+    filtered_dashboard._on_card_clicked(1, "ОРИТ")
     qapp.processEvents()
     assert filtered_dashboard._quick_open_button.isEnabled() is True
 
@@ -383,6 +397,58 @@ def test_sanitary_dashboard_distinguishes_empty_states_and_clears_selection(qapp
     assert filtered_dashboard._last_empty_state == "filtered_out"
     assert filtered_dashboard._department_context_value.text() == "Не выбрано"
     assert filtered_dashboard._quick_open_button.isEnabled() is False
-    filtered_card = filtered_dashboard.list_widget.itemWidget(filtered_dashboard.list_widget.item(0))
-    assert filtered_card is not None
+    filtered_card = _card_at(filtered_dashboard, 0)
     assert any("Ничего не найдено" in label.text() for label in filtered_card.findChildren(QLabel))
+
+
+def test_sanitary_dashboard_cards_are_layout_children_after_filter_reset(qapp) -> None:
+    dashboard = SanitaryDashboard(
+        sanitary_service=cast(
+            Any,
+            _SanitaryServiceStub(
+                {
+                    1: [
+                        _make_sample(
+                            1,
+                            department_id=1,
+                            lab_no="SAN-0001",
+                            growth_flag=1,
+                            taken_at=_dt(2026, 4, 20, 8, 30),
+                            sampling_point="Раковина",
+                        )
+                    ],
+                    2: [
+                        _make_sample(
+                            2,
+                            department_id=2,
+                            lab_no="SAN-0002",
+                            growth_flag=0,
+                            taken_at=_dt(2026, 4, 21, 8, 30),
+                            sampling_point="Стол",
+                        )
+                    ],
+                }
+            ),
+        ),
+        reference_service=cast(Any, _reference_service_stub()),
+    )
+    dashboard.show()
+    qapp.processEvents()
+
+    assert len(dashboard._dep_cards) == 2
+    assert dashboard._cards_layout.count() == 2
+    assert all(card.parent() is dashboard._cards_container for card in dashboard._dep_cards)
+    assert all(card.sizeHint().height() >= 60 for card in dashboard._dep_cards)
+
+    dashboard.search_input.setText("ОРИТ")
+    qapp.processEvents()
+    assert len(dashboard._dep_cards) == 1
+    assert dashboard._cards_layout.count() == 1
+    assert dashboard._dep_cards[0].dep_name == "ОРИТ"
+
+    dashboard._clear_filters()
+    qapp.processEvents()
+
+    assert len(dashboard._dep_cards) == 2
+    assert dashboard._cards_layout.count() == 2
+    assert all(card.parent() is dashboard._cards_container for card in dashboard._dep_cards)

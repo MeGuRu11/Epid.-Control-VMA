@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import cast
 
 from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCheckBox,
@@ -16,8 +17,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLayout,
     QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -59,6 +58,7 @@ class SanitaryDepartmentEntry:
     positive_count: int
     pending_count: int
     last_sample: SanitarySampleResponse | None
+    last_microbe_label: str = ""
 
 
 SANITARY_KPI_SPECS = (
@@ -67,6 +67,92 @@ SANITARY_KPI_SPECS = (
     SanitaryKpiSpec("positive", "Положительные", "POS", "с положительным ростом", "positive"),
     SanitaryKpiSpec("pending", "Без результата", "NR", "ожидают результата", "warning"),
 )
+
+
+class _DepartmentCard(QWidget):
+    """Кликабельная карточка отделения для layout-списка."""
+
+    card_clicked = Signal(int, str)
+    card_double_clicked = Signal(int, str)
+
+    def __init__(self, entry: SanitaryDepartmentEntry, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.dep_id = entry.dep_id
+        self.dep_name = entry.name
+        self._selected = False
+        self.setObjectName("listCard")
+        self.setProperty("selected", False)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._build_layout(entry)
+
+    def _build_layout(self, entry: SanitaryDepartmentEntry) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(8)
+
+        title = QLabel(entry.name)
+        title.setObjectName("cardTitle")
+        state_text = "Есть положительные" if entry.positive_count > 0 else "Без положительных"
+        state_tone = "positive" if entry.positive_count > 0 else "success"
+        state_badge = QLabel(state_text)
+        state_badge.setObjectName("sanitaryStateBadge")
+        state_badge.setProperty("tone", state_tone)
+
+        header.addWidget(title)
+        header.addStretch()
+        header.addWidget(state_badge)
+        layout.addLayout(header)
+
+        middle = QLabel(
+            f"Проб: {entry.total_count} • Положительные: {entry.positive_count} • Без результата: {entry.pending_count}"
+        )
+        middle.setObjectName("sanitaryListMeta")
+        middle.setWordWrap(True)
+        layout.addWidget(middle)
+
+        bottom_parts = [f"Последняя проба: {self._sample_taken_text(entry.last_sample)}"]
+        if entry.last_sample is not None:
+            if entry.last_sample.sampling_point:
+                bottom_parts.append(f"Точка: {entry.last_sample.sampling_point}")
+            if entry.last_sample.room:
+                bottom_parts.append(f"Помещение: {entry.last_sample.room}")
+            if entry.last_microbe_label:
+                bottom_parts.append(f"Микроорганизм: {entry.last_microbe_label}")
+            elif entry.last_sample.medium:
+                bottom_parts.append(f"Среда: {entry.last_sample.medium}")
+        bottom = QLabel(" • ".join(bottom_parts))
+        bottom.setObjectName("sanitaryListMeta")
+        bottom.setWordWrap(True)
+        layout.addWidget(bottom)
+
+    def set_selected(self, selected: bool) -> None:
+        if self._selected == selected:
+            return
+        self._selected = selected
+        self.setProperty("selected", selected)
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.update()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.card_clicked.emit(self.dep_id, self.dep_name)
+        super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.card_double_clicked.emit(self.dep_id, self.dep_name)
+        super().mouseDoubleClickEvent(event)
+
+    def _sample_taken_text(self, sample: SanitarySampleResponse | None) -> str:
+        if sample is None or sample.taken_at is None:
+            return "-"
+        return sample.taken_at.strftime("%d.%m.%Y %H:%M")
 
 
 class SanitaryDashboard(QWidget):
@@ -89,6 +175,7 @@ class SanitaryDashboard(QWidget):
         self._kpi_cards: list[QWidget] = []
         self._entries: list[SanitaryDepartmentEntry] = []
         self._list_item_widgets: list[QWidget] = []
+        self._dep_cards: list[_DepartmentCard] = []
         self._initial_refresh_pending = False
         self._selected_department_id: int | None = None
         self._selected_department_name = ""
@@ -392,12 +479,19 @@ class SanitaryDashboard(QWidget):
         toolbar.addStretch()
         layout.addLayout(toolbar)
 
-        self.list_widget = QListWidget()
-        self.list_widget.setSpacing(8)
-        self.list_widget.setMinimumHeight(240)
-        self.list_widget.itemDoubleClicked.connect(self._handle_item_double_clicked)
-        self.list_widget.itemSelectionChanged.connect(self._on_selection_changed)
-        layout.addWidget(self.list_widget, 1)
+        self._cards_container = QWidget()
+        self._cards_container.setObjectName("depListContainer")
+        self._cards_layout = QVBoxLayout(self._cards_container)
+        self._cards_layout.setContentsMargins(0, 0, 0, 0)
+        self._cards_layout.setSpacing(8)
+        self._cards_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        self._list_scroll = QScrollArea()
+        self._list_scroll.setWidgetResizable(True)
+        self._list_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._list_scroll.setWidget(self._cards_container)
+        self._list_scroll.setMinimumHeight(240)
+        layout.addWidget(self._list_scroll, 1)
         return card
 
     def _build_context_card(self, title: str) -> tuple[QWidget, QLabel]:
@@ -457,53 +551,6 @@ class SanitaryDashboard(QWidget):
         badge.setObjectName("sanitaryStateBadge")
         badge.setProperty("tone", tone)
         return badge
-
-    def _build_department_item(self, entry: SanitaryDepartmentEntry) -> QWidget:
-        wrapper = QWidget()
-        wrapper.setObjectName("listCard")
-
-        layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(6)
-
-        header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header.setSpacing(8)
-
-        title = QLabel(entry.name)
-        title.setObjectName("cardTitle")
-        state_text = "Есть положительные" if entry.positive_count > 0 else "Без положительных"
-        state_tone = "positive" if entry.positive_count > 0 else "success"
-        state_badge = self._build_state_badge(state_text, state_tone)
-
-        header.addWidget(title)
-        header.addStretch()
-        header.addWidget(state_badge)
-        layout.addLayout(header)
-
-        middle = QLabel(
-            f"Проб: {entry.total_count} • Положительные: {entry.positive_count} • Без результата: {entry.pending_count}"
-        )
-        middle.setObjectName("sanitaryListMeta")
-        middle.setWordWrap(True)
-        layout.addWidget(middle)
-
-        bottom_parts = [f"Последняя проба: {self._sample_taken_text(entry.last_sample)}"]
-        if entry.last_sample is not None:
-            if entry.last_sample.sampling_point:
-                bottom_parts.append(f"Точка: {entry.last_sample.sampling_point}")
-            if entry.last_sample.room:
-                bottom_parts.append(f"Помещение: {entry.last_sample.room}")
-            micro_text = self._microbe_label(entry.last_sample)
-            if micro_text:
-                bottom_parts.append(f"Микроорганизм: {micro_text}")
-            elif entry.last_sample.medium:
-                bottom_parts.append(f"Среда: {entry.last_sample.medium}")
-        bottom = QLabel(" • ".join(bottom_parts))
-        bottom.setObjectName("sanitaryListMeta")
-        bottom.setWordWrap(True)
-        layout.addWidget(bottom)
-        return wrapper
 
     def _build_empty_card(self, title: str, detail: str) -> QWidget:
         card = QWidget()
@@ -743,6 +790,7 @@ class SanitaryDashboard(QWidget):
 
             positive_count = sum(1 for sample in filtered_samples if sample.growth_flag == 1)
             pending_count = sum(1 for sample in filtered_samples if sample.growth_flag is None)
+            last_sample = self._find_last_sample(filtered_samples)
             entries.append(
                 SanitaryDepartmentEntry(
                     dep_id=dep_id,
@@ -751,7 +799,8 @@ class SanitaryDashboard(QWidget):
                     total_count=len(filtered_samples),
                     positive_count=positive_count,
                     pending_count=pending_count,
-                    last_sample=self._find_last_sample(filtered_samples),
+                    last_sample=last_sample,
+                    last_microbe_label=self._microbe_label(last_sample) if last_sample is not None else "",
                 )
             )
 
@@ -818,84 +867,78 @@ class SanitaryDashboard(QWidget):
         return sample.microorganism_free or ""
 
     def _populate_list(self, entries: list[SanitaryDepartmentEntry], empty_state: str | None) -> None:
-        updates_enabled = self.list_widget.updatesEnabled()
-        self.list_widget.setUpdatesEnabled(False)
         self._list_item_widgets.clear()
-        self.list_widget.clear()
-        try:
-            if empty_state == "no_data":
-                self._add_empty_state(
-                    "no_data",
-                    "Проб пока нет",
-                    "Санитарные пробы по отделениям ещё не зарегистрированы.",
-                )
-                return
-            if empty_state == "filtered_out":
-                self._add_empty_state(
-                    "filtered_out",
-                    "Ничего не найдено",
-                    "Попробуйте изменить фильтры или сбросить текущие условия отбора.",
-                )
-                return
+        self._dep_cards.clear()
+        while self._cards_layout.count():
+            child = self._cards_layout.takeAt(0)
+            if child is None:
+                continue
+            widget = child.widget()
+            if widget is not None:
+                widget.deleteLater()
 
-            self._last_empty_state = None
-            for entry in entries:
-                item = QListWidgetItem()
-                card = self._build_department_item(entry)
-                item.setData(Qt.ItemDataRole.UserRole, entry.dep_id)
-                item.setData(Qt.ItemDataRole.UserRole + 1, entry.name)
-                self._add_list_item_widget(item, card)
-        finally:
-            self.list_widget.setUpdatesEnabled(updates_enabled)
+        if empty_state == "no_data":
+            empty = self._build_empty_card(
+                "Проб пока нет",
+                "Санитарные пробы по отделениям ещё не зарегистрированы.",
+            )
+            self._cards_layout.addWidget(empty)
+            self._list_item_widgets.append(empty)
+            self._last_empty_state = "no_data"
+            return
 
-    def _add_empty_state(self, state: str, title: str, detail: str) -> None:
-        self._last_empty_state = state
-        item = QListWidgetItem()
-        item.setFlags(Qt.ItemFlag.NoItemFlags)
-        card = self._build_empty_card(title, detail)
-        self._add_list_item_widget(item, card)
+        if empty_state == "filtered_out":
+            empty = self._build_empty_card(
+                "Ничего не найдено",
+                "Попробуйте изменить фильтры или сбросить текущие условия отбора.",
+            )
+            self._cards_layout.addWidget(empty)
+            self._list_item_widgets.append(empty)
+            self._last_empty_state = "filtered_out"
+            return
 
-    def _add_list_item_widget(self, item: QListWidgetItem, card: QWidget) -> None:
-        # adjustSize() принудительно вычисляет размер виджета без parent/show.
-        # Без этого sizeHint() возвращает (-1,-1) и карточка невидима.
-        card.adjustSize()
-        hint = card.sizeHint().expandedTo(card.minimumSizeHint())
-        if hint.height() <= 0:
-            hint.setHeight(80)
-        item.setSizeHint(hint)
-        self.list_widget.addItem(item)
-        self.list_widget.setItemWidget(item, card)
-        self._list_item_widgets.append(card)
+        self._last_empty_state = None
+        for entry in entries:
+            card = _DepartmentCard(entry, self._cards_container)
+            card.card_clicked.connect(self._on_card_clicked)
+            card.card_double_clicked.connect(self._on_card_double_clicked)
+            self._cards_layout.addWidget(card)
+            self._dep_cards.append(card)
+            self._list_item_widgets.append(card)
 
     def _restore_selection(self, department_id: int | None) -> None:
         self._selected_department_id = None
         self._selected_department_name = ""
-        if department_id is None:
-            return
-        for row in range(self.list_widget.count()):
-            item = self.list_widget.item(row)
-            if item is None:
-                continue
-            if item.data(Qt.ItemDataRole.UserRole) == department_id:
-                self.list_widget.setCurrentItem(item)
+        for card in self._dep_cards:
+            selected = department_id is not None and card.dep_id == department_id
+            card.set_selected(selected)
+            if selected:
                 self._selected_department_id = department_id
-                self._selected_department_name = str(item.data(Qt.ItemDataRole.UserRole + 1) or "")
-                return
+                self._selected_department_name = card.dep_name
 
-    def _on_selection_changed(self) -> None:
-        item = self.list_widget.currentItem()
-        dep_id = item.data(Qt.ItemDataRole.UserRole) if item is not None else None
-        dep_name = item.data(Qt.ItemDataRole.UserRole + 1) if item is not None else None
-        self._selected_department_id = dep_id if isinstance(dep_id, int) else None
-        self._selected_department_name = str(dep_name) if isinstance(dep_name, str) else ""
+    def _on_card_clicked(self, dep_id: int, dep_name: str) -> None:
+        self._selected_department_id = dep_id
+        self._selected_department_name = dep_name
+        for card in self._dep_cards:
+            card.set_selected(card.dep_id == dep_id)
+        self._on_selection_changed_new(dep_id, dep_name)
+
+    def _on_card_double_clicked(self, dep_id: int, dep_name: str) -> None:
+        self._on_card_clicked(dep_id, dep_name)
+        self._handle_item_double_clicked_new(dep_id, dep_name)
+
+    def _on_selection_changed_new(self, dep_id: int, dep_name: str) -> None:
+        self._selected_department_id = dep_id
+        self._selected_department_name = dep_name
         self._update_selection_context()
         self._sync_action_state()
 
     def _sync_action_state(self) -> None:
         self._quick_open_button.setEnabled(self._selected_department_id is not None)
 
-    def _handle_item_double_clicked(self, item: QListWidgetItem) -> None:
-        self.list_widget.setCurrentItem(item)
+    def _handle_item_double_clicked_new(self, dep_id: int, dep_name: str) -> None:
+        self._selected_department_id = dep_id
+        self._selected_department_name = dep_name
         self._open_selected()
 
     def refresh(self) -> None:
@@ -912,10 +955,8 @@ class SanitaryDashboard(QWidget):
             f"положительных {sum(entry.positive_count for entry in entries)}"
         )
 
-        blocker = QSignalBlocker(self.list_widget)
         self._populate_list(entries, empty_state)
         self._restore_selection(previous_department_id if empty_state is None else None)
-        del blocker
 
         self._update_selection_context()
         self._sync_action_state()

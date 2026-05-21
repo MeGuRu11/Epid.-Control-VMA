@@ -85,4 +85,28 @@
   - `python -m ruff check app tests` - pass;
   - `python -m compileall -q app tests scripts` - pass;
   - `python scripts/check_mojibake.py` - pass.
-- Next: push `main` and watch the new Quality Gates run.
+- Pushed `9b9d6bf fix: install pytest-qt in CI` to `origin/main`.
+- GitHub Actions run `26225521464` completed successfully.
+
+## Sanitary department cards root fix
+
+- Current task: replace the broken `QListWidget + setItemWidget` department-card list in `app/ui/sanitary/sanitary_dashboard.py`.
+- Root cause addressed: Qt6 geometry/layout issues caused by `setUpdatesEnabled(False)` around `setItemWidget()` and word-wrapped labels whose size hints depend on a parent width.
+- Implemented:
+  - private `_DepartmentCard(QWidget)` with `card_clicked` and `card_double_clicked`;
+  - `QScrollArea + QVBoxLayout` list surface using `_cards_container`, `_cards_layout`, `_list_scroll`;
+  - `_dep_cards` storage and direct card selection/restoration;
+  - empty states inserted directly into `_cards_layout`;
+  - selected card QSS in `app/ui/theme.py`.
+- Removed the dashboard dependency on `QListWidgetItem`, `setItemWidget`, `adjustSize`, and list-widget update blocking.
+- Tests updated in `tests/unit/test_sanitary_dashboard.py`.
+- Verification so far:
+  - RED targeted before implementation: `5 failed, 3 passed`;
+  - GREEN targeted: `8 passed`;
+  - related sanitary/smoke tests: `16 passed`, `1 warning`;
+  - `python -m mypy app tests --no-incremental` - pass (`389 source files`);
+  - `python -m ruff check app tests` - pass;
+  - `python scripts/check_architecture.py` - pass;
+  - `python -m compileall -q app tests scripts` - pass;
+  - `python -m pytest -q --tb=short` - pass (`808 passed`, `1 warning`).
+- Next: run final `check_mojibake`/`git diff --check`, commit as `fix: replace QListWidget with QScrollArea for sanitary department cards (root fix)`.

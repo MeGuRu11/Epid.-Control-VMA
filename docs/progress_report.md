@@ -7424,7 +7424,7 @@ Window title, кнопки, внутренние ключи — не трону�
 ## 2026-05-21 - fix: install pytest-qt in CI
 
 **Коммит:** `fix: install pytest-qt in CI`
-**Статус:** готово к push
+**Статус:** закоммичено, GitHub Actions зелёный
 
 - После push коммита `fix: guard nullable Qt items for CI mypy` GitHub Actions подтвердил, что шаг `Mypy` проходит.
 - Следующий сбой был на шаге `Pytest`: `fixture 'qtbot' not found` для всех Qt/UI tests.
@@ -7439,3 +7439,39 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m ruff check app tests` - pass.
 - `python -m compileall -q app tests scripts` - pass.
 - `python scripts/check_mojibake.py` - pass.
+
+---
+
+## 2026-05-21 - fix: replace QListWidget with QScrollArea for sanitary department cards
+
+**Коммит:** `fix: replace QListWidget with QScrollArea for sanitary department cards (root fix)`
+**Статус:** готово к коммиту
+
+- Исправлена корневая причина невидимых карточек отделений в `SanitaryDashboard`: список отделений больше не строится через `QListWidgetItem + setItemWidget`.
+- Добавлен приватный `_DepartmentCard` с `card_clicked` / `card_double_clicked`, собственным layout и selected-state.
+- В `SanitaryDashboard` список отделений переведён на `QScrollArea + QVBoxLayout`:
+  - `self._cards_container`;
+  - `self._cards_layout`;
+  - `self._list_scroll`;
+  - `self._dep_cards`.
+- Удалена симптомная логика `adjustSize()`, `setSizeHint()` и `setUpdatesEnabled(False)` вокруг карточек списка.
+- Обновлены выбор, восстановление выбора после refresh, empty states, клик и double-click без `QListWidgetItem`.
+- В `app/ui/theme.py` добавлен стиль `QWidget#listCard[selected="true"]`.
+- Regression-тесты `tests/unit/test_sanitary_dashboard.py` теперь проверяют:
+  - отсутствие `QListWidget` внутри dashboard;
+  - карточки как children layout-контейнера;
+  - высоту `sizeHint()` карточек;
+  - selected-state по клику;
+  - open-history по double-click;
+  - пересоздание карточек после фильтра и сброса фильтров.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `5 failed, 3 passed` на отсутствующих `_list_scroll`, `_cards_layout`, `_dep_cards`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `8 passed`.
+- Related: `python -m pytest tests/unit/test_sanitary_dashboard.py tests/unit/test_sanitary_history_dialog.py tests/unit/test_ui_smoke.py -q --tb=short` - `16 passed`, `1 warning`.
+- `python -m mypy app tests --no-incremental` - pass (`389 source files`).
+- `python -m ruff check app tests` - pass.
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python -m pytest -q --tb=short` - pass (`808 passed`, `1 warning`).
