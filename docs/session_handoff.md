@@ -48,3 +48,25 @@
 
 - Ручные скриншоты диалогов не снимались; проверка выполнена через unit/UI tests на реальных PySide6-виджетах в offscreen-режиме.
 - Push не выполнялся.
+
+## CI mypy follow-up
+
+- GitHub Actions `Mypy` failed after the S4.5 commit with 11 nullable Qt API errors.
+- Local root cause check: this machine has `PySide6 6.7.3`, while CI installs fresh dependencies from `PySide6>=6.6`; newer stubs treat `QLayout.takeAt`, `QTableWidget.item`, and `QWidget.layout` as nullable.
+- Fixed app guards in:
+  - `app/ui/analytics/widgets/heatmap.py`;
+  - `app/ui/analytics/widgets/donut_chart.py`.
+- Fixed test narrowing in:
+  - `tests/unit/test_resistance_grid.py`;
+  - `tests/unit/test_susceptibility_panel.py`;
+  - `tests/unit/test_lab_sample_detail_dialog.py`;
+  - `tests/unit/test_sanitary_sample_dialog.py`.
+- `gh` is not installed in PATH, so CI log inspection used the screenshot supplied by the user.
+- Checks after the fix:
+  - `python -m mypy app tests --no-incremental` - pass (`389 source files`);
+  - targeted sample/resistance tests - `15 passed`;
+  - heatmap/donut tests - `10 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python scripts/check_architecture.py` - pass;
+  - `python -m compileall -q app tests scripts` - pass.
+- Committed: `fix: guard nullable Qt items for CI mypy`.

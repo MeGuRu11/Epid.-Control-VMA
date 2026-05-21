@@ -57,9 +57,15 @@ def test_susceptibility_panel_apply_templates_only_fills_empty(qtbot: Any) -> No
 
     panel.apply_default_templates()
 
-    assert panel.susc_table.item(0, 1).text() == "R"
-    assert panel.susc_table.item(0, 3).text() == "disk"
-    assert panel.phage_table.item(0, 2).text() == "7"
+    susc_result = panel.susc_table.item(0, 1)
+    susc_method = panel.susc_table.item(0, 3)
+    phage_diameter = panel.phage_table.item(0, 2)
+    assert susc_result is not None
+    assert susc_method is not None
+    assert phage_diameter is not None
+    assert susc_result.text() == "R"
+    assert susc_method.text() == "disk"
+    assert phage_diameter.text() == "7"
 
 
 def test_susceptibility_panel_get_rows(qtbot: Any) -> None:

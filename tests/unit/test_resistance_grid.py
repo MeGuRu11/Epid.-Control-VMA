@@ -35,7 +35,9 @@ def test_resistance_grid_low_count_shows_dash(qtbot: Any) -> None:
 
     grid.set_data({"ECO - E. coli": {"AMX - Amoxicillin": {"S": 1, "I": 0, "R": 3, "total": 4}}})
 
-    assert grid.item(0, 0).text() == "\u2014"
+    item = grid.item(0, 0)
+    assert item is not None
+    assert item.text() == "\u2014"
 
 
 def test_resistance_grid_high_resistance_red_background(qtbot: Any) -> None:
@@ -47,5 +49,6 @@ def test_resistance_grid_high_resistance_red_background(qtbot: Any) -> None:
     grid.set_data({"ECO - E. coli": {"AMX - Amoxicillin": {"S": 1, "I": 0, "R": 4, "total": 5}}})
 
     item = grid.item(0, 0)
+    assert item is not None
     assert item.text() == "80%"
     assert item.background().color().name().lower() == "#fecaca"

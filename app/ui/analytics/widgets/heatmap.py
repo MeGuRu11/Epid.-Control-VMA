@@ -62,6 +62,8 @@ class Heatmap(QWidget):
     ) -> None:
         while self._grid.count():
             item = self._grid.takeAt(0)
+            if item is None:
+                continue
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()

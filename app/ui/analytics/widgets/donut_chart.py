@@ -122,6 +122,8 @@ class DonutChart(QWidget):
 
         while self._legend.count():
             item = self._legend.takeAt(0)
+            if item is None:
+                continue
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
@@ -142,6 +144,8 @@ class IsmpDepartmentBar(QWidget):
     def set_data(self, items: list[tuple[str, int]], max_n: int = 8) -> None:
         while self._layout.count():
             item = self._layout.takeAt(0)
+            if item is None:
+                continue
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()

@@ -58,8 +58,9 @@ def test_sanitary_dialog_tab_structure(qtbot: Any) -> None:
     ]
     assert dialog.findChild(QWidget, "sampleHeader") is not None
     assert footer is not None
-    assert dialog.layout() is not None
-    assert dialog.layout().indexOf(footer) >= 0
+    layout = dialog.layout()
+    assert layout is not None
+    assert layout.indexOf(footer) >= 0
 
 
 def test_sanitary_dialog_save_validates_required_fields(qtbot: Any) -> None:

@@ -7397,3 +7397,24 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m compileall -q app tests scripts` — pass.
 - `python scripts/check_mojibake.py` — pass.
 - `git diff --check` — pass.
+
+---
+
+## 2026-05-21 - fix: guard nullable Qt items for CI mypy
+
+**Коммит:** `fix: guard nullable Qt items for CI mypy`
+**Статус:** закоммичено
+
+- Проверено падение GitHub Actions `Mypy`: CI использует свежую установку зависимостей из `PySide6>=6.6`, где Qt stubs строже помечают nullable API.
+- В `app/ui/analytics/widgets/heatmap.py` и `app/ui/analytics/widgets/donut_chart.py` добавлены guards для `QLayout.takeAt(...) -> QLayoutItem | None`.
+- В unit-тестах добавлены явные `assert item is not None` / `assert layout is not None` перед обращением к `QTableWidgetItem` и `QLayout`.
+- `gh` локально недоступен (`gh` не найден в PATH), поэтому лог CI сверялся по предоставленному screenshot; все 11 строк из GitHub mypy log закрыты локальными правками.
+
+### Проверки
+
+- `python -m mypy app tests --no-incremental` - pass (`389 source files`).
+- `python -m pytest tests/unit/test_susceptibility_panel.py tests/unit/test_lab_sample_detail_dialog.py tests/unit/test_sanitary_sample_dialog.py tests/unit/test_resistance_grid.py -q --tb=short` - `15 passed`.
+- `python -m pytest tests/unit/test_heatmap.py tests/unit/test_donut_chart.py -q --tb=short` - `10 passed`.
+- `python -m ruff check app tests` - pass.
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
