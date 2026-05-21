@@ -7445,7 +7445,7 @@ Window title, кнопки, внутренние ключи — не трону�
 ## 2026-05-21 - fix: replace QListWidget with QScrollArea for sanitary department cards
 
 **Коммит:** `fix: replace QListWidget with QScrollArea for sanitary department cards (root fix)`
-**Статус:** готово к коммиту
+**Статус:** закоммичено локально
 
 - Исправлена корневая причина невидимых карточек отделений в `SanitaryDashboard`: список отделений больше не строится через `QListWidgetItem + setItemWidget`.
 - Добавлен приватный `_DepartmentCard` с `card_clicked` / `card_double_clicked`, собственным layout и selected-state.
@@ -7475,3 +7475,25 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python scripts/check_architecture.py` - pass.
 - `python -m compileall -q app tests scripts` - pass.
 - `python -m pytest -q --tb=short` - pass (`808 passed`, `1 warning`).
+
+---
+
+## 2026-05-21 - fix: selected highlight for sanitary department cards
+
+**Коммит:** `fix: show selected highlight on department card in SanitaryDashboard`
+**Статус:** закоммичено локально
+
+- `theme.py`: добавлены theme-токены `accent_subtle`, `surface_hover`, `border_focus`.
+- `theme.py`: QSS-правила `QWidget#listCard[selected="true"]`, `QWidget#listCard:hover` и `QWidget#listCard[selected="true"]:hover` переведены на палитру проекта.
+- `sanitary_dashboard.py`: `unpolish/polish/update` уже находится в `_DepartmentCard.set_selected()` и используется при клике и восстановлении выбора.
+- Тест: добавлена проверка, что после выбора ровно одна карточка имеет `selected=True`.
+- Тест: добавлена проверка QSS selected/hover правил для `QWidget#listCard`.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `1 failed, 8 passed` на отсутствии `COL["accent_subtle"]`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_dashboard.py -q --tb=short` - `9 passed`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python scripts/check_mojibake.py` - pass.
+- `git diff --check` - pass.

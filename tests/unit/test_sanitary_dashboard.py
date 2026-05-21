@@ -9,8 +9,10 @@ from PySide6.QtCore import QDate, QDateTime, Qt, QTime
 from PySide6.QtWidgets import QBoxLayout, QLabel, QListWidget, QScrollArea, QWidget
 
 from app.application.dto.sanitary_dto import SanitarySampleResponse
+from app.config import Settings
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
 from app.ui.sanitary.sanitary_history import SanitarySampleDetailDialog
+from app.ui.theme import COL, _build_qss
 from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATETIME
 
 
@@ -280,6 +282,8 @@ def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypa
     assert dashboard._context_badge.text() == "Отделение выбрано"
     assert dashboard._quick_open_button.isEnabled() is True
     assert dashboard._dep_cards[0].property("selected") is True
+    selected_cards = [card for card in dashboard._dep_cards if card.property("selected") is True]
+    assert len(selected_cards) == 1
 
     qtbot.mouseDClick(dashboard._dep_cards[0], Qt.MouseButton.LeftButton)
 
@@ -287,6 +291,26 @@ def test_sanitary_dashboard_updates_selection_context_and_opens_history(monkeypa
     assert captured["kwargs"]["department_id"] == 1
     assert captured["kwargs"]["department_name"] == "ОРИТ"
     assert captured["kwargs"]["actor_id"] == 77
+
+
+def test_sanitary_dashboard_list_card_styles_include_selected_and_hover_states() -> None:
+    accent_subtle = COL.get("accent_subtle")
+    surface_hover = COL.get("surface_hover")
+    border_focus = COL.get("border_focus")
+
+    assert accent_subtle is not None
+    assert surface_hover is not None
+    assert border_focus is not None
+
+    qss = _build_qss(Settings())
+
+    assert 'QWidget#listCard[selected="true"]' in qss
+    assert f"background: {accent_subtle};" in qss
+    assert f"border: 2px solid {COL['accent']};" in qss
+    assert "QWidget#listCard:hover" in qss
+    assert f"background: {surface_hover};" in qss
+    assert f"border: 1px solid {border_focus};" in qss
+    assert 'QWidget#listCard[selected="true"]:hover' in qss
 
 
 def test_sanitary_dashboard_updates_filter_summary_and_reset(qapp) -> None:

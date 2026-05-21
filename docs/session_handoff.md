@@ -109,4 +109,24 @@
   - `python scripts/check_architecture.py` - pass;
   - `python -m compileall -q app tests scripts` - pass;
   - `python -m pytest -q --tb=short` - pass (`808 passed`, `1 warning`).
-- Next: run final `check_mojibake`/`git diff --check`, commit as `fix: replace QListWidget with QScrollArea for sanitary department cards (root fix)`.
+- Committed locally: `4bf6d7b fix: replace QListWidget with QScrollArea for sanitary department cards (root fix)`.
+
+## Sanitary department card selected highlight hotfix
+
+- Current task: make the selected department card visually distinct in `SanitaryDashboard`.
+- Existing state before hotfix:
+  - `_DepartmentCard.set_selected()` already calls `setProperty("selected", ...)`, `unpolish`, `polish`, and `update`;
+  - `_restore_selection()` already uses `set_selected()`;
+  - QSS selected style existed but used hardcoded colors and had no hover/selected:hover rules.
+- Implemented:
+  - theme tokens `accent_subtle`, `surface_hover`, `border_focus`;
+  - QSS rules for `QWidget#listCard[selected="true"]`, `QWidget#listCard:hover`, and `QWidget#listCard[selected="true"]:hover`;
+  - tests for exactly one selected card after click and for selected/hover QSS rules.
+- Verification so far:
+  - RED targeted: `1 failed, 8 passed` on missing `COL["accent_subtle"]`;
+  - GREEN targeted: `9 passed`;
+  - `python -m ruff check app tests` - pass;
+  - `python -m mypy app tests` - pass (`389 source files`);
+  - `python scripts/check_mojibake.py` - pass;
+  - `git diff --check` - pass.
+- Committed locally: `fix: show selected highlight on department card in SanitaryDashboard`.

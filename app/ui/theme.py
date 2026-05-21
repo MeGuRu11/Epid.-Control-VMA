@@ -17,9 +17,12 @@ COL = {
     "text_muted": "#707070",
     "muted": "#7A7A78",
     "accent": "#A1E3D8",
+    "accent_subtle": "#E0F6F2",
     "accent2": "#8FDCCF",
     "accent_border": "#6FB9AD",
     "accent_pressed": "#76CABC",
+    "surface_hover": "#FFFDF8",
+    "border_focus": "#6FB9AD",
     "link": "#61C9B6",
     "success_bg": "#E6F6EA",
     "success": "#9AD8A6",
@@ -821,8 +824,19 @@ def _build_qss(settings: Settings) -> str:
         border-radius: 8px;
     }}
     QWidget#listCard[selected="true"] {{
-        background: #e0f2f1;
-        border: 1px solid #4db6ac;
+        background: {COL["accent_subtle"]};
+        border: 2px solid {COL["accent"]};
+        border-radius: 8px;
+    }}
+    QWidget#listCard:hover {{
+        background: {COL["surface_hover"]};
+        border: 1px solid {COL["border_focus"]};
+        border-radius: 8px;
+    }}
+    QWidget#listCard[selected="true"]:hover {{
+        background: {COL["accent_subtle"]};
+        border: 2px solid {COL["accent"]};
+        border-radius: 8px;
     }}
     QWidget#sanitaryHistorySummaryCard {{
         background: rgba(255, 249, 242, 0.88);
