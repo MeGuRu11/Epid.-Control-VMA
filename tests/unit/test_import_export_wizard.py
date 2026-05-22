@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
-from PySide6.QtWidgets import QAbstractItemView, QDialog
+from PySide6.QtWidgets import QAbstractItemView, QDialog, QFileDialog
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.services.exchange_service import ExchangeService
@@ -28,12 +29,16 @@ def _session() -> SessionContext:
     return SessionContext(user_id=1, login="admin", role="admin")
 
 
-def test_direction_page_contextually_hides_irrelevant_controls(qapp) -> None:
-    wizard = ImportExportWizard(
+def _wizard(table_labels: dict[str, str] | None = None) -> ImportExportWizard:
+    return ImportExportWizard(
         exchange_service=cast(ExchangeService, _ExchangeServiceStub()),
         session=_session(),
-        table_labels={"patients": "Пациенты"},
+        table_labels=table_labels or {"patients": "Пациенты"},
     )
+
+
+def test_direction_page_contextually_hides_irrelevant_controls(qapp) -> None:
+    wizard = _wizard({"patients": "Пациенты"})
     page = wizard._direction_page
 
     assert page.table_select.isHidden()
@@ -136,3 +141,111 @@ def test_import_export_view_shows_localized_direction_labels() -> None:
         direction_values.append(item.text())
 
     assert sorted(direction_values) == ["Импорт", "Неизвестно", "Экспорт"]
+
+
+def test_path_page_autofills_export_filename(
+    qapp,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.ui.settings import export_paths
+
+    monkeypatch.setattr(
+        export_paths,
+        "compose_save_path",
+        lambda kind, filename: f"C:/exports/{kind}/{filename}",
+    )
+    wizard = _wizard({"patients": "Пациенты"})
+    wizard._direction_page.table_select.setCurrentText("Пациенты")
+    wizard._direction_page.format.setCurrentText("Excel")
+
+    wizard._path_page.initializePage()
+
+    path = wizard._path_page.path_input.text()
+    assert re.search(r"C:/exports/excel/export_\d{4}-\d{2}-\d{2}_patients\.xlsx$", path)
+    assert wizard._path_page.path_input.placeholderText() == ""
+
+
+def test_path_page_initialize_clears_path_for_import(qapp) -> None:
+    wizard = _wizard()
+    wizard._direction_page.direction.setCurrentText("Импорт")
+    wizard._path_page.path_input.setText("C:/exports/old.xlsx")
+
+    wizard._path_page.initializePage()
+
+    assert wizard._path_page.path_input.text() == ""
+    assert "импорта" in wizard._path_page.path_input.placeholderText()
+
+
+def test_path_page_browse_uses_contextual_export_filename(
+    qapp,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.ui.settings import export_paths
+
+    captured: list[tuple[str, str, str]] = []
+    monkeypatch.setattr(
+        export_paths,
+        "compose_save_path",
+        lambda kind, filename: f"{kind}/{filename}",
+    )
+
+    def _fake_get_save_file_name(
+        parent: object,
+        title: str,
+        suggested_path: str,
+        filter_text: str,
+    ) -> tuple[str, str]:
+        del parent
+        captured.append((title, suggested_path, filter_text))
+        return suggested_path, filter_text
+
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", _fake_get_save_file_name)
+
+    wizard = _wizard({"patients": "Пациенты"})
+    wizard._direction_page.format.setCurrentText("CSV")
+    wizard._direction_page.table_select.setCurrentText("Пациенты")
+
+    wizard._path_page._browse()
+
+    assert captured
+    assert re.search(r"excel/export_\d{4}-\d{2}-\d{2}_patients\.csv$", captured[0][1])
+    assert wizard._path_page.path_input.text() == captured[0][1]
+
+
+def test_preview_page_export_shows_summary_table(qapp) -> None:
+    wizard = _wizard({"patients": "Пациенты"})
+    wizard._direction_page.format.setCurrentText("Excel")
+    wizard._path_page.path_input.setText("C:/exports/export.xlsx")
+
+    wizard._preview_page.initializePage()
+
+    table = wizard._preview_page.preview_table
+    assert table.rowCount() == 3
+    assert table.columnCount() == 2
+
+    first_param = table.item(0, 0)
+    second_param = table.item(1, 0)
+    third_param = table.item(2, 0)
+    first_value = table.item(0, 1)
+    third_value = table.item(2, 1)
+    assert first_param is not None
+    assert second_param is not None
+    assert third_param is not None
+    assert first_value is not None
+    assert third_value is not None
+    assert first_param.text() == "Формат"
+    assert second_param.text() == "Раздел"
+    assert third_param.text() == "Файл"
+    assert "Excel" in first_value.text()
+    assert third_value.text() == "C:/exports/export.xlsx"
+
+
+def test_wizard_pages_show_step_titles_and_subtitles(qapp) -> None:
+    wizard = _wizard()
+
+    assert wizard._direction_page.title() == "Шаг 1 из 3 — Параметры"
+    assert wizard._direction_page.subTitle() == "Выберите направление, формат и раздел данных."
+    assert wizard._path_page.title() == "Шаг 2 из 3 — Файл"
+    assert wizard._path_page.subTitle() == "Укажите путь для сохранения или выбора файла."
+    assert wizard._preview_page.title() == "Шаг 3 из 3 — Предпросмотр и проверка"
+    assert wizard._preview_page.subTitle() == "Проверьте параметры перед запуском операции."

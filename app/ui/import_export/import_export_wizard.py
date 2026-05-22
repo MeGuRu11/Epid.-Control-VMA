@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
@@ -270,11 +271,20 @@ def _to_int(value: object) -> int:
     return 0
 
 
+def _current_export_datestamp() -> str:
+    return datetime.now(UTC).astimezone().strftime("%Y-%m-%d")
+
+
+def _export_table_slug(table_name: object | None) -> str:
+    return str(table_name or "all").lower().replace(" ", "_")[:20]
+
+
 class DirectionPage(QWizardPage):
     def __init__(self, wizard: ImportExportWizard) -> None:
         super().__init__(wizard)
         self.wizard_ref = wizard
-        self.setTitle("Выбор операции")
+        self.setTitle("Шаг 1 из 3 — Параметры")
+        self.setSubTitle("Выберите направление, формат и раздел данных.")
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -361,7 +371,8 @@ class PathPage(QWizardPage):
     def __init__(self, wizard: ImportExportWizard) -> None:
         super().__init__(wizard)
         self.wizard_ref = wizard
-        self.setTitle("Файл")
+        self.setTitle("Шаг 2 из 3 — Файл")
+        self.setSubTitle("Укажите путь для сохранения или выбора файла.")
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -373,6 +384,31 @@ class PathPage(QWizardPage):
         layout.addWidget(self.path_input)
         layout.addWidget(browse_btn)
 
+    def initializePage(self) -> None:  # noqa: N802
+        from app.ui.settings.export_paths import ExportKind, compose_save_path
+
+        direction = self.wizard_ref._direction_page.direction.currentData()
+        if direction != "export":
+            self.path_input.clear()
+            self.path_input.setPlaceholderText("Выберите файл для импорта...")
+            return
+
+        fmt = self.wizard_ref._direction_page.format.currentData()
+        table_name = self.wizard_ref._direction_page.table_select.currentData()
+        datestamp = _current_export_datestamp()
+        filename = f"export_{datestamp}_{_export_table_slug(table_name)}"
+
+        ext_map: dict[str, tuple[ExportKind, str]] = {
+            "excel": ("excel", f"{filename}.xlsx"),
+            "csv": ("excel", f"{filename}.csv"),
+            "pdf": ("pdf", f"{filename}.pdf"),
+            "zip": ("zip", f"{filename}.zip"),
+            "form100_zip": ("zip", f"form100_{datestamp}.zip"),
+        }
+        folder_key, fname = ext_map.get(fmt, ("excel", f"{filename}.xlsx"))
+        self.path_input.setText(compose_save_path(folder_key, fname))
+        self.path_input.setPlaceholderText("")
+
     def _browse(self) -> None:
         direction = self.wizard_ref._direction_page.direction.currentData()
         from app.ui.settings.export_paths import compose_save_path, get_open_dir
@@ -380,7 +416,9 @@ class PathPage(QWizardPage):
         fmt = self.wizard_ref._direction_page.format.currentData()
 
         if direction == "export":
-            filename = "export"
+            table_name = self.wizard_ref._direction_page.table_select.currentData()
+            datestamp = _current_export_datestamp()
+            filename = f"export_{datestamp}_{_export_table_slug(table_name)}"
             if fmt == "excel":
                 path, _ = QFileDialog.getSaveFileName(
                     self,
@@ -406,7 +444,7 @@ class PathPage(QWizardPage):
                 path, _ = QFileDialog.getSaveFileName(
                     self,
                     "Экспорт Form100 ZIP",
-                    compose_save_path("zip", "form100_export.zip"),
+                    compose_save_path("zip", f"form100_{datestamp}.zip"),
                     "ZIP (*.zip)",
                 )
             else:
@@ -441,7 +479,8 @@ class PreviewPage(QWizardPage):
     def __init__(self, wizard: ImportExportWizard) -> None:
         super().__init__(wizard)
         self.wizard_ref = wizard
-        self.setTitle("Предпросмотр и проверка")
+        self.setTitle("Шаг 3 из 3 — Предпросмотр и проверка")
+        self.setSubTitle("Проверьте параметры перед запуском операции.")
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -463,20 +502,21 @@ class PreviewPage(QWizardPage):
         file_path = self.wizard_ref._path_page.path_input.text().strip()
         direction_text = self.wizard_ref._direction_page.direction.currentText()
         format_text = self.wizard_ref._direction_page.format.currentText()
-        summary = f"Операция: {direction_text}, формат: {format_text}"
+        summary_parts = [f"Операция: {direction_text}", f"Формат: {format_text}"]
         if table_name:
-            summary += f", таблица: {table_text}"
+            summary_parts.append(f"Раздел: {table_text}")
         if direction == "import":
-            summary += f", режим: {mode_text}"
+            summary_parts.append(f"Режим импорта: {mode_text}")
         if file_path:
-            summary += f", файл: {file_path}"
-        self.summary_label.setText(summary)
+            summary_parts.append(f"Файл: {file_path}")
+        self.summary_label.setText("  •  ".join(summary_parts))
 
         self.preview_table.clearContents()
         self.preview_table.setRowCount(0)
         self.preview_table.setColumnCount(0)
 
         if direction == "export":
+            self._show_export_summary(fmt, file_path, table_name, table_text)
             return
         if not file_path:
             return
@@ -487,6 +527,46 @@ class PreviewPage(QWizardPage):
             self._preview_csv(path)
         elif fmt == "excel":
             self._preview_excel(path)
+
+    def _show_export_summary(
+        self,
+        fmt: str,
+        file_path: str,
+        table_name: str | None,
+        table_text: str,
+    ) -> None:
+        """Показать сводку параметров экспорта вместо пустой таблицы."""
+        fmt_descriptions = {
+            "excel": "Excel (.xlsx) — полный пакет данных, несколько листов с заголовками",
+            "csv": "CSV — одна таблица в текстовом формате, разделитель запятая",
+            "pdf": "PDF — печатный отчёт по выбранному разделу",
+            "zip": "ZIP — полный пакет обмена с manifest и Excel",
+            "form100_zip": "Form100 ZIP — архив карточек Формы 100",
+        }
+        fmt_desc = fmt_descriptions.get(fmt, fmt)
+
+        rows = [
+            ("Формат", fmt_desc),
+            ("Раздел", table_text if table_name else "Весь пакет данных"),
+            ("Файл", file_path or "— не задан —"),
+        ]
+
+        self.preview_table.setColumnCount(2)
+        self.preview_table.setHorizontalHeaderLabels(["Параметр", "Значение"])
+        self.preview_table.setRowCount(len(rows))
+        self.preview_table.verticalHeader().setVisible(False)
+        self.preview_table.horizontalHeader().setStretchLastSection(True)
+
+        for row_idx, (param, value) in enumerate(rows):
+            param_item = QTableWidgetItem(param)
+            font = param_item.font()
+            font.setBold(True)
+            param_item.setFont(font)
+            self.preview_table.setItem(row_idx, 0, param_item)
+            self.preview_table.setItem(row_idx, 1, QTableWidgetItem(str(value)))
+
+        self.preview_table.resizeColumnsToContents()
+        self.preview_table.resizeRowsToContents()
 
     def _preview_csv(self, path: Path) -> None:
         with path.open("r", encoding="utf-8-sig", newline="") as f:
@@ -523,4 +603,3 @@ class PreviewPage(QWizardPage):
             for col_idx, value in enumerate(row):
                 self.preview_table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
         resize_columns_to_content(self.preview_table)
-

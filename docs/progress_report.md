@@ -7588,6 +7588,30 @@ Window title, кнопки, внутренние ключи — не трону�
 
 ---
 
+## 2026-05-22 - feat: P1.5 import/export wizard UX improvements
+
+**Статус:** реализовано и проверено
+
+- `PathPage.initializePage()` автозаполняет путь экспорта с датой и разделом.
+- `_browse()` предлагает имя файла с датой и slug раздела вместо `export`.
+- `PreviewPage` для экспорта показывает сводную таблицу из 3 параметров вместо пустой таблицы.
+- `summary_label` переведён на читаемый формат через `  •  `.
+- Страницы мастера получили заголовки `Шаг N из 3` и поясняющие subtitles.
+- Добавлены unit-тесты мастера импорта/экспорта.
+
+### Проверки
+
+- RED: `python -m pytest tests\unit\test_import_export_wizard.py -q` - `5 failed, 4 passed` на старом поведении.
+- GREEN targeted: `python -m pytest tests\unit\test_import_export_wizard.py -q --tb=short` - `9 passed`, `1 warning`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests --no-incremental` - pass (`389 source files`).
+- `python -m pytest -q` - pass (`819 passed`, `1 warning`).
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `git diff --check` - pass.
+
+---
+
 ## 2026-05-22 - feat: P1.4 Analytics XLSX в составе Analytics v2
 
 **Статус:** реализовано и проверено
