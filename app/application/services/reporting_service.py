@@ -15,11 +15,11 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.application.dto.analytics_dto import AnalyticsSearchRequest
+from app.application.dto.analytics_dto import AnalyticsSampleRow, AnalyticsSearchRequest
 from app.application.reporting.formatters import format_percent
 from app.application.services.analytics_service import AnalyticsService
 from app.application.services.form100_service_v2 import Form100ServiceV2
@@ -90,6 +90,69 @@ def _build_ismp_summary(agg: dict[str, Any], ismp: dict[str, Any]) -> dict[str, 
 
 def _as_int(value: object) -> int:
     return int(cast(Any, value))
+
+
+def _compute_top_microbes(rows: list[AnalyticsSampleRow], top_n: int = 10) -> list[tuple[str, int]]:
+    """Топ микроорганизмов по числу положительных изолятов."""
+    counts: dict[str, int] = {}
+    for row in rows:
+        if row.growth_flag != 1 or not row.microorganism:
+            continue
+        micro = str(row.microorganism)
+        counts[micro] = counts.get(micro, 0) + 1
+    return sorted(counts.items(), key=lambda item: item[1], reverse=True)[:top_n]
+
+
+def _compute_heatmap(
+    rows: list[AnalyticsSampleRow],
+    top_n: int = 10,
+) -> tuple[dict[str, dict[str, int]], list[str], list[str]]:
+    """Матрица отделение -> микроорганизм -> число положительных изолятов."""
+    matrix: dict[str, dict[str, int]] = {}
+    dept_totals: dict[str, int] = {}
+    micro_totals: dict[str, int] = {}
+    for row in rows:
+        if row.growth_flag != 1 or not row.department_name or not row.microorganism:
+            continue
+        dept = str(row.department_name)
+        micro = str(row.microorganism)
+        dept_map = matrix.setdefault(dept, {})
+        dept_map[micro] = dept_map.get(micro, 0) + 1
+        dept_totals[dept] = dept_totals.get(dept, 0) + 1
+        micro_totals[micro] = micro_totals.get(micro, 0) + 1
+
+    top_depts = sorted(dept_totals, key=dept_totals.__getitem__, reverse=True)[:top_n]
+    top_micros = sorted(micro_totals, key=micro_totals.__getitem__, reverse=True)[:top_n]
+    filtered = {
+        dept: {micro: matrix[dept].get(micro, 0) for micro in top_micros}
+        for dept in top_depts
+    }
+    return filtered, top_depts, top_micros
+
+
+def _compute_resistance(
+    rows: list[AnalyticsSampleRow],
+    top_n: int = 10,
+) -> dict[str, dict[str, dict[str, int]]]:
+    """Матрица микроорганизм -> антибиотик -> счетчики S/I/R."""
+    matrix: dict[str, dict[str, dict[str, int]]] = {}
+    micro_totals: dict[str, int] = {}
+    for row in rows:
+        if not row.microorganism or not row.antibiotic or not row.ris:
+            continue
+        ris = str(row.ris).upper()
+        if ris not in {"S", "I", "R"}:
+            continue
+        micro = str(row.microorganism)
+        antibiotic = str(row.antibiotic)
+        micro_map = matrix.setdefault(micro, {})
+        cell = micro_map.setdefault(antibiotic, {"S": 0, "I": 0, "R": 0, "total": 0})
+        cell[ris] += 1
+        cell["total"] += 1
+        micro_totals[micro] = micro_totals.get(micro, 0) + 1
+
+    top_micros = sorted(micro_totals, key=micro_totals.__getitem__, reverse=True)[:top_n]
+    return {micro: matrix[micro] for micro in top_micros if micro in matrix}
 
 
 class ReportingService:
@@ -247,18 +310,27 @@ class ReportingService:
             date_to=request.date_to,
             department_id=request.department_id,
         )
+        dept_summary = self.analytics_service.get_department_summary(
+            request.date_from,
+            request.date_to,
+            request.patient_category,
+        )
+        trend_rows = self.analytics_service.get_trend_by_day(
+            request.date_from,
+            request.date_to,
+            request.patient_category,
+        )
+        ismp_by_dept = self.analytics_service.get_ismp_by_department(
+            request.date_from,
+            request.date_to,
+        )
+        top_microbes = _compute_top_microbes(rows)
+        heatmap_matrix, ordered_depts, ordered_micros = _compute_heatmap(rows)
+        resistance = _compute_resistance(rows)
         extended_summary = _build_ismp_summary(agg, ismp)
         filters = request.model_dump(exclude_none=True)
         filter_maps = self._build_filter_maps()
         unicode_font = get_pdf_unicode_font_name()
-
-        summary_data = [
-            ["Параметр", "Значение"],
-            ["Дата отчета", datetime.now(UTC).strftime("%d.%m.%Y %H:%M")],
-            ["Всего", str(agg.get("total", 0))],
-            ["Положительные", str(agg.get("positives", 0))],
-            ["Доля положительных", f"{agg.get('positive_share', 0) * 100:.1f}%"],
-        ]
 
         styles = getSampleStyleSheet()
         normal_style = styles["Normal"]
@@ -270,6 +342,35 @@ class ReportingService:
             leading=8,
             wordWrap="CJK",
         )
+        title_style = ParagraphStyle(
+            "PdfTitle",
+            parent=normal_style,
+            fontName=unicode_font,
+            fontSize=14,
+            leading=18,
+            spaceAfter=6,
+        )
+        section_style = ParagraphStyle(
+            "PdfSection",
+            parent=normal_style,
+            fontName=unicode_font,
+            fontSize=10,
+            leading=12,
+            spaceAfter=4,
+            spaceBefore=4,
+        )
+
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        doc = SimpleDocTemplate(
+            str(file_path),
+            pagesize=landscape(A4),
+            leftMargin=10 * mm,
+            rightMargin=10 * mm,
+            topMargin=15 * mm,
+            bottomMargin=15 * mm,
+        )
+
+        available_width = landscape(A4)[0] - 20 * mm
 
         filter_data: list[list[Paragraph]] = [
             [Paragraph("Фильтр", cell_style), Paragraph("Значение", cell_style)]
@@ -278,7 +379,7 @@ class ReportingService:
             filter_data.append(
                 [
                     Paragraph(_format_filter_label(key), cell_style),
-                    Paragraph(self._format_filter_value(key, value, filter_maps), cell_style)
+                    Paragraph(self._format_filter_value(key, value, filter_maps), cell_style),
                 ]
             )
 
@@ -309,18 +410,6 @@ class ReportingService:
                 ]
             )
 
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        doc = SimpleDocTemplate(
-            str(file_path),
-            pagesize=landscape(A4),
-            leftMargin=10 * mm,
-            rightMargin=10 * mm,
-            topMargin=15 * mm,
-            bottomMargin=15 * mm,
-        )
-
-        # Calculate optimal generic column widths for A4 landscape (277mm usable width roughly)
-        available_width = landscape(A4)[0] - 20 * mm
         col_widths = [
             available_width * 0.05,  # ID
             available_width * 0.08,  # Lab No
@@ -333,38 +422,15 @@ class ReportingService:
             available_width * 0.17,  # Antibiotic
         ]
 
-        summary_table = Table(summary_data, colWidths=[available_width * 0.3, available_width * 0.7])
-        summary_table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                    ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("FONTNAME", (0, 0), (-1, -1), unicode_font),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ]
-            )
+        filter_table = Table(
+            filter_data,
+            repeatRows=1,
+            colWidths=[available_width * 0.3, available_width * 0.7],
         )
-        filter_table = Table(filter_data, repeatRows=1, colWidths=[available_width * 0.3, available_width * 0.7])
         filter_table.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                    ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("FONTNAME", (0, 0), (-1, -1), unicode_font),
-                    ("FONTSIZE", (0, 0), (-1, -1), 7),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
-                    ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
-                ]
-            )
-        )
-        data_table = Table(table_data, repeatRows=1, colWidths=col_widths)
-        data_table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("FONTNAME", (0, 0), (-1, -1), unicode_font),
@@ -377,16 +443,85 @@ class ReportingService:
             )
         )
 
-        elements = [summary_table, filter_table, data_table]
-        ismp_cases = ismp.get("ismp_cases", 0)
-        elements.append(Spacer(1, 14))
+        data_table = Table(table_data, repeatRows=1, colWidths=col_widths)
+        data_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                    ("FONTSIZE", (0, 0), (-1, -1), 7),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+                ]
+            )
+        )
+
+        elements: list[Any] = []
+        report_date = datetime.now(UTC).strftime("%d.%m.%Y %H:%M")
+        date_label = (
+            f"{request.date_from} - {request.date_to}"
+            if request.date_from and request.date_to
+            else "весь период"
+        )
+        total = int(agg.get("total", 0) or 0)
+        positives = int(agg.get("positives", 0) or 0)
+        positive_share = float(agg.get("positive_share", 0.0) or 0.0)
+        ismp_cases = int(ismp.get("ismp_cases", 0) or 0)
+
+        elements.append(
+            Paragraph(
+                "<b>Аналитический отчёт по пробам</b>",
+                title_style,
+            )
+        )
+        elements.append(Paragraph(f"Период: {date_label}   Сформирован: {report_date}", cell_style))
+        elements.append(Spacer(1, 8))
+
+        kpi_data = [
+            [
+                Paragraph(f"<b>Всего проб</b><br/>{total}", cell_style),
+                Paragraph(f"<b>Положительных</b><br/>{positives}", cell_style),
+                Paragraph(f"<b>Доля положительных</b><br/>{positive_share * 100:.1f}%", cell_style),
+                Paragraph(f"<b>Случаев ИСМП</b><br/>{ismp_cases}", cell_style),
+            ]
+        ]
+        kpi_table = Table(kpi_data, colWidths=[available_width * 0.25] * 4)
+        kpi_table.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CCCCCC")),
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8F4EF")),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ]
+            )
+        )
+        elements.append(kpi_table)
+        elements.append(Spacer(1, 10))
+
+        elements.append(Paragraph("<b>Параметры отчёта</b>", section_style))
+        if len(filter_data) > 1:
+            elements.append(filter_table)
+        else:
+            elements.append(Paragraph("Фильтры: не заданы.", cell_style))
+        elements.append(Spacer(1, 10))
+
         elements.append(
             Paragraph(
                 "<b>ИСМП — Инфекции, связанные с оказанием медицинской помощи</b>",
-                cell_style,
+                section_style,
             )
         )
-        elements.append(Spacer(1, 6))
+        elements.append(Spacer(1, 4))
 
         if ismp_cases == 0:
             elements.append(Paragraph("Случаев ИСМП в выбранном периоде не зарегистрировано.", cell_style))
@@ -460,6 +595,306 @@ class ReportingService:
                     )
                 )
                 elements.append(type_table)
+        if ismp_by_dept:
+            elements.append(Spacer(1, 8))
+            elements.append(Paragraph("<b>ИСМП по отделениям:</b>", cell_style))
+            elements.append(Spacer(1, 4))
+            total_dept_ismp = sum(count for _, count in ismp_by_dept)
+            dept_ismp_data = [
+                [
+                    Paragraph("Отделение", cell_style),
+                    Paragraph("Случаев", cell_style),
+                    Paragraph("Доля", cell_style),
+                ]
+            ]
+            for dept_name, count in ismp_by_dept:
+                share = (count / total_dept_ismp * 100) if total_dept_ismp else 0.0
+                dept_ismp_data.append(
+                    [
+                        Paragraph(str(dept_name), cell_style),
+                        Paragraph(str(count), cell_style),
+                        Paragraph(f"{share:.1f}%", cell_style),
+                    ]
+                )
+            dept_ismp_table = Table(
+                dept_ismp_data,
+                colWidths=[available_width * 0.5, available_width * 0.25, available_width * 0.25],
+            )
+            dept_ismp_table.setStyle(
+                TableStyle(
+                    [
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#EDE4D8")),
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F5EFE8")),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ]
+                )
+            )
+            elements.append(dept_ismp_table)
+        elements.append(PageBreak())
+
+        elements.append(Paragraph("<b>Сводка по отделениям</b>", section_style))
+        elements.append(Spacer(1, 6))
+        if dept_summary:
+            dept_headers = ["Отделение", "Всего проб", "Положительных", "Доля пол.", "Последняя проба"]
+            dept_data: list[list[Paragraph]] = [[Paragraph(h, cell_style) for h in dept_headers]]
+            for item in sorted(dept_summary, key=lambda row: row.get("total", 0), reverse=True):
+                last = item.get("last_date")
+                last_str = str(_format_value(last) or "-")
+                dept_data.append(
+                    [
+                        Paragraph(str(item.get("department_name", "-")), cell_style),
+                        Paragraph(str(item.get("total", 0)), cell_style),
+                        Paragraph(str(item.get("positives", 0)), cell_style),
+                        Paragraph(f"{float(item.get('positive_share', 0) or 0) * 100:.1f}%", cell_style),
+                        Paragraph(last_str, cell_style),
+                    ]
+                )
+            dept_table = Table(
+                dept_data,
+                repeatRows=1,
+                colWidths=[
+                    available_width * 0.35,
+                    available_width * 0.15,
+                    available_width * 0.15,
+                    available_width * 0.15,
+                    available_width * 0.20,
+                ],
+            )
+            dept_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
+                        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                        ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                        ("FONTSIZE", (0, 0), (-1, -1), 7),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ]
+                )
+            )
+            elements.append(dept_table)
+        else:
+            elements.append(Paragraph("Данных по отделениям нет.", cell_style))
+        elements.append(PageBreak())
+
+        elements.append(Paragraph("<b>Топ микроорганизмов</b>", section_style))
+        elements.append(Spacer(1, 6))
+        if top_microbes:
+            total_isolates = sum(count for _, count in top_microbes)
+            micro_headers = ["Микроорганизм", "Изолятов", "Доля"]
+            micro_data: list[list[Paragraph]] = [[Paragraph(h, cell_style) for h in micro_headers]]
+            for name, count in top_microbes:
+                share = count / total_isolates * 100 if total_isolates else 0.0
+                micro_data.append(
+                    [
+                        Paragraph(name, cell_style),
+                        Paragraph(str(count), cell_style),
+                        Paragraph(f"{share:.1f}%", cell_style),
+                    ]
+                )
+            micro_table = Table(
+                micro_data,
+                repeatRows=1,
+                colWidths=[available_width * 0.6, available_width * 0.2, available_width * 0.2],
+            )
+            micro_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
+                        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                        ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                        ("FONTSIZE", (0, 0), (-1, -1), 7),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ]
+                )
+            )
+            elements.append(micro_table)
+        else:
+            elements.append(Paragraph("Роста нет или данные отсутствуют.", cell_style))
+        elements.append(PageBreak())
+
+        elements.append(Paragraph("<b>Паттерн резистентности</b>", section_style))
+        elements.append(Spacer(1, 6))
+        if resistance:
+            all_antibiotics: list[str] = []
+            for ab_map in resistance.values():
+                for antibiotic in ab_map:
+                    if antibiotic not in all_antibiotics:
+                        all_antibiotics.append(antibiotic)
+            all_antibiotics.sort()
+
+            res_data: list[list[Paragraph]] = [
+                [Paragraph("Микроорганизм", cell_style)]
+                + [Paragraph(antibiotic, cell_style) for antibiotic in all_antibiotics]
+            ]
+            for micro, ab_map in resistance.items():
+                row_cells = [Paragraph(micro, cell_style)]
+                for antibiotic in all_antibiotics:
+                    cell = ab_map.get(antibiotic, {})
+                    if cell:
+                        row_cells.append(
+                            Paragraph(
+                                f"R:{cell.get('R', 0)} I:{cell.get('I', 0)} S:{cell.get('S', 0)}",
+                                cell_style,
+                            )
+                        )
+                    else:
+                        row_cells.append(Paragraph("-", cell_style))
+                res_data.append(row_cells)
+
+            first_col_w = available_width * 0.30
+            rest_w = (available_width - first_col_w) / max(len(all_antibiotics), 1)
+            res_table = Table(
+                res_data,
+                repeatRows=1,
+                colWidths=[first_col_w] + [rest_w] * len(all_antibiotics),
+            )
+            res_style = [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                ("FONTSIZE", (0, 0), (-1, -1), 6),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+            ]
+            for row_idx, (_micro, ab_map) in enumerate(resistance.items(), start=1):
+                for col_idx, antibiotic in enumerate(all_antibiotics, start=1):
+                    cell = ab_map.get(antibiotic, {})
+                    total_cell = int(cell.get("total", 0) or 0)
+                    if not cell or total_cell == 0:
+                        continue
+                    r_share = int(cell.get("R", 0) or 0) / total_cell
+                    s_share = int(cell.get("S", 0) or 0) / total_cell
+                    if r_share >= 0.5:
+                        bg = colors.HexColor("#FADADD")
+                    elif s_share >= 0.5:
+                        bg = colors.HexColor("#D5F0D5")
+                    else:
+                        bg = colors.HexColor("#FFF5CC")
+                    res_style.append(("BACKGROUND", (col_idx, row_idx), (col_idx, row_idx), bg))
+            res_table.setStyle(TableStyle(res_style))
+            elements.append(res_table)
+        else:
+            elements.append(Paragraph("Данных о резистентности нет (нет проб с RIS-разметкой).", cell_style))
+        elements.append(PageBreak())
+
+        elements.append(Paragraph("<b>Heatmap: отделения × микроорганизмы</b>", section_style))
+        elements.append(Spacer(1, 6))
+        if heatmap_matrix and ordered_micros:
+            heat_data: list[list[Paragraph]] = [
+                [Paragraph("Отделение", cell_style)] + [Paragraph(micro, cell_style) for micro in ordered_micros]
+            ]
+            all_vals = [
+                heatmap_matrix[dept].get(micro, 0)
+                for dept in ordered_depts
+                for micro in ordered_micros
+            ]
+            max_val = max(all_vals) if all_vals else 1
+            for dept in ordered_depts:
+                row_cells = [Paragraph(dept, cell_style)]
+                for micro in ordered_micros:
+                    value = heatmap_matrix[dept].get(micro, 0)
+                    row_cells.append(Paragraph(str(value) if value else "-", cell_style))
+                heat_data.append(row_cells)
+
+            first_col_w = available_width * 0.30
+            rest_w = (available_width - first_col_w) / max(len(ordered_micros), 1)
+            heat_table = Table(
+                heat_data,
+                repeatRows=1,
+                colWidths=[first_col_w] + [rest_w] * len(ordered_micros),
+            )
+            heat_style = [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                ("FONTSIZE", (0, 0), (-1, -1), 6),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+            ]
+            for row_idx, dept in enumerate(ordered_depts, start=1):
+                for col_idx, micro in enumerate(ordered_micros, start=1):
+                    value = heatmap_matrix[dept].get(micro, 0)
+                    if value == 0 or max_val == 0:
+                        continue
+                    intensity = value / max_val
+                    bg = colors.Color(
+                        1.0,
+                        (255 - intensity * (255 - 140)) / 255,
+                        (255 - intensity * 255) / 255,
+                    )
+                    heat_style.append(("BACKGROUND", (col_idx, row_idx), (col_idx, row_idx), bg))
+            heat_table.setStyle(TableStyle(heat_style))
+            elements.append(heat_table)
+        else:
+            elements.append(Paragraph("Недостаточно данных для построения тепловой карты.", cell_style))
+        elements.append(PageBreak())
+
+        elements.append(Paragraph("<b>Тренд по периодам</b>", section_style))
+        elements.append(Spacer(1, 6))
+        if trend_rows:
+            trend_headers = ["Дата", "Всего проб", "Положительных", "Доля пол."]
+            trend_data: list[list[Paragraph]] = [[Paragraph(h, cell_style) for h in trend_headers]]
+            for item in trend_rows:
+                day_value = item.get("day")
+                day_str = str(_format_value(day_value) or "-")
+                total_trend = int(item.get("total", 0) or 0)
+                positives_trend = int(item.get("positives", 0) or 0)
+                share_trend = positives_trend / total_trend * 100 if total_trend else 0.0
+                trend_data.append(
+                    [
+                        Paragraph(day_str, cell_style),
+                        Paragraph(str(total_trend), cell_style),
+                        Paragraph(str(positives_trend), cell_style),
+                        Paragraph(f"{share_trend:.1f}%", cell_style),
+                    ]
+                )
+            trend_table = Table(
+                trend_data,
+                repeatRows=1,
+                colWidths=[available_width * 0.25] * 4,
+            )
+            trend_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E8E0D8")),
+                        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                        ("FONTNAME", (0, 0), (-1, -1), unicode_font),
+                        ("FONTSIZE", (0, 0), (-1, -1), 7),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
+                    ]
+                )
+            )
+            elements.append(trend_table)
+        else:
+            elements.append(Paragraph("Данных для построения тренда нет.", cell_style))
+        elements.append(PageBreak())
+
+        elements.append(Paragraph("<b>Таблица проб</b>", section_style))
+        elements.append(Spacer(1, 6))
+        elements.append(data_table)
         build_invariant_pdf(doc, elements)
 
         artifact_path = self._save_artifact_copy(report_type="analytics", source_path=file_path)
@@ -753,5 +1188,3 @@ class ReportingService:
             if mapped is not None:
                 return str(mapped)
         return str(_format_value(value))
-
-

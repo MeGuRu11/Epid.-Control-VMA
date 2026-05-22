@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
+from reportlab.platypus import PageBreak, Paragraph, Table
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -41,6 +43,32 @@ def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[S
             session.close()
 
     return _session_scope
+
+
+def _plain_texts(elements: list[Any]) -> list[str]:
+    texts: list[str] = []
+    for element in elements:
+        if isinstance(element, Paragraph):
+            texts.append(element.getPlainText())
+        elif isinstance(element, Table):
+            for row in element._cellvalues:  # noqa: SLF001 - ReportLab stores cell content internally.
+                for cell in row:
+                    if isinstance(cell, Paragraph | Table):
+                        texts.extend(_plain_texts([cell]))
+                    else:
+                        texts.append(str(cell))
+    return texts
+
+
+def _capture_pdf_elements(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[Any]]:
+    captured: dict[str, list[Any]] = {}
+
+    def _capture_build(doc: Any, elements: list[Any]) -> None:
+        captured["elements"] = elements
+        Path(doc.filename).write_bytes(b"%PDF-1.4\n")
+
+    monkeypatch.setattr(reporting_service_module, "build_invariant_pdf", _capture_build)
+    return captured
 
 
 def test_export_report_saves_artifact_and_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -159,3 +187,109 @@ def test_export_report_accepts_date_filters_in_history_payload(
     assert len(rows) == 1
     assert rows[0]["filters"]["date_from"] == "2026-04-01"
     assert rows[0]["filters"]["date_to"] == "2026-04-19"
+
+
+def test_export_analytics_pdf_contains_all_sections(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_factory = make_session_factory(tmp_path / "pdf_sections.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    captured = _capture_pdf_elements(monkeypatch)
+
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+
+    export_path = tmp_path / "analytics_v2.pdf"
+    result = service.export_analytics_pdf(
+        request=AnalyticsSearchRequest(),
+        file_path=export_path,
+        actor_id=None,
+    )
+
+    elements = captured["elements"]
+    text = "\n".join(_plain_texts(elements))
+    assert export_path.exists()
+    assert str(result["path"]) == str(export_path)
+    assert sum(isinstance(element, PageBreak) for element in elements) == 6
+    assert "Аналитический отчёт по пробам" in text
+    assert "ИСМП — Инфекции, связанные с оказанием медицинской помощи" in text
+    assert "Сводка по отделениям" in text
+    assert "Топ микроорганизмов" in text
+    assert "Паттерн резистентности" in text
+    assert "Heatmap: отделения × микроорганизмы" in text
+    assert "Тренд по периодам" in text
+    assert "Таблица проб" in text
+
+
+def test_export_analytics_pdf_with_resistance_and_heatmap_data(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.infrastructure.db.models_sqlalchemy import (
+        Department,
+        EmrCase,
+        LabAbxSusceptibility,
+        LabMicrobeIsolation,
+        LabSample,
+        Patient,
+        RefAntibiotic,
+        RefMaterialType,
+        RefMicroorganism,
+    )
+
+    session_factory = make_session_factory(tmp_path / "pdf_data.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    captured = _capture_pdf_elements(monkeypatch)
+
+    with session_factory() as session:
+        dept = Department(name="Терапия")
+        material = RefMaterialType(code="BLD", name="Кровь")
+        micro = RefMicroorganism(name="E.coli", code="ECO")
+        antibiotic = RefAntibiotic(name="Ампициллин", code="AMP")
+        patient = Patient(full_name="Иванов И.И.", dob=date(1980, 1, 1), category="Военнослужащий")
+        session.add_all([dept, material, micro, antibiotic, patient])
+        session.flush()
+
+        case = EmrCase(patient_id=patient.id, hospital_case_no="CASE-1", department_id=dept.id)
+        session.add(case)
+        session.flush()
+
+        sample = LabSample(
+            patient_id=patient.id,
+            emr_case_id=case.id,
+            lab_no="LAB-001",
+            material_type_id=material.id,
+            taken_at=datetime(2024, 3, 1, 8, 30, tzinfo=UTC),
+            growth_flag=1,
+        )
+        session.add(sample)
+        session.flush()
+
+        session.add_all(
+            [
+                LabMicrobeIsolation(lab_sample_id=sample.id, microorganism_id=micro.id),
+                LabAbxSusceptibility(
+                    lab_sample_id=sample.id,
+                    antibiotic_id=antibiotic.id,
+                    ris="R",
+                ),
+            ]
+        )
+
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+    export_path = tmp_path / "analytics_v2_data.pdf"
+    result = service.export_analytics_pdf(
+        request=AnalyticsSearchRequest(),
+        file_path=export_path,
+        actor_id=None,
+    )
+
+    text = "\n".join(_plain_texts(captured["elements"]))
+    assert export_path.exists()
+    assert str(result["path"]) == str(export_path)
+    assert "Терапия" in text
+    assert "ECO - E.coli" in text
+    assert "AMP - Ампициллин" in text
+    assert "R:1 I:0 S:0" in text

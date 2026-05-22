@@ -7588,6 +7588,29 @@ Window title, кнопки, внутренние ключи — не трону�
 
 ---
 
+## 2026-05-22 - feat: P1.3 Analytics PDF в составе Analytics v2
+
+**Статус:** готово к коммиту
+
+- `export_analytics_pdf` перестроен в 7 логических страниц: титул/параметры/KPI/ИСМП, отделения, топ микроорганизмов, резистентность, heatmap, тренд, таблица проб.
+- Добавлены приватные вычисления `_compute_top_microbes`, `_compute_heatmap`, `_compute_resistance` на базе `AnalyticsSampleRow`.
+- PDF теперь вызывает данные Analytics v2: `get_department_summary`, `get_trend_by_day`, `get_ismp_by_department`.
+- Резистентность и heatmap получают цветовую раскраску; таблица проб сохраняет `repeatRows=1`.
+- Добавлены интеграционные тесты структуры PDF и сценария с реальными данными по резистентности/heatmap.
+- Unit-stub для PDF/ИСМП расширен новыми методами Analytics v2.
+
+### Проверки
+
+- RED: `python -m pytest tests/integration/test_reporting_service_artifacts.py::test_export_analytics_pdf_contains_all_sections tests/integration/test_reporting_service_artifacts.py::test_export_analytics_pdf_with_resistance_and_heatmap_data -q --tb=short` - `2 failed` на отсутствии `PageBreak` и секции резистентности.
+- GREEN targeted: `python -m pytest tests/unit/test_analytics_pdf_ismp.py tests/integration/test_reporting_service_artifacts.py -q --tb=short` - `11 passed`, `1 warning`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python -m pytest -q` - pass (`811 passed`, `1 warning`).
+- `python -m compileall -q app tests scripts` - pass.
+- PDF smoke: `PyMuPDF` render - 7 страниц, PNG `1263x893`, визуально проверены страницы 1-7 без пустых страниц, квадратов и перекрытий.
+
+---
+
 ## 2026-05-21 - fix: stronger sanitary department card accent bar
 
 **Коммит:** `fix: increase accent bar width and saturation for visible card selection`

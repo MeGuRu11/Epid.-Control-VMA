@@ -34,6 +34,25 @@ class _AnalyticsServiceStub:
     ) -> dict[str, Any]:
         return self.ismp
 
+    def get_department_summary(
+        self,
+        _date_from: object,
+        _date_to: object,
+        _patient_category: object = None,
+    ) -> list[dict[str, Any]]:
+        return []
+
+    def get_trend_by_day(
+        self,
+        _date_from: object,
+        _date_to: object,
+        _patient_category: object = None,
+    ) -> list[dict[str, Any]]:
+        return []
+
+    def get_ismp_by_department(self, _date_from: object, _date_to: object) -> list[tuple[str, int]]:
+        return []
+
 
 def _make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
     engine = create_engine(f"sqlite:///{db_path.as_posix()}", future=True)
