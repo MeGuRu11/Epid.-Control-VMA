@@ -10,7 +10,8 @@ from typing import Any, cast
 from uuid import uuid4
 
 from openpyxl import Workbook
-from openpyxl.styles import Font
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -155,6 +156,61 @@ def _compute_resistance(
     return {micro: matrix[micro] for micro in top_micros if micro in matrix}
 
 
+def _xlsx_header_row(ws: Any, headers: list[str], bold: bool = True) -> None:
+    """Записать строку заголовков XLSX."""
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=ws.max_row, column=col)
+        if bold:
+            cell.font = Font(bold=True)
+        cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+
+def _xlsx_set_col_widths(ws: Any, widths: list[int | float]) -> None:
+    """Установить ширины колонок XLSX."""
+    for idx, width in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = width
+
+
+def _xlsx_freeze(ws: Any, cell: str = "A2") -> None:
+    """Зафиксировать область листа XLSX."""
+    ws.freeze_panes = cell
+
+
+def _xlsx_date_value(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        if "T" in value and len(value) >= 19:
+            try:
+                return datetime.fromisoformat(value).date()
+            except ValueError:
+                return value
+        if len(value) == 10 and "-" in value:
+            try:
+                return date.fromisoformat(value)
+            except ValueError:
+                return value
+    return value
+
+
+_FILL_RED = PatternFill(fill_type="solid", fgColor="FADADD")
+_FILL_GREEN = PatternFill(fill_type="solid", fgColor="D5F0D5")
+_FILL_YELLOW = PatternFill(fill_type="solid", fgColor="FFF5CC")
+
+
+def _heat_fill(value: int, max_value: int) -> PatternFill | None:
+    if value == 0 or max_value == 0:
+        return None
+    intensity = value / max_value
+    r = 255
+    g = int(255 - intensity * (255 - 140))
+    b = int(255 - intensity * 255)
+    return PatternFill(fill_type="solid", fgColor=f"{r:02X}{g:02X}{b:02X}")
+
+
 class ReportingService:
     def __init__(
         self,
@@ -182,27 +238,202 @@ class ReportingService:
             date_to=request.date_to,
             department_id=request.department_id,
         )
+        dept_summary = self.analytics_service.get_department_summary(
+            request.date_from,
+            request.date_to,
+            request.patient_category,
+        )
+        trend_rows = self.analytics_service.get_trend_by_day(
+            request.date_from,
+            request.date_to,
+            request.patient_category,
+        )
+        ismp_by_dept = self.analytics_service.get_ismp_by_department(
+            request.date_from,
+            request.date_to,
+        )
+        top_microbes = _compute_top_microbes(rows)
+        heatmap_matrix, ordered_depts, ordered_micros = _compute_heatmap(rows)
+        resistance = _compute_resistance(rows)
         extended_summary = _build_ismp_summary(agg, ismp)
+        filters = request.model_dump(exclude_none=True)
+        filter_maps = self._build_filter_maps()
 
         wb = Workbook()
         summary_ws = wb.active
         if summary_ws is None:
             raise RuntimeError("Не удалось создать лист сводки")
         summary_ws.title = "Сводка"
-        summary_ws.append(["Параметр", "Значение"])
-        summary_ws.append(["Дата отчета", datetime.now(UTC).strftime("%d.%m.%Y %H:%M")])
-        summary_ws.append(["Всего", agg.get("total", 0)])
-        summary_ws.append(["Положительные", agg.get("positives", 0)])
-        summary_ws.append(["Доля положительных", agg.get("positive_share", 0)])
+
+        report_date = datetime.now(UTC).strftime("%d.%m.%Y %H:%M")
+        date_label = (
+            f"{request.date_from} - {request.date_to}"
+            if request.date_from and request.date_to
+            else "весь период"
+        )
+
+        _xlsx_header_row(summary_ws, ["Параметр", "Значение"])
+        summary_ws.append(["Дата отчёта", report_date])
+        summary_ws.append(["Период", date_label])
+        summary_ws.append(["Всего проб", agg.get("total", 0)])
+        summary_ws.append(["Положительных", agg.get("positives", 0)])
+        summary_ws.append(["Доля положительных", agg.get("positive_share", 0.0)])
+        summary_ws.cell(row=summary_ws.max_row, column=2).number_format = "0.0%"
+        summary_ws.append(["Случаев ИСМП", ismp.get("ismp_cases", 0)])
+        summary_ws.append([])
+        summary_ws.append(["Всего госпитализаций", ismp.get("total_cases", 0)])
+        summary_ws.append(["Инцидентность (на 1000 госпит.)", ismp.get("incidence", 0.0)])
+        summary_ws.cell(row=summary_ws.max_row, column=2).number_format = "0.0"
+        summary_ws.append(["Плотность (на 1000 койко-дн.)", ismp.get("incidence_density", 0.0)])
+        summary_ws.cell(row=summary_ws.max_row, column=2).number_format = "0.0"
+        summary_ws.append(["Превалентность", ismp.get("prevalence", 0.0) / 100])
+        summary_ws.cell(row=summary_ws.max_row, column=2).number_format = "0.0%"
+        _xlsx_set_col_widths(summary_ws, [38, 20])
+        _xlsx_freeze(summary_ws, "A2")
 
         filters_ws = wb.create_sheet(title="Фильтры")
-        filters_ws.append(["Фильтр", "Значение"])
-        filters = request.model_dump(exclude_none=True)
-        filter_maps = self._build_filter_maps()
+        _xlsx_header_row(filters_ws, ["Фильтр", "Значение"])
         for key, value in filters.items():
             filters_ws.append(
                 [_format_filter_label(key), self._format_filter_value(key, value, filter_maps)]
             )
+        _xlsx_set_col_widths(filters_ws, [32, 40])
+        _xlsx_freeze(filters_ws, "A2")
+
+        dept_ws = wb.create_sheet(title="По отделениям")
+        _xlsx_header_row(dept_ws, ["Отделение", "Всего проб", "Положительных", "Доля пол.", "Последняя проба"])
+        for item in sorted(dept_summary, key=lambda row: row.get("total", 0), reverse=True):
+            last = _xlsx_date_value(item.get("last_date"))
+            dept_ws.append(
+                [
+                    item.get("department_name", "-"),
+                    item.get("total", 0),
+                    item.get("positives", 0),
+                    item.get("positive_share", 0.0),
+                    last,
+                ]
+            )
+            dept_ws.cell(row=dept_ws.max_row, column=4).number_format = "0.0%"
+            dept_ws.cell(row=dept_ws.max_row, column=5).number_format = "DD.MM.YYYY"
+        _xlsx_set_col_widths(dept_ws, [35, 14, 16, 14, 18])
+        _xlsx_freeze(dept_ws, "A2")
+
+        micro_ws = wb.create_sheet(title="Топ микробов")
+        _xlsx_header_row(micro_ws, ["Микроорганизм", "Изолятов", "Доля (%)"])
+        total_isolates = sum(count for _, count in top_microbes) or 1
+        for name, count in top_microbes:
+            micro_ws.append([name, count, round(count / total_isolates * 100, 1)])
+            micro_ws.cell(row=micro_ws.max_row, column=3).number_format = "0.0"
+        _xlsx_set_col_widths(micro_ws, [50, 14, 14])
+        _xlsx_freeze(micro_ws, "A2")
+
+        res_ws = wb.create_sheet(title="Резистентность")
+        if resistance:
+            all_antibiotics = sorted({antibiotic for ab_map in resistance.values() for antibiotic in ab_map})
+            _xlsx_header_row(res_ws, ["Микроорганизм", "Антибиотик", "R", "I", "S", "Всего", "%R"])
+            for micro, ab_map in resistance.items():
+                for antibiotic in all_antibiotics:
+                    cell = ab_map.get(antibiotic)
+                    if not cell:
+                        continue
+                    r_count = int(cell.get("R", 0) or 0)
+                    i_count = int(cell.get("I", 0) or 0)
+                    s_count = int(cell.get("S", 0) or 0)
+                    total_cell = int(cell.get("total", 0) or 0)
+                    r_share = r_count / total_cell if total_cell else 0.0
+                    s_share = s_count / total_cell if total_cell else 0.0
+                    res_ws.append([micro, antibiotic, r_count, i_count, s_count, total_cell, r_share])
+                    share_cell = res_ws.cell(row=res_ws.max_row, column=7)
+                    share_cell.number_format = "0.0%"
+                    if r_share >= 0.5:
+                        share_cell.fill = _FILL_RED
+                    elif s_share >= 0.5:
+                        share_cell.fill = _FILL_GREEN
+                    else:
+                        share_cell.fill = _FILL_YELLOW
+        else:
+            res_ws.append(["Данных о резистентности нет"])
+        _xlsx_set_col_widths(res_ws, [40, 30, 8, 8, 8, 10, 10])
+        _xlsx_freeze(res_ws, "A2")
+
+        heat_ws = wb.create_sheet(title="Heatmap")
+        if heatmap_matrix and ordered_micros:
+            _xlsx_header_row(heat_ws, ["Отделение", *ordered_micros])
+            all_values = [
+                heatmap_matrix[dept].get(micro, 0)
+                for dept in ordered_depts
+                for micro in ordered_micros
+            ]
+            max_value = max(all_values) if all_values else 1
+            for dept in ordered_depts:
+                heat_ws.append([dept, *[heatmap_matrix[dept].get(micro, 0) for micro in ordered_micros]])
+                row_idx = heat_ws.max_row
+                for col_idx, micro in enumerate(ordered_micros, start=2):
+                    value = heatmap_matrix[dept].get(micro, 0)
+                    fill = _heat_fill(value, max_value)
+                    if fill:
+                        heat_ws.cell(row=row_idx, column=col_idx).fill = fill
+            _xlsx_set_col_widths(heat_ws, [35, *([12] * len(ordered_micros))])
+            _xlsx_freeze(heat_ws, "B2")
+        else:
+            heat_ws.append(["Недостаточно данных для Heatmap"])
+            _xlsx_set_col_widths(heat_ws, [40])
+            _xlsx_freeze(heat_ws, "A2")
+
+        trend_ws = wb.create_sheet(title="Тренд")
+        _xlsx_header_row(trend_ws, ["Дата", "Всего проб", "Положительных", "Доля пол."])
+        for item in trend_rows:
+            day_value = _xlsx_date_value(item.get("day"))
+            total_trend = int(item.get("total", 0) or 0)
+            positives_trend = int(item.get("positives", 0) or 0)
+            share_trend = positives_trend / total_trend if total_trend else 0.0
+            trend_ws.append([day_value, total_trend, positives_trend, share_trend])
+            trend_ws.cell(row=trend_ws.max_row, column=1).number_format = "DD.MM.YYYY"
+            trend_ws.cell(row=trend_ws.max_row, column=4).number_format = "0.0%"
+        _xlsx_set_col_widths(trend_ws, [16, 14, 16, 14])
+        _xlsx_freeze(trend_ws, "A2")
+
+        ismp_ws = wb.create_sheet(title="ИСМП")
+        _xlsx_header_row(ismp_ws, ["Показатель", "Значение"])
+
+        ismp_rows = [
+            ("Всего госпитализаций", ismp.get("total_cases", 0)),
+            ("Госпитализаций с ИСМП", ismp.get("ismp_cases", 0)),
+            ("Инцидентность (на 1000 госпит.)", ismp.get("incidence", 0.0)),
+            ("Плотность (на 1000 койко-дн.)", ismp.get("incidence_density", 0.0)),
+            ("Превалентность", ismp.get("prevalence", 0.0) / 100),
+        ]
+        for label, value in ismp_rows:
+            ismp_ws.append([label, value])
+
+        ismp_ws.cell(row=4, column=2).number_format = "0.0"
+        ismp_ws.cell(row=5, column=2).number_format = "0.0"
+        ismp_ws.cell(row=6, column=2).number_format = "0.0%"
+        _xlsx_set_col_widths(ismp_ws, [38, 16])
+        _xlsx_freeze(ismp_ws, "A2")
+
+        by_type = cast(list[dict[str, Any]], ismp.get("by_type") or [])
+        if by_type:
+            ismp_ws.append([])
+            _xlsx_header_row(ismp_ws, ["Тип ИСМП", "Случаев", "Доля (%)"])
+            total_ismp = ismp.get("ismp_total") or sum(entry.get("count", 0) for entry in by_type)
+            for entry in by_type:
+                count = entry.get("count", 0)
+                share = (count / total_ismp * 100) if total_ismp else 0.0
+                ismp_ws.append([entry.get("type", ""), count, round(share, 1)])
+                ismp_ws.cell(row=ismp_ws.max_row, column=3).number_format = "0.0"
+        elif ismp.get("ismp_cases", 0) == 0:
+            ismp_ws.append(["Случаев ИСМП в выбранном периоде не зарегистрировано"])
+
+        ismp_dept_ws = wb.create_sheet(title="ИСМП по отделениям")
+        _xlsx_header_row(ismp_dept_ws, ["Отделение", "Случаев ИСМП"])
+        if ismp_by_dept:
+            for dept_name, ismp_count in ismp_by_dept:
+                ismp_dept_ws.append([dept_name, ismp_count])
+        else:
+            ismp_dept_ws.append(["Случаев ИСМП не зарегистрировано"])
+        _xlsx_set_col_widths(ismp_dept_ws, [35, 16])
+        _xlsx_freeze(ismp_dept_ws, "A2")
 
         data_ws = wb.create_sheet(title="Данные")
         columns = [
@@ -216,65 +447,26 @@ class ReportingService:
             "Микроорганизм",
             "Антибиотик",
         ]
-        data_ws.append(columns)
+        _xlsx_header_row(data_ws, columns)
         for row in rows:
+            taken_at = _xlsx_date_value(row.taken_at)
             data_ws.append(
                 [
                     row.lab_sample_id,
                     row.lab_no,
                     row.patient_name,
                     row.patient_category,
-                    _format_value(row.taken_at),
+                    taken_at,
                     row.department_name,
                     row.material_type,
                     row.microorganism,
                     row.antibiotic,
                 ]
             )
+            data_ws.cell(row=data_ws.max_row, column=5).number_format = "DD.MM.YYYY"
+        _xlsx_set_col_widths(data_ws, [8, 14, 25, 14, 14, 20, 20, 30, 25])
+        _xlsx_freeze(data_ws, "A2")
 
-        ismp_ws = wb.create_sheet(title="ИСМП")
-        ismp_ws.append(["Показатель", "Значение"])
-        ismp_ws["A1"].font = Font(bold=True)
-        ismp_ws["B1"].font = Font(bold=True)
-
-        ismp_rows = [
-            ("Всего госпитализаций", ismp.get("total_cases", 0)),
-            ("Госпитализаций с ИСМП", ismp.get("ismp_cases", 0)),
-            ("Инцидентность (на 1000 госпит.)", ismp.get("incidence", 0.0)),
-            ("Плотность (на 1000 койко-дн.)", ismp.get("incidence_density", 0.0)),
-            ("Превалентность", ismp.get("prevalence", 0.0) / 100),
-        ]
-        for label, value in ismp_rows:
-            ismp_ws.append([label, value])
-
-        for row_idx, (_, value) in enumerate(ismp_rows, start=2):
-            cell = ismp_ws.cell(row=row_idx, column=2)
-            if isinstance(value, float):
-                if row_idx == 6:
-                    cell.number_format = "0.0%"
-                else:
-                    cell.number_format = "0.0"
-
-        ismp_ws.column_dimensions["A"].width = 38
-        ismp_ws.column_dimensions["B"].width = 16
-
-        by_type = cast(list[dict[str, Any]], ismp.get("by_type") or [])
-        if by_type:
-            ismp_ws.append([])
-            ismp_ws.append(["Тип ИСМП", "Случаев", "Доля (%)"])
-            header_row = ismp_ws.max_row
-            for col in range(1, 4):
-                ismp_ws.cell(row=header_row, column=col).font = Font(bold=True)
-
-            total_ismp = ismp.get("ismp_total") or sum(entry.get("count", 0) for entry in by_type)
-            for entry in by_type:
-                count = entry.get("count", 0)
-                share = (count / total_ismp * 100) if total_ismp else 0.0
-                ismp_ws.append([entry.get("type", ""), count, round(share, 1)])
-                share_cell = ismp_ws.cell(row=ismp_ws.max_row, column=3)
-                share_cell.number_format = "0.0"
-        elif ismp.get("ismp_cases", 0) == 0:
-            ismp_ws.append(["Случаев ИСМП в выбранном периоде не зарегистрировано"])
         file_path.parent.mkdir(parents=True, exist_ok=True)
         wb.save(file_path)
 

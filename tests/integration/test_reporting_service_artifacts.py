@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from openpyxl import load_workbook
 from reportlab.platypus import PageBreak, Paragraph, Table
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -293,3 +294,131 @@ def test_export_analytics_pdf_with_resistance_and_heatmap_data(
     assert "ECO - E.coli" in text
     assert "AMP - Ампициллин" in text
     assert "R:1 I:0 S:0" in text
+
+
+def test_export_analytics_xlsx_has_all_sheets(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_factory = make_session_factory(tmp_path / "xlsx_sheets.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+    export_path = tmp_path / "analytics_v2.xlsx"
+
+    service.export_analytics_xlsx(
+        request=AnalyticsSearchRequest(),
+        file_path=export_path,
+        actor_id=None,
+    )
+
+    workbook = load_workbook(export_path)
+    assert workbook.sheetnames == [
+        "Сводка",
+        "Фильтры",
+        "По отделениям",
+        "Топ микробов",
+        "Резистентность",
+        "Heatmap",
+        "Тренд",
+        "ИСМП",
+        "ИСМП по отделениям",
+        "Данные",
+    ]
+
+
+def test_export_analytics_xlsx_freeze_panes_on_data_sheet(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_factory = make_session_factory(tmp_path / "xlsx_freeze.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+    export_path = tmp_path / "analytics_freeze.xlsx"
+
+    service.export_analytics_xlsx(
+        request=AnalyticsSearchRequest(),
+        file_path=export_path,
+        actor_id=None,
+    )
+
+    workbook = load_workbook(export_path)
+    assert workbook["Данные"].freeze_panes == "A2"
+
+
+def test_export_analytics_xlsx_populates_resistance_heatmap_and_trend(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.infrastructure.db.models_sqlalchemy import (
+        Department,
+        EmrCase,
+        LabAbxSusceptibility,
+        LabMicrobeIsolation,
+        LabSample,
+        Patient,
+        RefAntibiotic,
+        RefMaterialType,
+        RefMicroorganism,
+    )
+
+    session_factory = make_session_factory(tmp_path / "xlsx_v2_data.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+
+    with session_factory() as session:
+        dept = Department(name="Терапия")
+        material = RefMaterialType(code="BLD", name="Кровь")
+        micro = RefMicroorganism(name="E.coli", code="ECO")
+        antibiotic = RefAntibiotic(name="Ампициллин", code="AMP")
+        patient = Patient(full_name="Иванов И.И.", dob=date(1980, 1, 1), category="Военнослужащий")
+        session.add_all([dept, material, micro, antibiotic, patient])
+        session.flush()
+
+        case = EmrCase(patient_id=patient.id, hospital_case_no="CASE-XLSX-1", department_id=dept.id)
+        session.add(case)
+        session.flush()
+
+        sample = LabSample(
+            patient_id=patient.id,
+            emr_case_id=case.id,
+            lab_no="LAB-XLSX-001",
+            material_type_id=material.id,
+            taken_at=datetime(2024, 3, 1, 8, 30, tzinfo=UTC),
+            growth_flag=1,
+        )
+        session.add(sample)
+        session.flush()
+        session.add_all(
+            [
+                LabMicrobeIsolation(lab_sample_id=sample.id, microorganism_id=micro.id),
+                LabAbxSusceptibility(
+                    lab_sample_id=sample.id,
+                    antibiotic_id=antibiotic.id,
+                    ris="R",
+                ),
+            ]
+        )
+
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+    export_path = tmp_path / "analytics_v2_data.xlsx"
+    service.export_analytics_xlsx(
+        request=AnalyticsSearchRequest(),
+        file_path=export_path,
+        actor_id=None,
+    )
+
+    workbook = load_workbook(export_path)
+    assert workbook["По отделениям"]["A2"].value == "Терапия"
+    assert workbook["Топ микробов"]["A2"].value == "ECO - E.coli"
+    assert workbook["Резистентность"]["A2"].value == "ECO - E.coli"
+    assert workbook["Резистентность"]["B2"].value == "AMP - Ампициллин"
+    assert workbook["Резистентность"]["G2"].value == 1
+    assert workbook["Резистентность"]["G2"].number_format == "0.0%"
+    assert workbook["Резистентность"]["G2"].fill.fgColor.rgb == "00FADADD"
+    assert workbook["Heatmap"]["A2"].value == "Терапия"
+    assert workbook["Heatmap"]["B2"].value == 1
+    assert workbook["Heatmap"]["B2"].fill.fgColor.rgb == "00FF8C00"
+    assert workbook["Тренд"]["A2"].number_format == "DD.MM.YYYY"
+    assert workbook["Данные"]["E2"].number_format == "DD.MM.YYYY"

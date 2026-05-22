@@ -7588,6 +7588,32 @@ Window title, кнопки, внутренние ключи — не трону�
 
 ---
 
+## 2026-05-22 - feat: P1.4 Analytics XLSX в составе Analytics v2
+
+**Статус:** реализовано и проверено
+
+- `export_analytics_xlsx` перестроен в формат Analytics v2 с 10 листами: `Сводка`, `Фильтры`, `По отделениям`, `Топ микробов`, `Резистентность`, `Heatmap`, `Тренд`, `ИСМП`, `ИСМП по отделениям`, `Данные`.
+- XLSX использует общие вычисления Analytics v2: топ микроорганизмов, heatmap отделение x микроорганизм, паттерн резистентности, тренд, сводку по отделениям и ИСМП по отделениям.
+- Добавлены XLSX-хелперы для заголовков, ширин колонок, freeze panes, дат и тепловой заливки.
+- Лист `Резистентность` форматирует `%R` как процент и подсвечивает устойчивость цветом; `Heatmap` подсвечивает частоты по интенсивности.
+- Лист `Данные` сохраняет исходную таблицу проб, фиксирует шапку и записывает дату взятия как дату Excel.
+- Интеграционные тесты покрывают состав листов, freeze panes, заполнение резистентности, heatmap, тренда и форматы дат/процентов.
+- Unit-stub XLSX/ИСМП расширен методами Analytics v2, чтобы существующие тесты ИСМП проверяли новый экспорт.
+
+### Проверки
+
+- RED: `python -m pytest tests/integration/test_reporting_service_artifacts.py::test_export_analytics_xlsx_has_all_sheets tests/integration/test_reporting_service_artifacts.py::test_export_analytics_xlsx_freeze_panes_on_data_sheet tests/integration/test_reporting_service_artifacts.py::test_export_analytics_xlsx_populates_resistance_heatmap_and_trend -q --tb=short` - `3 failed` на старом составе листов и отсутствии `freeze_panes`.
+- GREEN targeted: `python -m pytest tests/integration/test_reporting_service_artifacts.py::test_export_analytics_xlsx_has_all_sheets tests/integration/test_reporting_service_artifacts.py::test_export_analytics_xlsx_freeze_panes_on_data_sheet tests/integration/test_reporting_service_artifacts.py::test_export_analytics_xlsx_populates_resistance_heatmap_and_trend -q --tb=short` - `3 passed`, `1 warning`.
+- Regression targeted: `python -m pytest tests/unit/test_analytics_xlsx_ismp.py tests/unit/test_analytics_pdf_ismp.py tests/integration/test_reporting_service_artifacts.py tests/integration/test_analytics_report_ismp.py -q --tb=short` - `20 passed`, `1 warning`.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`389 source files`).
+- `python -m pytest -q` - pass (`814 passed`, `1 warning`).
+- `python -m compileall -q app tests scripts` - pass.
+- XLSX smoke через `openpyxl` - pass: 10 листов, `Heatmap`, `freeze_panes`, процентные форматы и заливки проверены.
+- `soffice` и `pdftoppm` в PATH отсутствуют, поэтому визуальный render-smoke XLSX недоступен.
+
+---
+
 ## 2026-05-22 - feat: P1.3 Analytics PDF в составе Analytics v2
 
 **Статус:** готово к коммиту
