@@ -23,7 +23,10 @@ class IdResolver:
         self._material_types: dict[int, str] = {}
         self._microorganisms: dict[int, str] = {}
         self._antibiotics: dict[int, str] = {}
+        self._antibiotic_groups: dict[int, str] = {}
+        self._phages: dict[int, str] = {}
         self._departments: dict[int, str] = {}
+        self._emr_cases: dict[int, str] = {}
         self._users: dict[int, str] = {}
 
     def _load_material_types(self) -> None:
@@ -50,6 +53,22 @@ class IdResolver:
         rows = self._session.query(RefAntibiotic).all()
         self._antibiotics = {int(r.id): f"{r.code} — {r.name}" for r in rows}
 
+    def _load_antibiotic_groups(self) -> None:
+        if self._antibiotic_groups:
+            return
+        from app.infrastructure.db.models_sqlalchemy import RefAntibioticGroup
+
+        rows = self._session.query(RefAntibioticGroup).all()
+        self._antibiotic_groups = {int(r.id): f"{r.code} — {r.name}" for r in rows}
+
+    def _load_phages(self) -> None:
+        if self._phages:
+            return
+        from app.infrastructure.db.models_sqlalchemy import RefPhage
+
+        rows = self._session.query(RefPhage).all()
+        self._phages = {int(r.id): f"{r.code} — {r.name}" for r in rows}
+
     def _load_departments(self) -> None:
         if self._departments:
             return
@@ -57,6 +76,14 @@ class IdResolver:
 
         rows = self._session.query(Department).all()
         self._departments = {int(r.id): str(r.name) for r in rows}
+
+    def _load_emr_cases(self) -> None:
+        if self._emr_cases:
+            return
+        from app.infrastructure.db.models_sqlalchemy import EmrCase
+
+        rows = self._session.query(EmrCase).all()
+        self._emr_cases = {int(r.id): str(r.hospital_case_no) for r in rows}
 
     def _load_users(self) -> None:
         if self._users:
@@ -84,11 +111,29 @@ class IdResolver:
         self._load_antibiotics()
         return self._antibiotics.get(id_, str(id_))
 
+    def resolve_antibiotic_group(self, id_: int | None) -> str:
+        if id_ is None:
+            return "—"
+        self._load_antibiotic_groups()
+        return self._antibiotic_groups.get(id_, str(id_))
+
+    def resolve_phage(self, id_: int | None) -> str:
+        if id_ is None:
+            return "—"
+        self._load_phages()
+        return self._phages.get(id_, str(id_))
+
     def resolve_department(self, id_: int | None) -> str:
         if id_ is None:
             return "—"
         self._load_departments()
         return self._departments.get(id_, str(id_))
+
+    def resolve_emr_case_no(self, id_: int | None) -> str:
+        if id_ is None:
+            return "—"
+        self._load_emr_cases()
+        return self._emr_cases.get(id_, str(id_))
 
     def resolve_user(self, id_: int | None) -> str:
         if id_ is None:

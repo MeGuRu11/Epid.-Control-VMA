@@ -32,6 +32,94 @@ Desktop-приложение для стационара: ЭМЗ пациент�
 
 ## Журнал работ
 
+### 2026-05-23 — fix: PDF table alignment and form100 Russian header
+
+- `reporting_service.py`: для числовых колонок в таблице «Топ микроорганизмов» добавлен `ALIGN=CENTER`, ширины колонок изменены на `55/20/25`, чтобы длинные названия не слипались с числами.
+- `reporting_service.py`: таблица «Сводка по отделениям» проверена, `ALIGN=CENTER` для числовых колонок уже присутствует.
+- `exchange_service.py`: для resolved-колонки `created_by_name` в `EXCEL_COLUMN_HEADERS["form100"]` добавлен русский заголовок «Создал (имя)».
+- Регрессии: добавлены проверки PDF-таблиц Analytics и заголовков листа «Форма 100».
+- `python -m ruff check app tests scripts` — pass.
+- `python -m mypy app tests` — pass (`391 source files`).
+- `python -m pytest -q` — pass (`832 passed`, `1 warning`).
+- `python scripts\generate_sample_exports.py --skip-seed` — `15 OK / 0 SKIP / 0 ERROR`.
+- Smoke: PyMuPDF-render страниц 2/3 `analytics.pdf` проверен визуально; `full_export.xlsx` содержит «Создал (имя)» и не содержит `created_by_name` в заголовках листа «Форма 100».
+
+### 2026-05-23 — fix: import round-trip safety
+
+- `_apply_enum_labels` убран из `export_excel` и `export_csv`: Excel/CSV теперь хранят machine values (`primary`, `valid`, `disk`, `admission`, `0/1`) и пригодны для обратного импорта.
+- JSON-экспорт не вызывал `_apply_enum_labels` и остаётся machine-oriented.
+- `_apply_enum_labels` применяется только в PDF-представлениях: `ExchangeService.export_pdf` и `ReportingService.export_analytics_pdf`.
+- В `analytics.pdf` таблица проб получила колонку `Результат роста` с человекочитаемыми значениями `Рост выявлен` / `Рост не выявлен`.
+- Новый скрипт `scripts/test_import_roundtrip.py` проверяет импорт собственных `full_export.xlsx`, `full_export.zip`, CSV и JSON из `docs/sample_exports/`.
+- Новый тест `tests/integration/test_exchange_service_roundtrip.py` покрывает Excel/CSV round-trip и сохранение machine enum values.
+- Обновлены тесты Excel/CSV: в машинных форматах проверяются `primary`, `valid`, `0/1`, а не русские label-значения.
+
+Проверки:
+- RED: `python -m pytest tests\integration\test_exchange_service_roundtrip.py -q` — `4 failed`, воспроизведены `ck_emr_diagnosis_` и ошибки `lab_sample`.
+- GREEN targeted: round-trip и обновлённые Excel/CSV/PDF тесты — `8 passed`.
+- `python scripts\seed_demo_data.py --clear` — pass.
+- `python scripts\seed_demo_data.py` — pass, `Form100 карточек: 1`.
+- `python scripts\generate_sample_exports.py --skip-seed` — `15 OK / 0 SKIP / 0 ERROR`.
+- `python scripts\test_import_roundtrip.py` — `7 PASS / 0 FAIL`.
+- Structural smoke: 15 файлов, Excel/CSV/JSON содержат machine values, PDF содержит русские enum labels, `analytics.pdf` — 7 страниц.
+- PyMuPDF render-smoke: страница 7 `analytics.pdf` визуально проверена, `Результат роста` читается.
+- `python -m ruff check app tests scripts` — pass.
+- `python -m mypy app tests scripts\test_import_roundtrip.py` — pass (`392 source files`).
+- `python -m pytest -q` — `831 passed`, `1 warning`.
+
+### 2026-05-23 — fix: comprehensive export quality improvements
+
+P0:
+- `export_excel` теперь использует `_build_extended_columns` / `_fill_resolved_fields`, как CSV/PDF, и добавляет человекочитаемые FK-колонки.
+- Расширены связи резолва: microorganism, antibiotic, antibiotic_group, phage, department для `emr_case`, номер госпитализации для `ismp_case`.
+- Добавлены русские заголовки для `ismp_case`, `ref_ismp_abbreviations`, `form100`, `form100_data` и новых JOIN-колонок.
+- Добавлен `_apply_enum_labels`: `primary`, `admission`, `valid`, `disk`, `growth_flag` экспортируются как русские значения.
+- `seed_demo_data.py`: категории пациентов берутся из `MilitaryCategory`, без `hospital` / `outpatient`.
+
+P1:
+- `reporting_service.py`: исправлены ширины и выравнивание таблиц Analytics PDF для «Сводка по отделениям» и «Тренд по периодам».
+- Analytics PDF ограничивает длинные preview-таблицы, чтобы сохранить 7 читаемых страниц; полный набор данных остаётся в XLSX/JSON.
+
+P2:
+- `form100_data` исключён из human-friendly `full_export.xlsx`, но остаётся в JSON-экспорте.
+
+Тесты:
+- Добавлены 4 интеграционных теста Excel-экспорта: FK-резолв микроорганизма, перевод `qc_status`, перевод `growth_flag`, отсутствие листа `form100_data`.
+- Добавлен unit-тест, что demo-seed использует русские категории пациентов.
+- Обновлены старые ожидания CSV/XLSX под новый human-friendly формат.
+
+Проверки:
+- RED: новые targeted-тесты падали на старом поведении (`5 failed`).
+- GREEN targeted: новые targeted-тесты — `5 passed`.
+- `python -m ruff check app tests scripts` — pass.
+- `python -m mypy app tests scripts\seed_demo_data.py scripts\generate_sample_exports.py` — pass (`392 source files`).
+- `python -m pytest -q` — `827 passed`, `1 warning`.
+- `python scripts\seed_demo_data.py --clear` — pass.
+- `python scripts\seed_demo_data.py` — pass, `Form100 карточек: 1`.
+- `python scripts\generate_sample_exports.py --skip-seed` — `15 OK / 0 SKIP / 0 ERROR`.
+- Structural smoke: 15 файлов, `analytics.pdf` 7 страниц, `analytics.xlsx` 10 листов, `full_export.xlsx` 25 листов без `Форма 100 данные`.
+- PyMuPDF render-smoke: `analytics.pdf` стр. 2 и 6 визуально проверены, цифры не слипаются.
+
+### 2026-05-23 — feat: Form100 demo card in seed_demo_data
+
+- `seed_demo_data.py`: `_create_demo_form100` создаёт одну карточку Form100 с `Form100DataV2` для полного smoke-экспорта.
+- `SeedStats.form100_cards` добавлен, `_format_stats` выводит количество Form100-карточек.
+- `_clear_data` очищает `form100_data` и `form100`, чтобы повторный demo-seed не оставлял старые карточки.
+- `generate_sample_exports.py`: `form100_card.pdf` теперь экспортируется, итог `15 OK / 0 SKIP / 0 ERROR`.
+- `tests/unit/test_generate_sample_exports_script.py`: добавлена проверка поля `form100_cards`.
+
+### Проверки
+
+- RED: `python -m pytest tests\unit\test_generate_sample_exports_script.py -q` — падал на отсутствии `SeedStats.form100_cards`.
+- GREEN: `python -m pytest tests\unit\test_generate_sample_exports_script.py -q` — `3 passed`, `1 warning`.
+- `python -m pytest tests\unit\test_seed_demo_data.py -q` — `3 passed`.
+- `python scripts\seed_demo_data.py --clear` — pass.
+- `python scripts\seed_demo_data.py` — pass, выводит `Form100 карточек: 1`.
+- `python scripts\generate_sample_exports.py --skip-seed` — `15 OK / 0 SKIP / 0 ERROR`.
+- `python -m ruff check app tests scripts\seed_demo_data.py scripts\generate_sample_exports.py` — pass.
+- `python -m mypy scripts\seed_demo_data.py` — pass.
+- `python -m pytest -q` — `822 passed`, `1 warning`.
+
 ### 2026-05-23 — feat: генератор всех demo-выгрузок
 
 - Добавлен `scripts/generate_sample_exports.py`: засевает demo-данные через `seed_demo_data.seed(clear=True)`, вызывает все форматы выгрузки Analytics, Exchange, CSV/PDF по таблицам и Form100 ZIP, сохраняет файлы в `docs/sample_exports/` по умолчанию и печатает итоговую таблицу файл → размер → статус.

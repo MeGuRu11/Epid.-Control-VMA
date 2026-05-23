@@ -23,10 +23,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.application.dto.analytics_dto import AnalyticsSampleRow, AnalyticsSearchRequest
 from app.application.reporting.formatters import format_percent
 from app.application.services.analytics_service import AnalyticsService
+from app.application.services.exchange_service import _apply_enum_labels
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reference_service import ReferenceService
 from app.config import DATA_DIR
 from app.domain.constants import MilitaryCategory
+from app.domain.types import JSONDict
 from app.infrastructure.db import models_sqlalchemy as models
 from app.infrastructure.db.session import session_scope
 from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
@@ -34,6 +36,8 @@ from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
 from app.infrastructure.security.sha256 import sha256_file
 
 REPORT_ARTIFACT_DIR = DATA_DIR / "artifacts" / "reports"
+_ANALYTICS_PDF_MAX_TREND_ROWS = 24
+_ANALYTICS_PDF_MAX_SAMPLE_ROWS = 12
 
 FILTER_LABELS: dict[str, str] = {
     "date_from": "Дата от",
@@ -580,20 +584,25 @@ class ReportingService:
             "Лаб. номер",
             "ФИО пациента",
             "Категория",
+            "Результат роста",
             "Дата взятия",
             "Отделение",
             "Материал",
             "Микроорганизм",
             "Антибиотик",
         ]
+        pdf_sample_rows = rows[:_ANALYTICS_PDF_MAX_SAMPLE_ROWS]
         table_data: list[list[Paragraph]] = [[Paragraph(h, cell_style) for h in headers]]
-        for row in rows:
+        for row in pdf_sample_rows:
+            display_row: JSONDict = {"growth_flag": row.growth_flag}
+            _apply_enum_labels(display_row)
             table_data.append(
                 [
                     Paragraph(str(row.lab_sample_id), cell_style),
                     Paragraph(str(row.lab_no or ""), cell_style),
                     Paragraph(row.patient_name or "", cell_style),
                     Paragraph(row.patient_category or "", cell_style),
+                    Paragraph(str(display_row.get("growth_flag") or ""), cell_style),
                     Paragraph(str(_format_value(row.taken_at) or ""), cell_style),
                     Paragraph(row.department_name or "", cell_style),
                     Paragraph(row.material_type or "", cell_style),
@@ -605,13 +614,14 @@ class ReportingService:
         col_widths = [
             available_width * 0.05,  # ID
             available_width * 0.08,  # Lab No
-            available_width * 0.15,  # Patient
+            available_width * 0.14,  # Patient
             available_width * 0.08,  # Category
+            available_width * 0.08,  # Growth
             available_width * 0.08,  # Date
-            available_width * 0.12,  # Department
-            available_width * 0.12,  # Material
-            available_width * 0.15,  # Microorganism
-            available_width * 0.17,  # Antibiotic
+            available_width * 0.11,  # Department
+            available_width * 0.11,  # Material
+            available_width * 0.13,  # Microorganism
+            available_width * 0.14,  # Antibiotic
         ]
 
         filter_table = Table(
@@ -848,11 +858,11 @@ class ReportingService:
                 dept_data,
                 repeatRows=1,
                 colWidths=[
-                    available_width * 0.35,
+                    available_width * 0.30,
+                    available_width * 0.13,
                     available_width * 0.15,
                     available_width * 0.15,
-                    available_width * 0.15,
-                    available_width * 0.20,
+                    available_width * 0.27,
                 ],
             )
             dept_table.setStyle(
@@ -863,8 +873,9 @@ class ReportingService:
                         ("FONTNAME", (0, 0), (-1, -1), unicode_font),
                         ("FONTSIZE", (0, 0), (-1, -1), 7),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 3 * mm),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 3 * mm),
                         ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
                         ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
                     ]
@@ -893,7 +904,7 @@ class ReportingService:
             micro_table = Table(
                 micro_data,
                 repeatRows=1,
-                colWidths=[available_width * 0.6, available_width * 0.2, available_width * 0.2],
+                colWidths=[available_width * 0.55, available_width * 0.20, available_width * 0.25],
             )
             micro_table.setStyle(
                 TableStyle(
@@ -903,6 +914,7 @@ class ReportingService:
                         ("FONTNAME", (0, 0), (-1, -1), unicode_font),
                         ("FONTSIZE", (0, 0), (-1, -1), 7),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("ALIGN", (1, 1), (-1, -1), "CENTER"),
                         ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
                         ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
                         ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
@@ -1044,7 +1056,8 @@ class ReportingService:
         if trend_rows:
             trend_headers = ["Дата", "Всего проб", "Положительных", "Доля пол."]
             trend_data: list[list[Paragraph]] = [[Paragraph(h, cell_style) for h in trend_headers]]
-            for item in trend_rows:
+            pdf_trend_rows = trend_rows[:_ANALYTICS_PDF_MAX_TREND_ROWS]
+            for item in pdf_trend_rows:
                 day_value = item.get("day")
                 day_str = str(_format_value(day_value) or "-")
                 total_trend = int(item.get("total", 0) or 0)
@@ -1061,7 +1074,12 @@ class ReportingService:
             trend_table = Table(
                 trend_data,
                 repeatRows=1,
-                colWidths=[available_width * 0.25] * 4,
+                colWidths=[
+                    available_width * 0.22,
+                    available_width * 0.22,
+                    available_width * 0.26,
+                    available_width * 0.30,
+                ],
             )
             trend_table.setStyle(
                 TableStyle(
@@ -1072,20 +1090,35 @@ class ReportingService:
                         ("FONTSIZE", (0, 0), (-1, -1), 7),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
                         ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 2 * mm),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 2 * mm),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 3 * mm),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 3 * mm),
                         ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
                         ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
                     ]
                 )
             )
             elements.append(trend_table)
+            if len(trend_rows) > len(pdf_trend_rows):
+                elements.append(
+                    Paragraph(
+                        f"Показаны первые {len(pdf_trend_rows)} периодов из {len(trend_rows)}; полный тренд доступен в XLSX.",
+                        cell_style,
+                    )
+                )
         else:
             elements.append(Paragraph("Данных для построения тренда нет.", cell_style))
         elements.append(PageBreak())
 
         elements.append(Paragraph("<b>Таблица проб</b>", section_style))
         elements.append(Spacer(1, 6))
+        if len(rows) > len(pdf_sample_rows):
+            elements.append(
+                Paragraph(
+                    f"Показаны первые {len(pdf_sample_rows)} проб из {len(rows)}; полный набор доступен в XLSX.",
+                    cell_style,
+                )
+            )
+            elements.append(Spacer(1, 4))
         elements.append(data_table)
         build_invariant_pdf(doc, elements)
 

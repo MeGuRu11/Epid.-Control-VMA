@@ -105,6 +105,7 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "patient_id": "ID пациента",
         "hospital_case_no": "№ госпитализации",
         "department_id": "ID отделения",
+        "department_name": "Отделение",
         "created_at": "Создано",
         "created_by": "Создал (ID)",
         "created_by_name": "Создал",
@@ -123,8 +124,8 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "ordered_at": "Назначено",
         "taken_at": "Взято",
         "delivered_at": "Доставлено",
-        "growth_result_at": "Результат роста",
-        "growth_flag": "Рост",
+        "growth_result_at": "Дата результата роста",
+        "growth_flag": "Результат роста",
         "colony_desc": "Колонии/морфология",
         "microscopy": "Микроскопия",
         "cfu": "КОЕ",
@@ -146,8 +147,8 @@ CSV_HEADERS: dict[str, dict[str, str]] = {
         "ordered_at": "Назначено",
         "taken_at": "Взято",
         "delivered_at": "Доставлено",
-        "growth_result_at": "Результат роста",
-        "growth_flag": "Рост",
+        "growth_result_at": "Дата результата роста",
+        "growth_flag": "Результат роста",
         "colony_desc": "Колонии/морфология",
         "microscopy": "Микроскопия",
         "cfu": "КОЕ",
@@ -224,8 +225,22 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "code": "Код типа материала",
         "name": "Тип материала",
     },
+    "ref_ismp_abbreviations": {
+        "id": "ID",
+        "code": "Код",
+        "name": "Наименование",
+        "description": "Описание",
+    },
     "patients": CSV_HEADERS["patients"],
     "emr_case": CSV_HEADERS["emr_case"],
+    "ismp_case": {
+        "id": "ID случая",
+        "emr_case_id": "ID госпитализации",
+        "emr_case_no": "№ госпитализации",
+        "ismp_type": "Тип ИСМП",
+        "start_date": "Дата начала",
+        "created_at": "Создано",
+    },
     "emr_case_version": {
         "id": "ID версии ЭМЗ",
         "emr_case_id": "ID госпитализации",
@@ -277,6 +292,7 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "id": "ID выделения",
         "lab_sample_id": "ID лабораторной пробы",
         "microorganism_id": "ID микроорганизма",
+        "microorganism_name": "Микроорганизм",
         "microorganism_free": "Микроорганизм (свободно)",
         "notes": "Примечания",
     },
@@ -284,7 +300,9 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "id": "ID результата чувствительности",
         "lab_sample_id": "ID лабораторной пробы",
         "antibiotic_id": "ID антибиотика",
+        "antibiotic_name": "Антибиотик",
         "group_id": "ID группы антибиотиков",
+        "antibiotic_group_name": "Группа антибиотиков",
         "ris": "RIS",
         "mic_mg_l": "MIC, мг/л",
         "method": "Метод",
@@ -293,6 +311,7 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "id": "ID результата фагов",
         "lab_sample_id": "ID лабораторной пробы",
         "phage_id": "ID фага",
+        "phage_name": "Бактериофаг",
         "phage_free": "Фаг (свободно)",
         "lysis_diameter_mm": "Диаметр лизиса, мм",
     },
@@ -301,6 +320,7 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "id": "ID выделения",
         "sanitary_sample_id": "ID санитарной пробы",
         "microorganism_id": "ID микроорганизма",
+        "microorganism_name": "Микроорганизм",
         "microorganism_free": "Микроорганизм (свободно)",
         "notes": "Примечания",
     },
@@ -308,7 +328,9 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "id": "ID результата чувствительности",
         "sanitary_sample_id": "ID санитарной пробы",
         "antibiotic_id": "ID антибиотика",
+        "antibiotic_name": "Антибиотик",
         "group_id": "ID группы антибиотиков",
+        "antibiotic_group_name": "Группа антибиотиков",
         "ris": "RIS",
         "mic_mg_l": "MIC, мг/л",
         "method": "Метод",
@@ -317,8 +339,47 @@ EXCEL_COLUMN_HEADERS: dict[str, dict[str, str]] = {
         "id": "ID результата фагов",
         "sanitary_sample_id": "ID санитарной пробы",
         "phage_id": "ID фага",
+        "phage_name": "Бактериофаг",
         "phage_free": "Фаг (свободно)",
         "lysis_diameter_mm": "Диаметр лизиса, мм",
+    },
+    "form100": {
+        "id": "ID карточки",
+        "legacy_card_id": "Унаследованный ID",
+        "emr_case_id": "ID госпитализации",
+        "created_at": "Создано",
+        "created_by": "Создал",
+        "created_by_name": "Создал (имя)",
+        "updated_at": "Обновлено",
+        "updated_by": "Обновил",
+        "status": "Статус",
+        "version": "Версия",
+        "signed_version": "Подписанная версия",
+        "is_archived": "Архив",
+        "main_full_name": "ФИО",
+        "main_unit": "В/часть",
+        "main_id_tag": "Жетон",
+        "main_diagnosis": "Диагноз",
+        "birth_date": "Дата рождения",
+        "signed_by": "Подписал",
+        "signed_at": "Дата подписи",
+        "artifact_path": "Путь артефакта",
+        "artifact_sha256": "SHA256 артефакта",
+    },
+    "form100_data": {
+        "id": "ID",
+        "form100_id": "ID карточки",
+        "stub_json": "Корешок (JSON)",
+        "main_json": "Основные данные (JSON)",
+        "lesion_json": "Поражение (JSON)",
+        "san_loss_json": "Санитарные потери (JSON)",
+        "mp_json": "Мед. помощь (JSON)",
+        "bottom_json": "Низ карточки (JSON)",
+        "flags_json": "Флаги (JSON)",
+        "bodymap_gender": "Пол на схеме",
+        "bodymap_annotations_json": "Метки на схеме (JSON)",
+        "bodymap_tissue_types_json": "Типы тканей (JSON)",
+        "raw_payload_json": "Полный payload (JSON)",
     },
 }
 
@@ -336,6 +397,23 @@ _HANDLED_IMPORT_ERRORS = (
 _EXPORT_BATCH_SIZE = 500
 _FORM100_PDF_EXPORT_NOTE = "PDF-артефакты карточек Формы 100 экспортируются отдельно через Form100 ZIP"
 _FULL_EXPORT_NOTES: dict[str, str] = {"form100_pdf": _FORM100_PDF_EXPORT_NOTE}
+_HUMAN_EXPORT_SKIP_TABLES = {"form100_data"}
+_ENUM_VALUE_LABELS: dict[str, dict[object, str]] = {
+    "study_kind": {"primary": "первичное", "repeat": "повторное"},
+    "qc_status": {"valid": "валидный", "conditional": "условный", "rejected": "отклонён"},
+    "kind": {
+        "admission": "при поступлении",
+        "discharge": "при выписке",
+        "complication": "осложнение",
+    },
+    "method": {"disk": "диско-диффузионный", "etest": "Е-тест", "broth": "бульонный"},
+    "growth_flag": {
+        0: "Рост не выявлен",
+        1: "Рост выявлен",
+        "0": "Рост не выявлен",
+        "1": "Рост выявлен",
+    },
+}
 _JSON_LIST_COLUMNS = frozenset(
     {
         "bodymap_annotations_json",
@@ -377,6 +455,14 @@ def _serialize_json_value(value: object) -> JSONValue | object:
     if isinstance(value, date):
         return value.isoformat()
     return value
+
+
+def _apply_enum_labels(record: JSONDict) -> None:
+    """Перевести enum-поля БД в человекочитаемые значения для экспортов."""
+    for field, mapping in _ENUM_VALUE_LABELS.items():
+        if field in record and record[field] is not None:
+            value = record[field]
+            record[field] = cast(JSONValue, mapping.get(value, value))
 
 
 def _is_json_column(column_name: str) -> bool:
@@ -450,6 +536,20 @@ def _build_extended_columns(table_name: str, columns: list[str]) -> list[str]:
     resolved_after: dict[str, dict[str, str]] = {
         "lab_sample": {"material_type_id": "material_type_name"},
         "sanitary_sample": {"department_id": "department_name"},
+        "emr_case": {"department_id": "department_name"},
+        "ismp_case": {"emr_case_id": "emr_case_no"},
+        "lab_microbe_isolation": {"microorganism_id": "microorganism_name"},
+        "san_microbe_isolation": {"microorganism_id": "microorganism_name"},
+        "lab_abx_susceptibility": {
+            "antibiotic_id": "antibiotic_name",
+            "group_id": "antibiotic_group_name",
+        },
+        "san_abx_susceptibility": {
+            "antibiotic_id": "antibiotic_name",
+            "group_id": "antibiotic_group_name",
+        },
+        "lab_phage_panel_result": {"phage_id": "phage_name"},
+        "san_phage_panel_result": {"phage_id": "phage_name"},
     }
     table_resolved_after = resolved_after.get(table_name, {})
     extended_columns: list[str] = []
@@ -485,6 +585,29 @@ def _fill_resolved_fields(record: JSONDict, table_name: str, resolver: IdResolve
     if table_name == "sanitary_sample":
         record["department_name"] = resolver.resolve_department(
             _coerce_int_id(record.get("department_id"))
+        )
+    if table_name == "emr_case":
+        record["department_name"] = resolver.resolve_department(
+            _coerce_int_id(record.get("department_id"))
+        )
+    if table_name == "ismp_case":
+        record["emr_case_no"] = resolver.resolve_emr_case_no(
+            _coerce_int_id(record.get("emr_case_id"))
+        )
+    if table_name in ("lab_microbe_isolation", "san_microbe_isolation"):
+        record["microorganism_name"] = resolver.resolve_microorganism(
+            _coerce_int_id(record.get("microorganism_id"))
+        )
+    if table_name in ("lab_abx_susceptibility", "san_abx_susceptibility"):
+        record["antibiotic_name"] = resolver.resolve_antibiotic(
+            _coerce_int_id(record.get("antibiotic_id"))
+        )
+        record["antibiotic_group_name"] = resolver.resolve_antibiotic_group(
+            _coerce_int_id(record.get("group_id"))
+        )
+    if table_name in ("lab_phage_panel_result", "san_phage_panel_result"):
+        record["phage_name"] = resolver.resolve_phage(
+            _coerce_int_id(record.get("phage_id"))
         )
     if "created_by" in record:
         record["created_by_name"] = resolver.resolve_user(_coerce_int_id(record.get("created_by")))
@@ -1100,14 +1223,19 @@ class ExchangeService:
 
         counts: dict[str, int] = {}
         with self.session_factory() as session:
+            resolver = IdResolver(session)
             for name, model_cls in TABLE_MODELS.items():
+                if name in _HUMAN_EXPORT_SKIP_TABLES:
+                    continue
                 ws = wb.create_sheet(title=_get_excel_sheet_title(name))
                 columns = [c.name for c in model_cls.__table__.columns]
-                ws.append(_get_excel_headers(name, columns))
+                extended_columns = _build_extended_columns(name, columns)
+                ws.append(_get_excel_headers(name, extended_columns))
                 row_count = 0
                 for row in _iter_model_rows(session, model_cls):
                     data = _model_to_dict(row)
-                    ws.append([data.get(col) for col in columns])
+                    _fill_resolved_fields(data, name, resolver)
+                    ws.append([data.get(col) for col in extended_columns])
                     row_count += 1
                 counts[name] = row_count
         if len(wb.worksheets) > 1:
@@ -1118,7 +1246,14 @@ class ExchangeService:
         self._prepare_output_dir(file_path.parent)
         wb.save(file_path)
         if log_package:
-            self._record_package("export", "excel", file_path, actor_id, scope_tables=list(TABLE_MODELS), rows_affected=sum(counts.values()))
+            self._record_package(
+                "export",
+                "excel",
+                file_path,
+                actor_id,
+                scope_tables=list(counts),
+                rows_affected=sum(counts.values()),
+            )
         return {"path": str(file_path), "counts": counts}
 
     def export_zip(self, file_path: str | Path, *, exported_by: str | None = None, actor_id: int) -> ZipExportResult:
@@ -1519,6 +1654,7 @@ class ExchangeService:
             for row in _iter_model_rows(session, model_cls):
                 record = _model_to_dict(row)
                 _fill_resolved_fields(record, table_name, resolver)
+                _apply_enum_labels(record)
                 data.append(
                     [
                         Paragraph("" if record.get(col) is None else str(record.get(col)), cell_style)

@@ -15,9 +15,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.application.dto.analytics_dto import AnalyticsSearchRequest
 from app.application.services import reporting_service as reporting_service_module
 from app.application.services.analytics_service import AnalyticsService
+from app.application.services.exchange_service import ExchangeService
 from app.application.services.reporting_service import ReportingService
 from app.infrastructure.db.models_sqlalchemy import Base
 from app.infrastructure.security.sha256 import sha256_file
+from scripts.seed_demo_data import seed
+from tests.integration.test_exchange_service_import_reports import seed_actor
 
 
 def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
@@ -70,6 +73,113 @@ def _capture_pdf_elements(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[Any
 
     monkeypatch.setattr(reporting_service_module, "build_invariant_pdf", _capture_build)
     return captured
+
+
+def _find_table_after_heading(elements: list[Any], heading: str) -> Table:
+    seen_heading = False
+    for element in elements:
+        if isinstance(element, Paragraph) and heading in element.getPlainText():
+            seen_heading = True
+            continue
+        if seen_heading and isinstance(element, Table):
+            return element
+    raise AssertionError(f"Table after heading {heading!r} not found")
+
+
+def _export_seeded_full_excel(tmp_path: Path, name: str) -> Any:
+    session_factory = make_session_factory(tmp_path / f"{name}.db")
+    actor_id = seed_actor(session_factory)
+    id_store_path = tmp_path / f"{name}_ids.json"
+    with session_factory() as session:
+        seed(session, clear=True, id_store_path=id_store_path)
+
+    export_path = tmp_path / f"{name}.xlsx"
+    ExchangeService(session_factory=session_factory).export_excel(
+        export_path,
+        exported_by="exchange_admin",
+        actor_id=actor_id,
+    )
+    return load_workbook(export_path, data_only=True)
+
+
+def test_export_analytics_pdf_numeric_tables_center_values_and_fit_long_names(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Числовые колонки PDF-таблиц должны отделяться от длинных имён."""
+    session_factory = make_session_factory(tmp_path / "pdf_table_alignment.db")
+    monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
+    captured = _capture_pdf_elements(monkeypatch)
+    with session_factory() as session:
+        seed(session, clear=True, id_store_path=tmp_path / "pdf_table_alignment.ids.json")
+
+    analytics_service = AnalyticsService(session_factory=session_factory)
+    service = ReportingService(analytics_service=analytics_service, session_factory=session_factory)
+    service.export_analytics_pdf(
+        request=AnalyticsSearchRequest(),
+        file_path=tmp_path / "analytics_tables.pdf",
+        actor_id=None,
+    )
+
+    dept_table = _find_table_after_heading(captured["elements"], "Сводка по отделениям")
+    micro_table = _find_table_after_heading(captured["elements"], "Топ микроорганизмов")
+
+    assert dept_table._cellStyles[1][1].alignment == "CENTER"  # noqa: SLF001
+    assert micro_table._cellStyles[1][1].alignment == "CENTER"  # noqa: SLF001
+    micro_width_total = sum(micro_table._argW)  # noqa: SLF001
+    micro_width_ratios = [width / micro_width_total for width in micro_table._argW]  # noqa: SLF001
+    assert micro_width_ratios == pytest.approx([0.55, 0.20, 0.25])
+
+
+def test_export_excel_resolves_microorganism_id_to_name(tmp_path: Path) -> None:
+    """Excel-экспорт должен содержать колонку с названием микроорганизма."""
+    workbook = _export_seeded_full_excel(tmp_path, "exchange_microorganism")
+    worksheet = workbook["Лаб. выделения"]
+
+    headers = [worksheet.cell(1, column).value for column in range(1, worksheet.max_column + 1)]
+    assert "Микроорганизм" in headers
+    name_column = headers.index("Микроорганизм") + 1
+    assert worksheet.cell(2, name_column).value
+
+
+def test_export_excel_preserves_machine_qc_status(tmp_path: Path) -> None:
+    """Поле qc_status должно оставаться machine value для round-trip."""
+    workbook = _export_seeded_full_excel(tmp_path, "exchange_qc_status")
+    worksheet = workbook["Лабораторные пробы"]
+
+    headers = [worksheet.cell(1, column).value for column in range(1, worksheet.max_column + 1)]
+    qc_column = headers.index("Статус QC") + 1
+    values = {
+        worksheet.cell(row, qc_column).value
+        for row in range(2, worksheet.max_row + 1)
+    }
+
+    assert "валидный" not in values
+    assert "valid" in values or all(value is None for value in values)
+
+
+def test_export_excel_preserves_machine_growth_flag(tmp_path: Path) -> None:
+    """growth_flag должен оставаться 0/1 для round-trip."""
+    workbook = _export_seeded_full_excel(tmp_path, "exchange_growth_flag")
+    worksheet = workbook["Лабораторные пробы"]
+
+    headers = [worksheet.cell(1, column).value for column in range(1, worksheet.max_column + 1)]
+    growth_column = headers.index("Результат роста") + 1
+    values = {
+        worksheet.cell(row, growth_column).value
+        for row in range(2, worksheet.max_row + 1)
+    }
+
+    assert "Рост выявлен" not in values
+    assert "Рост не выявлен" not in values
+    assert values <= {0, 1, None}
+
+
+def test_export_excel_form100_data_sheet_absent(tmp_path: Path) -> None:
+    """Лист form100_data должен отсутствовать в human-friendly Excel."""
+    workbook = _export_seeded_full_excel(tmp_path, "exchange_form100_data")
+
+    assert "Форма 100 данные" not in workbook.sheetnames
 
 
 def test_export_report_saves_artifact_and_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -294,6 +404,7 @@ def test_export_analytics_pdf_with_resistance_and_heatmap_data(
     assert "ECO - E.coli" in text
     assert "AMP - Ампициллин" in text
     assert "R:1 I:0 S:0" in text
+    assert "Рост выявлен" in text
 
 
 def test_export_analytics_xlsx_has_all_sheets(

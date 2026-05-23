@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
+import inspect
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -30,6 +32,25 @@ def test_generate_sample_exports_importable() -> None:
 
     assert hasattr(module, "run_exports")
     assert hasattr(module, "main")
+
+
+def test_seed_stats_has_form100_field() -> None:
+    """SeedStats должен содержать поле form100_cards."""
+    from scripts.seed_demo_data import SeedStats
+
+    fields = [field.name for field in dataclasses.fields(SeedStats)]
+    assert "form100_cards" in fields
+
+
+def test_seed_demo_uses_russian_patient_categories() -> None:
+    """Демо-seed должен использовать доменные категории пациентов."""
+    import scripts.seed_demo_data as seed_mod
+    from app.domain.constants import MilitaryCategory
+
+    source = inspect.getsource(seed_mod)
+    assert any(value in source for value in MilitaryCategory.values())
+    assert '"hospital"' not in source
+    assert '"outpatient"' not in source
 
 
 def test_resolve_export_actor_creates_demo_admin_for_empty_db(tmp_path: Path) -> None:

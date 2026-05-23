@@ -1,45 +1,68 @@
-# Сессия 2026-05-23 - генератор всех demo-выгрузок
+# Сессия 2026-05-23 - final export cosmetics
 
 ## Текущее состояние
 
 - Репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
 - Ветка: `main`.
-- Задача: реализовать и проверить `scripts/generate_sample_exports.py` по постановке `CODEX_GENERATE_ALL_EXPORTS.md`.
+- Задача: финальные косметические правки PDF-таблиц Analytics и заголовка Form100 в Excel.
 - Статус: реализовано и проверено локально; коммит и push не выполнялись.
 
 ## Изменения
 
-- `scripts/generate_sample_exports.py`
-  - Добавлен CLI: `python scripts/generate_sample_exports.py [--skip-seed] [--out-dir PATH]`.
-  - По умолчанию засевает demo-данные через `scripts.seed_demo_data.seed(clear=True)`.
-  - Генерирует Analytics PDF/XLSX, полный Exchange XLSX/ZIP/JSON, Form100 package ZIP, CSV и PDF по таблицам `lab_sample`, `sanitary_sample`, `patients`, `emr_case`.
-  - Сохраняет файлы в `docs/sample_exports/` по умолчанию и печатает итоговую таблицу статусов.
-  - Если нет Form100-карточек, `form100_card.pdf` получает статус `SKIP`.
-  - Для чистой demo-БД создаёт служебного `demo-admin`, если активного администратора ещё нет.
-- `tests/unit/test_generate_sample_exports_script.py`
-  - Добавлен smoke-тест импорта скрипта.
-  - Добавлена проверка bootstrap admin actor в пустой БД.
-- `.gitignore`
-  - Добавлено исключение `docs/sample_exports/`.
-- `README.md`
-  - Добавлен раздел «Демо-выгрузки».
-- `docs/progress_report.md`
-  - Добавлена запись о выполненной задаче.
+- `app/application/services/reporting_service.py`
+  - В таблице `Топ микроорганизмов` уменьшена первая колонка и расширена колонка доли (`55/20/25`).
+  - Для числовых колонок `Топ микроорганизмов` добавлен `ALIGN=CENTER`.
+  - Таблица `Сводка по отделениям` проверена: `ALIGN=CENTER` для числовых колонок уже был добавлен ранее.
+- `app/application/services/exchange_service.py`
+  - Для `EXCEL_COLUMN_HEADERS["form100"]` добавлен заголовок `created_by_name`: `Создал (имя)`.
+- `tests/integration/test_reporting_service_artifacts.py`
+  - Добавлена регрессия на выравнивание числовых колонок и ширины `Топ микроорганизмов`.
+- `tests/integration/test_full_export_form100_ismp.py`
+  - Добавлена проверка, что лист `Форма 100` не содержит сырой заголовок `created_by_name`.
 
 ## Проверки
 
-- `python -m ruff check app tests scripts\generate_sample_exports.py` - pass.
-- `python -m mypy scripts\generate_sample_exports.py tests\unit\test_generate_sample_exports_script.py` - pass.
-- `python -m pytest tests\unit\test_generate_sample_exports_script.py -q` - `2 passed`, `1 warning`.
-- `python scripts\check_mojibake.py` - pass.
-- `git diff --check` - pass.
-- Runtime-smoke на изолированной БД:
-  - `python -m alembic upgrade head` при `EPIDCONTROL_DATA_DIR=tmp_run\sample_exports_smoke4` и абсолютном `EPIDCONTROL_DB_FILE`.
-  - `python scripts\generate_sample_exports.py --out-dir tmp\sample_exports_smoke4\exports` - `14 OK / 1 SKIP / 0 ERROR`.
-  - `python scripts\generate_sample_exports.py --skip-seed --out-dir tmp\sample_exports_smoke3\exports_skip` - `14 OK / 1 SKIP / 0 ERROR`.
+- RED targeted: `python -m pytest tests\integration\test_reporting_service_artifacts.py::test_export_analytics_pdf_numeric_tables_center_values_and_fit_long_names tests\integration\test_full_export_form100_ismp.py::test_full_xlsx_includes_human_friendly_ismp_and_form100_sheets -q` - `2 failed` на старом поведении.
+- GREEN targeted: та же команда - `2 passed`, `1 warning`.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`391 source files`).
+- `python -m pytest -q` - `832 passed`, `1 warning`.
+- `python scripts\generate_sample_exports.py --skip-seed` - `15 OK / 0 SKIP / 0 ERROR`.
+- PyMuPDF render-smoke: страницы 2 и 3 `docs/sample_exports/analytics.pdf` сохранены в `tmp/pdfs/analytics_page_2.png` и `tmp/pdfs/analytics_page_3.png`, визуально проверены.
+- openpyxl smoke: в `docs/sample_exports/full_export.xlsx` лист `Форма 100` содержит `Создал (имя)` и не содержит `created_by_name`.
+
+## Предыдущая задача: safe import round-trip
+
+- `app/application/services/exchange_service.py`
+  - `_apply_enum_labels` убран из `export_excel`.
+  - `_apply_enum_labels` убран из `export_csv`.
+  - JSON-экспорт оставлен machine-oriented; вызова `_apply_enum_labels` там не было.
+  - `export_pdf` продолжает применять `_apply_enum_labels`, потому что PDF не импортируется обратно и должен быть человекочитаемым.
+- `app/application/services/reporting_service.py`
+  - `export_analytics_pdf` применяет `_apply_enum_labels` локально для отображения `growth_flag`.
+  - В таблицу проб Analytics PDF добавлена колонка `Результат роста`.
+- `scripts/test_import_roundtrip.py`
+  - Новый smoke-скрипт импортирует собственные `full_export.xlsx`, `full_export.zip`, CSV и JSON из `docs/sample_exports/`.
+  - Скрипт сам находит активного admin actor или создаёт `demo-admin`.
+- `tests/integration/test_exchange_service_roundtrip.py`
+  - Новый интеграционный набор проверяет Excel/CSV round-trip и machine enum values.
+- Обновлены старые тесты Excel/CSV, чтобы ожидать machine values в машинных форматах.
+
+## Проверки
+
+- RED: `python -m pytest tests\integration\test_exchange_service_roundtrip.py -q` - `4 failed`; воспроизведены `CHECK constraint failed: ck_emr_diagnosis_` и ошибки `lab_sample`.
+- GREEN targeted: round-trip и обновлённые Excel/CSV/PDF проверки - `8 passed`.
+- `python scripts\seed_demo_data.py --clear` - pass.
+- `python scripts\seed_demo_data.py` - pass, `Form100 карточек: 1`.
+- `python scripts\generate_sample_exports.py --skip-seed` - `15 OK / 0 SKIP / 0 ERROR`.
+- `python scripts\test_import_roundtrip.py` - `7 PASS / 0 FAIL`.
+- Structural smoke - pass: Excel/CSV/JSON содержат machine values, PDF содержит русские enum labels, `analytics.pdf` имеет 7 страниц.
+- PyMuPDF render-smoke - pass: страница 7 `analytics.pdf` визуально проверена.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests scripts\test_import_roundtrip.py` - pass (`392 source files`).
+- `python -m pytest -q` - `831 passed`, `1 warning`.
 
 ## Примечания
 
-- `form100_card.pdf` был `SKIP`, потому что `seed_demo_data.py` не создаёт Form100-карточки. `form100_package.zip` при этом создаётся корректно.
-- Временные smoke-артефакты находятся в игнорируемых `tmp/` и `tmp_run/`.
-- Случайно созданный корневой `app.db` от некорректного первого smoke-запуска удалён.
+- Сгенерированные файлы лежат в `docs/sample_exports/`; каталог игнорируется git.
+- Рендеры текущей визуальной проверки лежат в `tmp/pdfs/analytics_page_2.png` и `tmp/pdfs/analytics_page_3.png`.

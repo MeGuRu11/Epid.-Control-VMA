@@ -148,7 +148,7 @@ def test_lab_sample_csv_has_material_type_name_column(tmp_path: Path) -> None:
     assert rows[0]["Тип материала"] == "BLD — Кровь"
 
 
-def test_lab_sample_csv_growth_flag_header_is_rost(tmp_path: Path) -> None:
+def test_lab_sample_csv_growth_flag_header_is_readable_result(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "lab_growth_flag.db")
     actor_id = seed_actor(session_factory)
     _seed_lab_sample(session_factory, actor_id=actor_id)
@@ -156,9 +156,11 @@ def test_lab_sample_csv_growth_flag_header_is_rost(tmp_path: Path) -> None:
 
     ExchangeService(session_factory=session_factory).export_csv(csv_path, "lab_sample", actor_id=actor_id)
 
-    headers, _rows = _read_csv(csv_path)
-    assert "Рост" in headers
+    headers, rows = _read_csv(csv_path)
+    assert "Результат роста" in headers
+    assert "Рост" not in headers
     assert "Рост (0/1)" not in headers
+    assert rows[0]["Результат роста"] == "1"
 
 
 def test_sanitary_sample_csv_has_department_name_column(tmp_path: Path) -> None:

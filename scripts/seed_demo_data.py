@@ -16,6 +16,7 @@ import argparse
 import json
 import random
 import sys
+import uuid as _uuid
 from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass
@@ -29,7 +30,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import DATA_DIR, DB_FILE  # noqa: E402
-from app.domain.constants import IsmpType  # noqa: E402
+from app.domain.constants import IsmpType, MilitaryCategory  # noqa: E402
 from app.infrastructure.db.models_sqlalchemy import (  # noqa: E402
     Department,
     EmrAntibioticCourse,
@@ -37,6 +38,8 @@ from app.infrastructure.db.models_sqlalchemy import (  # noqa: E402
     EmrCaseVersion,
     EmrDiagnosis,
     EmrIntervention,
+    Form100DataV2,
+    Form100V2,
     IsmpCase,
     LabAbxSusceptibility,
     LabMicrobeIsolation,
@@ -65,6 +68,7 @@ class SeedStats:
     resistance_anchor_samples: int
     ismp_cases: int
     sanitary_samples: int
+    form100_cards: int
 
 
 @dataclass(frozen=True)
@@ -111,6 +115,13 @@ _PATIENTS = [
         "gender": "M",
     },
 ]
+
+_DEMO_CATEGORIES = (
+    MilitaryCategory.OFFICER.value,  # "офицер(прапорщик)"
+    MilitaryCategory.SERGEANT.value,  # "сержант(старшина)"
+    MilitaryCategory.PRIVATE.value,  # "рядовой(матрос)"
+    MilitaryCategory.CIVILIAN_STAFF.value,  # "гражданский персонал ВС РФ"
+)
 
 _DEPARTMENT_NAMES = ("Реанимация (ОРИТ)", "Хирургия", "Терапия", "Неврология")
 
@@ -249,6 +260,9 @@ def _clear_data(session: Session, *, id_store_path: Path | None = None) -> None:
     demo_case_ids = select(EmrCase.id).where(EmrCase.hospital_case_no.like("DEMO-%"))
     demo_version_ids = select(EmrCaseVersion.id).where(EmrCaseVersion.emr_case_id.in_(demo_case_ids))
 
+    session.execute(delete(Form100DataV2))
+    session.execute(delete(Form100V2))
+
     session.execute(delete(SanAbxSusceptibility).where(SanAbxSusceptibility.sanitary_sample_id.in_(demo_sanitary_ids)))
     session.execute(delete(SanPhagePanelResult).where(SanPhagePanelResult.sanitary_sample_id.in_(demo_sanitary_ids)))
     session.execute(delete(SanMicrobeIsolation).where(SanMicrobeIsolation.sanitary_sample_id.in_(demo_sanitary_ids)))
@@ -359,7 +373,7 @@ def _create_patients(session: Session) -> list[Patient]:
             full_name=full_name,
             dob=_parse_date(item["birth_date"]),
             sex=item["gender"],
-            category="hospital" if index % 2 == 0 else "outpatient",
+            category=_DEMO_CATEGORIES[index % len(_DEMO_CATEGORIES)],
         )
         session.add(patient)
         patients.append(patient)
@@ -592,6 +606,62 @@ def _create_ismp_cases(session: Session, *, demo_cases: Sequence[DemoCase], rng:
     return min(4, len(eligible))
 
 
+def _create_demo_form100(session: Session, patient: Patient, run_tag: str) -> Form100V2:
+    """Создать одну демо-карточку Form100 для тестового экспорта."""
+    card_id = str(_uuid.uuid4())
+    now = datetime.now(UTC)
+    id_tag = f"DEMO-{run_tag[:8]}"
+    birth_date = patient.dob
+    main_payload = {
+        "main_full_name": patient.full_name,
+        "main_birth_date": str(birth_date or ""),
+        "main_unit": "Демо-часть 000",
+        "main_id_tag": id_tag,
+        "main_rank": "рядовой",
+        "main_diagnosis": "Z00.0 Общее медицинское обследование",
+    }
+    main_json = json.dumps(main_payload, ensure_ascii=False)
+
+    form = Form100V2(
+        id=card_id,
+        legacy_card_id=card_id,
+        created_at=now,
+        created_by="demo",
+        updated_at=now,
+        updated_by="demo",
+        status="DRAFT",
+        version=1,
+        is_archived=False,
+        main_full_name=patient.full_name,
+        main_unit="Демо-часть 000",
+        main_id_tag=id_tag,
+        main_diagnosis="Z00.0 Общее медицинское обследование",
+        birth_date=birth_date,
+    )
+    session.add(form)
+    session.flush()
+
+    data = Form100DataV2(
+        id=str(_uuid.uuid4()),
+        form100_id=card_id,
+        stub_json="{}",
+        main_json=main_json,
+        lesion_json="{}",
+        san_loss_json="{}",
+        mp_json="{}",
+        bottom_json="{}",
+        flags_json="{}",
+        bodymap_gender="M",
+        bodymap_annotations_json="[]",
+        bodymap_tissue_types_json="[]",
+        raw_payload_json=json.dumps({"main": main_payload}, ensure_ascii=False),
+    )
+    session.add(data)
+    session.flush()
+
+    return form
+
+
 def _create_sanitary_samples(
     session: Session,
     *,
@@ -681,6 +751,7 @@ def seed(session: Session, *, clear: bool = False, id_store_path: Path | None = 
     lab_samples += resistance_anchor_samples
     positive_lab_samples += resistance_anchor_samples
     ismp_cases = _create_ismp_cases(session, demo_cases=demo_cases, rng=rng)
+    _create_demo_form100(session=session, patient=patients[0], run_tag=run_tag)
     sanitary_samples = _create_sanitary_samples(
         session,
         departments=departments,
@@ -699,21 +770,24 @@ def seed(session: Session, *, clear: bool = False, id_store_path: Path | None = 
         resistance_anchor_samples=resistance_anchor_samples,
         ismp_cases=ismp_cases,
         sanitary_samples=sanitary_samples,
+        form100_cards=1,
     )
 
 
 def _format_stats(stats: SeedStats) -> str:
-    return (
-        "OK Seed завершён:\n"
-        f"  Пациентов: {stats.patients}\n"
-        f"  ЭМЗ / госпитализаций: {stats.emr_cases}\n"
+    lines = [
+        "OK Seed завершён:",
+        f"  Пациентов: {stats.patients}",
+        f"  ЭМЗ / госпитализаций: {stats.emr_cases}",
         f"  Лабораторных проб: {stats.lab_samples} "
-        f"(из них положительных: {stats.positive_lab_samples})\n"
+        f"(из них положительных: {stats.positive_lab_samples})",
         f"  Resistance anchors: {stats.resistance_anchor_samples} доп. проб "
-        f"({len(_RESISTANCE_ANCHORS)} пары микроорганизм×антибиотик)\n"
-        f"  ИСМП случаев: {stats.ismp_cases}\n"
-        f"  Санитарных проб: {stats.sanitary_samples}"
-    )
+        f"({len(_RESISTANCE_ANCHORS)} пары микроорганизм×антибиотик)",
+        f"  ИСМП случаев: {stats.ismp_cases}",
+        f"  Санитарных проб: {stats.sanitary_samples}",
+        f"  Form100 карточек: {stats.form100_cards}",
+    ]
+    return "\n".join(lines)
 
 
 def _configure_stdout() -> None:

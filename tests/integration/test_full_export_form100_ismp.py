@@ -7,7 +7,11 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from app.application.services.exchange_service import EXCEL_SHEET_TITLES, ExchangeService
+from app.application.services.exchange_service import (
+    EXCEL_COLUMN_HEADERS,
+    EXCEL_SHEET_TITLES,
+    ExchangeService,
+)
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.infrastructure.db import models_sqlalchemy as models
 from tests.integration.test_exchange_service_import_reports import make_session_factory, seed_actor
@@ -71,7 +75,7 @@ def test_full_json_includes_ismp_and_form100_with_nested_json(tmp_path: Path) ->
     assert form100_data["main_json"]["main_full_name"] == "Ivan Ivanov"
 
 
-def test_full_xlsx_includes_ismp_and_form100_sheets(tmp_path: Path) -> None:
+def test_full_xlsx_includes_human_friendly_ismp_and_form100_sheets(tmp_path: Path) -> None:
     session_factory = make_session_factory(tmp_path / "full_xlsx_form100_ismp.db")
     actor_id = seed_actor(session_factory)
     _seed_ismp_and_form100(session_factory, actor_id)
@@ -81,9 +85,16 @@ def test_full_xlsx_includes_ismp_and_form100_sheets(tmp_path: Path) -> None:
     result = service.export_excel(xlsx_path, exported_by="exchange_admin", actor_id=actor_id)
 
     workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
-    for table_name in ("ref_ismp_abbreviations", "ismp_case", "form100", "form100_data"):
+    for table_name in ("ref_ismp_abbreviations", "ismp_case", "form100"):
         assert result["counts"][table_name] == 1
         assert EXCEL_SHEET_TITLES[table_name] in workbook.sheetnames
+    assert "form100_data" not in result["counts"]
+    assert EXCEL_SHEET_TITLES["form100_data"] not in workbook.sheetnames
+
+    form100_sheet = workbook[EXCEL_SHEET_TITLES["form100"]]
+    headers = [cell.value for cell in next(form100_sheet.iter_rows(min_row=1, max_row=1))]
+    assert "created_by_name" not in headers
+    assert EXCEL_COLUMN_HEADERS["form100"]["created_by_name"] in headers
 
 
 def test_full_zip_manifest_notes_form100_pdf_exported_separately(tmp_path: Path) -> None:
