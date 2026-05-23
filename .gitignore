@@ -48,6 +48,7 @@ data/
 *.log
 
 # Local temporary artifacts
+docs/sample_exports/
 tmp/
 tmp_run/
 _pytest_tmp/

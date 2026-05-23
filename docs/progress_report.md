@@ -32,6 +32,28 @@ Desktop-приложение для стационара: ЭМЗ пациент�
 
 ## Журнал работ
 
+### 2026-05-23 — feat: генератор всех demo-выгрузок
+
+- Добавлен `scripts/generate_sample_exports.py`: засевает demo-данные через `seed_demo_data.seed(clear=True)`, вызывает все форматы выгрузки Analytics, Exchange, CSV/PDF по таблицам и Form100 ZIP, сохраняет файлы в `docs/sample_exports/` по умолчанию и печатает итоговую таблицу файл → размер → статус.
+- Скрипт поддерживает `--skip-seed` и `--out-dir PATH`.
+- Для чистой demo-БД генератор сам подготавливает служебного `demo-admin`, если ещё нет активного администратора, чтобы audit/report/export FK и проверки прав проходили корректно.
+- Если в БД нет Form100, `form100_card.pdf` помечается как `SKIP`; остальные выгрузки продолжают выполняться.
+- `docs/sample_exports/` добавлен в `.gitignore`.
+- В `README.md` добавлен раздел «Демо-выгрузки».
+- Добавлен smoke-тест импорта скрипта и unit-проверка подготовки demo-admin actor.
+
+### Проверки
+
+- RED: `python -m pytest tests\unit\test_generate_sample_exports_script.py -q` — падал на отсутствии `scripts/generate_sample_exports.py`.
+- RED: `python -m pytest tests\unit\test_generate_sample_exports_script.py -q` — после runtime-smoke добавлен тест actor bootstrap, падал на отсутствии `_resolve_export_actor_id`.
+- GREEN: `python -m ruff check app tests scripts\generate_sample_exports.py` — pass.
+- GREEN: `python -m mypy scripts\generate_sample_exports.py tests\unit\test_generate_sample_exports_script.py` — pass.
+- GREEN: `python -m pytest tests\unit\test_generate_sample_exports_script.py -q` — `2 passed`, `1 warning`.
+- `python scripts\check_mojibake.py` — pass.
+- `git diff --check` — pass.
+- Runtime-smoke в изолированной БД `tmp_run/sample_exports_smoke4`: `python scripts\generate_sample_exports.py --out-dir tmp\sample_exports_smoke4\exports` — `14 OK / 1 SKIP / 0 ERROR`; `form100_card.pdf` ожидаемо `SKIP`, потому что demo-seed не создаёт Form100.
+- Runtime-smoke `--skip-seed`: `python scripts\generate_sample_exports.py --skip-seed --out-dir tmp\sample_exports_smoke3\exports_skip` — `14 OK / 1 SKIP / 0 ERROR`.
+
 ### 2026-05-08 — fix: P0.5 относительные POSIX-пути в export manifest и metadata
 
 - Добавлен интеграционный инвариант `test_manifest_no_pii_paths.py`: exchange ZIP manifest, Form100 ZIP manifest/payload и `last_backup.json` не содержат абсолютных Windows-путей, backslash-разделителей и `manifest.root` кроме допустимого `.`.
