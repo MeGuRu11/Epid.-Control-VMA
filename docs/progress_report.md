@@ -7800,3 +7800,30 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m ruff check app tests` - pass.
 - `python -m mypy app tests` - pass (`389 source files`).
 - `python -m pytest -q` - pass (`809 passed`, `1 warning`).
+
+---
+
+## 2026-05-26 - fix: CI mypy None guards and S4.6 automated audit
+
+**Статус:** реализовано и проверено локально
+
+- Исправлены CI-only mypy ошибки на более строгой версии type checker:
+  - `EmzForm._scroll_to_section()` теперь проверяет `QScrollArea.widget()` на `None` перед `mapTo()`.
+  - `tests/unit/test_row_delete_button.py` сохраняет `QTableWidget.item()` в локальные переменные и проверяет `None` перед `.text()`.
+  - `tests/unit/test_emz_form_intervention_rows.py` проверяет `box.layout()` и `horizontalHeaderItem()` перед использованием.
+- Начат S4.6 финальный аудит:
+  - создан `docs/audit_report_v1_1_0.md`;
+  - зафиксированы результаты автоматизированных проверок;
+  - отдельно отмечены невыполненные ручные UI/regression пункты и blocked artifact validation.
+
+### Проверки
+
+- Baseline до правок: `python -m mypy app tests` - pass локально (`397 source files`), что подтвердило различие локальной и CI-строгости.
+- `python -m ruff check app tests` - pass.
+- `python -m mypy app tests` - pass (`397 source files`).
+- `python -m pytest -q` - pass (`861 passed`, `3 warnings`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python -m alembic check` - pass, `No new upgrade operations detected`.
+- `python scripts/check_mojibake.py` - pass.
+- `python -m pytest --cov=app --cov-report=term-missing -q` - pass (`861 passed`, `3 warnings`, coverage `78%`).
