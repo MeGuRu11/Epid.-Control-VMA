@@ -5,12 +5,19 @@ from typing import cast
 
 from PySide6.QtWidgets import QComboBox, QDateEdit, QDateTimeEdit, QTableWidget
 
+from app.ui.emz.widgets.row_delete_button import RowDeleteButton
 from app.ui.widgets.table_utils import connect_combo_resize_on_content
 
 CreateComboFn = Callable[[], QComboBox]
 CreateDateEditFn = Callable[[], QDateEdit]
 CreateDateTimeEditFn = Callable[[], QDateTimeEdit]
 ResizeTableFn = Callable[[QTableWidget], None]
+
+
+def _ensure_row_delete_button(table: QTableWidget, row: int) -> None:
+    last_col = table.columnCount() - 1
+    if not isinstance(table.cellWidget(row, last_col), RowDeleteButton):
+        table.setCellWidget(row, last_col, RowDeleteButton(table))
 
 
 def setup_diagnosis_rows(
@@ -27,6 +34,7 @@ def setup_diagnosis_rows(
         icd_combo = create_icd_combo()
         table.setCellWidget(row, 1, icd_combo)
         connect_combo_resize_on_content(table, icd_combo, row)
+        _ensure_row_delete_button(table, row)
     resize_table(table)
 
 
@@ -45,6 +53,7 @@ def setup_abx_rows(
         abx_combo = create_abx_combo()
         table.setCellWidget(row, 2, abx_combo)
         connect_combo_resize_on_content(table, abx_combo, row)
+        _ensure_row_delete_button(table, row)
     resize_table(table)
 
 
@@ -64,6 +73,7 @@ def setup_intervention_rows(
             table.setCellWidget(row, 1, create_dt_cell())
         if not isinstance(table.cellWidget(row, 2), QDateTimeEdit):
             table.setCellWidget(row, 2, create_dt_cell())
+        _ensure_row_delete_button(table, row)
     resize_table(table)
 
 
@@ -81,6 +91,7 @@ def setup_ismp_rows(
             connect_combo_resize_on_content(table, type_combo, row)
         if not isinstance(table.cellWidget(row, 1), QDateEdit):
             table.setCellWidget(row, 1, create_date_cell())
+        _ensure_row_delete_button(table, row)
     resize_table(table)
 
 
@@ -93,7 +104,7 @@ def refresh_diagnosis_reference_rows(
     for row in range(table.rowCount()):
         type_widget = table.cellWidget(row, 0)
         type_combo = cast(QComboBox, type_widget) if isinstance(type_widget, QComboBox) else None
-        selected_type = type_combo.currentText() if type_combo else "Поступление"
+        selected_type = type_combo.currentText() if type_combo else ""
         new_type_combo = create_type_combo()
         new_type_combo.setCurrentText(selected_type)
         table.setCellWidget(row, 0, new_type_combo)
@@ -109,6 +120,7 @@ def refresh_diagnosis_reference_rows(
                 new_icd_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 1, new_icd_combo)
         connect_combo_resize_on_content(table, new_icd_combo, row)
+        _ensure_row_delete_button(table, row)
 
 
 def refresh_abx_reference_rows(
@@ -127,6 +139,7 @@ def refresh_abx_reference_rows(
                 new_abx_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 2, new_abx_combo)
         connect_combo_resize_on_content(table, new_abx_combo, row)
+        _ensure_row_delete_button(table, row)
 
 
 def refresh_ismp_reference_rows(
@@ -145,4 +158,4 @@ def refresh_ismp_reference_rows(
                 new_type_combo.setCurrentIndex(idx)
         table.setCellWidget(row, 0, new_type_combo)
         connect_combo_resize_on_content(table, new_type_combo, row)
-
+        _ensure_row_delete_button(table, row)

@@ -30,6 +30,9 @@ class _FakeComboBox:
         self.max_visible_items: int | None = None
         self.object_name = ""
         self.popup_view = _FakePopupView()
+        self.properties: dict[str, object] = {}
+        self.currentTextChanged = _FakeSignal()
+        self._style = _FakeStyle()
 
     def setObjectName(self, value: str) -> None:  # noqa: N802
         self.object_name = value
@@ -65,9 +68,25 @@ class _FakeComboBox:
 
     def setCurrentIndex(self, idx: int) -> None:  # noqa: N802
         self.current_index = idx
+        if 0 <= idx < len(self.items):
+            self.current_text = self.items[idx][0]
+        self.currentTextChanged.emit(self.current_text)
 
     def setCurrentText(self, value: str) -> None:  # noqa: N802
         self.current_text = value
+        self.currentTextChanged.emit(value)
+
+    def currentText(self) -> str:  # noqa: N802
+        return self.current_text
+
+    def setProperty(self, name: str, value: object) -> None:  # noqa: N802
+        self.properties[name] = value
+
+    def property(self, name: str) -> object | None:
+        return self.properties.get(name)
+
+    def style(self) -> _FakeStyle:
+        return self._style
 
     def setToolTip(self, value: str) -> None:  # noqa: N802
         self.tooltip = value
@@ -88,6 +107,26 @@ class _FakePopupView:
 
     def setMaximumHeight(self, value: int) -> None:  # noqa: N802
         self.maximum_height = value
+
+
+class _FakeSignal:
+    def __init__(self) -> None:
+        self.callbacks: list[Callable[[str], None]] = []
+
+    def connect(self, callback: Callable[[str], None]) -> None:
+        self.callbacks.append(callback)
+
+    def emit(self, value: str) -> None:
+        for callback in self.callbacks:
+            callback(value)
+
+
+class _FakeStyle:
+    def unpolish(self, _widget: object) -> None:
+        return
+
+    def polish(self, _widget: object) -> None:
+        return
 
 
 class _FakeDateTimeEdit:
@@ -170,20 +209,47 @@ class _Ismp:
     description: str | None = None
 
 
-def test_create_diag_type_combo(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QComboBox", _FakeComboBox)
-    combo = cast(_FakeComboBox, factories.create_diag_type_combo())
-    assert len(combo.items) == 4
-    assert all(label for label, _ in combo.items)
+def test_wide_popup_combo_sets_view_width_to_content(qapp) -> None:
+    combo = factories.WidePopupComboBox()
+    combo.addItems(["short", "Очень длинное значение для проверки ширины popup"])
+    combo.resize(60, combo.sizeHint().height())
+    combo.show()
+    qapp.processEvents()
+
+    combo.showPopup()
+    qapp.processEvents()
+
+    expected_width = max(
+        combo.width(),
+        factories.WidePopupComboBox.MIN_POPUP_WIDTH,
+        combo.view().sizeHintForColumn(combo.modelColumn()) + 40,
+    )
+    assert combo.view().minimumWidth() == expected_width
+    combo.hidePopup()
+    combo.close()
 
 
-def test_create_intervention_type_combo(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QComboBox", _FakeComboBox)
-    combo = cast(_FakeComboBox, factories.create_intervention_type_combo())
-    assert combo.editable is True
-    assert combo.current_text == ""
-    assert combo.tooltip != ""
-    assert len(combo.items) == 6
+def test_create_diag_type_combo(qapp) -> None:
+    combo = factories.create_diag_type_combo()
+    try:
+        assert isinstance(combo, factories.WidePopupComboBox)
+        assert combo.objectName() == "emzDiagTypeCombo"
+        assert combo.count() == 5
+        assert combo.itemText(0) == ""
+    finally:
+        combo.close()
+
+
+def test_create_intervention_type_combo(qapp) -> None:
+    combo = factories.create_intervention_type_combo()
+    try:
+        assert isinstance(combo, factories.WidePopupComboBox)
+        assert combo.isEditable() is True
+        assert combo.currentText() == ""
+        assert combo.toolTip() != ""
+        assert combo.count() == 6
+    finally:
+        combo.close()
 
 
 def test_create_outcome_type_combo_uses_placeholder_and_stable_codes(monkeypatch) -> None:
@@ -207,7 +273,7 @@ def test_create_datetime_cell(monkeypatch) -> None:
     assert widget.display_format == "dd.MM.yyyy HH:mm"
     assert widget.minimum_dt is marker
     assert widget.current_dt is marker
-    assert widget.special_text == ""
+    assert widget.special_text == "ДД.ММ.ГГГГ ЧЧ:ММ"
     assert widget.keyboard_tracking is True
     assert widget.current_section is not None
 
@@ -220,29 +286,30 @@ def test_create_date_cell(monkeypatch) -> None:
     assert widget.display_format == "dd.MM.yyyy"
     assert widget.minimum_date is marker
     assert widget.current_date is marker
-    assert widget.special_text == ""
+    assert widget.special_text == "ДД.ММ.ГГГГ"
     assert widget.current_section is not None
 
 
-def test_create_icd_combo_and_wire(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QComboBox", _FakeComboBox)
+def test_create_icd_combo_and_wire(qapp) -> None:
     wired: list[object] = []
 
     def _wire(combo: QComboBox) -> None:
         wired.append(combo)
 
-    combo = cast(
-        _FakeComboBox,
-        factories.create_icd_combo(
-            icd_items=[_Icd(code="A00", title="Cholera")],
-            wire_search=cast(Callable[[QComboBox], None], _wire),
-        ),
+    combo = factories.create_icd_combo(
+        icd_items=[_Icd(code="A00", title="Cholera")],
+        wire_search=cast(Callable[[QComboBox], None], _wire),
     )
-    assert combo.editable is True
-    assert combo.insert_policy == _InsertPolicy.NoInsert
-    assert combo.items[0][1] is None
-    assert combo.items[1] == ("A00 - Cholera", "A00")
-    assert wired == [combo]
+    try:
+        assert isinstance(combo, factories.WidePopupComboBox)
+        assert combo.isEditable() is True
+        assert combo.insertPolicy() == QComboBox.InsertPolicy.NoInsert
+        assert combo.itemData(0) is None
+        assert combo.itemText(1) == "A00 - Cholera"
+        assert combo.itemData(1) == "A00"
+        assert wired == [combo]
+    finally:
+        combo.close()
 
 
 def test_populate_icd_combo_restores_selection_and_edit_text(monkeypatch) -> None:
@@ -311,16 +378,16 @@ def test_create_abx_combo_limits_real_popup_container_height(qapp) -> None:
     combo.close()
 
 
-def test_create_ismp_type_combo_sets_tooltip(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QComboBox", _FakeComboBox)
-    combo = cast(
-        _FakeComboBox,
-        factories.create_ismp_type_combo(
-            abbreviations=[_Ismp(code="VAP", name="Pneumonia", description=None)],
-            tooltip_role=42,
-        ),
+def test_create_ismp_type_combo_sets_tooltip(qapp) -> None:
+    combo = factories.create_ismp_type_combo(
+        abbreviations=[_Ismp(code="VAP", name="Pneumonia", description=None)],
+        tooltip_role=42,
     )
-    assert combo.items[0][1] is None
-    assert combo.items[1][0].startswith("VAP")
-    assert combo.items[1][1] == "VAP"
-    assert combo.item_data[(1, 42)] == "Pneumonia"
+    try:
+        assert isinstance(combo, factories.WidePopupComboBox)
+        assert combo.itemData(0) is None
+        assert combo.itemText(1).startswith("VAP")
+        assert combo.itemData(1) == "VAP"
+        assert combo.itemData(1, 42) == "Pneumonia"
+    finally:
+        combo.close()

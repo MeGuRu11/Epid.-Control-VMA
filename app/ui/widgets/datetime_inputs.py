@@ -22,7 +22,7 @@ def configure_optional_datetime_edit(
     widget.setDisplayFormat(DATETIME_DISPLAY_FORMAT)
     widget.setKeyboardTracking(True)
     widget.setMinimumDateTime(empty_datetime)
-    widget.setSpecialValueText("")
+    widget.setSpecialValueText("ДД.ММ.ГГГГ ЧЧ:ММ")
     widget.setDateTime(empty_datetime)
     widget.setCurrentSection(QDateTimeEdit.Section.DaySection)
     return widget
@@ -46,7 +46,7 @@ def configure_optional_date_edit(
     widget.setCalendarPopup(True)
     widget.setDisplayFormat(DATE_DISPLAY_FORMAT)
     widget.setMinimumDate(empty_date)
-    widget.setSpecialValueText("")
+    widget.setSpecialValueText("ДД.ММ.ГГГГ")
     widget.setDate(empty_date)
     widget.setCurrentSection(QDateEdit.Section.DaySection)
     return widget

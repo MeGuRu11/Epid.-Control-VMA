@@ -40,13 +40,22 @@ class _FakeDateEdit:
     pass
 
 
+class _FakeDeleteButton:
+    def __init__(self, table: QTableWidget) -> None:
+        self.table = table
+
+
 class _FakeTable:
-    def __init__(self, row_count: int = 0) -> None:
+    def __init__(self, row_count: int = 0, column_count: int = 7) -> None:
         self._row_count = row_count
+        self._column_count = column_count
         self.widgets: dict[tuple[int, int], object] = {}
 
     def rowCount(self) -> int:  # noqa: N802
         return self._row_count
+
+    def columnCount(self) -> int:  # noqa: N802
+        return self._column_count
 
     def cellWidget(self, row: int, col: int) -> object | None:  # noqa: N802
         return self.widgets.get((row, col))
@@ -56,6 +65,7 @@ class _FakeTable:
 
 
 def test_setup_diagnosis_rows_creates_combos_and_resizes(monkeypatch) -> None:
+    monkeypatch.setattr(setups, "RowDeleteButton", _FakeDeleteButton)
     connect_rows: list[int] = []
     resize_calls: list[int] = []
 
@@ -64,7 +74,7 @@ def test_setup_diagnosis_rows_creates_combos_and_resizes(monkeypatch) -> None:
 
     monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
-    table = cast(QTableWidget, _FakeTable(row_count=2))
+    table = cast(QTableWidget, _FakeTable(row_count=2, column_count=4))
 
     setups.setup_diagnosis_rows(
         table=table,
@@ -78,11 +88,14 @@ def test_setup_diagnosis_rows_creates_combos_and_resizes(monkeypatch) -> None:
     assert isinstance(fake.cellWidget(0, 1), _FakeCombo)
     assert isinstance(fake.cellWidget(1, 0), _FakeCombo)
     assert isinstance(fake.cellWidget(1, 1), _FakeCombo)
+    assert isinstance(fake.cellWidget(0, 3), _FakeDeleteButton)
+    assert isinstance(fake.cellWidget(1, 3), _FakeDeleteButton)
     assert connect_rows == [0, 0, 1, 1]
     assert len(resize_calls) == 1
 
 
 def test_setup_abx_rows_preserves_existing_datetime_widget(monkeypatch) -> None:
+    monkeypatch.setattr(setups, "RowDeleteButton", _FakeDeleteButton)
     monkeypatch.setattr(setups, "QDateTimeEdit", _FakeDateTimeEdit)
     connect_rows: list[int] = []
 
@@ -91,7 +104,7 @@ def test_setup_abx_rows_preserves_existing_datetime_widget(monkeypatch) -> None:
 
     monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
-    table = cast(QTableWidget, _FakeTable(row_count=1))
+    table = cast(QTableWidget, _FakeTable(row_count=1, column_count=6))
     existing_start = _FakeDateTimeEdit()
     cast(_FakeTable, table).setCellWidget(0, 0, existing_start)
 
@@ -106,6 +119,7 @@ def test_setup_abx_rows_preserves_existing_datetime_widget(monkeypatch) -> None:
     assert fake.cellWidget(0, 0) is existing_start
     assert isinstance(fake.cellWidget(0, 1), _FakeDateTimeEdit)
     assert isinstance(fake.cellWidget(0, 2), _FakeCombo)
+    assert isinstance(fake.cellWidget(0, 5), _FakeDeleteButton)
     assert connect_rows == [0]
 
 
@@ -135,6 +149,7 @@ def test_setup_abx_rows_creates_datetime_widgets_with_editable_time(qapp) -> Non
 
 
 def test_setup_intervention_rows_initializes_empty_existing_row(monkeypatch) -> None:
+    monkeypatch.setattr(setups, "RowDeleteButton", _FakeDeleteButton)
     connect_rows: list[int] = []
     resize_calls: list[int] = []
 
@@ -143,7 +158,7 @@ def test_setup_intervention_rows_initializes_empty_existing_row(monkeypatch) -> 
 
     monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
-    table = cast(QTableWidget, _FakeTable(row_count=1))
+    table = cast(QTableWidget, _FakeTable(row_count=1, column_count=7))
 
     setups.setup_intervention_rows(
         table=table,
@@ -156,11 +171,13 @@ def test_setup_intervention_rows_initializes_empty_existing_row(monkeypatch) -> 
     assert isinstance(fake.cellWidget(0, 0), _FakeCombo)
     assert isinstance(fake.cellWidget(0, 1), _FakeDateTimeEdit)
     assert isinstance(fake.cellWidget(0, 2), _FakeDateTimeEdit)
+    assert isinstance(fake.cellWidget(0, 6), _FakeDeleteButton)
     assert connect_rows == [0]
     assert resize_calls == [1]
 
 
 def test_refresh_diagnosis_reference_rows_preserves_selected_values(monkeypatch) -> None:
+    monkeypatch.setattr(setups, "RowDeleteButton", _FakeDeleteButton)
     monkeypatch.setattr(setups, "QComboBox", _FakeCombo)
     connect_rows: list[int] = []
 
@@ -169,7 +186,7 @@ def test_refresh_diagnosis_reference_rows_preserves_selected_values(monkeypatch)
 
     monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
-    table = cast(QTableWidget, _FakeTable(row_count=1))
+    table = cast(QTableWidget, _FakeTable(row_count=1, column_count=4))
     old_type_combo = _FakeCombo()
     old_type_combo.setCurrentText("Выписка")
     old_icd_combo = _FakeCombo({"A00": 1})
@@ -188,10 +205,12 @@ def test_refresh_diagnosis_reference_rows_preserves_selected_values(monkeypatch)
     new_icd_combo = cast(_FakeCombo, fake.cellWidget(0, 1))
     assert new_type_combo.current_text == "Выписка"
     assert new_icd_combo.current_index == 4
+    assert isinstance(fake.cellWidget(0, 3), _FakeDeleteButton)
     assert connect_rows == [0, 0]
 
 
 def test_refresh_abx_reference_rows_preserves_selected_value(monkeypatch) -> None:
+    monkeypatch.setattr(setups, "RowDeleteButton", _FakeDeleteButton)
     monkeypatch.setattr(setups, "QComboBox", _FakeCombo)
     connect_rows: list[int] = []
 
@@ -200,7 +219,7 @@ def test_refresh_abx_reference_rows_preserves_selected_value(monkeypatch) -> Non
 
     monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
-    table = cast(QTableWidget, _FakeTable(row_count=1))
+    table = cast(QTableWidget, _FakeTable(row_count=1, column_count=6))
     old_combo = _FakeCombo({10: 2})
     old_combo.setCurrentIndex(2)
     fake = cast(_FakeTable, table)
@@ -213,10 +232,12 @@ def test_refresh_abx_reference_rows_preserves_selected_value(monkeypatch) -> Non
 
     new_combo = cast(_FakeCombo, fake.cellWidget(0, 2))
     assert new_combo.current_index == 5
+    assert isinstance(fake.cellWidget(0, 5), _FakeDeleteButton)
     assert connect_rows == [0]
 
 
 def test_refresh_ismp_reference_rows_preserves_selected_value(monkeypatch) -> None:
+    monkeypatch.setattr(setups, "RowDeleteButton", _FakeDeleteButton)
     monkeypatch.setattr(setups, "QComboBox", _FakeCombo)
     connect_rows: list[int] = []
 
@@ -225,7 +246,7 @@ def test_refresh_ismp_reference_rows_preserves_selected_value(monkeypatch) -> No
 
     monkeypatch.setattr(setups, "connect_combo_resize_on_content", fake_connect)
 
-    table = cast(QTableWidget, _FakeTable(row_count=1))
+    table = cast(QTableWidget, _FakeTable(row_count=1, column_count=3))
     old_combo = _FakeCombo({"VAP": 3})
     old_combo.setCurrentIndex(3)
     fake = cast(_FakeTable, table)
@@ -238,4 +259,5 @@ def test_refresh_ismp_reference_rows_preserves_selected_value(monkeypatch) -> No
 
     new_combo = cast(_FakeCombo, fake.cellWidget(0, 0))
     assert new_combo.current_index == 1
+    assert isinstance(fake.cellWidget(0, 2), _FakeDeleteButton)
     assert connect_rows == [0]

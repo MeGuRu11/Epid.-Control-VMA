@@ -4,6 +4,8 @@ from collections.abc import Callable
 
 from PySide6.QtWidgets import QComboBox, QDateEdit, QDateTimeEdit, QTableWidget
 
+from app.ui.emz.widgets.row_delete_button import RowDeleteButton
+
 CreateComboFn = Callable[[], QComboBox]
 CreateDateTimeEditFn = Callable[[], QDateTimeEdit]
 CreateDateEditFn = Callable[[], QDateEdit]
@@ -25,6 +27,7 @@ def add_diagnosis_row(
     icd_combo = create_icd_combo()
     table.setCellWidget(row, 1, icd_combo)
     connect_combo_resize(table, icd_combo, row)
+    table.setCellWidget(row, table.columnCount() - 1, RowDeleteButton(table))
 
 
 def add_intervention_row(
@@ -41,6 +44,7 @@ def add_intervention_row(
     connect_combo_resize(table, type_combo, row)
     table.setCellWidget(row, 1, create_dt_cell())
     table.setCellWidget(row, 2, create_dt_cell())
+    table.setCellWidget(row, table.columnCount() - 1, RowDeleteButton(table))
 
 
 def add_abx_row(
@@ -57,6 +61,7 @@ def add_abx_row(
     combo = create_abx_combo()
     table.setCellWidget(row, 2, combo)
     connect_combo_resize(table, combo, row)
+    table.setCellWidget(row, table.columnCount() - 1, RowDeleteButton(table))
 
 
 def add_ismp_row(
@@ -72,6 +77,7 @@ def add_ismp_row(
     table.setCellWidget(row, 0, type_combo)
     connect_combo_resize(table, type_combo, row)
     table.setCellWidget(row, 1, create_date_cell())
+    table.setCellWidget(row, table.columnCount() - 1, RowDeleteButton(table))
 
 
 def delete_table_row(table: QTableWidget) -> None:
@@ -81,4 +87,3 @@ def delete_table_row(table: QTableWidget) -> None:
     if row < 0:
         row = table.rowCount() - 1
     table.removeRow(row)
-

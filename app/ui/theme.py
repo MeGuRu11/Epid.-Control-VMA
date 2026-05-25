@@ -1486,6 +1486,49 @@ def _build_qss(settings: Settings) -> str:
         background: {COL["surface"]};
         color: {COL["muted"]};
     }}
+    QPushButton#emzInlineAddButton {{
+        background: {COL["accent_subtle"]};
+        color: {COL["text"]};
+        border: 1px solid {COL["accent_border"]};
+        border-radius: 6px;
+        padding: 3px 10px;
+    }}
+    QPushButton#emzInlineAddButton:hover {{
+        background: {COL["accent"]};
+    }}
+    QPushButton#emzRowDeleteButton {{
+        background: transparent;
+        color: {COL["text_muted"]};
+        border: none;
+        border-radius: 4px;
+        font-size: 10px;
+    }}
+    QPushButton#emzRowDeleteButton:hover {{
+        background: {COL["error_bg"]};
+        color: {COL["error_fg"]};
+    }}
+    QComboBox#emzDiagTypeCombo {{
+        border-radius: 10px;
+        padding: 2px 8px;
+    }}
+    QComboBox#emzDiagTypeCombo[pillVariant="accent"] {{
+        background: {COL["accent_subtle"]};
+        border: 1px solid {COL["accent_border"]};
+    }}
+    QComboBox#emzDiagTypeCombo[pillVariant="success"] {{
+        background: {COL["success_bg"]};
+        border: 1px solid {COL["success"]};
+    }}
+    QComboBox#emzDiagTypeCombo[pillVariant="info"] {{
+        background: {COL["info_bg"]};
+        border: 1px solid {COL["border"]};
+    }}
+    QComboBox#emzDiagTypeCombo[pillVariant="danger"] {{
+        background: {COL["error_bg"]};
+        border: 1px solid {COL["error"]};
+        color: {COL["error_fg"]};
+        font-weight: 600;
+    }}
     QLineEdit, QComboBox, QDateEdit, QDateTimeEdit, QTextEdit, QPlainTextEdit, QSpinBox {{
         background: {COL["surface"]};
         border: 1px solid {COL["border"]};

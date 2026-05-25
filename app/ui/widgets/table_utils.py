@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QAbstractItemView, QComboBox, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QComboBox,
+    QHeaderView,
+    QTableWidget,
+    QTableWidgetItem,
+)
 
 
 def resize_columns_to_content(
@@ -14,6 +20,8 @@ def resize_columns_to_content(
     col_min_map = min_widths if isinstance(min_widths, dict) else {}
     for col in range(table.columnCount()):
         header = table.horizontalHeader()
+        if header is not None and header.sectionResizeMode(col) == QHeaderView.ResizeMode.Fixed:
+            continue
         if header is not None:
             header_width = header.sectionSizeHint(col)
         else:
@@ -90,4 +98,3 @@ def make_readonly_item_with_data(
 
 def set_table_read_only(table: QTableWidget) -> None:
     table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-

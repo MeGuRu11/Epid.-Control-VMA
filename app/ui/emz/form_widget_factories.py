@@ -223,14 +223,42 @@ class LimitedPopupComboBox(QComboBox):
         return QPoint(x, y)
 
 
+class WidePopupComboBox(QComboBox):
+    """QComboBox with popup width based on content instead of column width."""
+
+    MIN_POPUP_WIDTH: int = 200
+
+    def showPopup(self) -> None:  # noqa: N802
+        view = self.view()
+        content_width = view.sizeHintForColumn(self.modelColumn()) + 40
+        view.setMinimumWidth(max(self.width(), self.MIN_POPUP_WIDTH, content_width))
+        super().showPopup()
+
+
 def create_diag_type_combo() -> QComboBox:
-    combo = QComboBox()
-    combo.addItems(["Поступление", "Перевод", "Выписка", "Осложнение"])
+    combo = WidePopupComboBox()
+    combo.setObjectName("emzDiagTypeCombo")
+    combo.addItems(["", "Поступление", "Перевод", "Выписка", "Осложнение"])
+    combo.setCurrentIndex(0)
+
+    def _apply_pill() -> None:
+        variant = {
+            "Поступление": "accent",
+            "Перевод": "info",
+            "Выписка": "success",
+            "Осложнение": "danger",
+        }.get(combo.currentText(), "")
+        combo.setProperty("pillVariant", variant)
+        combo.style().unpolish(combo)
+        combo.style().polish(combo)
+
+    combo.currentTextChanged.connect(lambda _text: _apply_pill())
+    _apply_pill()
     return combo
 
 
 def create_intervention_type_combo() -> QComboBox:
-    combo = QComboBox()
+    combo = WidePopupComboBox()
     combo.setEditable(True)
     combo.addItems(
         [
@@ -267,7 +295,7 @@ def create_date_cell(empty_date: QDate) -> QDateEdit:
 
 
 def create_icd_combo(*, icd_items: Sequence[IcdLike], wire_search: Callable[[QComboBox], None]) -> QComboBox:
-    combo = QComboBox()
+    combo = WidePopupComboBox()
     combo.setEditable(True)
     combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
     combo.addItem("Выбрать", None)
@@ -311,7 +339,7 @@ def create_ismp_type_combo(
     abbreviations: Sequence[IsmpAbbreviationLike],
     tooltip_role: int,
 ) -> QComboBox:
-    combo = QComboBox()
+    combo = WidePopupComboBox()
     combo.addItem("Выбрать", None)
     for item in abbreviations:
         code = str(item.code)

@@ -26,15 +26,24 @@ class _FakeDateEdit:
     pass
 
 
+class _FakeDeleteButton:
+    def __init__(self, table: QTableWidget) -> None:
+        self.table = table
+
+
 class _FakeTable:
-    def __init__(self, row_count: int = 0, current_row: int = -1) -> None:
+    def __init__(self, row_count: int = 0, current_row: int = -1, column_count: int = 7) -> None:
         self._row_count = row_count
         self._current_row = current_row
+        self._column_count = column_count
         self.widgets: dict[tuple[int, int], object] = {}
         self.removed_rows: list[int] = []
 
     def rowCount(self) -> int:  # noqa: N802
         return self._row_count
+
+    def columnCount(self) -> int:  # noqa: N802
+        return self._column_count
 
     def insertRow(self, row: int) -> None:  # noqa: N802
         assert row == self._row_count
@@ -54,9 +63,10 @@ class _FakeTable:
         self._row_count -= 1
 
 
-def test_add_diagnosis_row_inserts_and_connects() -> None:
+def test_add_diagnosis_row_inserts_and_connects(monkeypatch) -> None:
+    monkeypatch.setattr(actions, "RowDeleteButton", _FakeDeleteButton)
     connected: list[tuple[int, object]] = []
-    table = cast(QTableWidget, _FakeTable(row_count=1))
+    table = cast(QTableWidget, _FakeTable(row_count=1, column_count=4))
 
     def _connect(_table: QTableWidget, combo: _FakeCombo, row: int) -> None:
         connected.append((row, combo))
@@ -72,12 +82,14 @@ def test_add_diagnosis_row_inserts_and_connects() -> None:
     assert fake.rowCount() == 2
     assert isinstance(fake.cellWidget(1, 0), _FakeCombo)
     assert isinstance(fake.cellWidget(1, 1), _FakeCombo)
+    assert isinstance(fake.cellWidget(1, 3), _FakeDeleteButton)
     assert [row for row, _ in connected] == [1, 1]
 
 
-def test_add_intervention_row_inserts_widgets() -> None:
+def test_add_intervention_row_inserts_widgets(monkeypatch) -> None:
+    monkeypatch.setattr(actions, "RowDeleteButton", _FakeDeleteButton)
     connected: list[int] = []
-    table = cast(QTableWidget, _FakeTable(row_count=2))
+    table = cast(QTableWidget, _FakeTable(row_count=2, column_count=7))
 
     def _connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connected.append(row)
@@ -94,12 +106,14 @@ def test_add_intervention_row_inserts_widgets() -> None:
     assert isinstance(fake.cellWidget(2, 0), _FakeCombo)
     assert isinstance(fake.cellWidget(2, 1), _FakeDateTimeEdit)
     assert isinstance(fake.cellWidget(2, 2), _FakeDateTimeEdit)
+    assert isinstance(fake.cellWidget(2, 6), _FakeDeleteButton)
     assert connected == [2]
 
 
-def test_add_abx_row_inserts_widgets() -> None:
+def test_add_abx_row_inserts_widgets(monkeypatch) -> None:
+    monkeypatch.setattr(actions, "RowDeleteButton", _FakeDeleteButton)
     connected: list[int] = []
-    table = cast(QTableWidget, _FakeTable(row_count=0))
+    table = cast(QTableWidget, _FakeTable(row_count=0, column_count=6))
 
     def _connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connected.append(row)
@@ -116,12 +130,14 @@ def test_add_abx_row_inserts_widgets() -> None:
     assert isinstance(fake.cellWidget(0, 0), _FakeDateTimeEdit)
     assert isinstance(fake.cellWidget(0, 1), _FakeDateTimeEdit)
     assert isinstance(fake.cellWidget(0, 2), _FakeCombo)
+    assert isinstance(fake.cellWidget(0, 5), _FakeDeleteButton)
     assert connected == [0]
 
 
-def test_add_ismp_row_inserts_widgets() -> None:
+def test_add_ismp_row_inserts_widgets(monkeypatch) -> None:
+    monkeypatch.setattr(actions, "RowDeleteButton", _FakeDeleteButton)
     connected: list[int] = []
-    table = cast(QTableWidget, _FakeTable(row_count=3))
+    table = cast(QTableWidget, _FakeTable(row_count=3, column_count=3))
 
     def _connect(_table: QTableWidget, _combo: _FakeCombo, row: int) -> None:
         connected.append(row)
@@ -137,6 +153,7 @@ def test_add_ismp_row_inserts_widgets() -> None:
     assert fake.rowCount() == 4
     assert isinstance(fake.cellWidget(3, 0), _FakeCombo)
     assert isinstance(fake.cellWidget(3, 1), _FakeDateEdit)
+    assert isinstance(fake.cellWidget(3, 2), _FakeDeleteButton)
     assert connected == [3]
 
 

@@ -13,6 +13,7 @@ from app.application.dto.emz_dto import EmzCaseDetail
 from app.container import Container
 from app.domain.constants import MilitaryCategory
 from app.ui.emz.emz_form import EmzForm
+from app.ui.emz.widgets.row_delete_button import RowDeleteButton
 
 
 class _ReferenceServiceStub:
@@ -91,7 +92,7 @@ def _assert_intervention_row_widgets(form: EmzForm, row: int) -> None:
 
 def _intervention_add_button(form: EmzForm) -> QPushButton:
     for button in cast(list[QPushButton], form.interv_box.findChildren(QPushButton)):
-        if button.text() == "Добавить строку":
+        if button.text() == "+ Добавить":
             return button
     raise AssertionError("Кнопка добавления строки вмешательства не найдена")
 
@@ -175,6 +176,65 @@ def test_section_counts_follow_required_fields_and_table_rows(qapp) -> None:
         qapp.processEvents()
 
         assert form.section_nav._chips["diagnoses"].text() == "Диагнозы (2)"
+    finally:
+        form.close()
+
+
+def test_table_sections_are_not_checkable_and_use_inline_add_button(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        for box in (form.diag_box, form.interv_box, form.abx_box, form.ismp_box):
+            assert not box.isCheckable()
+            buttons = cast(list[QPushButton], box.findChildren(QPushButton))
+            add_buttons: list[QPushButton] = [
+                button for button in buttons if button.text() == "+ Добавить"
+            ]
+            assert len(add_buttons) == 1
+            assert add_buttons[0].objectName() == "emzInlineAddButton"
+            assert not any(button.text() == "Удалить строку" for button in buttons)
+    finally:
+        form.close()
+
+
+def test_detail_tables_have_fixed_inline_delete_column(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        table_specs = [
+            (form.diagnosis_table, 4, 3, 2),
+            (form.intervention_table, 7, 6, 5),
+            (form.abx_table, 6, 5, 4),
+            (form.ismp_table, 3, 2, 1),
+        ]
+        for table, column_count, delete_col, stretch_col in table_specs:
+            header = table.horizontalHeader()
+            assert table.columnCount() == column_count
+            assert table.horizontalHeaderItem(delete_col).text() == ""
+            assert header.stretchLastSection() is False
+            assert header.sectionResizeMode(delete_col).name == "Fixed"
+            assert header.sectionResizeMode(stretch_col).name == "Stretch"
+            assert table.columnWidth(delete_col) == 30
+            assert isinstance(table.cellWidget(0, delete_col), RowDeleteButton)
+    finally:
+        form.close()
+
+
+def test_inline_delete_updates_section_count(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        form.show()
+        qapp.processEvents()
+
+        form._add_diagnosis_row()
+        qapp.processEvents()
+        assert form.section_nav._chips["diagnoses"].text() == "Диагнозы (2)"
+
+        button = form.diagnosis_table.cellWidget(1, 3)
+        assert isinstance(button, RowDeleteButton)
+        button.click()
+        qapp.processEvents()
+
+        assert form.diagnosis_table.rowCount() == 1
+        assert form.section_nav._chips["diagnoses"].text() == "Диагнозы (1)"
     finally:
         form.close()
 

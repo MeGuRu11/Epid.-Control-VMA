@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
+from PySide6.QtWidgets import QPushButton
 
 from app.ui.emz.widgets.emz_save_footer import EmzSaveFooter
 
@@ -38,3 +39,17 @@ def test_save_signal(footer: EmzSaveFooter, qtbot: Any) -> None:
 
     with qtbot.waitSignal(footer.save_requested, timeout=200):
         footer.save_btn.click()
+
+
+def test_set_close_callback_adds_left_close_button(footer: EmzSaveFooter) -> None:
+    closed: list[bool] = []
+
+    footer.set_close_callback(lambda: closed.append(True))
+
+    buttons = cast(list[QPushButton], footer.findChildren(QPushButton))
+    close_buttons = [button for button in buttons if button.text() == "Закрыть"]
+    assert len(close_buttons) == 1
+
+    close_buttons[0].click()
+
+    assert closed == [True]

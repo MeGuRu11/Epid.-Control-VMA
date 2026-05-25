@@ -6,8 +6,11 @@ from PySide6.QtCore import QDate, QDateTime, QTime
 
 from app.ui.widgets.date_input_flow import DateInputAutoFlow
 from app.ui.widgets.datetime_inputs import (
+    DATE_DISPLAY_FORMAT,
     DATETIME_DISPLAY_FORMAT,
+    DEFAULT_EMPTY_DATE,
     DEFAULT_EMPTY_DATETIME,
+    create_optional_date_edit,
     create_optional_datetime_edit,
 )
 
@@ -80,8 +83,19 @@ def test_optional_datetime_edit_starts_empty_without_current_time(qapp) -> None:
     widget = create_optional_datetime_edit()
     try:
         assert widget.displayFormat() == DATETIME_DISPLAY_FORMAT
+        assert widget.specialValueText() == "ДД.ММ.ГГГГ ЧЧ:ММ"
         assert widget.dateTime() == DEFAULT_EMPTY_DATETIME
         assert widget.time() == QTime(0, 0)
+    finally:
+        widget.deleteLater()
+
+
+def test_optional_date_edit_uses_readable_placeholder(qapp) -> None:
+    widget = create_optional_date_edit()
+    try:
+        assert widget.displayFormat() == DATE_DISPLAY_FORMAT
+        assert widget.specialValueText() == "ДД.ММ.ГГГГ"
+        assert widget.date() == DEFAULT_EMPTY_DATE
     finally:
         widget.deleteLater()
 

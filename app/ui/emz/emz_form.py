@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -402,22 +403,23 @@ class EmzForm(QWidget):
 
     def _build_table_boxes(self) -> None:
         self._build_tables()
-        self.diag_box = self._build_collapsible_table_box("Диагнозы", self.diagnosis_table, self._add_diagnosis_row)
+        self.diag_box = self._build_table_section_box("Диагнозы", self.diagnosis_table, self._add_diagnosis_row)
         self.diag_box.setObjectName("emzSection_diagnoses")
-        self.interv_box = self._build_collapsible_table_box(
+        self.interv_box = self._build_table_section_box(
             "Инвазивные вмешательства",
             self.intervention_table,
             self._add_intervention_row,
         )
         self.interv_box.setObjectName("emzSection_interventions")
-        self.abx_box = self._build_collapsible_table_box("Антибиотики", self.abx_table, self._add_abx_row)
+        self.abx_box = self._build_table_section_box("Антибиотики", self.abx_table, self._add_abx_row)
         self.abx_box.setObjectName("emzSection_antibiotics")
-        self.ismp_box = self._build_collapsible_table_box("ИСМП", self.ismp_table, self._add_ismp_row)
+        self.ismp_box = self._build_table_section_box("ИСМП", self.ismp_table, self._add_ismp_row)
         self.ismp_box.setObjectName("emzSection_ismp")
 
     def _build_tables(self) -> None:
-        self.diagnosis_table = self._make_table(["Тип", "МКБ-10", "Текст"], 1)
+        self.diagnosis_table = self._make_table(["Тип", "МКБ-10", "Текст", ""], 1)
         self.diagnosis_table.setProperty("min_column_widths", {0: 150})
+        self._configure_table_delete_column(self.diagnosis_table, stretch_col=2, delete_col=3)
         self.diagnosis_table.setMinimumHeight(170)
         self._set_table_tooltip(self.diagnosis_table, 0, "Тип диагноза: поступление/перевод/выписка/осложнение.")
         self._set_table_tooltip(self.diagnosis_table, 1, "Код МКБ-10 из списка.")
@@ -431,9 +433,11 @@ class EmzForm(QWidget):
                 "Длительность (мин)",
                 "Кем выполнено",
                 "Примечания",
+                "",
             ],
             1,
         )
+        self._configure_table_delete_column(self.intervention_table, stretch_col=5, delete_col=6)
         self.intervention_table.setItemDelegateForColumn(3, IntColumnDelegate(0, 100000, self.intervention_table))
         self.intervention_table.setMinimumHeight(190)
         self._set_table_tooltip(self.intervention_table, 1, "Дата/время начала: 31.12.2025 10:00")
@@ -447,21 +451,36 @@ class EmzForm(QWidget):
                 "Антибиотик",
                 "Свободное имя",
                 "Путь введения",
+                "",
             ],
             1,
         )
+        self._configure_table_delete_column(self.abx_table, stretch_col=4, delete_col=5)
         self.abx_table.setMinimumHeight(170)
         self._set_table_tooltip(self.abx_table, 0, "Дата/время начала: 31.12.2025 10:00")
         self._set_table_tooltip(self.abx_table, 1, "Дата/время окончания: 31.12.2025 12:00")
         self._set_table_tooltip(self.abx_table, 2, "Выберите антибиотик из списка.")
         self._set_table_tooltip(self.abx_table, 3, "Свободное имя препарата (если нет в списке).")
 
-        self.ismp_table = self._make_table(["Тип ИСМП", "Дата начала"], 1)
+        self.ismp_table = self._make_table(["Тип ИСМП", "Дата начала", ""], 1)
+        self._configure_table_delete_column(self.ismp_table, stretch_col=1, delete_col=2)
         self.ismp_table.setMinimumHeight(140)
         self._set_table_tooltip(self.ismp_table, 0, "Тип ИСМП (ВАП, КА-ИК, КА-ИМП).")
         self._set_table_tooltip(self.ismp_table, 1, "Дата начала: ДД.ММ.ГГГГ.")
 
-    def _build_collapsible_table_box(
+        for table in (self.diagnosis_table, self.intervention_table, self.abx_table, self.ismp_table):
+            table.model().rowsRemoved.connect(
+                lambda _parent, _first, _last: self._refresh_section_counts_if_ready()
+            )
+
+    def _configure_table_delete_column(self, table: QTableWidget, *, stretch_col: int, delete_col: int) -> None:
+        header = table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(stretch_col, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(delete_col, QHeaderView.ResizeMode.Fixed)
+        table.setColumnWidth(delete_col, 30)
+
+    def _build_table_section_box(
         self,
         title: str,
         table: QTableWidget,
@@ -469,28 +488,18 @@ class EmzForm(QWidget):
     ) -> QGroupBox:
         box = QGroupBox(title)
         layout = QVBoxLayout()
-        controls = QHBoxLayout()
-        add_btn = QPushButton("Добавить строку")
-        compact_button(add_btn)
+        layout.setContentsMargins(12, 8, 12, 12)
+
+        header_row = QHBoxLayout()
+        header_row.addStretch()
+        add_btn = QPushButton("+ Добавить")
+        add_btn.setObjectName("emzInlineAddButton")
+        compact_button(add_btn, min_width=100, max_width=150)
         add_btn.clicked.connect(add_callback)
-        del_btn = QPushButton("Удалить строку")
-        compact_button(del_btn)
-        del_btn.clicked.connect(lambda: self._delete_table_row(table))
-        controls.addWidget(add_btn)
-        controls.addWidget(del_btn)
-        controls.addStretch()
-
-        content = QWidget()
-        content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.addWidget(table)
-        content_layout.addLayout(controls)
-        layout.addWidget(content)
-
+        header_row.addWidget(add_btn)
+        layout.addLayout(header_row)
+        layout.addWidget(table)
         box.setLayout(layout)
-        box.setCheckable(True)
-        box.setChecked(True)
-        box.toggled.connect(content.setVisible)
         return box
 
     def _build_status_label(self) -> None:

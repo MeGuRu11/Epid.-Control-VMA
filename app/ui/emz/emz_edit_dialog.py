@@ -3,11 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout
 
 from app.container import Container
 from app.ui.emz.emz_form import EmzForm
-from app.ui.widgets.dialog_utils import localize_button_box
 
 
 class EmzEditDialog(QDialog):
@@ -49,14 +48,9 @@ class EmzEditDialog(QDialog):
         )
         self.form.set_edit_mode(True)
         self.form.load_case(self.patient_id, self.emr_case_id)
+        self.form.save_footer.set_close_callback(self.reject)
         layout.addWidget(self.form)
-
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        localize_button_box(buttons)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
 
     def _on_saved(self) -> None:
         if self.on_saved:
             self.on_saved()
-
