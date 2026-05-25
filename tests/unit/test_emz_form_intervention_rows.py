@@ -105,6 +105,80 @@ def _grid_row_for_widget(layout: QGridLayout, widget: QWidget) -> int:
     raise AssertionError(f"Виджет {widget.objectName() or widget.__class__.__name__} не найден в layout")
 
 
+def _grid_pos_for_widget(layout: QGridLayout, widget: QWidget) -> tuple[int, int]:
+    for index in range(layout.count()):
+        item = layout.itemAt(index)
+        if item is not None and item.widget() is widget:
+            row, col, _, _ = cast(tuple[int, int, int, int], layout.getItemPosition(index))
+            return row, col
+    raise AssertionError(f"Виджет {widget.objectName() or widget.__class__.__name__} не найден в layout")
+
+
+def test_emz_form_uses_sticky_navigation_and_footer(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        form.show()
+        qapp.processEvents()
+
+        assert hasattr(form, "section_nav")
+        assert hasattr(form, "save_footer")
+        assert hasattr(form, "_scroll_area")
+        assert not hasattr(form, "quick_save_btn")
+        assert form.save_footer.save_btn.text() == "Сохранить ЭМЗ"
+    finally:
+        form.close()
+
+
+def test_patient_layout_uses_four_field_columns(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        layout = cast(QGridLayout, form.form_box.layout())
+
+        assert _grid_pos_for_widget(layout, form.full_name) == (0, 1)
+        assert _grid_pos_for_widget(layout, form.dob) == (0, 3)
+        assert _grid_pos_for_widget(layout, form.sex) == (0, 5)
+        assert _grid_pos_for_widget(layout, form.category_combo) == (0, 7)
+        assert _grid_pos_for_widget(layout, form.military_unit) == (1, 1)
+        assert _grid_pos_for_widget(layout, form.military_district) == (1, 3)
+        assert _grid_pos_for_widget(layout, form.hospital_case_no) == (1, 5)
+        assert _grid_pos_for_widget(layout, form.department_combo) == (1, 7)
+        assert _grid_pos_for_widget(layout, form.injury_date) == (2, 1)
+        assert _grid_pos_for_widget(layout, form.admission_date) == (2, 3)
+        assert _grid_pos_for_widget(layout, form.outcome_type_combo) == (2, 5)
+        assert _grid_pos_for_widget(layout, form.outcome_date) == (2, 7)
+        assert _grid_pos_for_widget(layout, form.severity) == (3, 1)
+        assert _grid_pos_for_widget(layout, form.sofa_score) == (3, 3)
+        assert _grid_pos_for_widget(layout, form.vph_p_score) == (3, 5)
+    finally:
+        form.close()
+
+
+def test_section_counts_follow_required_fields_and_table_rows(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        form.show()
+        qapp.processEvents()
+
+        assert form.section_nav._chips["patient"].text() == "Основное (4 незап.)"
+        assert not form.save_footer.save_btn.isEnabled()
+
+        form.full_name.setText("Тестовый Пациент")
+        form.category_combo.setCurrentIndex(1)
+        form.hospital_case_no.setText("CASE-2")
+        form.department_combo.setCurrentIndex(1)
+        qapp.processEvents()
+
+        assert form.section_nav._chips["patient"].text() == "Основное"
+        assert form.save_footer.save_btn.isEnabled()
+
+        form._add_diagnosis_row()
+        qapp.processEvents()
+
+        assert form.section_nav._chips["diagnoses"].text() == "Диагнозы (2)"
+    finally:
+        form.close()
+
+
 def test_edit_form_initializes_intervention_row_for_empty_items(qapp) -> None:
     form = EmzForm(container=_container(), session=_session())
     try:
@@ -144,8 +218,11 @@ def test_form_contains_outcome_type_combo_between_admission_and_outcome(qapp) ->
         ]
 
         layout = cast(QGridLayout, form.form_box.layout())
-        assert _grid_row_for_widget(layout, form.admission_date) < _grid_row_for_widget(layout, combo)
-        assert _grid_row_for_widget(layout, combo) < _grid_row_for_widget(layout, form.outcome_date)
+        admission_row, admission_col = _grid_pos_for_widget(layout, form.admission_date)
+        combo_row, combo_col = _grid_pos_for_widget(layout, combo)
+        outcome_row, outcome_col = _grid_pos_for_widget(layout, form.outcome_date)
+        assert admission_row == combo_row == outcome_row
+        assert admission_col < combo_col < outcome_col
     finally:
         form.close()
 

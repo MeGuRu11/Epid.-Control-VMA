@@ -138,7 +138,7 @@ def test_apply_form_read_only_state() -> None:
     apply_form_read_only_state(
         read_only=True,
         sections=(cast(QWidget, section_a), cast(QWidget, section_b)),
-        quick_save_btn=cast(QPushButton, save_btn),
+        save_btn=cast(QPushButton, save_btn),
     )
     assert section_a.enabled is False
     assert section_b.enabled is False

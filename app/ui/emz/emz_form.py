@@ -138,6 +138,8 @@ from app.ui.emz.form_widget_factories import (
     create_ismp_type_combo,
     create_outcome_type_combo,
 )
+from app.ui.emz.widgets.emz_save_footer import EmzSaveFooter
+from app.ui.emz.widgets.emz_section_nav import EmzSectionNavBar
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.datetime_inputs import (
@@ -216,6 +218,7 @@ class EmzForm(QWidget):
         self._icd_search_updating = False
         self._date_empty = DEFAULT_EMPTY_DATE
         self._dt_empty = DEFAULT_EMPTY_DATETIME
+        self._form_read_only = False
         self._build_ui()
 
     def set_session(self, session: SessionContext) -> None:
@@ -223,16 +226,24 @@ class EmzForm(QWidget):
 
     def _build_ui(self) -> None:
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(16, 16, 16, 0)
+        main_layout.setSpacing(10)
         self._build_title_row(main_layout)
         self._build_quick_actions_row(main_layout)
         self._build_patient_hint_row(main_layout)
+        self.section_nav = EmzSectionNavBar(self)
+        self.section_nav.navigate_requested.connect(self._scroll_to_section)
+        main_layout.addWidget(self.section_nav)
         self._build_form_box()
         self._build_table_boxes()
         self._build_status_label()
-        main_layout.addWidget(self._build_scroll_area())
+        main_layout.addWidget(self._build_scroll_area(), stretch=1)
+        main_layout.addWidget(self.status_label)
+        self.save_footer = EmzSaveFooter(self)
+        self.save_footer.save_requested.connect(self.on_save_clicked)
+        main_layout.addWidget(self.save_footer)
         self._initialize_table_rows()
+        self._refresh_section_counts()
 
     def _build_title_row(self, main_layout: QVBoxLayout) -> None:
         title_row = QHBoxLayout()
@@ -252,10 +263,6 @@ class EmzForm(QWidget):
         self.quick_clear_btn = QPushButton("Очистить форму")
         compact_button(self.quick_clear_btn, min_width=96, max_width=180)
         self.quick_clear_btn.clicked.connect(self._reset_form)
-        self.quick_save_btn = QPushButton("Сохранить ЭМЗ")
-        self.quick_save_btn.setObjectName("primaryButton")
-        compact_button(self.quick_save_btn, min_width=96, max_width=180)
-        self.quick_save_btn.clicked.connect(self.on_save_clicked)
         self._quick_actions_bar = QWidget()
         self._quick_actions_bar.setObjectName("sectionActionBar")
         self._quick_actions_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self._quick_actions_bar)
@@ -271,15 +278,8 @@ class EmzForm(QWidget):
         case_actions_layout.addWidget(self.quick_last_btn)
         case_actions_layout.addWidget(self.quick_clear_btn)
 
-        self._quick_save_actions = QWidget()
-        self._quick_save_actions.setObjectName("sectionActionGroup")
-        save_actions_layout = QHBoxLayout(self._quick_save_actions)
-        save_actions_layout.setContentsMargins(0, 0, 0, 0)
-        save_actions_layout.addWidget(self.quick_save_btn)
-
         self._quick_actions_layout.addWidget(self._quick_case_actions)
         self._quick_actions_layout.addStretch()
-        self._quick_actions_layout.addWidget(self._quick_save_actions)
         main_layout.addWidget(self._quick_actions_bar)
         self._update_quick_actions_layout()
 
@@ -301,11 +301,12 @@ class EmzForm(QWidget):
         update_action_bar_direction(
             self._quick_actions_layout,
             self._quick_actions_bar,
-            [self._quick_case_actions, self._quick_save_actions],
+            [self._quick_case_actions],
         )
 
     def _build_form_box(self) -> None:
         self.form_box = QGroupBox("Пациент и госпитализация", self)
+        self.form_box.setObjectName("emzSection_patient")
         form_layout = QGridLayout()
         form_layout.setHorizontalSpacing(12)
         form_layout.setVerticalSpacing(10)
@@ -314,36 +315,41 @@ class EmzForm(QWidget):
 
         form_layout.addWidget(QLabel("ФИО *"), 0, 0)
         form_layout.addWidget(self.full_name, 0, 1)
-        form_layout.addWidget(QLabel("Дата рождения"), 1, 0)
-        form_layout.addWidget(self.dob, 1, 1)
-        form_layout.addWidget(QLabel("Пол (М/Ж)"), 2, 0)
-        form_layout.addWidget(self.sex, 2, 1)
-        form_layout.addWidget(QLabel("Категория военнослужащего *"), 3, 0)
-        form_layout.addWidget(self.category_combo, 3, 1)
-        form_layout.addWidget(QLabel("Воинская часть"), 4, 0)
-        form_layout.addWidget(self.military_unit, 4, 1)
-        form_layout.addWidget(QLabel("Военный округ"), 5, 0)
-        form_layout.addWidget(self.military_district, 5, 1)
-        form_layout.addWidget(QLabel("№ истории болезни *"), 6, 0)
-        form_layout.addWidget(self.hospital_case_no, 6, 1)
-        form_layout.addWidget(QLabel("Отделение *"), 7, 0)
-        form_layout.addWidget(self.department_combo, 7, 1)
-        form_layout.addWidget(QLabel("Дата/время травмы"), 0, 2)
-        form_layout.addWidget(self.injury_date, 0, 3)
-        form_layout.addWidget(QLabel("Дата/время поступления"), 1, 2)
-        form_layout.addWidget(self.admission_date, 1, 3)
+        form_layout.addWidget(QLabel("Дата рождения"), 0, 2)
+        form_layout.addWidget(self.dob, 0, 3)
+        form_layout.addWidget(QLabel("Пол (М/Ж)"), 0, 4)
+        form_layout.addWidget(self.sex, 0, 5)
+        form_layout.addWidget(QLabel("Категория военнослужащего *"), 0, 6)
+        form_layout.addWidget(self.category_combo, 0, 7)
+
+        form_layout.addWidget(QLabel("Воинская часть"), 1, 0)
+        form_layout.addWidget(self.military_unit, 1, 1)
+        form_layout.addWidget(QLabel("Военный округ"), 1, 2)
+        form_layout.addWidget(self.military_district, 1, 3)
+        form_layout.addWidget(QLabel("№ истории болезни *"), 1, 4)
+        form_layout.addWidget(self.hospital_case_no, 1, 5)
+        form_layout.addWidget(QLabel("Отделение *"), 1, 6)
+        form_layout.addWidget(self.department_combo, 1, 7)
+
+        form_layout.addWidget(QLabel("Дата/время травмы"), 2, 0)
+        form_layout.addWidget(self.injury_date, 2, 1)
+        form_layout.addWidget(QLabel("Дата/время поступления"), 2, 2)
+        form_layout.addWidget(self.admission_date, 2, 3)
         self.outcome_type_label = QLabel("Исход")
         self.outcome_type_label.setObjectName("emzOutcomeTypeLabel")
-        form_layout.addWidget(self.outcome_type_label, 2, 2)
-        form_layout.addWidget(self.outcome_type_combo, 2, 3)
-        form_layout.addWidget(QLabel("Дата/время исхода"), 3, 2)
-        form_layout.addWidget(self.outcome_date, 3, 3)
-        form_layout.addWidget(QLabel("Тяжесть"), 4, 2)
-        form_layout.addWidget(self.severity, 4, 3)
-        form_layout.addWidget(QLabel("SOFA"), 5, 2)
-        form_layout.addWidget(self.sofa_score, 5, 3)
-        form_layout.addWidget(QLabel("ВПХ-П"), 6, 2)
-        form_layout.addWidget(self.vph_p_score, 6, 3)
+        form_layout.addWidget(self.outcome_type_label, 2, 4)
+        form_layout.addWidget(self.outcome_type_combo, 2, 5)
+        form_layout.addWidget(QLabel("Дата/время исхода"), 2, 6)
+        form_layout.addWidget(self.outcome_date, 2, 7)
+
+        form_layout.addWidget(QLabel("Тяжесть"), 3, 0)
+        form_layout.addWidget(self.severity, 3, 1)
+        form_layout.addWidget(QLabel("SOFA"), 3, 2)
+        form_layout.addWidget(self.sofa_score, 3, 3)
+        form_layout.addWidget(QLabel("ВПХ-П"), 3, 4)
+        form_layout.addWidget(self.vph_p_score, 3, 5)
+        for col in (1, 3, 5, 7):
+            form_layout.setColumnStretch(col, 1)
         self.form_box.setLayout(form_layout)
 
     def _init_form_widgets(self) -> None:
@@ -385,17 +391,29 @@ class EmzForm(QWidget):
         self.vph_p_score.setValidator(QIntValidator(0, 1000, self))
         self.sofa_score.setToolTip("SOFA: только целое число.")
         self.vph_p_score.setToolTip("ВПХ-П: балльная оценка тяжести повреждений.")
+        self.full_name.textChanged.connect(lambda _text: self._refresh_section_counts_if_ready())
+        self.category_combo.currentIndexChanged.connect(
+            lambda _index: self._refresh_section_counts_if_ready()
+        )
+        self.hospital_case_no.textChanged.connect(lambda _text: self._refresh_section_counts_if_ready())
+        self.department_combo.currentIndexChanged.connect(
+            lambda _index: self._refresh_section_counts_if_ready()
+        )
 
     def _build_table_boxes(self) -> None:
         self._build_tables()
         self.diag_box = self._build_collapsible_table_box("Диагнозы", self.diagnosis_table, self._add_diagnosis_row)
+        self.diag_box.setObjectName("emzSection_diagnoses")
         self.interv_box = self._build_collapsible_table_box(
             "Инвазивные вмешательства",
             self.intervention_table,
             self._add_intervention_row,
         )
+        self.interv_box.setObjectName("emzSection_interventions")
         self.abx_box = self._build_collapsible_table_box("Антибиотики", self.abx_table, self._add_abx_row)
+        self.abx_box.setObjectName("emzSection_antibiotics")
         self.ismp_box = self._build_collapsible_table_box("ИСМП", self.ismp_table, self._add_ismp_row)
+        self.ismp_box.setObjectName("emzSection_ismp")
 
     def _build_tables(self) -> None:
         self.diagnosis_table = self._make_table(["Тип", "МКБ-10", "Текст"], 1)
@@ -485,6 +503,7 @@ class EmzForm(QWidget):
         scroll = QScrollArea(self)
         scroll.setWidgetResizable(True)
         scroll.setWidget(wrapper)
+        self._scroll_area = scroll
         return scroll
 
     def _build_content_layout(self) -> QVBoxLayout:
@@ -498,7 +517,6 @@ class EmzForm(QWidget):
         content_layout.addWidget(self.interv_box)
         content_layout.addWidget(self.abx_box)
         content_layout.addWidget(self.ismp_box)
-        content_layout.addLayout(self._build_footer_row())
         content_layout.addStretch()
         return content_layout
 
@@ -506,12 +524,6 @@ class EmzForm(QWidget):
         super().resizeEvent(event)
         if hasattr(self, "_quick_actions_layout"):
             self._update_quick_actions_layout()
-
-    def _build_footer_row(self) -> QHBoxLayout:
-        footer_row = QHBoxLayout()
-        footer_row.addWidget(self.status_label)
-        footer_row.addStretch()
-        return footer_row
 
     def _initialize_table_rows(self) -> None:
         self._load_references()
@@ -609,6 +621,7 @@ class EmzForm(QWidget):
             table.clearContents()
             table.setRowCount(1)
         self._setup_all_detail_tables()
+        self._refresh_section_counts_if_ready()
 
     def _on_first_row_changed(self, item: QTableWidgetItem) -> None:
         if item and item.row() == 0:
@@ -698,6 +711,7 @@ class EmzForm(QWidget):
             create_icd_combo=self._create_icd_combo,
             connect_combo_resize=connect_combo_resize_on_content,
         )
+        self._refresh_section_counts_if_ready()
 
     def _add_intervention_row(self) -> None:
         add_intervention_row(
@@ -706,6 +720,7 @@ class EmzForm(QWidget):
             create_dt_cell=self._create_dt_cell,
             connect_combo_resize=connect_combo_resize_on_content,
         )
+        self._refresh_section_counts_if_ready()
 
     def _add_abx_row(self) -> None:
         add_abx_row(
@@ -714,6 +729,7 @@ class EmzForm(QWidget):
             create_abx_combo=self._create_abx_combo,
             connect_combo_resize=connect_combo_resize_on_content,
         )
+        self._refresh_section_counts_if_ready()
 
     def _add_ismp_row(self) -> None:
         add_ismp_row(
@@ -722,9 +738,64 @@ class EmzForm(QWidget):
             create_date_cell=self._create_date_cell,
             connect_combo_resize=connect_combo_resize_on_content,
         )
+        self._refresh_section_counts_if_ready()
 
     def _delete_table_row(self, table: QTableWidget) -> None:
         delete_table_row(table)
+        self._refresh_section_counts_if_ready()
+
+    def _scroll_to_section(self, anchor: str) -> None:
+        box_map = {
+            "patient": self.form_box,
+            "diagnoses": self.diag_box,
+            "interventions": self.interv_box,
+            "antibiotics": self.abx_box,
+            "ismp": self.ismp_box,
+        }
+        box = box_map.get(anchor)
+        if box is None or not hasattr(self, "_scroll_area"):
+            return
+        pos = box.mapTo(self._scroll_area.widget(), box.rect().topLeft())
+        self._scroll_area.verticalScrollBar().setValue(max(0, pos.y() - 8))
+
+    def _refresh_patient_breadcrumb(self) -> None:
+        if not self._edit_mode or not hasattr(self, "patient_hint"):
+            return
+        name = self.full_name.text().strip() or "—"
+        dept = self.department_combo.currentText() or "—"
+        case_id = f"ЭМЗ #{self.emr_case_id}" if self.emr_case_id else "новый"
+        self.patient_hint.setText(f"{name}  ·  {case_id}  ·  {dept}")
+
+    def _refresh_section_counts_if_ready(self) -> None:
+        if hasattr(self, "section_nav") and hasattr(self, "save_footer"):
+            self._refresh_section_counts()
+        self._refresh_patient_breadcrumb()
+
+    def _refresh_section_counts(self) -> None:
+        if not hasattr(self, "section_nav") or not hasattr(self, "save_footer"):
+            return
+        missing = sum(
+            [
+                not self.full_name.text().strip(),
+                self.category_combo.currentData() is None,
+                not self.hospital_case_no.text().strip(),
+                self.department_combo.currentData() is None,
+            ]
+        )
+        counts = {
+            "patient": missing,
+            "diagnoses": self.diagnosis_table.rowCount(),
+            "interventions": self.intervention_table.rowCount(),
+            "antibiotics": self.abx_table.rowCount(),
+            "ismp": self.ismp_table.rowCount(),
+        }
+        self.section_nav.update_counts(counts)
+        save_label = "Сохранить изменения" if self._edit_mode else "Сохранить ЭМЗ"
+        self.save_footer.set_state(
+            missing_required=missing,
+            save_label=save_label,
+            enabled=not self._form_read_only,
+        )
 
     def _parse_dt(self, text: str | None) -> datetime | None:
         return parse_datetime_text(text)
@@ -855,11 +926,13 @@ class EmzForm(QWidget):
         )
 
     def _set_form_read_only(self, read_only: bool) -> None:
+        self._form_read_only = read_only
         apply_form_read_only_state(
             read_only=read_only,
             sections=(self.form_box, self.diag_box, self.interv_box, self.abx_box, self.ismp_box),
-            quick_save_btn=self.quick_save_btn,
+            save_btn=self.save_footer.save_btn,
         )
+        self._refresh_section_counts_if_ready()
 
     def set_edit_mode(self, enabled: bool) -> None:
         self._edit_mode = enabled
@@ -868,7 +941,7 @@ class EmzForm(QWidget):
         self._set_patient_read_only(state.patient_read_only)
         if state.patient_hint:
             self.patient_hint.setText(state.patient_hint)
-        self.quick_save_btn.setText(state.quick_save_text)
+        self._refresh_section_counts()
         self.edit_patient_btn.setVisible(False)
         set_quick_action_buttons_visible(
             visible=state.show_quick_actions,
@@ -882,7 +955,6 @@ class EmzForm(QWidget):
         self.emr_case_id = None
         self._current_patient_id = None
         self._edit_mode = False
-        self.quick_save_btn.setText("Сохранить ЭМЗ")
         reset_full_form_fields(
             full_name=self.full_name,
             dob=self.dob,
@@ -911,6 +983,7 @@ class EmzForm(QWidget):
             emr_case_id=None,
             emit=emit_context,
         )
+        self._refresh_section_counts()
 
     def clear_context(self) -> None:
         clear_status(self.status_label)
@@ -946,6 +1019,7 @@ class EmzForm(QWidget):
             patient_id=self._current_patient_id,
             emr_case_id=None,
         )
+        self._refresh_section_counts()
         self._set_status("Новая госпитализация: заполните данные.", "info")
 
     def _open_last_case(self) -> None:
@@ -1141,6 +1215,8 @@ class EmzForm(QWidget):
         self._fill_interventions(detail.interventions)
         self._fill_abx(detail.antibiotic_courses)
         self._fill_ismp(detail.ismp_cases)
+        self._refresh_section_counts()
+        self._refresh_patient_breadcrumb()
 
     def _set_status(self, message: str, level: str = "info") -> None:
         set_status(self.status_label, message, level)
@@ -1153,6 +1229,7 @@ class EmzForm(QWidget):
         except Exception:  # noqa: BLE001
             return
         self._apply_patient_identity_data(identity_from_patient_record(patient))
+        self._refresh_patient_breadcrumb()
 
     def _open_patient_edit(self) -> None:
         if not self._current_patient_id:
@@ -1181,6 +1258,8 @@ class EmzForm(QWidget):
             )
             if opened_case:
                 self._set_status("ЭМЗ открыта.", "success")
+            if self._edit_mode:
+                self._refresh_patient_breadcrumb()
         except ValueError as exc:
             self._set_status(str(exc), "warning")
             show_error(self, str(exc))

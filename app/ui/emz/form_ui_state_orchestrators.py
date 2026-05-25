@@ -48,11 +48,11 @@ def apply_form_read_only_state(
     *,
     read_only: bool,
     sections: Sequence[QWidget],
-    quick_save_btn: QPushButton,
+    save_btn: QPushButton,
 ) -> None:
     for section in sections:
         section.setEnabled(not read_only)
-    quick_save_btn.setEnabled(not read_only)
+    save_btn.setEnabled(not read_only)
 
 
 def set_quick_action_buttons_visible(

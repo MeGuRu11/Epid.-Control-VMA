@@ -1447,6 +1447,45 @@ def _build_qss(settings: Settings) -> str:
         background: transparent;
         border: none;
     }}
+    QWidget#emzSectionNavBar {{
+        background: {COL["surface"]};
+        border-bottom: 1px solid {COL["border"]};
+    }}
+    QPushButton#emzSectionChip {{
+        background: transparent;
+        color: {COL["text"]};
+        padding: 5px 12px;
+        border-radius: 12px;
+        border: none;
+    }}
+    QPushButton#emzSectionChip:hover {{
+        background: {COL["accent_subtle"]};
+    }}
+    QPushButton#emzSectionChip[hasError="true"] {{
+        background: {COL["error_bg"]};
+        color: {COL["error_fg"]};
+        font-weight: 600;
+    }}
+    QWidget#emzSaveFooter {{
+        background: {COL["surface"]};
+        border-top: 1px solid {COL["border"]};
+    }}
+    QLabel#emzSaveFooterStatus[hasError="true"] {{
+        color: {COL["error_fg"]};
+        font-weight: 600;
+    }}
+    QWidget#emzSaveFooter QPushButton#primaryButton {{
+        background: {COL["accent"]};
+        font-weight: 800;
+        padding: 6px 14px;
+    }}
+    QWidget#emzSaveFooter QPushButton#primaryButton:hover {{
+        background: {COL["accent_pressed"]};
+    }}
+    QWidget#emzSaveFooter QPushButton#primaryButton:disabled {{
+        background: {COL["surface"]};
+        color: {COL["muted"]};
+    }}
     QLineEdit, QComboBox, QDateEdit, QDateTimeEdit, QTextEdit, QPlainTextEdit, QSpinBox {{
         background: {COL["surface"]};
         border: 1px solid {COL["border"]};
