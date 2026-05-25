@@ -1497,15 +1497,21 @@ def _build_qss(settings: Settings) -> str:
         background: {COL["accent"]};
     }}
     QPushButton#emzRowDeleteButton {{
-        background: transparent;
+        background: {COL["surface"]};
         color: {COL["text_muted"]};
-        border: none;
+        border: 1px solid {COL["border"]};
         border-radius: 4px;
-        font-size: 10px;
+        padding: 2px 8px;
+        font-size: 11px;
     }}
     QPushButton#emzRowDeleteButton:hover {{
         background: {COL["error_bg"]};
+        border-color: {COL["error"]};
         color: {COL["error_fg"]};
+    }}
+    QPushButton#emzRowDeleteButton:pressed {{
+        background: {COL["error"]};
+        color: white;
     }}
     QComboBox#emzDiagTypeCombo {{
         border-radius: 10px;

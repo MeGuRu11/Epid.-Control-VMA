@@ -183,8 +183,11 @@ def test_section_counts_follow_required_fields_and_table_rows(qapp) -> None:
 def test_table_sections_are_not_checkable_and_use_inline_add_button(qapp) -> None:
     form = EmzForm(container=_container(), session=_session())
     try:
+        assert not hasattr(form, "_build_collapsible_table_box")
         for box in (form.diag_box, form.interv_box, form.abx_box, form.ismp_box):
             assert not box.isCheckable()
+            assert box.layout() is not None
+            assert box.layout().spacing() == 6
             buttons = cast(list[QPushButton], box.findChildren(QPushButton))
             add_buttons: list[QPushButton] = [
                 button for button in buttons if button.text() == "+ Добавить"
@@ -203,7 +206,7 @@ def test_detail_tables_have_fixed_inline_delete_column(qapp) -> None:
             (form.diagnosis_table, 4, 3, 2),
             (form.intervention_table, 7, 6, 5),
             (form.abx_table, 6, 5, 4),
-            (form.ismp_table, 3, 2, 1),
+            (form.ismp_table, 3, 2, 0),
         ]
         for table, column_count, delete_col, stretch_col in table_specs:
             header = table.horizontalHeader()
@@ -212,8 +215,26 @@ def test_detail_tables_have_fixed_inline_delete_column(qapp) -> None:
             assert header.stretchLastSection() is False
             assert header.sectionResizeMode(delete_col).name == "Fixed"
             assert header.sectionResizeMode(stretch_col).name == "Stretch"
-            assert table.columnWidth(delete_col) == 30
+            assert table.columnWidth(delete_col) == 100
             assert isinstance(table.cellWidget(0, delete_col), RowDeleteButton)
+    finally:
+        form.close()
+
+
+def test_ismp_table_uses_fixed_date_and_delete_columns(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        header = form.ismp_table.horizontalHeader()
+
+        assert form.ismp_table.columnCount() == 3
+        assert header.stretchLastSection() is False
+        assert header.sectionResizeMode(0).name == "Stretch"
+        assert header.sectionResizeMode(1).name == "Fixed"
+        assert form.ismp_table.columnWidth(1) == 130
+        assert header.sectionResizeMode(2).name == "Fixed"
+        assert form.ismp_table.columnWidth(2) == 100
+        assert form.ismp_table.verticalHeader().defaultSectionSize() == 32
+        assert isinstance(form.ismp_table.cellWidget(0, 2), RowDeleteButton)
     finally:
         form.close()
 
@@ -367,6 +388,43 @@ def test_emz_form_reset_keeps_datetime_fields_empty_not_current(qapp) -> None:
         assert form.admission_date.dateTime() == form._dt_empty
         assert form.outcome_date.dateTime() == form._dt_empty
         assert form._datetime_value(form.admission_date) is None
+    finally:
+        form.close()
+
+
+def test_reset_form_returns_from_edit_to_create_mode(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        form.show()
+        form.set_edit_mode(True)
+        qapp.processEvents()
+
+        form._reset_form(emit_context=False)
+        qapp.processEvents()
+
+        assert form._edit_mode is False
+        assert form.save_footer.save_btn.text() == "Сохранить ЭМЗ"
+        assert not form.quick_new_btn.isHidden()
+        assert not form.quick_clear_btn.isHidden()
+    finally:
+        form.close()
+
+
+def test_start_new_case_returns_from_edit_to_create_mode(qapp) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    try:
+        form.show()
+        form.set_edit_mode(True)
+        form._current_patient_id = 7
+        qapp.processEvents()
+
+        form._start_new_case()
+        qapp.processEvents()
+
+        assert form._edit_mode is False
+        assert form.save_footer.save_btn.text() == "Сохранить ЭМЗ"
+        assert not form.quick_new_btn.isHidden()
+        assert not form.quick_clear_btn.isHidden()
     finally:
         form.close()
 

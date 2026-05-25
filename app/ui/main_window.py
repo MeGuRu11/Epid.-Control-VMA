@@ -35,7 +35,6 @@ from app.ui.import_export.import_export_view import ImportExportView
 from app.ui.lab.lab_samples_view import LabSamplesView
 from app.ui.login_dialog import LoginDialog
 from app.ui.patient.patient_emk_view import PatientEmkView
-from app.ui.patient.patient_full_edit_dialog import PatientFullEditDialog
 from app.ui.references.reference_view import ReferenceView
 from app.ui.runtime_ui import apply_density_property, resolve_ui_runtime
 from app.ui.sanitary.sanitary_dashboard import SanitaryDashboard
@@ -428,7 +427,7 @@ class MainWindow(QMainWindow):
             session=self.session,
             on_case_selected=self._on_case_selected,
             on_edit_patient=self._open_patient_edit_dialog,
-            on_data_changed=self._notify_data_changed,
+            on_data_changed=self._on_emr_data_changed,
         )
         self._lab_view = LabSamplesView(
             lab_service=self.container.lab_service,
@@ -673,6 +672,11 @@ class MainWindow(QMainWindow):
         else:
             self._home_dirty = True
 
+    def _on_emr_data_changed(self) -> None:
+        """Refresh dependent EMK views after an EMZ save."""
+        if self._current_patient_id is not None:
+            self._after_patient_edit_saved(self._current_patient_id)
+
     def _open_emz_from_emk(self, patient_id: int | None, emr_case_id: int | None) -> None:
         self._on_case_selected(patient_id, emr_case_id)
         self._set_active_view(self._emr_form)
@@ -718,16 +722,12 @@ class MainWindow(QMainWindow):
                 icon=QMessageBox.Icon.Warning,
             )
             return
-        dlg = PatientFullEditDialog(
-            container=self.container,
-            session=self.session,
-            patient_id=patient_id,
-            emr_case_id=emr_case_id,
-            parent=self,
-        )
-        if dlg.exec() != QDialog.DialogCode.Accepted:
-            return
-        self._after_patient_edit_saved(patient_id)
+        self._emr_form.set_edit_mode(True)
+        self._emr_form.load_case(patient_id, emr_case_id, emit_context=False)
+        self._set_active_view(self._emr_form)
+        self._current_patient_id = patient_id
+        self._current_case_id = emr_case_id
+        self._context_bar.update_context(patient_id, emr_case_id)
 
     def _after_patient_edit_saved(self, patient_id: int) -> None:
         self._emk_view.refresh_patient(patient_id)

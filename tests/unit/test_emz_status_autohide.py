@@ -1,16 +1,15 @@
+"""Status label auto-hides for info/success and persists for errors."""
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import date
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtWidgets import QDialogButtonBox, QPushButton
-
+from app.application.dto.auth_dto import SessionContext
 from app.application.dto.emz_dto import EmzCaseDetail
 from app.container import Container
 from app.domain.constants import MilitaryCategory
-from app.ui.emz.emz_edit_dialog import EmzEditDialog
+from app.ui.emz.emz_form import EmzForm
 
 
 class _ReferenceServiceStub:
@@ -54,6 +53,10 @@ class _EmzServiceStub:
         )
 
 
+def _session() -> SessionContext:
+    return SessionContext(user_id=1, login="tester", role="admin")
+
+
 def _container() -> Container:
     return cast(
         Container,
@@ -61,34 +64,39 @@ def _container() -> Container:
     )
 
 
-def _footer_close_button(dialog: EmzEditDialog) -> QPushButton:
-    buttons = cast(list[QPushButton], dialog.form.save_footer.findChildren(QPushButton))
-    for button in buttons:
-        if button.text() == "Закрыть":
-            return button
-    raise AssertionError("Кнопка закрытия в footer не найдена")
+def test_status_info_auto_hides(qtbot: Any) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    qtbot.addWidget(form)
+
+    form._set_status_with_timeout("Тестовое сообщение", "info")
+
+    assert form.status_label.text() == "Тестовое сообщение"
+    assert form._status_hide_timer.isActive()
+
+    qtbot.wait(4100)
+
+    assert form.status_label.text() == ""
 
 
-def test_edit_dialog_uses_single_footer_button_row(qtbot: Any) -> None:
-    dialog = EmzEditDialog(container=_container(), patient_id=7, emr_case_id=42)
-    qtbot.addWidget(dialog)
-    try:
-        assert dialog.findChildren(QDialogButtonBox) == []
-        assert dialog.form.save_footer.save_btn.text() == "Сохранить изменения"
-        assert _footer_close_button(dialog).text() == "Закрыть"
-    finally:
-        dialog.close()
+def test_status_success_auto_hides(qtbot: Any) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    qtbot.addWidget(form)
+
+    form._set_status_with_timeout("ЭМЗ открыта.", "success")
+
+    assert form.status_label.text() == "ЭМЗ открыта."
+    assert form._status_hide_timer.isActive()
+
+    qtbot.wait(4100)
+
+    assert form.status_label.text() == ""
 
 
-def test_edit_dialog_footer_close_button_rejects(qtbot: Any) -> None:
-    dialog = EmzEditDialog(container=_container(), patient_id=7, emr_case_id=42)
-    qtbot.addWidget(dialog)
-    try:
-        rejected: list[bool] = []
-        dialog.rejected.connect(cast(Callable[[], None], lambda: rejected.append(True)))
+def test_status_error_persists(qtbot: Any) -> None:
+    form = EmzForm(container=_container(), session=_session())
+    qtbot.addWidget(form)
 
-        _footer_close_button(dialog).click()
+    form._set_status_with_timeout("Ошибка!", "error")
 
-        assert rejected == [True]
-    finally:
-        dialog.close()
+    assert form.status_label.text() == "Ошибка!"
+    assert not form._status_hide_timer.isActive()

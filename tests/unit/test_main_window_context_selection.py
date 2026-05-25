@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import cast
 
-from PySide6.QtWidgets import QDialog, QWidget
+from PySide6.QtWidgets import QWidget
 
 from app.application.dto.auth_dto import SessionContext
 from app.ui import main_window as main_window_module
@@ -38,12 +38,16 @@ class _FakeEmrForm:
     def __init__(self) -> None:
         self.clear_calls = 0
         self.load_calls: list[tuple[int | None, int | None, bool]] = []
+        self.edit_mode_calls: list[bool] = []
 
     def clear_context(self) -> None:
         self.clear_calls += 1
 
     def load_case(self, patient_id: int | None, emr_case_id: int | None, *, emit_context: bool = True) -> None:
         self.load_calls.append((patient_id, emr_case_id, emit_context))
+
+    def set_edit_mode(self, enabled: bool) -> None:
+        self.edit_mode_calls.append(enabled)
 
 
 class _ReentrantEmrForm(_FakeEmrForm):
@@ -185,32 +189,41 @@ def test_after_patient_edit_saved_skips_context_update_for_non_current_patient()
     assert changed["count"] == 1
 
 
-def test_open_patient_edit_dialog_uses_full_dialog_and_refreshes(monkeypatch) -> None:
-    created: dict[str, object] = {}
-    refreshed: list[int] = []
-
-    class _Dialog:
-        def __init__(self, **kwargs: object) -> None:
-            created.update(kwargs)
-
-        def exec(self) -> QDialog.DialogCode:
-            return QDialog.DialogCode.Accepted
-
-    monkeypatch.setattr(main_window_module, "PatientFullEditDialog", _Dialog)
+def test_open_patient_edit_dialog_switches_to_inline_emz_editor() -> None:
+    active_views: list[object] = []
     window = SimpleNamespace()
-    window.container = SimpleNamespace()
-    window.session = SessionContext(user_id=1, login="admin", role="admin")
     window._current_patient_id = 7
     window._current_case_id = 9
-    window._after_patient_edit_saved = refreshed.append
+    window._emr_form = _FakeEmrForm()
+    window._context_bar = _FakeContextBar()
+    window._set_active_view = active_views.append
 
     MainWindow._open_patient_edit_dialog(cast(MainWindow, window), 7)
 
-    assert created["container"] is window.container
-    assert created["session"] is window.session
-    assert created["patient_id"] == 7
-    assert created["emr_case_id"] == 9
+    assert window._emr_form.edit_mode_calls == [True]
+    assert window._emr_form.load_calls == [(7, 9, False)]
+    assert active_views == [window._emr_form]
+    assert window._current_patient_id == 7
+    assert window._current_case_id == 9
+    assert window._context_bar.calls == [(7, 9)]
+
+
+def test_on_emr_data_changed_refreshes_current_patient() -> None:
+    refreshed: list[int] = []
+    window = SimpleNamespace(_current_patient_id=7, _after_patient_edit_saved=refreshed.append)
+
+    MainWindow._on_emr_data_changed(cast(MainWindow, window))
+
     assert refreshed == [7]
+
+
+def test_on_emr_data_changed_skips_without_current_patient() -> None:
+    refreshed: list[int] = []
+    window = SimpleNamespace(_current_patient_id=None, _after_patient_edit_saved=refreshed.append)
+
+    MainWindow._on_emr_data_changed(cast(MainWindow, window))
+
+    assert refreshed == []
 
 
 def test_logout_uses_redesigned_confirmation_and_cancels(monkeypatch) -> None:

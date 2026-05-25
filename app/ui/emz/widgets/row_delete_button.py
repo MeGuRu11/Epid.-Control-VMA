@@ -1,17 +1,21 @@
-"""Inline button for deleting a table row."""
+"""Inline-кнопка удаления строки таблицы."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget
 
+from app.ui.widgets.button_utils import compact_button
+
 
 class RowDeleteButton(QPushButton):
+    """Кнопка 'Удалить' в строке таблицы."""
+
     def __init__(self, table: QTableWidget, parent: QWidget | None = None) -> None:
-        super().__init__("✕", parent)
+        super().__init__("Удалить", parent)
         self.setObjectName("emzRowDeleteButton")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedSize(24, 24)
-        self.setToolTip("Удалить строку")
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        compact_button(self, min_width=80, max_width=100)
         self._table = table
         self.clicked.connect(self._delete_my_row)
 

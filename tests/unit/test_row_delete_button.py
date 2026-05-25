@@ -48,3 +48,12 @@ def test_deletes_last_row(table: QTableWidget) -> None:
 
     assert table.rowCount() == 2
     assert table.item(1, 0).text() == "r1c0"
+
+
+def test_button_shows_text(table: QTableWidget) -> None:
+    button = table.cellWidget(0, 3)
+    assert isinstance(button, RowDeleteButton)
+
+    assert button.text() == "Удалить"
+    assert button.objectName() == "emzRowDeleteButton"
+    assert button.focusPolicy().name == "NoFocus"

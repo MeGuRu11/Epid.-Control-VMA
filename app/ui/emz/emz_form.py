@@ -11,6 +11,7 @@ from PySide6.QtCore import (
     QModelIndex,
     QPersistentModelIndex,
     Qt,
+    QTimer,
 )
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
@@ -463,7 +464,13 @@ class EmzForm(QWidget):
         self._set_table_tooltip(self.abx_table, 3, "Свободное имя препарата (если нет в списке).")
 
         self.ismp_table = self._make_table(["Тип ИСМП", "Дата начала", ""], 1)
-        self._configure_table_delete_column(self.ismp_table, stretch_col=1, delete_col=2)
+        xh = self.ismp_table.horizontalHeader()
+        xh.setStretchLastSection(False)
+        xh.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        xh.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self.ismp_table.setColumnWidth(1, 130)
+        xh.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.ismp_table.setColumnWidth(2, 100)
         self.ismp_table.setMinimumHeight(140)
         self._set_table_tooltip(self.ismp_table, 0, "Тип ИСМП (ВАП, КА-ИК, КА-ИМП).")
         self._set_table_tooltip(self.ismp_table, 1, "Дата начала: ДД.ММ.ГГГГ.")
@@ -478,7 +485,7 @@ class EmzForm(QWidget):
         header.setStretchLastSection(False)
         header.setSectionResizeMode(stretch_col, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(delete_col, QHeaderView.ResizeMode.Fixed)
-        table.setColumnWidth(delete_col, 30)
+        table.setColumnWidth(delete_col, 100)
 
     def _build_table_section_box(
         self,
@@ -489,6 +496,7 @@ class EmzForm(QWidget):
         box = QGroupBox(title)
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 8, 12, 12)
+        layout.setSpacing(6)
 
         header_row = QHBoxLayout()
         header_row.addStretch()
@@ -505,6 +513,9 @@ class EmzForm(QWidget):
     def _build_status_label(self) -> None:
         self.status_label = QLabel()
         set_status(self.status_label, "", "info")
+        self._status_hide_timer = QTimer(self)
+        self._status_hide_timer.setSingleShot(True)
+        self._status_hide_timer.timeout.connect(lambda: clear_status(self.status_label))
 
     def _build_scroll_area(self) -> QScrollArea:
         wrapper = QWidget()
@@ -587,6 +598,7 @@ class EmzForm(QWidget):
         table.setHorizontalHeaderLabels(headers)
         table.horizontalHeader().setStretchLastSection(True)
         table.verticalHeader().setVisible(False)
+        table.verticalHeader().setDefaultSectionSize(32)
         table.setAlternatingRowColors(True)
         table.setEditTriggers(
             QTableWidget.EditTrigger.DoubleClicked
@@ -963,7 +975,7 @@ class EmzForm(QWidget):
     def _reset_form(self, *, emit_context: bool = True) -> None:
         self.emr_case_id = None
         self._current_patient_id = None
-        self._edit_mode = False
+        self.set_edit_mode(False)
         reset_full_form_fields(
             full_name=self.full_name,
             dob=self.dob,
@@ -1003,6 +1015,7 @@ class EmzForm(QWidget):
             self._reset_form()
             self._set_status("Заполните данные пациента для новой госпитализации.", "info")
             return
+        self.set_edit_mode(False)
         # Keep patient info, reset hospitalization-specific fields.
         self.emr_case_id = None
         reset_hospitalization_fields(
@@ -1228,7 +1241,15 @@ class EmzForm(QWidget):
         self._refresh_patient_breadcrumb()
 
     def _set_status(self, message: str, level: str = "info") -> None:
+        self._set_status_with_timeout(message, level)
+
+    def _set_status_with_timeout(self, message: str, level: str = "info") -> None:
+        """Show status and auto-hide transient info/success messages."""
         set_status(self.status_label, message, level)
+        if level in {"info", "success"}:
+            self._status_hide_timer.start(4000)
+        else:
+            self._status_hide_timer.stop()
 
     def refresh_patient(self, patient_id: int) -> None:
         if not self._current_patient_id or self._current_patient_id != patient_id:

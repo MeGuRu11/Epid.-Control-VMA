@@ -32,6 +32,16 @@ Desktop-приложение для стационара: ЭМЗ пациент�
 
 ## Журнал работ
 
+### 2026-05-25 - feat(ui): remove EMZ edit dialog
+
+- `PatientFullEditDialog` и `EmzEditDialog` удалены.
+- `_open_patient_edit_dialog` в `main_window.py` теперь переключает вкладку ЭМЗ и загружает запись через `set_edit_mode(True)` + `load_case()`.
+- `_reset_form` и `_start_new_case` сбрасывают `edit_mode` в `False`.
+- `on_data_changed` callback формы ЭМЗ обновляет ЭМК после сохранения.
+- `python -m ruff check app tests` — pass.
+- `python -m mypy app tests` — pass (`396 source files`).
+- `python -m pytest -q` — pass (`857 passed`, `3 warnings`).
+
 ### 2026-05-23 — fix: PDF table alignment and form100 Russian header
 
 - `reporting_service.py`: для числовых колонок в таблице «Топ микроорганизмов» добавлен `ALIGN=CENTER`, ширины колонок изменены на `55/20/25`, чтобы длинные названия не слипались с числами.
