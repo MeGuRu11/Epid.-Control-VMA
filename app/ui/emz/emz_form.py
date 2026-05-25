@@ -776,7 +776,10 @@ class EmzForm(QWidget):
         box = box_map.get(anchor)
         if box is None or not hasattr(self, "_scroll_area"):
             return
-        pos = box.mapTo(self._scroll_area.widget(), box.rect().topLeft())
+        viewport = self._scroll_area.widget()
+        if viewport is None:
+            return
+        pos = box.mapTo(viewport, box.rect().topLeft())
         self._scroll_area.verticalScrollBar().setValue(max(0, pos.y() - 8))
 
     def _refresh_patient_breadcrumb(self) -> None:

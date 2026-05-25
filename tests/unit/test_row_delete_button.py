@@ -26,8 +26,12 @@ def test_deletes_middle_row(table: QTableWidget) -> None:
     button.click()
 
     assert table.rowCount() == 2
-    assert table.item(0, 0).text() == "r0c0"
-    assert table.item(1, 0).text() == "r2c0"
+    item_00 = table.item(0, 0)
+    item_10 = table.item(1, 0)
+    assert item_00 is not None
+    assert item_10 is not None
+    assert item_00.text() == "r0c0"
+    assert item_10.text() == "r2c0"
 
 
 def test_deletes_first_row(table: QTableWidget) -> None:
@@ -37,7 +41,9 @@ def test_deletes_first_row(table: QTableWidget) -> None:
     button.click()
 
     assert table.rowCount() == 2
-    assert table.item(0, 0).text() == "r1c0"
+    item_00 = table.item(0, 0)
+    assert item_00 is not None
+    assert item_00.text() == "r1c0"
 
 
 def test_deletes_last_row(table: QTableWidget) -> None:
@@ -47,7 +53,9 @@ def test_deletes_last_row(table: QTableWidget) -> None:
     button.click()
 
     assert table.rowCount() == 2
-    assert table.item(1, 0).text() == "r1c0"
+    item_10 = table.item(1, 0)
+    assert item_10 is not None
+    assert item_10.text() == "r1c0"
 
 
 def test_button_shows_text(table: QTableWidget) -> None:

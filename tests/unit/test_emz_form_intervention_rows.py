@@ -186,8 +186,9 @@ def test_table_sections_are_not_checkable_and_use_inline_add_button(qapp) -> Non
         assert not hasattr(form, "_build_collapsible_table_box")
         for box in (form.diag_box, form.interv_box, form.abx_box, form.ismp_box):
             assert not box.isCheckable()
-            assert box.layout() is not None
-            assert box.layout().spacing() == 6
+            layout = box.layout()
+            assert layout is not None
+            assert layout.spacing() == 6
             buttons = cast(list[QPushButton], box.findChildren(QPushButton))
             add_buttons: list[QPushButton] = [
                 button for button in buttons if button.text() == "+ Добавить"
@@ -211,7 +212,9 @@ def test_detail_tables_have_fixed_inline_delete_column(qapp) -> None:
         for table, column_count, delete_col, stretch_col in table_specs:
             header = table.horizontalHeader()
             assert table.columnCount() == column_count
-            assert table.horizontalHeaderItem(delete_col).text() == ""
+            delete_header = table.horizontalHeaderItem(delete_col)
+            assert delete_header is not None
+            assert delete_header.text() == ""
             assert header.stretchLastSection() is False
             assert header.sectionResizeMode(delete_col).name == "Fixed"
             assert header.sectionResizeMode(stretch_col).name == "Stretch"
