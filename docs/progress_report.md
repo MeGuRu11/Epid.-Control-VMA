@@ -7827,3 +7827,41 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m alembic check` - pass, `No new upgrade operations detected`.
 - `python scripts/check_mojibake.py` - pass.
 - `python -m pytest --cov=app --cov-report=term-missing -q` - pass (`861 passed`, `3 warnings`, coverage `78%`).
+
+---
+
+## 2026-05-26 - S4.6 финальный аудит v1.1.0
+
+**Статус:** audit-only выполнен; релиз не подтверждён до закрытия High-пунктов
+
+- Повторно выполнен полный набор автоматизированных проверок из `CODEX_S4_6_FINAL_AUDIT`.
+- Обновлён `docs/audit_report_v1_1_0.md` по финальному шаблону:
+  - автоматизированные gates зелёные;
+  - coverage `78%`, HTML-отчёт `htmlcov/index.html`;
+  - `alembic heads` показывает `0021_form100_artifacts (head)`;
+  - sample exports: `15 OK / 0 SKIP / 0 ERROR`;
+  - import round-trip: `7 PASS / 0 FAIL`.
+- Создан `docs/audit_v1_1_0/regression_checklist.md` как копия `docs/specs/SPEC_analytics_redesign.md` с audit-разметкой:
+  - `53/122` подтверждено автоматикой;
+  - `55/122` требует ручной проверки;
+  - `14/122` отмечено как static gap / obsolete.
+- По результатам аудита выставлен вердикт: `Не готов к выпуску v1.1.0 без решения High-пунктов`.
+
+### Проверки
+
+- `python -c "import sys; print(f'Python: {sys.version}')"` - pass, Python `3.12.10`.
+- `git log --oneline -1` - pass, `191c560`.
+- `git status --short` - pass, чисто на старте аудита.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`397 source files`).
+- `python scripts\check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python -m pytest -q --tb=short` - pass (`861 passed`, `3 warnings`).
+- `python -m pytest --cov=app --cov-report=term-missing --cov-report=html -q` - pass (`861 passed`, `3 warnings`, coverage `78%`).
+- `python -m alembic check` - pass.
+- `python -m alembic heads` - pass, `0021_form100_artifacts (head)`.
+- `python scripts\check_mojibake.py` - pass.
+- `python scripts\seed_demo_data.py --clear` - pass.
+- `python scripts\seed_demo_data.py` - pass.
+- `python scripts\generate_sample_exports.py --skip-seed` - pass (`15 OK / 0 SKIP / 0 ERROR`).
+- `python scripts\test_import_roundtrip.py` - pass (`7 PASS / 0 FAIL`).
