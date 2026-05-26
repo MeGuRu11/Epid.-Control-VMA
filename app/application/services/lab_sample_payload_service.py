@@ -155,6 +155,8 @@ def build_lab_sample_create_request(
     *,
     patient_id: int,
     emr_case_id: int | None,
+    lab_no: str = "",
+    barcode: str = "",
     material_type_id: int | None,
     material_location: str,
     medium: str,
@@ -170,6 +172,8 @@ def build_lab_sample_create_request(
     return LabSampleCreateRequest(
         patient_id=patient_id,
         emr_case_id=emr_case_id,
+        lab_no=_none_if_empty(lab_no),
+        barcode=_none_if_empty(barcode),
         material_type_id=material_type_id,
         material_location=_none_if_empty(material_location),
         medium=_none_if_empty(medium),
@@ -183,6 +187,8 @@ def build_lab_sample_create_request(
 
 def build_lab_sample_update_request(
     *,
+    lab_no: str = "",
+    barcode: str = "",
     material_type_id: int | None,
     material_location: str,
     medium: str,
@@ -195,6 +201,8 @@ def build_lab_sample_update_request(
     if material_type_id is None:
         raise ValueError("Выберите тип материала")
     return LabSampleUpdateRequest(
+        lab_no=_none_if_empty(lab_no),
+        barcode=_none_if_empty(barcode),
         material_type_id=material_type_id,
         material_location=_none_if_empty(material_location),
         medium=_none_if_empty(medium),

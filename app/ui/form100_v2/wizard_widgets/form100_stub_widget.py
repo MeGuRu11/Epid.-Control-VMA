@@ -7,7 +7,6 @@ from PySide6.QtCore import QDate, QTime
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
-    QDateEdit,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -21,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.form100_v2.wizard_widgets.icon_select_widget import IconSelectWidget
+from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
 
 STUB_MED_HELP_ITEMS: tuple[tuple[str, str], ...] = (
     ("stub_med_help_antibiotic", "Антибиотик"),
@@ -46,7 +46,7 @@ def _parse_date(raw: str) -> QDate:
             return QDate(dt.year, dt.month, dt.day)
         except ValueError:
             continue
-    return QDate.currentDate()
+    return DEFAULT_EMPTY_DATE
 
 
 def _parse_time(raw: str) -> QTime:
@@ -74,18 +74,14 @@ class Form100StubWidget(QWidget):
         top_form.setVerticalSpacing(6)
         self.stub_issued_time = QTimeEdit()
         self.stub_issued_time.setDisplayFormat("HH:mm")
-        self.stub_issued_date = QDateEdit()
-        self.stub_issued_date.setDisplayFormat("dd.MM.yyyy")
-        self.stub_issued_date.setCalendarPopup(True)
+        self.stub_issued_date = create_optional_date_edit()
         self.stub_rank = QLineEdit()
         self.stub_unit = QLineEdit()
         self.stub_full_name = QLineEdit()
         self.stub_id_tag = QLineEdit()
         self.stub_injury_time = QTimeEdit()
         self.stub_injury_time.setDisplayFormat("HH:mm")
-        self.stub_injury_date = QDateEdit()
-        self.stub_injury_date.setDisplayFormat("dd.MM.yyyy")
-        self.stub_injury_date.setCalendarPopup(True)
+        self.stub_injury_date = create_optional_date_edit()
         top_form.addRow("Выдана (время)", self.stub_issued_time)
         top_form.addRow("Выдана (дата)", self.stub_issued_date)
         top_form.addRow("В/звание", self.stub_rank)

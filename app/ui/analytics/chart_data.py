@@ -208,7 +208,9 @@ def _group_key_and_label(value: date, grouping: TimeGrouping) -> tuple[tuple[int
         return (value.year, value.month), f"{value.month:02d}.{value.year}"
 
     iso_year, iso_week, _weekday = value.isocalendar()
-    return (iso_year, iso_week), f"{iso_year}-W{iso_week:02d}"
+    week_start = value - timedelta(days=value.isoweekday() - 1)
+    week_end = week_start + timedelta(days=6)
+    return (iso_year, iso_week), f"{week_start:%d.%m}-{week_end:%d.%m}"
 
 
 def _normalize_period(start_date: date, end_date: date) -> tuple[date, date]:

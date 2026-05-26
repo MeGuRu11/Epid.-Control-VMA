@@ -3,12 +3,13 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, cast
 
-from PySide6.QtCore import QDate, QSignalBlocker, Qt, Signal
+from PySide6.QtCore import QSignalBlocker, Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
     QComboBox,
     QCompleter,
+    QDateEdit,
     QDateTimeEdit,
     QDialog,
     QDialogButtonBox,
@@ -52,7 +53,13 @@ from app.ui.sanitary.history_view_helpers import (
     summarize_history,
 )
 from app.ui.widgets.button_utils import compact_button
-from app.ui.widgets.datetime_inputs import create_optional_datetime_edit, optional_datetime_value
+from app.ui.widgets.datetime_inputs import (
+    DEFAULT_EMPTY_DATE,
+    create_optional_date_edit,
+    create_optional_datetime_edit,
+    optional_date_value,
+    optional_datetime_value,
+)
 from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
@@ -84,7 +91,7 @@ class SanitaryHistoryDialog(QDialog):
         self.actor_id = actor_id
         self._microbe_map: dict[int, str] = {}
         self._micro_search_updating: bool = False
-        self._date_empty = QDate(2000, 1, 1)
+        self._date_empty = DEFAULT_EMPTY_DATE
         self._last_empty_state: str | None = None
         self.page_index = 1
         self.page_size = 50
@@ -163,20 +170,10 @@ class SanitaryHistoryDialog(QDialog):
         growth_layout.addWidget(growth_label)
         growth_layout.addWidget(self.growth_filter)
 
-        self.date_from = QDateTimeEdit()
-        self.date_from.setCalendarPopup(True)
-        self.date_from.setDisplayFormat("dd.MM.yyyy")
-        self.date_from.setMinimumDate(self._date_empty)
-        self.date_from.setSpecialValueText("")
-        self.date_from.setDate(self._date_empty)
+        self.date_from = create_optional_date_edit()
         self.date_from.dateChanged.connect(self._on_filter_changed)
 
-        self.date_to = QDateTimeEdit()
-        self.date_to.setCalendarPopup(True)
-        self.date_to.setDisplayFormat("dd.MM.yyyy")
-        self.date_to.setMinimumDate(self._date_empty)
-        self.date_to.setSpecialValueText("")
-        self.date_to.setDate(self._date_empty)
+        self.date_to = create_optional_date_edit()
         self.date_to.dateChanged.connect(self._on_filter_changed)
 
         self._date_group = QWidget()
@@ -557,11 +554,8 @@ class SanitaryHistoryDialog(QDialog):
             self.prev_btn.setEnabled(False)
             self.next_btn.setEnabled(False)
 
-    def _date_value(self, widget: QDateTimeEdit) -> date | None:
-        qdate = widget.date()
-        if qdate == self._date_empty:
-            return None
-        return cast(date, qdate.toPython())
+    def _date_value(self, widget: QDateEdit) -> date | None:
+        return optional_date_value(widget)
 
     def _load_microbe_map(self) -> None:
         self._microbe_map = {}
@@ -652,9 +646,16 @@ class SanitarySampleDetailDialog(QDialog):
         self.sample_header.set_sanitary_context(self.sample_id, "")
         layout.addWidget(self.sample_header)
 
+        self.lab_no = QLineEdit()
+        self.lab_no.setPlaceholderText("например SAN-20260526-001")
+        self.barcode = QLineEdit()
+        self.barcode.setPlaceholderText("штрихкод пробы")
+        self.department_display = QLineEdit(str(self.department_id))
+        self.department_display.setReadOnly(True)
         self.sampling_point = QLineEdit()
         self.room = QLineEdit()
         self.medium = QLineEdit()
+        self.ordered_at = create_optional_datetime_edit()
         self.taken_at = create_optional_datetime_edit()
         self.delivered_at = create_optional_datetime_edit()
         self.sampling_point.textChanged.connect(self._update_header_context)
@@ -721,11 +722,15 @@ class SanitarySampleDetailDialog(QDialog):
         main_grid = QGridLayout()
         main_grid.setHorizontalSpacing(12)
         main_grid.setVerticalSpacing(8)
-        self._add_grid_field(main_grid, 0, 0, "Точка отбора", self.sampling_point)
-        self._add_grid_field(main_grid, 0, 1, "Время взятия", self.taken_at)
-        self._add_grid_field(main_grid, 1, 0, "Помещение", self.room)
-        self._add_grid_field(main_grid, 1, 1, "Дата доставки", self.delivered_at)
-        self._add_grid_field(main_grid, 2, 0, "Среда", self.medium)
+        self._add_grid_field(main_grid, 0, 0, "Лаб. номер", self.lab_no)
+        self._add_grid_field(main_grid, 0, 1, "Штрихкод", self.barcode)
+        self._add_grid_field(main_grid, 1, 0, "Отделение", self.department_display)
+        self._add_grid_field(main_grid, 1, 1, "Дата назначения", self.ordered_at)
+        self._add_grid_field(main_grid, 2, 0, "Точка отбора", self.sampling_point)
+        self._add_grid_field(main_grid, 2, 1, "Время взятия", self.taken_at)
+        self._add_grid_field(main_grid, 3, 0, "Помещение", self.room)
+        self._add_grid_field(main_grid, 3, 1, "Дата доставки", self.delivered_at)
+        self._add_grid_field(main_grid, 4, 0, "Среда", self.medium)
         main_grid.setColumnStretch(1, 1)
         main_grid.setColumnStretch(3, 1)
         main_layout.addLayout(main_grid)
@@ -993,10 +998,15 @@ class SanitarySampleDetailDialog(QDialog):
             sample_id = cast(int, self.sample_id)
             detail = self.sanitary_service.get_detail(sample_id)
             sample = detail["sample"]
+            self.lab_no.setText(sample.lab_no or "")
+            self.barcode.setText(sample.barcode or "")
+            self.department_display.setText(str(sample.department_id or self.department_id))
             self.sampling_point.setText(sample.sampling_point or "")
             self.sample_header.set_sanitary_context(sample_id, sample.sampling_point or "")
             self.room.setText(sample.room or "")
             self.medium.setText(sample.medium or "")
+            if getattr(sample, "ordered_at", None):
+                self.ordered_at.setDateTime(sample.ordered_at)
             if sample.taken_at:
                 self.taken_at.setDateTime(sample.taken_at)
             if getattr(sample, "delivered_at", None):
@@ -1097,8 +1107,11 @@ class SanitarySampleDetailDialog(QDialog):
                 req = build_sanitary_sample_create_request(
                     department_id=self.department_id,
                     sampling_point=self.sampling_point.text(),
+                    lab_no=self.lab_no.text(),
+                    barcode=self.barcode.text(),
                     room=self.room.text(),
                     medium=self.medium.text(),
+                    ordered_at=self._to_python_datetime(self.ordered_at),
                     taken_at=self._to_python_datetime(self.taken_at),
                     delivered_at=self._to_python_datetime(self.delivered_at),
                     created_by=None,
@@ -1115,9 +1128,13 @@ class SanitarySampleDetailDialog(QDialog):
         else:
             try:
                 upd_sample = build_sanitary_sample_update_request(
+                    department_id=self.department_id,
                     sampling_point=self.sampling_point.text(),
+                    lab_no=self.lab_no.text(),
+                    barcode=self.barcode.text(),
                     room=self.room.text(),
                     medium=self.medium.text(),
+                    ordered_at=self._to_python_datetime(self.ordered_at),
                     taken_at=self._to_python_datetime(self.taken_at),
                     delivered_at=self._to_python_datetime(self.delivered_at),
                 )

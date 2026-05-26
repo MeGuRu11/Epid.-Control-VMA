@@ -32,6 +32,26 @@ Desktop-приложение для стационара: ЭМЗ пациент�
 
 ## Журнал работ
 
+### 2026-05-26 — fix: proper optional date and datetime widgets
+
+- `datetime_inputs.py`: опциональные `QDateEdit`/`QDateTimeEdit` переведены на sentinel `01.01.1900` без `setSpecialValueText`; состояние пустого поля хранится в property `isEmpty`.
+- `theme.py`: добавлен серый текст для пустых date/date-time полей через QSS, при фокусе текст становится обычным.
+- `DateInputAutoFlow`: сохранён ручной ввод и paste для `26.05.2026`, `26052026`, `26.05.2026 08:30`, `260520260830` без возврата маски `ДД.ММ.ГГГГ`.
+- `DateInputAutoFlow`: исправлён пошаговый ввод даты/времени в `QDateTimeEdit`; каждая цифра видна сразу (`1_.__.____ __:__` → `10.10.2024 __:__` → `12:__` → `12:4_` → `12:43`), при этом `widget.date()` и `widget.time()` фиксируются по мере ввода.
+- Form100, ЭМЗ, Lab/Sanitary, patient, EMK и Analytics date-фильтры переведены на общие helper-фабрики; прямые `QDateEdit()`/`QDateTimeEdit()` остались только внутри helper-файла.
+- Дата рождения теперь имеет диапазон `1900..today`, остальные даты — `1900..2100`; `optional_date_value`/`optional_datetime_value` возвращают `None` для sentinel.
+- Добавлены regression-тесты для новых helper-фабрик, ручного ввода, paste и пустого состояния.
+
+Проверки:
+- `python -m ruff check app tests scripts` — pass.
+- `python -m mypy app tests` — pass (`398 source files`).
+- `python scripts\check_architecture.py` — pass.
+- `python -m compileall -q app tests scripts` — pass.
+- `python -m pytest -q --tb=short` — pass (`894 passed`, `3 warnings`).
+- `python -m alembic check` — pass.
+- `python -m alembic heads` — `0021_form100_artifacts (head)`.
+- `python scripts\check_mojibake.py` — pass.
+
 ### 2026-05-25 - feat(ui): remove EMZ edit dialog
 
 - `PatientFullEditDialog` и `EmzEditDialog` удалены.

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import cast
 
-from PySide6.QtCore import QDate, Qt, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
@@ -33,6 +33,11 @@ from app.application.services.reference_service import ReferenceService
 from app.ui.lab.lab_sample_detail import LabSampleDetailDialog
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import (
+    DEFAULT_EMPTY_DATE,
+    create_optional_date_edit,
+    optional_date_value,
+)
 from app.ui.widgets.notifications import show_warning
 from app.ui.widgets.patient_selector import PatientSelector
 from app.ui.widgets.table_utils import connect_combo_autowidth
@@ -86,7 +91,7 @@ class LabSamplesView(QWidget):
         self._kpi_widgets: dict[str, LabKpiWidgets] = {}
         self._kpi_cards: list[QWidget] = []
         self._kpi_columns = 1
-        self._date_empty = QDate(2000, 1, 1)
+        self._date_empty = DEFAULT_EMPTY_DATE
         self._last_empty_state: str | None = None
         self.page_index = 1
         self.page_size = 50
@@ -357,20 +362,10 @@ class LabSamplesView(QWidget):
         connect_combo_autowidth(self.material_filter)
         self.material_filter.currentIndexChanged.connect(self._on_filter_changed)
 
-        self.date_from = QDateEdit()
-        self.date_from.setCalendarPopup(True)
-        self.date_from.setDisplayFormat("dd.MM.yyyy")
-        self.date_from.setMinimumDate(self._date_empty)
-        self.date_from.setSpecialValueText("")
-        self.date_from.setDate(self._date_empty)
+        self.date_from = create_optional_date_edit()
         self.date_from.dateChanged.connect(self._on_filter_changed)
 
-        self.date_to = QDateEdit()
-        self.date_to.setCalendarPopup(True)
-        self.date_to.setDisplayFormat("dd.MM.yyyy")
-        self.date_to.setMinimumDate(self._date_empty)
-        self.date_to.setSpecialValueText("")
-        self.date_to.setDate(self._date_empty)
+        self.date_to = create_optional_date_edit()
         self.date_to.dateChanged.connect(self._on_filter_changed)
 
         clear_filters_btn = QPushButton("Сбросить")
@@ -1019,10 +1014,7 @@ class LabSamplesView(QWidget):
         self.next_btn.setEnabled(self.page_index < total_pages)
 
     def _date_value(self, widget: QDateEdit) -> date | None:
-        qdate = widget.date()
-        if qdate == self._date_empty:
-            return None
-        return cast(date, qdate.toPython())
+        return optional_date_value(widget)
 
     def _apply_filters(self, samples: list[LabSampleResponse]) -> list[LabSampleResponse]:
         search = self.search_input.text().strip().lower()

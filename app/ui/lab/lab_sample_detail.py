@@ -133,6 +133,10 @@ class LabSampleDetailDialog(QDialog):
             self._load_existing()
 
     def _build_fields(self) -> None:
+        self.lab_no = QLineEdit()
+        self.lab_no.setPlaceholderText("например LAB-20260526-001")
+        self.barcode = QLineEdit()
+        self.barcode.setPlaceholderText("штрихкод пробирки")
         self.material_type = QComboBox()
         self.material_type.setEditable(False)
         self.material_type.addItem("Выбрать", None)
@@ -189,13 +193,15 @@ class LabSampleDetailDialog(QDialog):
         main_grid = QGridLayout()
         main_grid.setHorizontalSpacing(12)
         main_grid.setVerticalSpacing(8)
-        self._add_grid_field(main_grid, 0, 0, "Тип материала", self.material_type)
-        self._add_grid_field(main_grid, 0, 1, "Время взятия", self.taken_at)
-        self._add_grid_field(main_grid, 1, 0, "Среда", self.medium)
-        self._add_grid_field(main_grid, 1, 1, "Дата доставки", self.delivered_at)
-        self._add_grid_field(main_grid, 2, 0, "Тип исследования", self.study_kind)
-        self._add_grid_field(main_grid, 2, 1, "Место забора", self.material_location)
-        self._add_grid_field(main_grid, 3, 0, "Дата назначения", self.ordered_at)
+        self._add_grid_field(main_grid, 0, 0, "Лаб. номер", self.lab_no)
+        self._add_grid_field(main_grid, 0, 1, "Штрихкод", self.barcode)
+        self._add_grid_field(main_grid, 1, 0, "Тип материала", self.material_type)
+        self._add_grid_field(main_grid, 1, 1, "Время взятия", self.taken_at)
+        self._add_grid_field(main_grid, 2, 0, "Среда", self.medium)
+        self._add_grid_field(main_grid, 2, 1, "Дата доставки", self.delivered_at)
+        self._add_grid_field(main_grid, 3, 0, "Тип исследования", self.study_kind)
+        self._add_grid_field(main_grid, 3, 1, "Локализация / место забора", self.material_location)
+        self._add_grid_field(main_grid, 4, 0, "Дата назначения", self.ordered_at)
         main_grid.setColumnStretch(1, 1)
         main_grid.setColumnStretch(3, 1)
         main_layout.addLayout(main_grid)
@@ -462,6 +468,8 @@ class LabSampleDetailDialog(QDialog):
             sample_id = cast(int, self.sample_id)
             detail = self.lab_service.get_detail(sample_id)
             sample = detail["sample"]
+            self.lab_no.setText(sample.lab_no or "")
+            self.barcode.setText(sample.barcode or "")
             self.sample_header.set_lab_context(
                 getattr(sample, "id", sample_id),
                 getattr(sample, "lab_no", "") or "",
@@ -585,6 +593,8 @@ class LabSampleDetailDialog(QDialog):
                 req = build_lab_sample_create_request(
                     patient_id=self.patient_id,
                     emr_case_id=self.emr_case_id,
+                    lab_no=self.lab_no.text(),
+                    barcode=self.barcode.text(),
                     material_type_id=material_id,
                     material_location=self.material_location.text(),
                     medium=self.medium.text(),
@@ -614,6 +624,8 @@ class LabSampleDetailDialog(QDialog):
             try:
                 material_id = self.material_type.currentData()
                 upd_sample = build_lab_sample_update_request(
+                    lab_no=self.lab_no.text(),
+                    barcode=self.barcode.text(),
                     material_type_id=material_id,
                     material_location=self.material_location.text(),
                     medium=self.medium.text(),

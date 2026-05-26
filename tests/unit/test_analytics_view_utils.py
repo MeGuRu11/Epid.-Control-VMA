@@ -73,7 +73,7 @@ def test_build_trend_chart_items_groups_by_week_before_calculating_percentage() 
         TimeGrouping.WEEK,
     )
 
-    assert result == [("2026-W17", 1.0)]
+    assert result == [("20.04-26.04", 1.0)]
 
 
 def test_build_top_microbe_chart_items_calculates_percentage_share() -> None:

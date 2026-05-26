@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -77,3 +78,31 @@ def test_lab_sample_autonumber(tmp_path: Path) -> None:
     )
     resp_update = service.update_result(resp1.id, upd, actor_id=actor_id)
     assert resp_update.growth_flag == 1
+
+
+def test_lab_sample_accepts_manual_identifier_fields(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "lab_manual.db")
+    material_type_id = seed_material(session_factory)
+    actor_id = seed_actor(session_factory)
+    service = LabService(session_factory=session_factory)
+
+    req = LabSampleCreateRequest(
+        patient_id=1,
+        emr_case_id=None,
+        lab_no="LAB-MANUAL-001",
+        barcode="460700000001",
+        material_type_id=material_type_id,
+        material_location="Рана бедра",
+        ordered_at=datetime(2025, 12, 15, 8, 0, 0, tzinfo=UTC),
+        taken_at=datetime(2025, 12, 15, 10, 0, 0, tzinfo=UTC),
+        study_kind="primary",
+    )
+
+    resp = service.create_sample(req, actor_id=actor_id)
+
+    assert resp.lab_no == "LAB-MANUAL-001"
+    assert resp.barcode == "460700000001"
+    assert resp.material_location == "Рана бедра"
+
+    with pytest.raises(ValueError, match="Лаб. номер"):
+        service.create_sample(req, actor_id=actor_id)

@@ -135,9 +135,11 @@ Top-5 самых слабых модулей: `form100_main_widget.py`, `patient
 
 | Приоритет | Описание | Действие |
 |-----------|----------|----------|
-| Critical | Не найдено по автоматизированным проверкам | Нет |
-| High | Ручной regression-pass не выполнен: `55/122` пунктов Analytics checklist и общие UI-сценарии остаются непроверенными | Выполнить до релиза |
-| High | `14/122` пунктов Analytics regression checklist имеют static gap/obsolete статус; часть выглядит как реально отсутствующая функциональность, а не только ручная проверка | Решить до релиза: исправить, снять из scope или задокументировать как принятое отклонение |
+| Critical | Ручной QA выявил, что date/date-time поля не принимают нормальный keyboard/paste ввод | Исправлено в follow-up: общий date-input слой поддерживает цифры и paste; нужен повторный ручной smoke |
+| High | В диалогах лабораторной и санитарной пробы отсутствовали видимые идентификаторы (`Лаб. номер`, `Штрихкод`) и часть контекстных полей | Исправлено в follow-up: поля добавлены в UI/DTO/service/repository; нужен повторный ручной smoke |
+| Medium | Form100 sidebar обрезал длинный заголовок; Analytics показывала ISO-week labels вида `2026-W05` | Исправлено в follow-up: sidebar расширен/переносится, week labels заменены на диапазоны дат |
+| Low | Ручной regression-pass остаётся обязательным релизным шагом: `55/122` пунктов Analytics checklist и общие UI-сценарии требуют действий пользователя | Выполнить после follow-up исправлений |
+| Low | `14/122` пунктов Analytics regression checklist имеют static gap/obsolete статус | Принято как scope change: перенесено в `v1.2 backlog`, не блокирует v1.1.0 |
 | Medium | Покрытие ниже `40%` в 8 UI-модулях, включая Patient/EMK и Form100 bodymap | Добавить smoke/unit тесты после релизного решения по High-пунктам |
 | Medium | `form100_main_widget.py` имеет `0%` coverage и выглядит как legacy/dead-code candidate | Проверить использование и удалить/покрыть после релиза |
 | Low | Предупреждения pytest от `reportlab`, `pytest-qt`, `pytest-asyncio` | Занести в backlog |
@@ -156,9 +158,9 @@ Top-5 самых слабых модулей: `form100_main_widget.py`, `patient
 | P1.4 — Analytics XLSX v2 | Автотесты и sample export проходят |
 | P1.5 — Import/Export wizard UX | Автотесты проходят |
 | S4.1 — Confirm dialog on close | Нужен ручной smoke `X` / `Alt+F4` |
-| S4.2 — Analytics v2 | Автотесты проходят, но regression checklist имеет `14` gap/obsolete пунктов |
-| S4.5 — Lab/sanitary sample dialogs redesign | Нужен ручной smoke диалогов |
-| EMZ redesign | Автотесты проходят, нужен ручной smoke сценария редактирования |
+| S4.2 — Analytics v2 | Автотесты проходят; `14` gap/obsolete пунктов приняты как `v1.2 backlog` |
+| S4.5 — Lab/sanitary sample dialogs redesign | Follow-up добавил недостающие поля; нужен повторный ручной smoke диалогов |
+| EMZ redesign | Follow-up исправил общий date input; нужен повторный ручной smoke сценария редактирования |
 | S4.6 — этот аудит | Автоматизированная часть выполнена; ручная часть не выполнена |
 
 ---
@@ -180,12 +182,13 @@ Top-5 самых слабых модулей: `form100_main_widget.py`, `patient
 - Сделать профилирование Analytics v2 на `10k` проб.
 - Настроить UTF-8 stdout для Windows CLI scripts.
 - Добавить Pyright/Pylance config для подавления типовых Qt optional-warning noise, если команда использует Pyright.
-- Обновить `docs/specs/SPEC_analytics_redesign.md`: разделить актуальные v1.1.0 требования, принятые scope changes и устаревшие feature-flag пункты.
+- Выполнить повторный ручной smoke по date input, Lab/San dialogs, Form100 sidebar и Analytics weekly labels.
+- Перенести `v1.2 backlog` пункты из regression checklist в отдельный roadmap после релиза.
 
 ---
 
 ## Готовность к релизу
 
-**Вердикт:** ❌ Не готов к выпуску v1.1.0 без решения High-пунктов.
+**Вердикт:** ⚠️ Готовность зависит от повторного ручного smoke после follow-up исправлений.
 
-Автоматизированные quality gates зелёные, но финальная release readiness не подтверждена: ручной regression-pass не выполнен, а static audit нашёл несоответствия Analytics regression checklist.
+Автоматизированные quality gates повторно пройдены после follow-up исправлений: ruff, mypy, architecture, compileall, полный pytest, Alembic, mojibake и sample export round-trip зелёные. Остался ручной smoke пользователем. Static gaps Analytics приняты как scope change для `v1.2.0`.

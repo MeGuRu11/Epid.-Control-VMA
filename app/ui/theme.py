@@ -1547,6 +1547,12 @@ def _build_qss(settings: Settings) -> str:
         border: 1px solid {COL["accent_border"]};
         background: {COL["surface2"]};
     }}
+    QDateEdit[isEmpty="true"], QDateTimeEdit[isEmpty="true"] {{
+        color: {COL["text_muted"]};
+    }}
+    QDateEdit[isEmpty="true"]:focus, QDateTimeEdit[isEmpty="true"]:focus {{
+        color: {COL["text"]};
+    }}
     QLineEdit[error="true"],
     QComboBox[error="true"],
     QDateEdit[error="true"],

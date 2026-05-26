@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
+from PySide6.QtCore import QDate, QDateTime, QTime
 from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QTabWidget, QWidget
 
 from app.ui.sanitary.sanitary_history import SanitarySampleDetailDialog
@@ -15,7 +17,7 @@ class _SanitaryServiceStub:
 
     def create_sample(self, request: Any, *, actor_id: int) -> SimpleNamespace:
         self.created.append((request, actor_id))
-        return SimpleNamespace(id=100)
+        return SimpleNamespace(id=100, lab_no=request.lab_no or "SAN-20260526-0001")
 
 
 class _ReferenceServiceStub:
@@ -97,3 +99,23 @@ def test_sanitary_dialog_susceptibility_panel_extracted(qtbot: Any) -> None:
     assert isinstance(dialog.susceptibility_panel, SusceptibilityPanel)
     assert dialog.susc_table is dialog.susceptibility_panel.susc_table
     assert dialog.phage_table is dialog.susceptibility_panel.phage_table
+
+
+def test_sanitary_dialog_exposes_identifier_fields_and_saves_them(qtbot: Any) -> None:
+    dialog, sanitary_service = _dialog(qtbot)
+
+    dialog.lab_no.setText("SAN-MANUAL-001")
+    dialog.barcode.setText("460700000002")
+    assert "4" in dialog.department_display.text()
+    dialog.sampling_point.setText("Раковина")
+    dialog.ordered_at.setDateTime(QDateTime(QDate(2026, 5, 26), QTime(7, 45)))
+    dialog.taken_at.setDateTime(QDateTime(QDate(2026, 5, 26), QTime(8, 30)))
+
+    dialog.on_save()
+
+    assert sanitary_service.created
+    request, actor_id = sanitary_service.created[0]
+    assert actor_id == 77
+    assert request.lab_no == "SAN-MANUAL-001"
+    assert request.barcode == "460700000002"
+    assert request.ordered_at == datetime.fromisoformat("2026-05-26T07:45:00")

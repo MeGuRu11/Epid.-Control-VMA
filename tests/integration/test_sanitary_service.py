@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -71,3 +72,28 @@ def test_sanitary_sample(tmp_path: Path) -> None:
     )
     resp2 = service.update_result(resp.id, upd, actor_id=actor_id)
     assert resp2.growth_flag == 0
+
+
+def test_sanitary_sample_accepts_manual_identifier_fields(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "san_manual.db")
+    dep_id = seed_department(session_factory)
+    actor_id = seed_actor(session_factory)
+    service = SanitaryService(session_factory=session_factory)
+
+    req = SanitarySampleCreateRequest(
+        department_id=dep_id,
+        sampling_point="Раковина",
+        room="101",
+        lab_no="SAN-MANUAL-001",
+        barcode="460700000002",
+        ordered_at=datetime(2025, 12, 15, 8, 0, 0, tzinfo=UTC),
+        taken_at=datetime(2025, 12, 15, 9, 0, 0, tzinfo=UTC),
+    )
+
+    resp = service.create_sample(req, actor_id=actor_id)
+
+    assert resp.lab_no == "SAN-MANUAL-001"
+    assert resp.barcode == "460700000002"
+
+    with pytest.raises(ValueError, match="Лаб. номер"):
+        service.create_sample(req, actor_id=actor_id)

@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Any, cast
 
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QDateEdit
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QDateEdit, QLabel
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.form100_v2_dto import (
@@ -17,6 +18,8 @@ from app.application.dto.form100_v2_dto import (
 from app.infrastructure.reporting import form100_pdf_report_v2 as report_module
 from app.ui.form100_v2.form100_wizard import Form100Wizard
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_identification import StepIdentification
+from app.ui.widgets.date_input_flow import DateInputAutoFlow
+from app.ui.widgets.datetime_inputs import IS_EMPTY_PROPERTY
 
 
 class _Form100ServiceStub:
@@ -93,6 +96,19 @@ def _fill_required_identification(step: StepIdentification) -> None:
     step.main_id_tag.setText("Ж-100")
 
 
+def test_wizard_sidebar_title_wraps_instead_of_clipping(qapp) -> None:
+    del qapp
+    wizard = _wizard(_Form100ServiceStub())
+    try:
+        panel = wizard._step_panel
+        title = panel.findChild(QLabel, "wizardStepTitle")
+        assert title is not None
+        assert title.wordWrap() is True
+        assert panel.minimumWidth() >= 260
+    finally:
+        wizard.close()
+
+
 def _plain_texts(elements: list[Any]) -> list[str]:
     texts: list[str] = []
 
@@ -119,10 +135,33 @@ def test_birth_date_widget_exists_and_empty_by_default(qapp) -> None:
     step = StepIdentification()
     try:
         assert isinstance(step.birth_date, QDateEdit)
-        assert step.birth_date.specialValueText() == "Не указана"
+        assert step.birth_date.specialValueText() == ""
         assert step.birth_date.minimumDate() == QDate(1900, 1, 1)
+        assert step.birth_date.maximumDate() == QDate.currentDate()
+        assert step.birth_date.text() == "01.01.1900"
+        assert step.birth_date.property(IS_EMPTY_PROPERTY) is True
         assert step._get_birth_date() is None
     finally:
+        step.close()
+
+
+def test_birth_date_accepts_paste_without_special_text_corruption(qapp) -> None:
+    flow = DateInputAutoFlow(qapp)
+    qapp.installEventFilter(flow)
+    step = StepIdentification()
+    try:
+        qapp.clipboard().setText("15.06.1985")
+        step.birth_date.show()
+        step.birth_date.setFocus()
+        qapp.processEvents()
+
+        QTest.keySequence(step.birth_date, "Ctrl+V")
+        qapp.processEvents()
+
+        assert step.birth_date.text() == "15.06.1985"
+        assert step._get_birth_date() == date(1985, 6, 15)
+    finally:
+        qapp.removeEventFilter(flow)
         step.close()
 
 

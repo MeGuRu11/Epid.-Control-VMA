@@ -4,11 +4,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
-from PySide6.QtCore import QDate, QDateTime, QPoint, QPointF, Qt
+from PySide6.QtCore import QDate, QDateTime, QPoint, QPointF, Qt, QTime
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QComboBox
 
 import app.ui.emz.form_widget_factories as factories
+from app.ui.widgets.datetime_inputs import IS_EMPTY_PROPERTY
 
 
 class _InsertPolicy:
@@ -265,29 +266,35 @@ def test_create_outcome_type_combo_uses_placeholder_and_stable_codes(monkeypatch
     ]
 
 
-def test_create_datetime_cell(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QDateTimeEdit", _FakeDateTimeEdit)
-    marker = cast(QDateTime, object())
-    widget = cast(_FakeDateTimeEdit, factories.create_datetime_cell(marker))
-    assert widget.calendar_popup is True
-    assert widget.display_format == "dd.MM.yyyy HH:mm"
-    assert widget.minimum_dt is marker
-    assert widget.current_dt is marker
-    assert widget.special_text == "ДД.ММ.ГГГГ ЧЧ:ММ"
-    assert widget.keyboard_tracking is True
-    assert widget.current_section is not None
+def test_create_datetime_cell(qapp) -> None:
+    marker = QDateTime(QDate(2024, 1, 1), QTime(0, 0))
+    widget = factories.create_datetime_cell(marker)
+    try:
+        assert widget.calendarPopup() is True
+        assert widget.displayFormat() == "dd.MM.yyyy HH:mm"
+        assert widget.minimumDateTime() == marker
+        assert widget.dateTime() == marker
+        assert widget.specialValueText() == ""
+        assert widget.property(IS_EMPTY_PROPERTY) is True
+        assert widget.keyboardTracking() is True
+        assert widget.currentSection() is not None
+    finally:
+        widget.deleteLater()
 
 
-def test_create_date_cell(monkeypatch) -> None:
-    monkeypatch.setattr(factories, "QDateEdit", _FakeDateEdit)
-    marker = cast(QDate, object())
-    widget = cast(_FakeDateEdit, factories.create_date_cell(marker))
-    assert widget.calendar_popup is True
-    assert widget.display_format == "dd.MM.yyyy"
-    assert widget.minimum_date is marker
-    assert widget.current_date is marker
-    assert widget.special_text == "ДД.ММ.ГГГГ"
-    assert widget.current_section is not None
+def test_create_date_cell(qapp) -> None:
+    marker = QDate(2024, 1, 1)
+    widget = factories.create_date_cell(marker)
+    try:
+        assert widget.calendarPopup() is True
+        assert widget.displayFormat() == "dd.MM.yyyy"
+        assert widget.minimumDate() == marker
+        assert widget.date() == marker
+        assert widget.specialValueText() == ""
+        assert widget.property(IS_EMPTY_PROPERTY) is True
+        assert widget.currentSection() is not None
+    finally:
+        widget.deleteLater()
 
 
 def test_create_icd_combo_and_wire(qapp) -> None:

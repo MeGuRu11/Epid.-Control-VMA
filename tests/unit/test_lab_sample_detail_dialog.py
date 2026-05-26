@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
+from PySide6.QtCore import QDate, QDateTime, QTime
 from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QTabWidget, QWidget
 
 from app.ui.lab.lab_sample_detail import LabSampleDetailDialog
@@ -16,7 +17,11 @@ class _LabServiceStub:
 
     def create_sample(self, request: Any, *, actor_id: int) -> SimpleNamespace:
         self.created.append((request, actor_id))
-        return SimpleNamespace(id=42, qc_due_at=datetime(2026, 5, 19, 12, 0, tzinfo=UTC))
+        return SimpleNamespace(
+            id=42,
+            lab_no=request.lab_no or "BLD-20260519-0001",
+            qc_due_at=datetime(2026, 5, 19, 12, 0, tzinfo=UTC),
+        )
 
 
 class _ReferenceServiceStub:
@@ -103,3 +108,22 @@ def test_lab_dialog_susceptibility_panel_extracted(qtbot: Any) -> None:
     assert isinstance(dialog.susceptibility_panel, SusceptibilityPanel)
     assert dialog.susc_table is dialog.susceptibility_panel.susc_table
     assert dialog.phage_table is dialog.susceptibility_panel.phage_table
+
+
+def test_lab_dialog_exposes_identifier_fields_and_saves_them(qtbot: Any) -> None:
+    dialog, lab_service = _dialog(qtbot)
+
+    dialog.lab_no.setText("LAB-MANUAL-001")
+    dialog.barcode.setText("460700000001")
+    dialog.material_type.setCurrentIndex(dialog.material_type.findData(1))
+    dialog.material_location.setText("Рана бедра")
+    dialog.taken_at.setDateTime(QDateTime(QDate(2026, 5, 26), QTime(8, 30)))
+
+    dialog.on_save()
+
+    assert lab_service.created
+    request, actor_id = lab_service.created[0]
+    assert actor_id == 7
+    assert request.lab_no == "LAB-MANUAL-001"
+    assert request.barcode == "460700000001"
+    assert request.material_location == "Рана бедра"

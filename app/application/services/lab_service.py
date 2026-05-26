@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
-from typing import cast
+from typing import Any, cast
 
 from app.application.dto.lab_dto import (
     LabSampleCreateRequest,
@@ -34,6 +34,30 @@ def _compute_qc_due_at(taken_at: datetime | None, material_code: str | None, mat
     return base_dt + timedelta(hours=hours)
 
 
+def _clean_optional_text(value: str | None) -> str | None:
+    text = (value or "").strip()
+    return text or None
+
+
+def _lab_response(sample: Any, micro: Any | None = None) -> LabSampleResponse:
+    return LabSampleResponse(
+        id=cast(int, sample.id),
+        lab_no=cast(str, sample.lab_no),
+        barcode=cast(str | None, sample.barcode),
+        material_type_id=cast(int, sample.material_type_id),
+        material_location=cast(str | None, sample.material_location),
+        medium=cast(str | None, sample.medium),
+        ordered_at=cast(datetime | None, sample.ordered_at),
+        taken_at=cast(datetime | None, sample.taken_at),
+        delivered_at=cast(datetime | None, sample.delivered_at),
+        growth_flag=cast(int | None, sample.growth_flag),
+        qc_due_at=cast(datetime | None, sample.qc_due_at),
+        qc_status=cast(str | None, sample.qc_status),
+        microorganism_id=cast(int | None, micro.microorganism_id) if micro else None,
+        microorganism_free=cast(str | None, micro.microorganism_free) if micro else None,
+    )
+
+
 class LabService:
     def __init__(
         self,
@@ -59,14 +83,20 @@ class LabService:
     def create_sample(self, request: LabSampleCreateRequest, *, actor_id: int) -> LabSampleResponse:
         taken_at = request.taken_at or datetime.now(UTC)
         seq_date = taken_at.date()
+        manual_lab_no = _clean_optional_text(request.lab_no)
         with self.session_factory() as session:
             self._require_write_access(session, actor_id)
             material = self.ref_repo.get_material_type(session, request.material_type_id)
             if not material:
                 raise ValueError("Тип материала не найден")
-            seq = self.lab_repo.next_lab_number(session, seq_date, request.material_type_id)
             material_code = cast(str, material.code)
-            lab_no = _format_lab_no(material_code, seq_date, seq)
+            if manual_lab_no is not None:
+                if self.lab_repo.get_sample_by_lab_no(session, manual_lab_no) is not None:
+                    raise ValueError(f"Лаб. номер уже существует: {manual_lab_no}")
+                lab_no = manual_lab_no
+            else:
+                seq = self.lab_repo.next_lab_number(session, seq_date, request.material_type_id)
+                lab_no = _format_lab_no(material_code, seq_date, seq)
             qc_due_at = _compute_qc_due_at(
                 request.taken_at,
                 cast(str | None, material.code),
@@ -78,6 +108,7 @@ class LabService:
                 patient_id=request.patient_id,
                 emr_case_id=request.emr_case_id,
                 lab_no=lab_no,
+                barcode=_clean_optional_text(request.barcode),
                 material_type_id=request.material_type_id,
                 material_location=request.material_location,
                 medium=request.medium,
@@ -99,26 +130,7 @@ class LabService:
                 payload_json=json.dumps({"lab_no": lab_no}),
             )
 
-            sample_id = cast(int, sample.id)
-            lab_no_value = cast(str, sample.lab_no)
-            material_type_id = cast(int, sample.material_type_id)
-            material_location = cast(str | None, sample.material_location)
-            medium = cast(str | None, sample.medium)
-            taken_at_value = cast(datetime | None, sample.taken_at)
-            growth_flag = cast(int | None, sample.growth_flag)
-            qc_due_at_value = cast(datetime | None, sample.qc_due_at)
-            qc_status = cast(str | None, sample.qc_status)
-            return LabSampleResponse(
-                id=sample_id,
-                lab_no=lab_no_value,
-                material_type_id=material_type_id,
-                material_location=material_location,
-                medium=medium,
-                taken_at=taken_at_value,
-                growth_flag=growth_flag,
-                qc_due_at=qc_due_at_value,
-                qc_status=qc_status,
-            )
+            return _lab_response(sample)
 
     def update_result(self, sample_id: int, request: LabSampleResultUpdate, actor_id: int) -> LabSampleResponse:
         with self.session_factory() as session:
@@ -164,30 +176,7 @@ class LabService:
             session.refresh(sample)
             isolation = self.lab_repo.get_isolation(session, sample_id)
             micro = isolation[0] if isolation else None
-            sample_id_value = cast(int, sample.id)
-            lab_no_value = cast(str, sample.lab_no)
-            material_type_id = cast(int, sample.material_type_id)
-            material_location = cast(str | None, sample.material_location)
-            medium = cast(str | None, sample.medium)
-            taken_at = cast(datetime | None, sample.taken_at)
-            growth_flag = cast(int | None, sample.growth_flag)
-            qc_due_at_value = cast(datetime | None, sample.qc_due_at)
-            qc_status = cast(str | None, sample.qc_status)
-            microorganism_id = cast(int | None, micro.microorganism_id) if micro else None
-            microorganism_free = cast(str | None, micro.microorganism_free) if micro else None
-            return LabSampleResponse(
-                id=sample_id_value,
-                lab_no=lab_no_value,
-                material_type_id=material_type_id,
-                material_location=material_location,
-                medium=medium,
-                taken_at=taken_at,
-                growth_flag=growth_flag,
-                qc_due_at=qc_due_at_value,
-                qc_status=qc_status,
-                microorganism_id=microorganism_id,
-                microorganism_free=microorganism_free,
-            )
+            return _lab_response(sample, micro)
 
     def update_sample(self, sample_id: int, request: LabSampleUpdateRequest, actor_id: int) -> None:
         with self.session_factory() as session:
@@ -198,6 +187,14 @@ class LabService:
 
             material_id = request.material_type_id or cast(int, sample.material_type_id)
             material = self.ref_repo.get_material_type(session, material_id)
+            current_lab_no = cast(str, sample.lab_no)
+            manual_lab_no = _clean_optional_text(request.lab_no)
+            if (
+                manual_lab_no is not None
+                and manual_lab_no != current_lab_no
+                and self.lab_repo.get_sample_by_lab_no(session, manual_lab_no) is not None
+            ):
+                raise ValueError(f"Лаб. номер уже существует: {manual_lab_no}")
             base_taken_at = request.taken_at if request.taken_at is not None else cast(datetime | None, sample.taken_at)
             qc_due_at = _compute_qc_due_at(
                 base_taken_at,
@@ -208,6 +205,8 @@ class LabService:
             self.lab_repo.update_sample(
                 session,
                 sample_id=sample_id,
+                lab_no=manual_lab_no if manual_lab_no != current_lab_no else None,
+                barcode=_clean_optional_text(request.barcode),
                 material_type_id=request.material_type_id,
                 material_location=request.material_location,
                 medium=request.medium,
@@ -235,31 +234,7 @@ class LabService:
                 sample_id = cast(int, s.id)
                 isolation = self.lab_repo.get_isolation(session, sample_id)
                 micro = isolation[0] if isolation else None
-                lab_no_value = cast(str, s.lab_no)
-                material_type_id = cast(int, s.material_type_id)
-                material_location = cast(str | None, s.material_location)
-                medium = cast(str | None, s.medium)
-                taken_at = cast(datetime | None, s.taken_at)
-                growth_flag = cast(int | None, s.growth_flag)
-                qc_due_at_value = cast(datetime | None, s.qc_due_at)
-                qc_status = cast(str | None, s.qc_status)
-                microorganism_id = cast(int | None, micro.microorganism_id) if micro else None
-                microorganism_free = cast(str | None, micro.microorganism_free) if micro else None
-                responses.append(
-                    LabSampleResponse(
-                        id=sample_id,
-                        lab_no=lab_no_value,
-                        material_type_id=material_type_id,
-                        material_location=material_location,
-                        medium=medium,
-                        taken_at=taken_at,
-                        growth_flag=growth_flag,
-                        qc_due_at=qc_due_at_value,
-                        qc_status=qc_status,
-                        microorganism_id=microorganism_id,
-                        microorganism_free=microorganism_free,
-                    )
-                )
+                responses.append(_lab_response(s, micro))
             return responses
 
     def get_detail(self, sample_id: int) -> dict:
@@ -276,6 +251,4 @@ class LabService:
                 "susceptibility": susceptibility,
                 "phages": phages,
             }
-
-
 

@@ -10,8 +10,11 @@ class SanitarySampleCreateRequest(BaseModel):
 
     department_id: int
     sampling_point: str
+    lab_no: str | None = None
+    barcode: str | None = None
     room: str | None = None
     medium: str | None = None
+    ordered_at: datetime | None = None
     taken_at: datetime | None = None
     delivered_at: datetime | None = None
     created_by: int | None = None
@@ -30,9 +33,13 @@ class SanitarySampleResultUpdate(BaseModel):
 
 
 class SanitarySampleUpdateRequest(BaseModel):
+    department_id: int | None = None
     sampling_point: str | None = None
+    lab_no: str | None = None
+    barcode: str | None = None
     room: str | None = None
     medium: str | None = None
+    ordered_at: datetime | None = None
     taken_at: datetime | None = None
     delivered_at: datetime | None = None
 
@@ -40,11 +47,14 @@ class SanitarySampleUpdateRequest(BaseModel):
 class SanitarySampleResponse(BaseModel):
     id: int
     lab_no: str
+    barcode: str | None = None
     department_id: int
     sampling_point: str | None = None
     room: str | None = None
     medium: str | None = None
+    ordered_at: datetime | None = None
     taken_at: datetime | None
+    delivered_at: datetime | None = None
     growth_flag: int | None
     microorganism_id: int | None = None
     microorganism_free: str | None = None

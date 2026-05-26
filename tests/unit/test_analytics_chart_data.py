@@ -202,7 +202,7 @@ def test_group_time_series_week_sums_iso_week_values() -> None:
 
     result = group_time_series(points, TimeGrouping.WEEK, date(2026, 4, 20), date(2026, 4, 26))
 
-    assert result.labels == ["2026-W17"]
+    assert result.labels == ["20.04-26.04"]
     assert result.values == [5]
 
 
@@ -214,7 +214,7 @@ def test_group_time_series_week_splits_different_weeks() -> None:
 
     result = group_time_series(points, TimeGrouping.WEEK, date(2026, 4, 20), date(2026, 5, 3))
 
-    assert result.labels == ["2026-W17", "2026-W18"]
+    assert result.labels == ["20.04-26.04", "27.04-03.05"]
     assert result.values == [2, 3]
 
 
@@ -227,7 +227,7 @@ def test_group_time_series_week_handles_year_boundary() -> None:
 
     result = group_time_series(points, TimeGrouping.WEEK, date(2025, 12, 29), date(2026, 1, 5))
 
-    assert result.labels == ["2026-W01", "2026-W02"]
+    assert result.labels == ["29.12-04.01", "05.01-11.01"]
     assert result.values == [5, 4]
 
 
@@ -256,7 +256,7 @@ def test_group_time_series_auto_returns_effective_grouping() -> None:
     )
 
     assert result.effective_grouping is TimeGrouping.WEEK
-    assert result.labels[0] == "2026-W01"
+    assert result.labels[0] == "29.12-04.01"
 
 
 def test_group_time_series_empty_list_does_not_fail() -> None:
@@ -278,7 +278,7 @@ def test_group_trend_rows_week_aggregates_totals_before_percentage() -> None:
         date_to=date(2026, 4, 26),
     )
 
-    assert result.labels == ["2026-W17"]
+    assert result.labels == ["20.04-26.04"]
     assert result.values == [1.0]
 
 
@@ -415,7 +415,7 @@ def test_apply_trend_uses_selected_time_grouping(qapp) -> None:
         request=AnalyticsSearchRequest(date_from=date(2026, 4, 20), date_to=date(2026, 4, 26)),
     )
 
-    assert cast(_ChartCapture, overview.trend_chart).items == [("2026-W17", 1.0)]
+    assert cast(_ChartCapture, overview.trend_chart).items == [("20.04-26.04", 1.0)]
     view.close()
 
 
@@ -451,7 +451,7 @@ def test_time_grouping_change_refreshes_dashboard_and_keeps_selected_mode(qapp) 
 
     assert service.trend_calls == 1
     assert overview.time_grouping.currentData() == TimeGrouping.WEEK.value
-    assert cast(_ChartCapture, overview.trend_chart).items[0][0] == "2026-W01"
+    assert cast(_ChartCapture, overview.trend_chart).items[0][0] == "29.12-04.01"
     view.close()
 
 

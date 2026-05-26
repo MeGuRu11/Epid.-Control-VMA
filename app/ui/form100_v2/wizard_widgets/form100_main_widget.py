@@ -7,7 +7,6 @@ from typing import Any
 from PySide6.QtCore import QDate, Qt, QTime
 from PySide6.QtWidgets import (
     QCheckBox,
-    QDateEdit,
     QFormLayout,
     QFrame,
     QGridLayout,
@@ -22,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from app.ui.form100_v2.wizard_widgets.bodymap_widget import BodyMapWidget
 from app.ui.form100_v2.wizard_widgets.lesion_type_widget import LesionTypeWidget
+from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
 
 LESION_ITEMS: tuple[tuple[str, str], ...] = (
     ("lesion_gunshot",    "О  Огнестрельное"),
@@ -203,9 +203,7 @@ class Form100MainWidget(QWidget):
         issued_time_row = QHBoxLayout()
         self.main_issued_time = QTimeEdit()
         self.main_issued_time.setDisplayFormat("HH:mm")
-        self.main_issued_date = QDateEdit()
-        self.main_issued_date.setDisplayFormat("dd.MM.yyyy")
-        self.main_issued_date.setCalendarPopup(True)
+        self.main_issued_date = create_optional_date_edit()
         issued_time_row.addWidget(self.main_issued_time)
         issued_time_row.addWidget(QLabel("от"))
         issued_time_row.addWidget(self.main_issued_date)
@@ -223,9 +221,7 @@ class Form100MainWidget(QWidget):
         injury_time_row = QHBoxLayout()
         self.main_injury_time = QTimeEdit()
         self.main_injury_time.setDisplayFormat("HH:mm")
-        self.main_injury_date = QDateEdit()
-        self.main_injury_date.setDisplayFormat("dd.MM.yyyy")
-        self.main_injury_date.setCalendarPopup(True)
+        self.main_injury_date = create_optional_date_edit()
         injury_time_row.addWidget(self.main_injury_time)
         injury_time_row.addWidget(QLabel("от"))
         injury_time_row.addWidget(self.main_injury_date)
@@ -326,7 +322,7 @@ class Form100MainWidget(QWidget):
         ):
             val = str(payload.get(key) or "")
             d = QDate.fromString(val, "dd.MM.yyyy")
-            date_edit.setDate(d if d.isValid() else QDate.currentDate())
+            date_edit.setDate(d if d.isValid() else DEFAULT_EMPTY_DATE)
 
     def collect(self) -> tuple[dict[str, str], list[dict[str, Any]]]:
         payload: dict[str, str] = {}

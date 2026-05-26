@@ -5,11 +5,10 @@ from collections.abc import Callable
 from datetime import date
 from typing import cast
 
-from PySide6.QtCore import QDate, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
-    QDateEdit,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -45,6 +44,7 @@ from app.ui.patient.emk_utils import (
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.table_utils import resize_columns_to_content
@@ -80,7 +80,7 @@ class PatientEmkView(QWidget):
         self._cases_cache: list[tuple[EmzCaseDetail, EmzCaseResponse]] = []
         self._current_patient: PatientResponse | None = None
         self._current_case_id: int | None = None
-        self._date_empty = QDate(2000, 1, 1)
+        self._date_empty = DEFAULT_EMPTY_DATE
         self._search_token = 0
         self._cases_token = 0
         self._build_ui()
@@ -362,18 +362,8 @@ class PatientEmkView(QWidget):
         self.department_filter.currentIndexChanged.connect(self._apply_case_filters)
         filter_row.addWidget(self.department_filter)
         filter_row.addWidget(QLabel("Период"))
-        self.date_from = QDateEdit()
-        self.date_from.setDisplayFormat("dd.MM.yyyy")
-        self.date_from.setCalendarPopup(True)
-        self.date_from.setSpecialValueText("")
-        self.date_from.setDate(self._date_empty)
-        self.date_from.setMinimumDate(self._date_empty)
-        self.date_to = QDateEdit()
-        self.date_to.setDisplayFormat("dd.MM.yyyy")
-        self.date_to.setCalendarPopup(True)
-        self.date_to.setSpecialValueText("")
-        self.date_to.setDate(self._date_empty)
-        self.date_to.setMinimumDate(self._date_empty)
+        self.date_from = create_optional_date_edit()
+        self.date_to = create_optional_date_edit()
         self.date_from.dateChanged.connect(self._apply_case_filters)
         self.date_to.dateChanged.connect(self._apply_case_filters)
         filter_row.addWidget(self.date_from)
@@ -842,5 +832,3 @@ class PatientEmkView(QWidget):
                 f"Ошибка: {error_text(exc, 'Не удалось удалить пациента')}",
                 "error",
             )
-
-

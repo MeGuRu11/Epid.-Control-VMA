@@ -6,7 +6,6 @@ from typing import Any
 
 from PySide6.QtCore import QDate, QTime
 from PySide6.QtWidgets import (
-    QDateEdit,
     QFormLayout,
     QFrame,
     QGroupBox,
@@ -19,6 +18,11 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.form100_v2.wizard_widgets.form100_stub_widget import Form100StubWidget
+from app.ui.widgets.datetime_inputs import (
+    DEFAULT_EMPTY_DATE,
+    create_birth_date_edit,
+    create_optional_date_edit,
+)
 
 
 class StepIdentification(QWidget):
@@ -51,9 +55,7 @@ class StepIdentification(QWidget):
         issued_row.setSpacing(6)
         self.main_issued_time = QTimeEdit()
         self.main_issued_time.setDisplayFormat("HH:mm")
-        self.main_issued_date = QDateEdit()
-        self.main_issued_date.setDisplayFormat("dd.MM.yyyy")
-        self.main_issued_date.setCalendarPopup(True)
+        self.main_issued_date = create_optional_date_edit()
         issued_row.addWidget(self.main_issued_time)
         issued_row.addWidget(QLabel("от"))
         issued_row.addWidget(self.main_issued_date)
@@ -67,21 +69,13 @@ class StepIdentification(QWidget):
         self.main_full_name.setPlaceholderText("фамилия, имя, отчество")
         self.main_id_tag = QLineEdit()
         self.main_id_tag.setPlaceholderText("удостоверение / жетон №")
-        self.birth_date = QDateEdit()
-        self.birth_date.setDisplayFormat("dd.MM.yyyy")
-        self.birth_date.setCalendarPopup(True)
-        self.birth_date.setSpecialValueText("Не указана")
-        self.birth_date.setMinimumDate(QDate(1900, 1, 1))
-        self.birth_date.setMaximumDate(QDate.currentDate())
-        self.birth_date.setDate(self.birth_date.minimumDate())
+        self.birth_date = create_birth_date_edit()
         injury_row = QHBoxLayout()
         injury_row.setContentsMargins(0, 0, 0, 0)
         injury_row.setSpacing(6)
         self.main_injury_time = QTimeEdit()
         self.main_injury_time.setDisplayFormat("HH:mm")
-        self.main_injury_date = QDateEdit()
-        self.main_injury_date.setDisplayFormat("dd.MM.yyyy")
-        self.main_injury_date.setCalendarPopup(True)
+        self.main_injury_date = create_optional_date_edit()
         injury_row.addWidget(self.main_injury_time)
         injury_row.addWidget(QLabel("от"))
         injury_row.addWidget(self.main_injury_date)
@@ -121,9 +115,9 @@ class StepIdentification(QWidget):
                     QDate(parsed_birth_date.year, parsed_birth_date.month, parsed_birth_date.day)
                 )
             except ValueError:
-                self.birth_date.setDate(self.birth_date.minimumDate())
+                self.birth_date.setDate(DEFAULT_EMPTY_DATE)
         else:
-            self.birth_date.setDate(self.birth_date.minimumDate())
+            self.birth_date.setDate(DEFAULT_EMPTY_DATE)
         for time_edit, key in (
             (self.main_issued_time, "main_issued_time"),
             (self.main_injury_time, "main_injury_time"),
@@ -138,11 +132,11 @@ class StepIdentification(QWidget):
         ):
             val = str(payload.get(key) or "")
             d = QDate.fromString(val, "dd.MM.yyyy")
-            date_edit.setDate(d if d.isValid() else QDate.currentDate())
+            date_edit.setDate(d if d.isValid() else DEFAULT_EMPTY_DATE)
 
     def _get_birth_date(self) -> date | None:
         qdate = self.birth_date.date()
-        if qdate == self.birth_date.minimumDate():
+        if qdate == DEFAULT_EMPTY_DATE:
             return None
         return date(qdate.year(), qdate.month(), qdate.day())
 
@@ -176,4 +170,3 @@ class StepIdentification(QWidget):
             self.main_injury_date,
         ):
             w.setEnabled(not locked)
-

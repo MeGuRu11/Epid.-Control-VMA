@@ -334,8 +334,8 @@ class Form100Wizard(QDialog):
         # -- Левая панель: индикатор шагов ---------------------------------
         step_panel = QFrame()
         step_panel.setObjectName("wizardStepPanel")
-        step_panel.setMinimumWidth(164)
-        step_panel.setMaximumWidth(228)
+        step_panel.setMinimumWidth(260)
+        step_panel.setMaximumWidth(300)
         step_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self._step_panel = step_panel
         sp_lay = QVBoxLayout(step_panel)
@@ -345,6 +345,7 @@ class Form100Wizard(QDialog):
         hdr_title = QLabel("Первичные медицинские карточки (ф. 100)")
         hdr_title.setObjectName("wizardStepTitle")
         hdr_title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        hdr_title.setWordWrap(True)
         sp_lay.addWidget(hdr_title)
 
         sep = QFrame()
@@ -523,28 +524,28 @@ class Form100Wizard(QDialog):
     def _apply_responsive_metrics(self) -> None:
         width = max(1, self.width())
         if width < 1220:
-            panel_min, panel_max = 132, 156
+            panel_min, panel_max = 260, 280
             nav_height = 48
             back_min, back_max = 78, 102
             next_min, next_max = 78, 102
             save_min, save_max = 84, 118
             cancel_min, cancel_max = 76, 98
         elif width < 1366:
-            panel_min, panel_max = 150, 172
+            panel_min, panel_max = 260, 288
             nav_height = 50
             back_min, back_max = 82, 110
             next_min, next_max = 82, 110
             save_min, save_max = 88, 126
             cancel_min, cancel_max = 80, 104
         elif width < 1600:
-            panel_min, panel_max = 160, 192
+            panel_min, panel_max = 260, 300
             nav_height = 52
             back_min, back_max = 84, 122
             next_min, next_max = 84, 122
             save_min, save_max = 92, 138
             cancel_min, cancel_max = 82, 116
         else:
-            panel_min, panel_max = 172, 228
+            panel_min, panel_max = 272, 320
             nav_height = 56
             back_min, back_max = 88, 136
             next_min, next_max = 88, 136
@@ -726,5 +727,3 @@ class Form100Wizard(QDialog):
             )
             return
         self.accept()
-
-

@@ -19,8 +19,8 @@ from PySide6.QtWidgets import (
 
 from app.ui.emz.form_utils import OUTCOME_TYPE_OPTIONS, OUTCOME_TYPE_PLACEHOLDER
 from app.ui.widgets.datetime_inputs import (
-    configure_optional_date_edit,
-    configure_optional_datetime_edit,
+    create_optional_date_edit,
+    create_optional_datetime_edit,
 )
 
 ABX_COMBO_MAX_VISIBLE_ITEMS = 6
@@ -285,13 +285,11 @@ def create_outcome_type_combo() -> QComboBox:
 
 
 def create_datetime_cell(empty_dt: QDateTime) -> QDateTimeEdit:
-    widget = QDateTimeEdit()
-    return configure_optional_datetime_edit(widget, empty_datetime=empty_dt)
+    return create_optional_datetime_edit(empty_datetime=empty_dt)
 
 
 def create_date_cell(empty_date: QDate) -> QDateEdit:
-    widget = QDateEdit()
-    return configure_optional_date_edit(widget, empty_date=empty_date)
+    return create_optional_date_edit(empty_date=empty_date)
 
 
 def create_icd_combo(*, icd_items: Sequence[IcdLike], wire_search: Callable[[QComboBox], None]) -> QComboBox:

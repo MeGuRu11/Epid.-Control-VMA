@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 from app.application.dto.sanitary_dto import (
     SanitarySampleCreateRequest,
@@ -19,6 +19,29 @@ from app.infrastructure.db.session import session_scope
 
 def _format_sanitary_lab_no(seq_date: datetime, seq: int) -> str:
     return f"SAN-{seq_date.strftime('%Y%m%d')}-{seq:04d}"
+
+
+def _clean_optional_text(value: str | None) -> str | None:
+    text = (value or "").strip()
+    return text or None
+
+
+def _sanitary_response(sample: Any, micro: Any | None = None) -> SanitarySampleResponse:
+    return SanitarySampleResponse(
+        id=cast(int, sample.id),
+        lab_no=cast(str, sample.lab_no),
+        barcode=cast(str | None, sample.barcode),
+        department_id=cast(int, sample.department_id),
+        sampling_point=cast(str | None, sample.sampling_point),
+        room=cast(str | None, sample.room),
+        medium=cast(str | None, sample.medium),
+        ordered_at=cast(datetime | None, sample.ordered_at),
+        taken_at=cast(datetime | None, sample.taken_at),
+        delivered_at=cast(datetime | None, sample.delivered_at),
+        growth_flag=cast(int | None, sample.growth_flag),
+        microorganism_id=cast(int | None, micro.microorganism_id) if micro else None,
+        microorganism_free=cast(str | None, micro.microorganism_free) if micro else None,
+    )
 
 
 class SanitaryService:
@@ -43,17 +66,25 @@ class SanitaryService:
 
     def create_sample(self, request: SanitarySampleCreateRequest, *, actor_id: int) -> SanitarySampleResponse:
         seq_date = request.taken_at or datetime.now(UTC)
+        manual_lab_no = _clean_optional_text(request.lab_no)
         with self.session_factory() as session:
             self._require_write_access(session, actor_id)
-            seq = self.repo.next_lab_number(session, seq_date)
-            lab_no = _format_sanitary_lab_no(seq_date, seq)
+            if manual_lab_no is not None:
+                if self.repo.get_sample_by_lab_no(session, manual_lab_no) is not None:
+                    raise ValueError(f"Лаб. номер уже существует: {manual_lab_no}")
+                lab_no = manual_lab_no
+            else:
+                seq = self.repo.next_lab_number(session, seq_date)
+                lab_no = _format_sanitary_lab_no(seq_date, seq)
             sample = self.repo.create_sample(
                 session,
                 lab_no=lab_no,
+                barcode=_clean_optional_text(request.barcode),
                 department_id=request.department_id,
                 sampling_point=request.sampling_point,
                 room=request.room,
                 medium=request.medium,
+                ordered_at=request.ordered_at,
                 taken_at=request.taken_at,
                 delivered_at=request.delivered_at,
                 created_by=actor_id,
@@ -68,24 +99,7 @@ class SanitaryService:
                 payload_json=json.dumps({"lab_no": lab_no}),
             )
 
-            sample_id = cast(int, sample.id)
-            lab_no_value = cast(str, sample.lab_no)
-            department_id = cast(int, sample.department_id)
-            sampling_point = cast(str | None, sample.sampling_point)
-            room = cast(str | None, sample.room)
-            medium = cast(str | None, sample.medium)
-            taken_at = cast(datetime | None, sample.taken_at)
-            growth_flag = cast(int | None, sample.growth_flag)
-            return SanitarySampleResponse(
-                id=sample_id,
-                lab_no=lab_no_value,
-                department_id=department_id,
-                sampling_point=sampling_point,
-                room=room,
-                medium=medium,
-                taken_at=taken_at,
-                growth_flag=growth_flag,
-            )
+            return _sanitary_response(sample)
 
     def update_result(
         self, sample_id: int, request: SanitarySampleResultUpdate, actor_id: int
@@ -131,28 +145,7 @@ class SanitaryService:
             session.refresh(sample)
             isolation = self.repo.get_isolation(session, sample_id)
             micro = isolation[0] if isolation else None
-            sample_id_value = cast(int, sample.id)
-            lab_no_value = cast(str, sample.lab_no)
-            department_id = cast(int, sample.department_id)
-            sampling_point = cast(str | None, sample.sampling_point)
-            room = cast(str | None, sample.room)
-            medium = cast(str | None, sample.medium)
-            taken_at = cast(datetime | None, sample.taken_at)
-            growth_flag = cast(int | None, sample.growth_flag)
-            microorganism_id = cast(int | None, micro.microorganism_id) if micro else None
-            microorganism_free = cast(str | None, micro.microorganism_free) if micro else None
-            return SanitarySampleResponse(
-                id=sample_id_value,
-                lab_no=lab_no_value,
-                department_id=department_id,
-                sampling_point=sampling_point,
-                room=room,
-                medium=medium,
-                taken_at=taken_at,
-                growth_flag=growth_flag,
-                microorganism_id=microorganism_id,
-                microorganism_free=microorganism_free,
-            )
+            return _sanitary_response(sample, micro)
 
     def update_sample(self, sample_id: int, request: SanitarySampleUpdateRequest, actor_id: int) -> None:
         with self.session_factory() as session:
@@ -161,12 +154,24 @@ class SanitaryService:
             if not sample:
                 raise ValueError("Проба не найдена")
 
+            current_lab_no = cast(str, sample.lab_no)
+            manual_lab_no = _clean_optional_text(request.lab_no)
+            if (
+                manual_lab_no is not None
+                and manual_lab_no != current_lab_no
+                and self.repo.get_sample_by_lab_no(session, manual_lab_no) is not None
+            ):
+                raise ValueError(f"Лаб. номер уже существует: {manual_lab_no}")
             self.repo.update_sample(
                 session,
                 sample_id=sample_id,
+                department_id=request.department_id,
+                lab_no=manual_lab_no if manual_lab_no != current_lab_no else None,
+                barcode=_clean_optional_text(request.barcode),
                 sampling_point=request.sampling_point,
                 room=request.room,
                 medium=request.medium,
+                ordered_at=request.ordered_at,
                 taken_at=request.taken_at,
                 delivered_at=request.delivered_at,
             )
@@ -194,29 +199,7 @@ class SanitaryService:
                 sample_id = cast(int, s.id)
                 isolation = self.repo.get_isolation(session, sample_id)
                 micro = isolation[0] if isolation else None
-                lab_no_value = cast(str, s.lab_no)
-                department_id = cast(int, s.department_id)
-                sampling_point = cast(str | None, s.sampling_point)
-                room = cast(str | None, s.room)
-                medium = cast(str | None, s.medium)
-                taken_at = cast(datetime | None, s.taken_at)
-                growth_flag = cast(int | None, s.growth_flag)
-                microorganism_id = cast(int | None, micro.microorganism_id) if micro else None
-                microorganism_free = cast(str | None, micro.microorganism_free) if micro else None
-                responses.append(
-                    SanitarySampleResponse(
-                        id=sample_id,
-                        lab_no=lab_no_value,
-                        department_id=department_id,
-                        sampling_point=sampling_point,
-                        room=room,
-                        medium=medium,
-                        taken_at=taken_at,
-                        growth_flag=growth_flag,
-                        microorganism_id=microorganism_id,
-                        microorganism_free=microorganism_free,
-                    )
-                )
+                responses.append(_sanitary_response(s, micro))
             return responses
 
     def get_detail(self, sample_id: int) -> dict:
@@ -233,6 +216,4 @@ class SanitaryService:
                 "susceptibility": susceptibility,
                 "phages": phages,
             }
-
-
 

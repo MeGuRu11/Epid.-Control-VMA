@@ -21,6 +21,10 @@ class LabRepository:
         stmt = select(LabSample).where(LabSample.id == sample_id)
         return session.execute(stmt).scalar_one_or_none()
 
+    def get_sample_by_lab_no(self, session: Session, lab_no: str) -> LabSample | None:
+        stmt = select(LabSample).where(LabSample.lab_no == lab_no)
+        return session.execute(stmt).scalar_one_or_none()
+
     def list_by_patient(self, session: Session, patient_id: int, emr_case_id: int | None = None) -> list[LabSample]:
         stmt = select(LabSample).where(LabSample.patient_id == patient_id)
         if emr_case_id is not None:
@@ -51,6 +55,7 @@ class LabRepository:
         patient_id: int,
         emr_case_id: int | None,
         lab_no: str,
+        barcode: str | None,
         material_type_id: int,
         material_location: str | None,
         medium: str | None,
@@ -66,6 +71,7 @@ class LabRepository:
             patient_id=patient_id,
             emr_case_id=emr_case_id,
             lab_no=lab_no,
+            barcode=barcode,
             material_type_id=material_type_id,
             material_location=material_location,
             medium=medium,
@@ -114,6 +120,8 @@ class LabRepository:
         session: Session,
         sample_id: int,
         *,
+        lab_no: str | None = None,
+        barcode: str | None,
         material_type_id: int | None,
         material_location: str | None,
         medium: str | None,
@@ -124,6 +132,7 @@ class LabRepository:
         qc_due_at: datetime | None = None,
     ) -> None:
         values = {
+            "barcode": barcode,
             "material_type_id": material_type_id,
             "material_location": material_location,
             "medium": medium,
@@ -132,6 +141,8 @@ class LabRepository:
             "taken_at": taken_at,
             "delivered_at": delivered_at,
         }
+        if lab_no is not None:
+            values["lab_no"] = lab_no
         if qc_due_at is not None:
             values["qc_due_at"] = qc_due_at
         stmt = (

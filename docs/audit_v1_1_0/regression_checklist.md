@@ -5,7 +5,7 @@ Source: `docs/specs/SPEC_analytics_redesign.md`.
 Legend:
 - `[x] (auto)` - confirmed by tests, scripts, or static checks during S4.6.
 - `[ ] (manual)` - requires manual UI verification.
-- `[ ] (gap)` - static audit found an implementation/spec mismatch or obsolete checklist item.
+- `[ ] (v1.2 backlog)` - accepted scope change from the v1.1.0 static audit; not a release blocker.
 
 ## Summary
 
@@ -127,14 +127,14 @@ Legend:
 
 ### 3.2 Таблица результатов
 - [ ] (manual) Колонки: ID, Лаб. №, ФИО, Категория, Дата, Отделение, Материал, Микро, Антибиотик.
-- [ ] (gap) Сортировка по любой колонке. - Finding: static gap: SearchTab table has no sortingEnabled/sortItems setup
-- [ ] (gap) Клик по строке открывает превью пробы (модальное окно или панель справа). - Finding: static gap: SearchTab has no row/cell activation handler for sample preview
-- [ ] (gap) При >1000 результатах используется виртуализация или пагинация. - Finding: static gap: SearchTab truncates to rows[:1000] with warning, no pagination/virtualization
+- [ ] (v1.2 backlog) Сортировка по любой колонке. - Finding: static gap: SearchTab table has no sortingEnabled/sortItems setup
+- [ ] (v1.2 backlog) Клик по строке открывает превью пробы (модальное окно или панель справа). - Finding: static gap: SearchTab has no row/cell activation handler for sample preview
+- [ ] (v1.2 backlog) При >1000 результатах используется виртуализация или пагинация. - Finding: static gap: SearchTab truncates to rows[:1000] with warning, no pagination/virtualization
 - [x] (auto) Color-coded badge: положительные пробы — мягкая красная подсветка, отрицательные — нейтральная. - Evidence: test_search_tab_badges.py
 
 ### 3.3 Quick filter chips (новая фича)
 - [x] (auto) Chip «Только положительные» — клик добавляет growth_flag=True в фильтр. - Evidence: test_quick_filter_chips.py::test_chip_toggle_emits_filter_changed
-- [ ] (gap) Chip «Только Грам−» / «Только Грам+» — фильтрует по taxon_group микроорганизма. - Finding: static gap: QuickFilterChips has positive/blood/wound chips, no Gram+/Gram- chip or taxon_group filter
+- [ ] (v1.2 backlog) Chip «Только Грам−» / «Только Грам+» — фильтрует по taxon_group микроорганизма. - Finding: static gap: QuickFilterChips has positive/blood/wound chips, no Gram+/Gram- chip or taxon_group filter
 - [x] (auto) Chip «Только из крови» / «Только из ран» — фильтрует по material_type. - Evidence: test_quick_filter_chips.py::test_material_chip_can_set_material_type_id
 - [ ] (manual) Активный chip визуально выделен (бирюзовый бордер).
 - [x] (auto) Повторный клик снимает фильтр. - Evidence: test_quick_filter_chips.py::test_chip_filter_resets_on_deactivation
@@ -144,7 +144,7 @@ Legend:
 ## Раздел 4 — Экспорт
 
 ### 4.1 Excel
-- [ ] (gap) Кнопка «Экспорт XLSX» — диалог сохранения с дефолтным именем (например, `analytics_2026-05-09.xlsx`). - Finding: static gap: Analytics export default filename is analytics_report.xlsx, not dated analytics_YYYY-MM-DD.xlsx
+- [ ] (v1.2 backlog) Кнопка «Экспорт XLSX» — диалог сохранения с дефолтным именем (например, `analytics_2026-05-09.xlsx`). - Finding: static gap: Analytics export default filename is analytics_report.xlsx, not dated analytics_YYYY-MM-DD.xlsx
 - [x] (auto) Файл содержит листы: Сводка, Фильтры, Данные. - Evidence: test_reporting_service_artifacts.py::test_export_analytics_xlsx_has_all_sheets
 - [x] (auto) Числа — реальные числовые ячейки с правильным форматированием (даты — datetime, проценты — `0.0%`). - Evidence: test_reporting_service_artifacts.py + test_analytics_xlsx_ismp.py
 - [ ] (manual) При уже существующем файле — подтверждение перезаписи.
@@ -158,23 +158,23 @@ Legend:
 - [x] (auto) Запись в `report_run` создана. - Evidence: test_reporting_service_artifacts.py::test_export_report_saves_artifact_and_history
 
 ### 4.3 Quick-export всей вкладки (новая фича)
-- [ ] (gap) Кнопка «Скачать отчёт» в шапке текущей вкладки → PDF со всеми KPI, графиками, таблицами этой вкладки. - Finding: static gap: quick-export current tab button was not found
-- [ ] (gap) Имя файла включает название вкладки и дату. - Finding: static gap: quick-export current tab button was not found
+- [ ] (v1.2 backlog) Кнопка «Скачать отчёт» в шапке текущей вкладки → PDF со всеми KPI, графиками, таблицами этой вкладки. - Finding: static gap: quick-export current tab button was not found
+- [ ] (v1.2 backlog) Имя файла включает название вкладки и дату. - Finding: static gap: quick-export current tab button was not found
 
 ---
 
 ## Раздел 5 — История отчётов
 
 ### 5.1 Список
-- [ ] (gap) Колонки: Дата, Тип, Описание, SHA256 (короткий), Действия. - Finding: static gap: ReportsTab columns differ and do not include action column
+- [ ] (v1.2 backlog) Колонки: Дата, Тип, Описание, SHA256 (короткий), Действия. - Finding: static gap: ReportsTab columns differ and do not include action column
 - [ ] (manual) Сортировка по дате (новые сверху).
-- [ ] (gap) Фильтр по типу (Аналитика / Form100 / Все). - Finding: static gap: ReportsTab type filter has Analytics only, no Form100/All options
+- [ ] (v1.2 backlog) Фильтр по типу (Аналитика / Form100 / Все). - Finding: static gap: ReportsTab type filter has Analytics only, no Form100/All options
 - [x] (auto) Поиск по описанию. - Evidence: ReportsTab has query filter; full UX manual
-- [ ] (gap) Период «от-до» для фильтрации. - Finding: static gap: ReportsTab has no date range controls
+- [ ] (v1.2 backlog) Период «от-до» для фильтрации. - Finding: static gap: ReportsTab has no date range controls
 
 ### 5.2 Действия
-- [ ] (gap) «Открыть» — открывает файл в системном просмотрщике. - Finding: static gap: ReportsTab has no open artifact action
-- [ ] (gap) «Сохранить как» — копирует файл в выбранное место. - Finding: static gap: ReportsTab has no save-as/copy artifact action
+- [ ] (v1.2 backlog) «Открыть» — открывает файл в системном просмотрщике. - Finding: static gap: ReportsTab has no open artifact action
+- [ ] (v1.2 backlog) «Сохранить как» — копирует файл в выбранное место. - Finding: static gap: ReportsTab has no save-as/copy artifact action
 - [x] (auto) «Проверить хеш» — пересчитывает SHA256 и сравнивает с записанным. - Evidence: test_reports_tab_verify.py + reporting service hash tests
 - [x] (auto) При несовпадении SHA — красный индикатор и предупреждение. - Evidence: test_reports_tab_verify.py::test_load_report_history_verify_hash_colors_mismatch_row
 - [x] (auto) При совпадении — зелёный чек. - Evidence: test_reports_tab_verify.py::test_load_report_history_verify_hash_colors_ok_row
@@ -238,7 +238,7 @@ Legend:
 - [x] (auto) БД-схема не меняется. - Evidence: python -m alembic check
 - [x] (auto) Все вызовы сервисов идут через `controller.py`, не напрямую из вкладок. - Evidence: controller delegation tests + check_architecture.py
 - [x] (auto) UI не импортирует `app.infrastructure.*`. - Evidence: python scripts/check_architecture.py
-- [ ] (gap) Старая страница (`AnalyticsSearchView`) работает до самого конца переноса при снятом флаге. - Finding: obsolete/gap: Analytics v1/use_analytics_v2 flag removed by S4.2 final migration
+- [ ] (v1.2 backlog) Старая страница (`AnalyticsSearchView`) работает до самого конца переноса при снятом флаге. - Finding: obsolete/gap: Analytics v1/use_analytics_v2 flag removed by S4.2 final migration
 
 ---
 
@@ -247,7 +247,7 @@ Legend:
 - [x] (auto) Сохранённые фильтры из v1 корректно загружаются и применяются в v2. - Evidence: test_saved_filter_service.py + SearchTab signal path; full migration manual
 - [x] (auto) История отчётов из v1 видна в v2. - Evidence: test_analytics_report_history_helpers.py + ReportsTab tests
 - [x] (auto) Геометрия окна и user preferences сохраняются. - Evidence: test_user_preferences_service.py + test_preferences_repository.py
-- [ ] (gap) При откате обратно на v1 (выключение флага) — никакие данные не потеряны. - Finding: obsolete/gap: Analytics v1/use_analytics_v2 flag removed by S4.2 final migration
+- [ ] (v1.2 backlog) При откате обратно на v1 (выключение флага) — никакие данные не потеряны. - Finding: obsolete/gap: Analytics v1/use_analytics_v2 flag removed by S4.2 final migration
 
 ---
 

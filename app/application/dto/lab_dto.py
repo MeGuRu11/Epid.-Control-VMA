@@ -10,6 +10,8 @@ class LabSampleCreateRequest(BaseModel):
 
     patient_id: int
     emr_case_id: int | None = None
+    lab_no: str | None = None
+    barcode: str | None = None
     material_type_id: int
     material_location: str | None = None
     medium: str | None = None
@@ -35,6 +37,8 @@ class LabSampleResultUpdate(BaseModel):
 
 
 class LabSampleUpdateRequest(BaseModel):
+    lab_no: str | None = None
+    barcode: str | None = None
     material_type_id: int | None = None
     material_location: str | None = None
     medium: str | None = None
@@ -47,10 +51,13 @@ class LabSampleUpdateRequest(BaseModel):
 class LabSampleResponse(BaseModel):
     id: int
     lab_no: str
+    barcode: str | None = None
     material_type_id: int
     material_location: str | None = None
     medium: str | None = None
+    ordered_at: datetime | None = None
     taken_at: datetime | None
+    delivered_at: datetime | None = None
     growth_flag: int | None
     qc_due_at: datetime | None = None
     qc_status: str | None = None

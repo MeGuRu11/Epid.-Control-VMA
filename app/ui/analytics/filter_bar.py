@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, cast
 from PySide6.QtCore import QDate, QSignalBlocker, Signal
 from PySide6.QtWidgets import (
     QComboBox,
-    QDateEdit,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -24,6 +23,7 @@ from app.ui.analytics.view_utils import (
     quick_period_bounds,
 )
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import create_optional_date_edit
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
 if TYPE_CHECKING:
@@ -232,14 +232,8 @@ class FilterBar(QWidget):
         grid.addWidget(self.growth_flag, 2, 3)
 
     def _init_filter_widgets(self) -> None:
-        self.date_from = QDateEdit()
-        self.date_from.setCalendarPopup(True)
-        self.date_from.setDisplayFormat("dd.MM.yyyy")
-        self.date_from.setMinimumDate(QDate(2000, 1, 1))
-        self.date_to = QDateEdit()
-        self.date_to.setCalendarPopup(True)
-        self.date_to.setDisplayFormat("dd.MM.yyyy")
-        self.date_to.setMinimumDate(QDate(2000, 1, 1))
+        self.date_from = create_optional_date_edit()
+        self.date_to = create_optional_date_edit()
         self.department = QComboBox()
         self.icd10 = QComboBox()
         self.icd10.setEditable(True)

@@ -126,8 +126,11 @@ def build_sanitary_sample_create_request(
     *,
     department_id: int,
     sampling_point: str,
+    lab_no: str = "",
+    barcode: str = "",
     room: str,
     medium: str,
+    ordered_at: datetime | None = None,
     taken_at: datetime | None,
     delivered_at: datetime | None,
     created_by: int | None = None,
@@ -139,8 +142,11 @@ def build_sanitary_sample_create_request(
     return SanitarySampleCreateRequest(
         department_id=department_id,
         sampling_point=point,
+        lab_no=_none_if_empty(lab_no),
+        barcode=_none_if_empty(barcode),
         room=_none_if_empty(room),
         medium=_none_if_empty(medium),
+        ordered_at=ordered_at,
         taken_at=taken_at,
         delivered_at=delivered_at,
         created_by=created_by,
@@ -149,9 +155,13 @@ def build_sanitary_sample_create_request(
 
 def build_sanitary_sample_update_request(
     *,
+    department_id: int | None = None,
     sampling_point: str,
+    lab_no: str = "",
+    barcode: str = "",
     room: str,
     medium: str,
+    ordered_at: datetime | None = None,
     taken_at: datetime | None,
     delivered_at: datetime | None,
 ) -> SanitarySampleUpdateRequest:
@@ -160,9 +170,13 @@ def build_sanitary_sample_update_request(
     if not point:
         raise ValueError("Укажите точку отбора")
     return SanitarySampleUpdateRequest(
+        department_id=department_id,
         sampling_point=point,
+        lab_no=_none_if_empty(lab_no),
+        barcode=_none_if_empty(barcode),
         room=_none_if_empty(room),
         medium=_none_if_empty(medium),
+        ordered_at=ordered_at,
         taken_at=taken_at,
         delivered_at=delivered_at,
     )

@@ -37,6 +37,12 @@ from app.application.services.form100_payload_service import (
     build_form100_data_payload,
 )
 from app.ui.form100_v2.widgets.bodymap_editor_v2 import BodymapEditorV2
+from app.ui.widgets.datetime_inputs import (
+    DEFAULT_EMPTY_DATE,
+    create_birth_date_edit,
+    create_optional_date_edit,
+    optional_date_value,
+)
 from app.ui.widgets.validation_banner import ValidationBanner
 
 _LESION_KEYS = (
@@ -100,10 +106,7 @@ class Form100EditorV2(QWidget):
         box = QGroupBox("Корешок")
         form = QFormLayout(box)
 
-        self.stub_issued_date = QDateEdit()
-        self.stub_issued_date.setDisplayFormat("dd.MM.yyyy")
-        self.stub_issued_date.setCalendarPopup(True)
-        self.stub_issued_date.setDate(QDate.currentDate())
+        self.stub_issued_date = create_optional_date_edit()
         self.stub_issued_time = QTimeEdit()
         self.stub_issued_time.setDisplayFormat("HH:mm")
         self.stub_issued_time.setTime(QTime.currentTime())
@@ -113,10 +116,7 @@ class Form100EditorV2(QWidget):
         self.stub_full_name = QLineEdit()
         self.stub_id_tag = QLineEdit()
 
-        self.stub_injury_date = QDateEdit()
-        self.stub_injury_date.setDisplayFormat("dd.MM.yyyy")
-        self.stub_injury_date.setCalendarPopup(True)
-        self.stub_injury_date.setDate(QDate.currentDate())
+        self.stub_injury_date = create_optional_date_edit()
         self.stub_injury_time = QTimeEdit()
         self.stub_injury_time.setDisplayFormat("HH:mm")
         self.stub_injury_time.setTime(QTime.currentTime())
@@ -181,23 +181,14 @@ class Form100EditorV2(QWidget):
         self.main_full_name = QLineEdit()
         self.main_unit = QLineEdit()
         self.main_id_tag = QLineEdit()
-        self.birth_date = QDateEdit()
-        self.birth_date.setDisplayFormat("dd.MM.yyyy")
-        self.birth_date.setCalendarPopup(True)
-        self.birth_date.setDate(QDate.currentDate())
+        self.birth_date = create_birth_date_edit()
         self.main_rank = QLineEdit()
         self.main_issued_place = QLineEdit()
-        self.main_issued_date = QDateEdit()
-        self.main_issued_date.setDisplayFormat("dd.MM.yyyy")
-        self.main_issued_date.setCalendarPopup(True)
-        self.main_issued_date.setDate(QDate.currentDate())
+        self.main_issued_date = create_optional_date_edit()
         self.main_issued_time = QTimeEdit()
         self.main_issued_time.setDisplayFormat("HH:mm")
         self.main_issued_time.setTime(QTime.currentTime())
-        self.main_injury_date = QDateEdit()
-        self.main_injury_date.setDisplayFormat("dd.MM.yyyy")
-        self.main_injury_date.setCalendarPopup(True)
-        self.main_injury_date.setDate(QDate.currentDate())
+        self.main_injury_date = create_optional_date_edit()
         self.main_injury_time = QTimeEdit()
         self.main_injury_time.setDisplayFormat("HH:mm")
         self.main_injury_time.setTime(QTime.currentTime())
@@ -392,16 +383,15 @@ class Form100EditorV2(QWidget):
         self.stub_diagnosis.clear()
         self.main_diagnosis.clear()
 
-        today = QDate.currentDate()
         now = QTime.currentTime()
-        self.stub_issued_date.setDate(today)
+        self.stub_issued_date.setDate(DEFAULT_EMPTY_DATE)
         self.stub_issued_time.setTime(now)
-        self.stub_injury_date.setDate(today)
+        self.stub_injury_date.setDate(DEFAULT_EMPTY_DATE)
         self.stub_injury_time.setTime(now)
-        self.birth_date.setDate(today)
-        self.main_issued_date.setDate(today)
+        self.birth_date.setDate(DEFAULT_EMPTY_DATE)
+        self.main_issued_date.setDate(DEFAULT_EMPTY_DATE)
         self.main_issued_time.setTime(now)
-        self.main_injury_date.setDate(today)
+        self.main_injury_date.setDate(DEFAULT_EMPTY_DATE)
         self.main_injury_time.setTime(now)
         self.tourniquet_time.setTime(now)
 
@@ -485,7 +475,7 @@ class Form100EditorV2(QWidget):
         if card.birth_date:
             self.birth_date.setDate(QDate(card.birth_date.year, card.birth_date.month, card.birth_date.day))
         else:
-            self.birth_date.setDate(QDate.currentDate())
+            self.birth_date.setDate(DEFAULT_EMPTY_DATE)
         self.main_rank.setText(str(main.get("main_rank") or ""))
         self.main_issued_place.setText(str(main.get("main_issued_place") or ""))
         _set_date_edit_from_value(self.main_issued_date, main.get("main_issued_date"))
@@ -547,7 +537,7 @@ class Form100EditorV2(QWidget):
             main_unit=self.main_unit.text().strip(),
             main_id_tag=_none_if_empty(self.main_id_tag.text()),
             main_diagnosis=self.main_diagnosis.toPlainText().strip(),
-            birth_date=_to_py_date(self.birth_date.date()),
+            birth_date=optional_date_value(self.birth_date) or _to_py_date(DEFAULT_EMPTY_DATE),
             data=Form100DataV2Dto.model_validate(payload),
         )
 
@@ -558,7 +548,7 @@ class Form100EditorV2(QWidget):
             main_unit=self.main_unit.text().strip(),
             main_id_tag=_none_if_empty(self.main_id_tag.text()),
             main_diagnosis=self.main_diagnosis.toPlainText().strip(),
-            birth_date=_to_py_date(self.birth_date.date()),
+            birth_date=optional_date_value(self.birth_date) or _to_py_date(DEFAULT_EMPTY_DATE),
             data=Form100DataV2Dto.model_validate(payload),
         )
 
@@ -681,7 +671,7 @@ class Form100EditorV2(QWidget):
                 issued_time=_to_storage_time(self.main_issued_time.time()),
                 injury_date=_to_storage_date(self.main_injury_date.date()),
                 injury_time=_to_storage_time(self.main_injury_time.time()),
-                birth_date_iso=_to_py_date(self.birth_date.date()).isoformat(),
+                birth_date_iso=(optional_date_value(self.birth_date) or _to_py_date(DEFAULT_EMPTY_DATE)).isoformat(),
             ),
             lesion=lesion,
             san_loss=san_loss,
@@ -770,14 +760,14 @@ def _set_date_edit_from_value(widget: QDateEdit, value: object) -> None:
         return
     text = str(value or "").strip()
     if not text:
-        widget.setDate(QDate.currentDate())
+        widget.setDate(DEFAULT_EMPTY_DATE)
         return
     for fmt in ("dd.MM.yyyy", "yyyy-MM-dd"):
         parsed = QDate.fromString(text, fmt)
         if parsed.isValid():
             widget.setDate(parsed)
             return
-    widget.setDate(QDate.currentDate())
+    widget.setDate(DEFAULT_EMPTY_DATE)
 
 
 def _set_time_edit_from_value(widget: QTimeEdit, value: object) -> None:
@@ -791,4 +781,3 @@ def _set_time_edit_from_value(widget: QTimeEdit, value: object) -> None:
             widget.setTime(parsed)
             return
     widget.setTime(QTime.currentTime())
-

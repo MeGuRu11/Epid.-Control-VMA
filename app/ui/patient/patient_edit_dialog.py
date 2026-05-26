@@ -5,7 +5,6 @@ from datetime import UTC, date, datetime
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QComboBox,
-    QDateEdit,
     QDialog,
     QFormLayout,
     QGroupBox,
@@ -22,6 +21,7 @@ from app.application.exceptions import AppError
 from app.application.services.patient_service import PatientService
 from app.domain.constants import MilitaryCategory
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import create_birth_date_edit, optional_date_value
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import clear_status, set_status
 
@@ -62,11 +62,7 @@ class PatientEditDialog(QDialog):
         box = QGroupBox("Данные пациента")
         form = QFormLayout()
         self.full_name = QLineEdit()
-        self.dob = QDateEdit()
-        self.dob.setCalendarPopup(True)
-        self.dob.setDisplayFormat("dd.MM.yyyy")
-        self.dob.setMinimumDate(QDate(1900, 1, 1))
-        self.dob.setMaximumDate(QDate.currentDate())
+        self.dob = create_birth_date_edit()
         self.sex = QComboBox()
         self.sex.addItems(["М", "Ж"])
         self.category_combo = QComboBox()
@@ -131,10 +127,7 @@ class PatientEditDialog(QDialog):
         return True
 
     def _date_value(self) -> date | None:
-        qd = self.dob.date()
-        if not qd.isValid():
-            return None
-        return date(qd.year(), qd.month(), qd.day())
+        return optional_date_value(self.dob)
 
     def _on_save(self) -> None:
         if not self._validate():
@@ -157,4 +150,3 @@ class PatientEditDialog(QDialog):
             return
         exec_message_box(self, "Готово", "Данные пациента обновлены.", icon=QMessageBox.Icon.Information)
         self.accept()
-

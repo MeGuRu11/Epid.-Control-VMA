@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import cast
 
-from PySide6.QtCore import QDate, QSignalBlocker, Qt, QTimer, Signal
+from PySide6.QtCore import QSignalBlocker, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPainterPath, QPaintEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
@@ -31,6 +31,11 @@ from app.application.services.sanitary_service import SanitaryService
 from app.ui.sanitary.sanitary_history import SanitaryHistoryDialog
 from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
+from app.ui.widgets.datetime_inputs import (
+    DEFAULT_EMPTY_DATE,
+    create_optional_date_edit,
+    optional_date_value,
+)
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
 
@@ -210,7 +215,7 @@ class SanitaryDashboard(QWidget):
         self.sanitary_service = sanitary_service
         self.reference_service = reference_service
         self._session = session
-        self._date_empty = QDate(2000, 1, 1)
+        self._date_empty = DEFAULT_EMPTY_DATE
         self._microbe_map: dict[int, str] = {}
         self._kpi_widgets: dict[str, SanitaryKpiWidgets] = {}
         self._kpi_cards: list[QWidget] = []
@@ -438,20 +443,10 @@ class SanitaryDashboard(QWidget):
         self.filter_enabled.setChecked(False)
         self.filter_enabled.stateChanged.connect(self._on_filter_changed)
 
-        self.date_from = QDateEdit()
-        self.date_from.setCalendarPopup(True)
-        self.date_from.setDisplayFormat("dd.MM.yyyy")
-        self.date_from.setMinimumDate(self._date_empty)
-        self.date_from.setSpecialValueText("")
-        self.date_from.setDate(self._date_empty)
+        self.date_from = create_optional_date_edit()
         self.date_from.dateChanged.connect(self._on_filter_changed)
 
-        self.date_to = QDateEdit()
-        self.date_to.setCalendarPopup(True)
-        self.date_to.setDisplayFormat("dd.MM.yyyy")
-        self.date_to.setMinimumDate(self._date_empty)
-        self.date_to.setSpecialValueText("")
-        self.date_to.setDate(self._date_empty)
+        self.date_to = create_optional_date_edit()
         self.date_to.dateChanged.connect(self._on_filter_changed)
 
         date_layout.addWidget(self.filter_enabled, 0, 0, 1, 2)
@@ -716,10 +711,7 @@ class SanitaryDashboard(QWidget):
         self.refresh()
 
     def _date_value(self, editor: QDateEdit) -> date | None:
-        current = editor.date()
-        if current == self._date_empty:
-            return None
-        return cast(date, current.toPython())
+        return optional_date_value(editor)
 
     def _current_period_text(self) -> str:
         if not self.filter_enabled.isChecked():

@@ -147,8 +147,8 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.datetime_inputs import (
     DEFAULT_EMPTY_DATE,
     DEFAULT_EMPTY_DATETIME,
-    configure_optional_date_edit,
-    configure_optional_datetime_edit,
+    create_birth_date_edit,
+    create_optional_datetime_edit,
     optional_date_value,
     optional_datetime_value,
     to_qdate,
@@ -357,7 +357,7 @@ class EmzForm(QWidget):
     def _init_form_widgets(self) -> None:
         self.full_name = QLineEdit()
         self.full_name.setToolTip("ФИО пациента. Обязательное поле.")
-        self.dob = configure_optional_date_edit(QDateEdit(), empty_date=self._date_empty)
+        self.dob = create_birth_date_edit()
         self.dob.setToolTip("Дата рождения: ДД.ММ.ГГГГ.")
         self.sex = QComboBox()
         self.sex.addItems(["М", "Ж"])
@@ -377,11 +377,11 @@ class EmzForm(QWidget):
         self.department_combo.setEditable(False)
         self.department_combo.addItem("Выбрать", None)
 
-        self.injury_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
-        self.admission_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
+        self.injury_date = create_optional_datetime_edit(empty_datetime=self._dt_empty)
+        self.admission_date = create_optional_datetime_edit(empty_datetime=self._dt_empty)
         self.outcome_type_combo = create_outcome_type_combo()
         connect_combo_autowidth(self.outcome_type_combo)
-        self.outcome_date = configure_optional_datetime_edit(QDateTimeEdit(), empty_datetime=self._dt_empty)
+        self.outcome_date = create_optional_datetime_edit(empty_datetime=self._dt_empty)
         self.injury_date.setToolTip("Дата/время травмы: ДД.ММ.ГГГГ ЧЧ:ММ.")
         self.admission_date.setToolTip("Дата/время поступления: ДД.ММ.ГГГГ ЧЧ:ММ.")
         self.outcome_type_combo.setToolTip("Исход госпитализации.")

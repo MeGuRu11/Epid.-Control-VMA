@@ -164,6 +164,13 @@ _ABX = [
     {"code": "VAN", "name": "Ванкомицин", "group_code": "GLY"},
 ]
 
+_LAB_LOCATIONS = (
+    "периферическая кровь",
+    "мочевой катетер",
+    "рана правого бедра",
+    "нижние дыхательные пути",
+)
+
 _SANITARY_OBJECTS = (
     "Воздух операционной",
     "Смыв со стола",
@@ -473,8 +480,9 @@ def _create_lab_samples(
                 patient_id=demo_case.case.patient_id,
                 emr_case_id=demo_case.case.id,
                 lab_no=f"DEMO-LAB-{run_tag}-{sample_count:03d}",
+                barcode=f"DEMO-LAB-BC-{run_tag[-6:]}-{sample_count:04d}",
                 material_type_id=material.id,
-                material_location="отделение",
+                material_location=_LAB_LOCATIONS[(sample_count - 1) % len(_LAB_LOCATIONS)],
                 medium="агар",
                 study_kind="primary",
                 ordered_at=_as_dt(taken_date, hour=8),
@@ -547,8 +555,9 @@ def _create_resistance_anchor_samples(
                 patient_id=demo_case.case.patient_id,
                 emr_case_id=demo_case.case.id,
                 lab_no=f"DEMO-LAB-{run_tag}-R{anchor_count:03d}",
+                barcode=f"DEMO-LAB-RBC-{run_tag[-6:]}-{anchor_count:04d}",
                 material_type_id=blood.id,
-                material_location="отделение",
+                material_location=_LAB_LOCATIONS[anchor_count % len(_LAB_LOCATIONS)],
                 medium="агар",
                 study_kind="primary",
                 ordered_at=_as_dt(taken_date, hour=8),
@@ -682,6 +691,7 @@ def _create_sanitary_samples(
             room=("операционная", "перевязочная", "палата")[index % 3],
             sampling_point=_SANITARY_OBJECTS[index % len(_SANITARY_OBJECTS)],
             lab_no=f"DEMO-SAN-{run_tag}-{index + 1:03d}",
+            barcode=f"DEMO-SAN-BC-{run_tag[-6:]}-{index + 1:04d}",
             medium="агар",
             ordered_at=_as_dt(taken_date, hour=8),
             taken_at=_as_dt(taken_date, hour=9),

@@ -21,6 +21,10 @@ class SanitaryRepository:
         stmt = select(SanitarySample).where(SanitarySample.id == sample_id)
         return session.execute(stmt).scalar_one_or_none()
 
+    def get_sample_by_lab_no(self, session: Session, lab_no: str) -> SanitarySample | None:
+        stmt = select(SanitarySample).where(SanitarySample.lab_no == lab_no)
+        return session.execute(stmt).scalar_one_or_none()
+
     def next_lab_number(self, session: Session, seq_date: datetime) -> int:
         seq_day = seq_date.date()
         stmt = select(SanitaryNumberSequence).where(SanitaryNumberSequence.seq_date == seq_day)
@@ -40,20 +44,24 @@ class SanitaryRepository:
         session: Session,
         *,
         lab_no: str,
+        barcode: str | None,
         department_id: int,
         sampling_point: str,
         room: str | None,
         medium: str | None,
+        ordered_at: datetime | None,
         taken_at: datetime | None,
         delivered_at: datetime | None,
         created_by: int | None,
     ) -> SanitarySample:
         sample = SanitarySample(
             lab_no=lab_no,
+            barcode=barcode,
             department_id=department_id,
             sampling_point=sampling_point,
             room=room,
             medium=medium,
+            ordered_at=ordered_at,
             taken_at=taken_at,
             delivered_at=delivered_at,
             created_by=created_by,
@@ -91,22 +99,33 @@ class SanitaryRepository:
         session: Session,
         sample_id: int,
         *,
+        department_id: int | None = None,
+        lab_no: str | None = None,
+        barcode: str | None,
         sampling_point: str | None,
         room: str | None,
         medium: str | None,
+        ordered_at: datetime | None,
         taken_at: datetime | None,
         delivered_at: datetime | None,
     ) -> None:
+        values: dict[str, object] = {
+            "barcode": barcode,
+            "sampling_point": sampling_point,
+            "room": room,
+            "medium": medium,
+            "ordered_at": ordered_at,
+            "taken_at": taken_at,
+            "delivered_at": delivered_at,
+        }
+        if department_id is not None:
+            values["department_id"] = department_id
+        if lab_no is not None:
+            values["lab_no"] = lab_no
         stmt = (
             update(SanitarySample)
             .where(SanitarySample.id == sample_id)
-            .values(
-                sampling_point=sampling_point,
-                room=room,
-                medium=medium,
-                taken_at=taken_at,
-                delivered_at=delivered_at,
-            )
+            .values(**values)
         )
         session.execute(stmt)
 
