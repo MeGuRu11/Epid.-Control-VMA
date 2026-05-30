@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.form100_v2_dto import (
@@ -187,6 +187,27 @@ def test_form100_v2_create_update_sign_audit(tmp_path: Path) -> None:
     assert "form100_sign" in actions
 
 
+def test_form100_v2_update_can_clear_birth_date_to_null(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "form100_v2_clear_birth_date.db")
+    _admin_id, operator_id = seed_users(session_factory)
+    service = Form100ServiceV2(session_factory=session_factory)
+    created = service.create_card(make_create_request(), actor_id=operator_id)
+
+    updated = service.update_card(
+        created.id,
+        Form100UpdateV2Request(birth_date=None),
+        actor_id=operator_id,
+        expected_version=1,
+    )
+
+    assert updated.birth_date is None
+    with session_factory() as session:
+        stored = session.execute(
+            select(models.Form100V2.birth_date).where(models.Form100V2.id == created.id)
+        ).scalar_one()
+    assert stored is None
+
+
 def test_form100_v2_exchange_and_reporting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     session_factory = make_session_factory(tmp_path / "form100_v2_exchange.db")
     monkeypatch.setattr(reporting_service_module, "REPORT_ARTIFACT_DIR", tmp_path / "artifacts")
@@ -310,4 +331,3 @@ def test_form100_v2_list_cards_filters_by_patient(tmp_path: Path) -> None:
     rows = service.list_cards(filters=Form100V2Filters(patient_id=patient_1_id), limit=50)
 
     assert [row.id for row in rows] == [card_1.id]
-
