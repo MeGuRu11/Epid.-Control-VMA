@@ -61,7 +61,7 @@ def configure_optional_date_edit(
     min_date = minimum_date if minimum_date is not None else empty_date
     widget.setCalendarPopup(True)
     widget.setDisplayFormat(DATE_DISPLAY_FORMAT)
-    widget.setKeyboardTracking(True)
+    widget.setKeyboardTracking(False)
     widget.setMinimumDate(min_date)
     widget.setMaximumDate(maximum_date)
     widget.setDate(empty_date)
@@ -120,7 +120,7 @@ def configure_optional_datetime_edit(
     min_dt = minimum_datetime if minimum_datetime is not None else empty_datetime
     widget.setCalendarPopup(True)
     widget.setDisplayFormat(DATETIME_DISPLAY_FORMAT)
-    widget.setKeyboardTracking(True)
+    widget.setKeyboardTracking(False)
     widget.setMinimumDateTime(min_dt)
     widget.setMaximumDateTime(maximum_datetime)
     widget.setDateTime(empty_datetime)

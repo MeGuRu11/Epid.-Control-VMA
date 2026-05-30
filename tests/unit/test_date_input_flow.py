@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
-
-from PySide6.QtCore import QDate, QDateTime, QTime
+from PySide6.QtCore import QDate, QDateTime, Qt, QTime
 from PySide6.QtTest import QTest
 
 from app.ui.widgets.date_input_flow import DateInputAutoFlow
@@ -12,6 +10,7 @@ from app.ui.widgets.datetime_inputs import (
     DEFAULT_EMPTY_DATE,
     DEFAULT_EMPTY_DATETIME,
     IS_EMPTY_PROPERTY,
+    create_birth_date_edit,
     create_optional_date_edit,
     create_optional_datetime_edit,
     optional_date_value,
@@ -19,68 +18,27 @@ from app.ui.widgets.datetime_inputs import (
 )
 
 
-class _FakeEditor:
-    def __init__(self) -> None:
-        self.text = ""
-        self.cursor = -1
-
-    def setText(self, value: str) -> None:  # noqa: N802
-        self.text = value
-
-    def setCursorPosition(self, value: int) -> None:  # noqa: N802
-        self.cursor = value
+def _install_flow(qapp) -> DateInputAutoFlow:
+    flow = DateInputAutoFlow(qapp)
+    qapp.installEventFilter(flow)
+    return flow
 
 
-class _FakeDateTimeEdit:
-    def __init__(self, display_format: str) -> None:
-        self._display_format = display_format
-        self.date_calls = 0
-        self.datetime_calls = 0
-
-    def displayFormat(self) -> str:  # noqa: N802
-        return self._display_format
-
-    def setDate(self, _value) -> None:  # noqa: N802
-        self.date_calls += 1
-
-    def setDateTime(self, _value) -> None:  # noqa: N802
-        self.datetime_calls += 1
+def _commit_widget_text(widget) -> None:
+    widget.interpretText()
 
 
-class _FakeDateEdit(_FakeDateTimeEdit):
-    pass
-
-
-def test_is_date_only_edit_handles_qdateedit_inheritance() -> None:
+def test_is_date_only_edit_handles_qdateedit_inheritance(qapp) -> None:
     flow = DateInputAutoFlow()
-    date_only = _FakeDateEdit("dd.MM.yyyy")
-    date_time = _FakeDateTimeEdit("dd.MM.yyyy HH:mm")
+    date_only = create_optional_date_edit()
+    date_time = create_optional_datetime_edit()
 
-    assert flow._is_date_only_edit(cast(Any, date_only)) is True
-    assert flow._is_date_only_edit(cast(Any, date_time)) is False
-
-
-def test_apply_buffer_keeps_date_only_field_without_time_part() -> None:
-    flow = DateInputAutoFlow()
-    editor = _FakeEditor()
-    date_only = _FakeDateEdit("dd.MM.yyyy")
-
-    flow._apply_buffer(cast(Any, date_only), cast(Any, editor), "120120001530")
-
-    assert editor.text == "12.01.2000"
-    assert date_only.date_calls == 1
-    assert date_only.datetime_calls == 0
-
-
-def test_apply_buffer_keeps_datetime_field_with_time_part() -> None:
-    flow = DateInputAutoFlow()
-    editor = _FakeEditor()
-    date_time = _FakeDateTimeEdit("dd.MM.yyyy HH:mm")
-
-    flow._apply_buffer(cast(Any, date_time), cast(Any, editor), "120120001530")
-
-    assert editor.text == "12.01.2000 15:30"
-    assert date_time.datetime_calls == 1
+    try:
+        assert flow._is_date_only_edit(date_only) is True
+        assert flow._is_date_only_edit(date_time) is False
+    finally:
+        date_only.deleteLater()
+        date_time.deleteLater()
 
 
 def test_optional_datetime_edit_starts_empty_without_current_time(qapp) -> None:
@@ -108,9 +66,74 @@ def test_optional_date_edit_uses_visible_sentinel(qapp) -> None:
         widget.deleteLater()
 
 
+def test_optional_datetime_edit_disables_keyboard_tracking(qapp) -> None:
+    widget = create_optional_datetime_edit()
+    try:
+        assert widget.keyboardTracking() is False
+    finally:
+        widget.deleteLater()
+
+
+def test_optional_date_edit_disables_keyboard_tracking(qapp) -> None:
+    widget = create_optional_date_edit()
+    try:
+        assert widget.keyboardTracking() is False
+    finally:
+        widget.deleteLater()
+
+
+def test_year_section_accepts_full_four_digit_year_after_commit(qapp) -> None:
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(12, 43)))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.YearSection)
+
+        QTest.keyClicks(widget, "1985")
+        qapp.processEvents()
+
+        assert widget.text() == "10.10.1985 12:43"
+        _commit_widget_text(widget)
+        assert widget.dateTime() == QDateTime(QDate(1985, 10, 10), QTime(12, 43))
+    finally:
+        widget.deleteLater()
+
+
+def test_birth_date_year_below_2000_sequential_typing(qapp) -> None:
+    widget = create_birth_date_edit()
+    try:
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.DaySection)
+
+        QTest.keyClicks(widget, "15061985")
+        qapp.processEvents()
+
+        assert widget.text() == "15.06.1985"
+        _commit_widget_text(widget)
+        assert widget.date() == QDate(1985, 6, 15)
+    finally:
+        widget.deleteLater()
+
+
+def test_minimum_does_not_change_empty_sentinel(qapp) -> None:
+    widget = create_optional_date_edit()
+    try:
+        assert widget.date() == DEFAULT_EMPTY_DATE
+        assert optional_date_value(widget) is None
+
+        widget.setDate(QDate(1985, 6, 15))
+
+        assert optional_date_value(widget) == QDate(1985, 6, 15).toPython()
+    finally:
+        widget.deleteLater()
+
+
 def test_auto_flow_date_pastes_formatted_value(qapp) -> None:
-    flow = DateInputAutoFlow(qapp)
-    qapp.installEventFilter(flow)
+    flow = _install_flow(qapp)
     widget = create_optional_date_edit()
     try:
         qapp.clipboard().setText("26.05.2026")
@@ -129,14 +152,53 @@ def test_auto_flow_date_pastes_formatted_value(qapp) -> None:
 
 
 def test_auto_flow_datetime_pastes_compact_value(qapp) -> None:
-    flow = DateInputAutoFlow(qapp)
-    qapp.installEventFilter(flow)
+    flow = _install_flow(qapp)
     widget = create_optional_datetime_edit()
     try:
         qapp.clipboard().setText("260520260830")
         widget.show()
         widget.setFocus()
         qapp.processEvents()
+
+        QTest.keySequence(widget, "Ctrl+V")
+        qapp.processEvents()
+
+        assert widget.text() == "26.05.2026 08:30"
+        assert widget.dateTime() == QDateTime(QDate(2026, 5, 26), QTime(8, 30))
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_datetime_pastes_formatted_value(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        qapp.clipboard().setText("26.05.2026 08:30")
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+
+        QTest.keySequence(widget, "Ctrl+V")
+        qapp.processEvents()
+
+        assert widget.text() == "26.05.2026 08:30"
+        assert widget.dateTime() == QDateTime(QDate(2026, 5, 26), QTime(8, 30))
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_datetime_paste_replaces_full_field_from_middle_section(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(12, 43)))
+        qapp.clipboard().setText("26.05.2026 08:30")
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.MonthSection)
 
         QTest.keySequence(widget, "Ctrl+V")
         qapp.processEvents()
@@ -160,136 +222,222 @@ def test_optional_datetime_edit_keeps_user_time_when_date_changes(qapp) -> None:
         widget.deleteLater()
 
 
-def test_auto_flow_datetime_date_only_input_uses_empty_time_not_current(qapp) -> None:
-    flow = DateInputAutoFlow()
-    widget = create_optional_datetime_edit()
-    editor = widget.lineEdit()
-    try:
-        flow._apply_buffer(widget, editor, "01012024")
-
-        assert widget.date() == QDate(2024, 1, 1)
-        assert widget.time() == QTime(0, 0)
-    finally:
-        widget.deleteLater()
-
-
-def test_auto_flow_datetime_full_input_preserves_explicit_user_time(qapp) -> None:
-    flow = DateInputAutoFlow()
-    widget = create_optional_datetime_edit()
-    editor = widget.lineEdit()
-    try:
-        flow._apply_buffer(widget, editor, "010120240830")
-
-        assert widget.date() == QDate(2024, 1, 1)
-        assert widget.time() == QTime(8, 30)
-    finally:
-        widget.deleteLater()
-
-
-def test_auto_flow_datetime_partial_time_digits_remain_visible(qapp) -> None:
-    flow = DateInputAutoFlow(qapp)
-    qapp.installEventFilter(flow)
+def test_auto_flow_datetime_native_typing_shows_partial_time_digits(qapp) -> None:
+    flow = _install_flow(qapp)
     widget = create_optional_datetime_edit()
     try:
         widget.show()
-        widget.lineEdit().setFocus()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.DaySection)
+
+        QTest.keyClicks(widget, "1010202412")
         qapp.processEvents()
 
-        QTest.keyClicks(widget.lineEdit(), "1010202412")
+        assert widget.lineEdit().text() == "10.10.2024 12:00"
+
+        QTest.keyClicks(widget, "4")
         qapp.processEvents()
 
-        assert widget.lineEdit().text() == "10.10.2024 12:__"
-        assert widget.lineEdit().cursorPosition() == 14
-        assert widget.date() == QDate(2024, 10, 10)
-        assert widget.time() == QTime(12, 0)
+        assert widget.lineEdit().text() == "10.10.2024 12:4"
 
-        QTest.keyClicks(widget.lineEdit(), "4")
-        qapp.processEvents()
-
-        assert widget.lineEdit().text() == "10.10.2024 12:4_"
-        assert widget.time() == QTime(12, 40)
-
-        QTest.keyClicks(widget.lineEdit(), "3")
+        QTest.keyClicks(widget, "3")
         qapp.processEvents()
 
         assert widget.lineEdit().text() == "10.10.2024 12:43"
+        _commit_widget_text(widget)
         assert widget.dateTime() == QDateTime(QDate(2024, 10, 10), QTime(12, 43))
     finally:
         qapp.removeEventFilter(flow)
         widget.deleteLater()
 
 
-def test_auto_flow_datetime_shows_date_immediately_after_8_digits(qapp) -> None:
-    flow = DateInputAutoFlow()
+def test_auto_flow_datetime_sequential_typing_builds_full_datetime(qapp) -> None:
+    flow = _install_flow(qapp)
     widget = create_optional_datetime_edit()
-    editor = widget.lineEdit()
     try:
-        flow._apply_buffer(widget, editor, "10102024")
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.DaySection)
 
-        assert widget.date() == QDate(2024, 10, 10)
-        assert editor.text() == "10.10.2024 __:__"
-        assert widget.time() == QTime(0, 0)
-    finally:
-        widget.deleteLater()
+        QTest.keyClicks(widget, "101020241243")
+        qapp.processEvents()
 
-
-def test_auto_flow_datetime_progressively_shows_each_digit(qapp) -> None:
-    flow = DateInputAutoFlow()
-    widget = create_optional_datetime_edit()
-    editor = widget.lineEdit()
-    expected_text_by_length = {
-        1: "1_.__.____ __:__",
-        2: "10.__.____ __:__",
-        3: "10.1_.____ __:__",
-        4: "10.10.____ __:__",
-        5: "10.10.2___ __:__",
-        6: "10.10.20__ __:__",
-        7: "10.10.202_ __:__",
-        8: "10.10.2024 __:__",
-        9: "10.10.2024 1_:__",
-        10: "10.10.2024 12:__",
-        11: "10.10.2024 12:4_",
-        12: "10.10.2024 12:43",
-    }
-    try:
-        for digit_count, expected_text in expected_text_by_length.items():
-            buffer = "101020241243"[:digit_count]
-            flow._apply_buffer(widget, editor, buffer)
-
-            assert editor.text() == expected_text
-            digits_in_text = "".join(character for character in editor.text() if character.isdigit())
-            assert digits_in_text.startswith(buffer)
-
+        assert widget.text() == "10.10.2024 12:43"
+        _commit_widget_text(widget)
+        assert widget.text() == "10.10.2024 12:43"
         assert widget.dateTime() == QDateTime(QDate(2024, 10, 10), QTime(12, 43))
     finally:
+        qapp.removeEventFilter(flow)
         widget.deleteLater()
 
 
-def test_auto_flow_date_only_shows_date_immediately(qapp) -> None:
-    flow = DateInputAutoFlow()
-    widget = create_optional_date_edit()
-    editor = widget.lineEdit()
+def test_auto_flow_datetime_section_edit_does_not_restart_full_input(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
     try:
-        flow._apply_buffer(widget, editor, "10102024")
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(12, 43)))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.MonthSection)
 
-        assert widget.date() == QDate(2024, 10, 10)
-        assert editor.text() == "10.10.2024"
+        QTest.keyClicks(widget, "05")
+        qapp.processEvents()
+
+        assert widget.text() == "10.05.2024 12:43"
+        _commit_widget_text(widget)
+        assert widget.dateTime() == QDateTime(QDate(2024, 5, 10), QTime(12, 43))
     finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_select_all_then_type_restarts_from_first_section(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(12, 43)))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        line = widget.lineEdit()
+        line.selectAll()
+        qapp.processEvents()
+
+        QTest.keyClicks(widget, "26052026")
+        qapp.processEvents()
+
+        assert widget.text().startswith("26.05.2026")
+        _commit_widget_text(widget)
+        assert widget.date() == QDate(2026, 5, 26)
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_datetime_year_section_edit_preserves_other_sections(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(8, 30)))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.YearSection)
+
+        QTest.keyClicks(widget, "1985")
+        qapp.processEvents()
+
+        assert widget.text() == "10.10.1985 08:30"
+        _commit_widget_text(widget)
+        assert widget.dateTime() == QDateTime(QDate(1985, 10, 10), QTime(8, 30))
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_datetime_arrow_changes_only_selected_section(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(12, 43)))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.MonthSection)
+
+        QTest.keyClick(widget, Qt.Key.Key_Up)
+        qapp.processEvents()
+
+        assert widget.text() == "10.11.2024 12:43"
+        assert widget.dateTime() == QDateTime(QDate(2024, 11, 10), QTime(12, 43))
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_select_all_then_delete_clears_datetime_to_sentinel(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        widget.setDateTime(QDateTime(QDate(2024, 10, 10), QTime(12, 43)))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        line = widget.lineEdit()
+        line.selectAll()
+        qapp.processEvents()
+
+        QTest.keyClick(widget, Qt.Key.Key_Delete)
+        qapp.processEvents()
+
+        assert widget.dateTime() == DEFAULT_EMPTY_DATETIME
+        assert optional_datetime_value(widget) is None
+        assert widget.property(IS_EMPTY_PROPERTY) is True
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_select_all_then_backspace_clears_date_to_sentinel(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_date_edit()
+    try:
+        widget.setDate(QDate(2024, 10, 10))
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        line = widget.lineEdit()
+        line.selectAll()
+        qapp.processEvents()
+
+        QTest.keyClick(widget, Qt.Key.Key_Backspace)
+        qapp.processEvents()
+
+        assert widget.date() == DEFAULT_EMPTY_DATE
+        assert optional_date_value(widget) is None
+        assert widget.property(IS_EMPTY_PROPERTY) is True
+    finally:
+        qapp.removeEventFilter(flow)
+        widget.deleteLater()
+
+
+def test_auto_flow_single_section_delete_stays_native(qapp) -> None:
+    flow = _install_flow(qapp)
+    widget = create_optional_datetime_edit()
+    try:
+        original = QDateTime(QDate(2024, 10, 10), QTime(12, 43))
+        widget.setDateTime(original)
+        widget.show()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.MonthSection)
+
+        QTest.keyClick(widget, Qt.Key.Key_Delete)
+        qapp.processEvents()
+
+        assert widget.dateTime() == original
+        assert optional_datetime_value(widget) is not None
+    finally:
+        qapp.removeEventFilter(flow)
         widget.deleteLater()
 
 
 def test_auto_flow_date_manual_input_matching_empty_sentinel_stays_visible(qapp) -> None:
-    flow = DateInputAutoFlow(qapp)
-    qapp.installEventFilter(flow)
+    flow = _install_flow(qapp)
     widget = create_optional_date_edit()
     try:
         widget.show()
-        widget.lineEdit().setFocus()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.DaySection)
+
+        QTest.keyClicks(widget, "01011900")
         qapp.processEvents()
 
-        QTest.keyClicks(widget.lineEdit(), "01011900")
-        qapp.processEvents()
-
+        _commit_widget_text(widget)
         assert widget.text() == "01.01.1900"
         assert optional_date_value(widget) is None
     finally:
@@ -298,17 +446,18 @@ def test_auto_flow_date_manual_input_matching_empty_sentinel_stays_visible(qapp)
 
 
 def test_auto_flow_datetime_manual_input_matching_empty_sentinel_stays_visible(qapp) -> None:
-    flow = DateInputAutoFlow(qapp)
-    qapp.installEventFilter(flow)
+    flow = _install_flow(qapp)
     widget = create_optional_datetime_edit()
     try:
         widget.show()
-        widget.lineEdit().setFocus()
+        widget.setFocus()
+        qapp.processEvents()
+        widget.setSelectedSection(widget.Section.DaySection)
+
+        QTest.keyClicks(widget, "010119000000")
         qapp.processEvents()
 
-        QTest.keyClicks(widget.lineEdit(), "010119000000")
-        qapp.processEvents()
-
+        _commit_widget_text(widget)
         assert widget.text() == "01.01.1900 00:00"
         assert optional_datetime_value(widget) is None
     finally:
