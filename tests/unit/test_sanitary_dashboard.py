@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 from PySide6.QtCore import QDate, QDateTime, Qt, QTime
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QBoxLayout, QLabel, QListWidget, QScrollArea, QWidget
 
 from app.application.dto.sanitary_dto import SanitarySampleResponse
@@ -373,6 +374,63 @@ def test_sanitary_dashboard_updates_filter_summary_and_reset(qapp) -> None:
     assert dashboard.growth_filter.currentIndex() == 0
     assert dashboard._date_value(dashboard.date_from) is None
     assert dashboard._date_value(dashboard.date_to) is None
+
+
+def test_sanitary_dashboard_enter_in_date_filters_keeps_filter_applied(qapp) -> None:
+    dashboard = SanitaryDashboard(
+        sanitary_service=cast(
+            Any,
+            _SanitaryServiceStub(
+                {
+                    1: [
+                        _make_sample(
+                            1,
+                            department_id=1,
+                            lab_no="SAN-0001",
+                            growth_flag=1,
+                            taken_at=_dt(2026, 4, 20, 8, 30),
+                        )
+                    ],
+                    2: [
+                        _make_sample(
+                            2,
+                            department_id=2,
+                            lab_no="SAN-0002",
+                            growth_flag=0,
+                            taken_at=_dt(2026, 4, 23, 10, 0),
+                        )
+                    ],
+                }
+            ),
+        ),
+        reference_service=cast(Any, _reference_service_stub()),
+    )
+    dashboard.show()
+    qapp.processEvents()
+
+    dashboard.filters_toggle.setChecked(True)
+    dashboard.filter_enabled.setChecked(True)
+    dashboard.date_from.setDate(QDate(2026, 4, 21))
+    qapp.processEvents()
+    dashboard.date_from.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dashboard.date_from, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert dashboard._date_value(dashboard.date_from) == _dt(2026, 4, 21, 0, 0).date()
+    assert dashboard.filter_enabled.isChecked() is True
+    assert dashboard._filter_summary_label.text() != "Без фильтров"
+
+    dashboard.date_to.setDate(QDate(2026, 4, 23))
+    qapp.processEvents()
+    dashboard.date_to.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dashboard.date_to, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert dashboard._date_value(dashboard.date_to) == _dt(2026, 4, 23, 0, 0).date()
+    assert dashboard.filter_enabled.isChecked() is True
+    assert dashboard._filter_summary_label.text() != "Без фильтров"
 
 
 def test_sanitary_dashboard_distinguishes_empty_states_and_clears_selection(qapp) -> None:

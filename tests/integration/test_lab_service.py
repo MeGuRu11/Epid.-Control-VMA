@@ -5,12 +5,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.lab_dto import LabSampleCreateRequest, LabSampleResultUpdate
 from app.application.services.lab_service import LabService
-from app.infrastructure.db.models_sqlalchemy import Base, RefMaterialType, User
+from app.infrastructure.db.models_sqlalchemy import Base, LabSample, RefMaterialType, User
 
 
 def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
@@ -106,3 +106,27 @@ def test_lab_sample_accepts_manual_identifier_fields(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Лаб. номер"):
         service.create_sample(req, actor_id=actor_id)
+
+
+def test_lab_sample_empty_optional_ordered_at_persists_as_null(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "lab_null_dates.db")
+    material_type_id = seed_material(session_factory)
+    actor_id = seed_actor(session_factory)
+    service = LabService(session_factory=session_factory)
+
+    req = LabSampleCreateRequest(
+        patient_id=1,
+        emr_case_id=None,
+        material_type_id=material_type_id,
+        ordered_at=None,
+        taken_at=datetime(2025, 12, 15, 10, 0, 0, tzinfo=UTC),
+        study_kind="primary",
+    )
+
+    resp = service.create_sample(req, actor_id=actor_id)
+    loaded = service.list_samples(patient_id=1)
+
+    assert next(item for item in loaded if item.id == resp.id).ordered_at is None
+    with session_factory() as session:
+        stored = session.execute(select(LabSample.ordered_at).where(LabSample.id == resp.id)).scalar_one()
+    assert stored is None

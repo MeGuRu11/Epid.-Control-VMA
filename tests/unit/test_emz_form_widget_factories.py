@@ -276,7 +276,7 @@ def test_create_datetime_cell(qapp) -> None:
         assert widget.dateTime() == marker
         assert widget.specialValueText() == ""
         assert widget.property(IS_EMPTY_PROPERTY) is True
-        assert widget.keyboardTracking() is True
+        assert widget.keyboardTracking() is False
         assert widget.currentSection() is not None
     finally:
         widget.deleteLater()

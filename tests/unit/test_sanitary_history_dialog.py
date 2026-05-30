@@ -5,7 +5,8 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QBoxLayout, QLabel
 
 from app.application.dto.sanitary_dto import SanitarySampleResponse
@@ -218,6 +219,52 @@ def test_sanitary_history_dialog_updates_filter_summary_and_resets_page(qapp) ->
     assert dialog.growth_filter.currentIndex() == 0
     assert dialog._date_value(dialog.date_from) is None
     assert dialog._date_value(dialog.date_to) is None
+
+
+def test_sanitary_history_dialog_enter_in_date_filters_does_not_reset(qapp) -> None:
+    samples = [
+        _make_sample(
+            1,
+            lab_no="SAN-0001",
+            growth_flag=1,
+            taken_at=_dt(2026, 4, 20, 8, 30),
+        ),
+        _make_sample(
+            2,
+            lab_no="SAN-0002",
+            growth_flag=0,
+            taken_at=_dt(2026, 4, 22, 8, 30),
+        ),
+    ]
+    dialog = SanitaryHistoryDialog(
+        sanitary_service=cast(Any, _SanitaryServiceStub({1: samples})),
+        reference_service=cast(Any, _reference_service_stub()),
+        department_id=1,
+        department_name="ОРИТ",
+        actor_id=77,
+    )
+    dialog.show()
+    qapp.processEvents()
+
+    dialog.date_from.setDate(QDate(2026, 4, 21))
+    qapp.processEvents()
+    dialog.date_from.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dialog.date_from, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert dialog._date_value(dialog.date_from) == _dt(2026, 4, 21, 0, 0).date()
+    assert dialog.filter_summary_label.text() != "Без фильтров"
+
+    dialog.date_to.setDate(QDate(2026, 4, 22))
+    qapp.processEvents()
+    dialog.date_to.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dialog.date_to, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert dialog._date_value(dialog.date_to) == _dt(2026, 4, 22, 0, 0).date()
+    assert dialog.filter_summary_label.text() != "Без фильтров"
 
 
 def test_sanitary_history_dialog_distinguishes_no_data_and_filtered_empty_states(qapp) -> None:

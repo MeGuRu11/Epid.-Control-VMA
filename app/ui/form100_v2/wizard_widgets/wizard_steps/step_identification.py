@@ -25,6 +25,12 @@ from app.ui.widgets.datetime_inputs import (
 )
 
 
+def _to_storage_date(value: QDate) -> str:
+    if value == DEFAULT_EMPTY_DATE:
+        return ""
+    return value.toString("dd.MM.yyyy")
+
+
 class StepIdentification(QWidget):
     """Шаг 1 мастера: Корешок + Идентификация основного бланка."""
 
@@ -150,9 +156,9 @@ class StepIdentification(QWidget):
         birth_date = self._get_birth_date()
         out["birth_date_iso"] = birth_date.isoformat() if birth_date else None
         out["main_issued_time"] = self.main_issued_time.time().toString("HH:mm")
-        out["main_issued_date"] = self.main_issued_date.date().toString("dd.MM.yyyy")
+        out["main_issued_date"] = _to_storage_date(self.main_issued_date.date())
         out["main_injury_time"] = self.main_injury_time.time().toString("HH:mm")
-        out["main_injury_date"] = self.main_injury_date.date().toString("dd.MM.yyyy")
+        out["main_injury_date"] = _to_storage_date(self.main_injury_date.date())
         return out, []
 
     def set_locked(self, locked: bool) -> None:

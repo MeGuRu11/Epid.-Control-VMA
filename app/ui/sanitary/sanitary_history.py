@@ -70,6 +70,13 @@ from app.ui.widgets.table_utils import connect_combo_autowidth
 _HANDLED_SANITARY_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
 
+def _disable_enter_defaults(root: QWidget) -> None:
+    buttons = cast(list[QPushButton], root.findChildren(QPushButton))
+    for button in buttons:
+        button.setAutoDefault(False)
+        button.setDefault(False)
+
+
 class SanitaryHistoryDialog(QDialog):
     references_updated = Signal()
     _micro_search_updating: bool = False
@@ -282,6 +289,7 @@ class SanitaryHistoryDialog(QDialog):
         actions_layout.addWidget(self._actions_panel)
         layout.addWidget(actions_box)
 
+        _disable_enter_defaults(self)
         self._update_filter_layout()
         self._update_list_header_layout()
         self.refresh()

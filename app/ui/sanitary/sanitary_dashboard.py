@@ -77,6 +77,13 @@ ACCENT_SELECTED = "#2A9D8F"
 ACCENT_NORMAL = "transparent"
 
 
+def _disable_enter_defaults(root: QWidget) -> None:
+    buttons = cast(list[QPushButton], root.findChildren(QPushButton))
+    for button in buttons:
+        button.setAutoDefault(False)
+        button.setDefault(False)
+
+
 class _AccentBar(QWidget):
     """Независимая от QSS акцентная полоса выбранной карточки."""
 
@@ -276,6 +283,7 @@ class SanitaryDashboard(QWidget):
         self._update_filter_summary()
         self._update_selection_context()
         self._sync_action_state()
+        _disable_enter_defaults(self)
         self._initial_refresh_pending = True
         QTimer.singleShot(0, self._run_initial_refresh)
 

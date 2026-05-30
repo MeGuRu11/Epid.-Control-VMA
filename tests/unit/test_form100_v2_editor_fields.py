@@ -65,6 +65,22 @@ def test_form100_v2_editor_builds_extended_stub_and_main_payload(qapp) -> None:
     assert payload["medical_help"]["mp_surgical_intervention_details"] == "ПХО раны"
 
 
+def test_form100_v2_editor_empty_optional_dates_do_not_store_sentinel(qapp) -> None:
+    editor = Form100EditorV2()
+
+    payload = editor._build_data_payload()
+    create_request = editor.build_create_request()
+    update_request = editor.build_update_request()
+
+    assert payload["stub"]["stub_issued_date"] == ""
+    assert payload["stub"]["stub_injury_date"] == ""
+    assert payload["main"]["main_issued_date"] == ""
+    assert payload["main"]["main_injury_date"] == ""
+    assert payload["main"]["birth_date"] == ""
+    assert create_request.birth_date is None
+    assert update_request.birth_date is None
+
+
 def test_form100_v2_editor_loads_extended_stub_and_main_fields(qapp) -> None:
     editor = Form100EditorV2()
     now = datetime(2026, 2, 18, 12, 0, tzinfo=UTC)

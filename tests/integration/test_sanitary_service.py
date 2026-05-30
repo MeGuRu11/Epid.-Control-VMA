@@ -5,12 +5,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.sanitary_dto import SanitarySampleCreateRequest, SanitarySampleResultUpdate
 from app.application.services.sanitary_service import SanitaryService
-from app.infrastructure.db.models_sqlalchemy import Base, Department, User
+from app.infrastructure.db.models_sqlalchemy import Base, Department, SanitarySample, User
 
 
 def make_session_factory(db_path: Path) -> Callable[[], AbstractContextManager[Session]]:
@@ -97,3 +97,28 @@ def test_sanitary_sample_accepts_manual_identifier_fields(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match="Лаб. номер"):
         service.create_sample(req, actor_id=actor_id)
+
+
+def test_sanitary_sample_empty_optional_ordered_at_persists_as_null(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "san_null_dates.db")
+    dep_id = seed_department(session_factory)
+    actor_id = seed_actor(session_factory)
+    service = SanitaryService(session_factory=session_factory)
+
+    req = SanitarySampleCreateRequest(
+        department_id=dep_id,
+        sampling_point="Раковина",
+        room="101",
+        ordered_at=None,
+        taken_at=datetime(2025, 12, 15, 9, 0, 0, tzinfo=UTC),
+    )
+
+    resp = service.create_sample(req, actor_id=actor_id)
+    loaded = service.list_samples_by_department(dep_id)
+
+    assert next(item for item in loaded if item.id == resp.id).ordered_at is None
+    with session_factory() as session:
+        stored = session.execute(
+            select(SanitarySample.ordered_at).where(SanitarySample.id == resp.id)
+        ).scalar_one()
+    assert stored is None

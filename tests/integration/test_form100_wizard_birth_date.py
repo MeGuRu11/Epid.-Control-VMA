@@ -145,6 +145,21 @@ def test_birth_date_widget_exists_and_empty_by_default(qapp) -> None:
         step.close()
 
 
+def test_identification_collect_keeps_empty_optional_dates_blank(qapp) -> None:
+    del qapp
+    step = StepIdentification()
+    try:
+        payload, _markers = step.collect()
+
+        assert payload["birth_date_iso"] is None
+        assert payload["stub_issued_date"] == ""
+        assert payload["stub_injury_date"] == ""
+        assert payload["main_issued_date"] == ""
+        assert payload["main_injury_date"] == ""
+    finally:
+        step.close()
+
+
 def test_birth_date_accepts_paste_without_special_text_corruption(qapp) -> None:
     flow = DateInputAutoFlow(qapp)
     qapp.installEventFilter(flow)

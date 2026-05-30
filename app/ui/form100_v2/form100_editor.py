@@ -537,7 +537,7 @@ class Form100EditorV2(QWidget):
             main_unit=self.main_unit.text().strip(),
             main_id_tag=_none_if_empty(self.main_id_tag.text()),
             main_diagnosis=self.main_diagnosis.toPlainText().strip(),
-            birth_date=optional_date_value(self.birth_date) or _to_py_date(DEFAULT_EMPTY_DATE),
+            birth_date=optional_date_value(self.birth_date),
             data=Form100DataV2Dto.model_validate(payload),
         )
 
@@ -548,7 +548,7 @@ class Form100EditorV2(QWidget):
             main_unit=self.main_unit.text().strip(),
             main_id_tag=_none_if_empty(self.main_id_tag.text()),
             main_diagnosis=self.main_diagnosis.toPlainText().strip(),
-            birth_date=optional_date_value(self.birth_date) or _to_py_date(DEFAULT_EMPTY_DATE),
+            birth_date=optional_date_value(self.birth_date),
             data=Form100DataV2Dto.model_validate(payload),
         )
 
@@ -638,6 +638,7 @@ class Form100EditorV2(QWidget):
         stub_med_help_underline = [name for name, check in self.stub_med_help_checks.items() if check.isChecked()]
         serum_pss_details = self.mp_serum_pss_details.text().strip()
         serum_pgs_details = self.mp_serum_pgs_details.text().strip()
+        birth_date = optional_date_value(self.birth_date)
         payload = Form100DataPayloadInput(
             stub=Form100StubPayloadInput(
                 issued_date=_to_storage_date(self.stub_issued_date.date()),
@@ -671,7 +672,7 @@ class Form100EditorV2(QWidget):
                 issued_time=_to_storage_time(self.main_issued_time.time()),
                 injury_date=_to_storage_date(self.main_injury_date.date()),
                 injury_time=_to_storage_time(self.main_injury_time.time()),
-                birth_date_iso=(optional_date_value(self.birth_date) or _to_py_date(DEFAULT_EMPTY_DATE)).isoformat(),
+                birth_date_iso=birth_date.isoformat() if birth_date else "",
             ),
             lesion=lesion,
             san_loss=san_loss,
@@ -742,11 +743,9 @@ def _none_if_empty(value: str) -> str | None:
     return text or None
 
 
-def _to_py_date(value: QDate) -> date:
-    return date(value.year(), value.month(), value.day())
-
-
 def _to_storage_date(value: QDate) -> str:
+    if value == DEFAULT_EMPTY_DATE:
+        return ""
     return value.toString("dd.MM.yyyy")
 
 

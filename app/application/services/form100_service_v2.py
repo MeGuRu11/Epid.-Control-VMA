@@ -237,6 +237,7 @@ class Form100ServiceV2:
 
             before_data_row = self.repo.get_data(session, card_id)
             before_payload = self.repo.to_card_dict(row, before_data_row)
+            request_fields = request.model_fields_set
 
             merged_card_payload: dict[str, object] = {
                 "emr_case_id": request.emr_case_id if request.emr_case_id is not None else row.emr_case_id,
@@ -244,7 +245,7 @@ class Form100ServiceV2:
                 "main_unit": request.main_unit if request.main_unit is not None else row.main_unit,
                 "main_id_tag": request.main_id_tag if request.main_id_tag is not None else row.main_id_tag,
                 "main_diagnosis": request.main_diagnosis if request.main_diagnosis is not None else row.main_diagnosis,
-                "birth_date": request.birth_date if request.birth_date is not None else row.birth_date,
+                "birth_date": request.birth_date if "birth_date" in request_fields else row.birth_date,
             }
             merged_data_payload = (
                 cast(JSONDict, request.data.model_dump())
@@ -834,5 +835,4 @@ def _inject_denormalized_fields(
         data_payload["bottom"] = cast(JSONValue, bottom)
     bottom_dict = cast(JSONDict, bottom)
     bottom_dict.setdefault("main_diagnosis", main_diagnosis)
-
 

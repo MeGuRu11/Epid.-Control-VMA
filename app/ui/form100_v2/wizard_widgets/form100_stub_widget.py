@@ -60,6 +60,12 @@ def _parse_time(raw: str) -> QTime:
     return QTime.currentTime()
 
 
+def _to_storage_date(value: QDate) -> str:
+    if value == DEFAULT_EMPTY_DATE:
+        return ""
+    return value.toString("dd.MM.yyyy")
+
+
 class Form100StubWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -220,13 +226,13 @@ class Form100StubWidget(QWidget):
         selected = [key for key, cb in self.stub_med_help_checks.items() if cb.isChecked()]
         out: dict[str, str] = {
             "stub_issued_time": self.stub_issued_time.time().toString("HH:mm"),
-            "stub_issued_date": self.stub_issued_date.date().toString("dd.MM.yyyy"),
+            "stub_issued_date": _to_storage_date(self.stub_issued_date.date()),
             "stub_rank": self.stub_rank.text().strip(),
             "stub_unit": self.stub_unit.text().strip(),
             "stub_full_name": self.stub_full_name.text().strip(),
             "stub_id_tag": self.stub_id_tag.text().strip(),
             "stub_injury_time": self.stub_injury_time.time().toString("HH:mm"),
-            "stub_injury_date": self.stub_injury_date.date().toString("dd.MM.yyyy"),
+            "stub_injury_date": _to_storage_date(self.stub_injury_date.date()),
             "stub_evacuation_method": self._evacuation_method(),
             "stub_evacuation_dest": self.stub_evacuation_dest.value(),
             "stub_med_help_json": json.dumps(selected, ensure_ascii=False),

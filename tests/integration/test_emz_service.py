@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.application.dto.emz_dto import EmzCreateRequest, EmzUpdateRequest, EmzVersionPayload
@@ -285,3 +285,44 @@ def test_update_case_meta_requires_actor_id(tmp_path: Path) -> None:
             department_id=None,
             actor_id=cast(int, None),
         )
+
+
+def test_emz_empty_optional_dates_persist_as_null(tmp_path: Path) -> None:
+    session_factory = make_session_factory(tmp_path / "emr_null_dates.db")
+    actor_id = seed_admin(session_factory)
+    service = EmzService(session_factory=session_factory)
+
+    payload = EmzVersionPayload(
+        admission_date=None,
+        injury_date=datetime(2025, 12, 10, 9, 0, tzinfo=UTC),
+        outcome_date=None,
+        severity="moderate",
+        diagnoses=[],
+        interventions=[],
+        antibiotic_courses=[],
+    )
+    req = EmzCreateRequest(
+        patient_full_name="Тест Тестов",
+        patient_dob=date(1992, 2, 2),
+        patient_sex="M",
+        patient_category=MilitaryCategory.OTHER.value,
+        patient_military_unit=None,
+        patient_military_district=None,
+        hospital_case_no="CASE-NULL-DATES",
+        department_id=None,
+        payload=payload,
+    )
+
+    created = service.create_emr(req, actor_id=actor_id)
+    loaded = service.get_current(created.id)
+
+    assert loaded.admission_date is None
+    assert loaded.outcome_date is None
+    with session_factory() as session:
+        stored = session.execute(
+            select(models.EmrCaseVersion.admission_date, models.EmrCaseVersion.outcome_date)
+            .where(models.EmrCaseVersion.emr_case_id == created.id)
+            .where(models.EmrCaseVersion.is_current.is_(True))
+        ).one()
+    assert stored.admission_date is None
+    assert stored.outcome_date is None

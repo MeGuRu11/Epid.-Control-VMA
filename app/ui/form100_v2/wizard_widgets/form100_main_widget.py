@@ -67,6 +67,12 @@ def _payload_text(payload: dict[str, str], key: str, fallback_key: str | None = 
     return str(payload.get(fallback_key) or "").strip()
 
 
+def _to_storage_date(value: QDate) -> str:
+    if value == DEFAULT_EMPTY_DATE:
+        return ""
+    return value.toString("dd.MM.yyyy")
+
+
 class Form100MainWidget(QWidget):
     """Основной бланк Формы 100: поражения + схема тела + медицинская помощь + идентификация."""
 
@@ -373,9 +379,9 @@ class Form100MainWidget(QWidget):
         payload["main_full_name"]    = self.main_full_name.text().strip()
         payload["main_id_tag"]       = self.main_id_tag.text().strip()
         payload["main_issued_time"]  = self.main_issued_time.time().toString("HH:mm")
-        payload["main_issued_date"]  = self.main_issued_date.date().toString("dd.MM.yyyy")
+        payload["main_issued_date"]  = _to_storage_date(self.main_issued_date.date())
         payload["main_injury_time"]  = self.main_injury_time.time().toString("HH:mm")
-        payload["main_injury_date"]  = self.main_injury_date.date().toString("dd.MM.yyyy")
+        payload["main_injury_date"]  = _to_storage_date(self.main_injury_date.date())
 
         markers = self.editor.markers()
         payload["bodymap_annotations_json"] = json.dumps(markers, ensure_ascii=False)
