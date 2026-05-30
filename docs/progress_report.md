@@ -274,15 +274,15 @@ P2:
 
 ### 2026-05-08 — docs: добавлены Codex action plan и entry prompt
 
-- В git добавлены `docs/CODEX_ACTION_PLAN.md` и `docs/CODEX_ENTRY_PROMPT.md`, которые фиксируют аудит отчётности/экспортов и входной prompt для текущего P0→P1→P2 цикла.
+- В git добавлены `docs/archive/CODEX_ACTION_PLAN.md` и `docs/archive/CODEX_ENTRY_PROMPT.md`, которые фиксируют аудит отчётности/экспортов и входной prompt для текущего P0→P1→P2 цикла.
 - Файлы оставлены в `docs/`, как подтверждено пользователем.
-- `docs/FORM100_FIXES_PLAN.md` не трогался: файл не входит в подтверждённый список для этого коммита.
+- `docs/archive/FORM100_FIXES_PLAN.md` не трогался: файл не входит в подтверждённый список для этого коммита.
 - Код приложения, тесты, БД и Alembic-миграции не менялись.
 
 ### Изменённые файлы
 
-- `docs/CODEX_ACTION_PLAN.md`
-- `docs/CODEX_ENTRY_PROMPT.md`
+- `docs/archive/CODEX_ACTION_PLAN.md`
+- `docs/archive/CODEX_ENTRY_PROMPT.md`
 - `docs/progress_report.md`
 
 ### Проверки
@@ -5035,7 +5035,7 @@ P2:
 - `tests/unit/test_ui_theme_tokens.py`
 - `tests/unit/test_form100_v2_step_evacuation.py`
 - `tests/integration/test_form100_v2_migration.py`
-- `docs/codex/tasks/2026-04-24-безопасные-ui-и-migration-фиксы.md`
+- `docs/archive/codex/tasks/2026-04-24-безопасные-ui-и-migration-фиксы.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 
@@ -5198,7 +5198,7 @@ P2:
 - `EpidControl.spec`
 - `tests/unit/test_analytics_charts.py`
 - `tests/unit/test_build_spec_configuration.py`
-- `docs/codex/tasks/2026-04-23-падение-exe-после-авторизации.md`
+- `docs/archive/codex/tasks/2026-04-23-падение-exe-после-авторизации.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 
@@ -5551,7 +5551,7 @@ P2:
 - `tests/unit/test_lab_sample_detail_helpers.py`
 - `tests/unit/test_sanitary_dashboard.py`
 - `tests/unit/test_sanitary_sample_payload_service.py`
-- `docs/codex/tasks/2026-05-05-fix-datetime-inputs.md`
+- `docs/archive/codex/tasks/2026-05-05-fix-datetime-inputs.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 
@@ -5644,7 +5644,7 @@ P2:
 
 - `app/ui/analytics/analytics_view.py`
 - `tests/unit/test_analytics_chart_data.py`
-- `docs/specs/SPEC_analytics_time_grouping.md`
+- `docs/archive/specs/SPEC_analytics_time_grouping.md`
 - `docs/progress_report.md`
 - `docs/session_handoff.md`
 
@@ -5689,7 +5689,7 @@ P2:
 
 ### Изменённые файлы
 
-- `docs/specs/SPEC_analytics_time_grouping.md`
+- `docs/archive/specs/SPEC_analytics_time_grouping.md`
 - `app/ui/analytics/chart_data.py`
 - `app/ui/analytics/view_utils.py`
 - `app/ui/analytics/analytics_view.py`
@@ -5843,8 +5843,8 @@ P2:
 
 ### Что сделано
 
-- Создана спецификация `docs/specs/SPEC_contextbar_compact_redesign.md`.
-- Создан task-файл `docs/codex/tasks/2026-04-27-компактный-редизайн-contextbar.md`.
+- Создана спецификация `docs/archive/specs/SPEC_contextbar_compact_redesign.md`.
+- Создан task-файл `docs/archive/codex/tasks/2026-04-27-компактный-редизайн-contextbar.md`.
 - `ContextBar` переработан в компактную панель закрепления одного пациента и одной госпитализации.
 - Быстрые переходы `ЭМЗ`, `Лаб`, `Ф100`, `Санитария`, `Аналитика` удалены из contextbar; навигация остаётся в верхнем меню и профильных экранах.
 - Расширенный выбор пациента/госпитализации теперь раскрывается кнопкой `Изменить`.
@@ -5856,8 +5856,8 @@ P2:
 
 ### Изменённые файлы
 
-- `docs/specs/SPEC_contextbar_compact_redesign.md`
-- `docs/codex/tasks/2026-04-27-компактный-редизайн-contextbar.md`
+- `docs/archive/specs/SPEC_contextbar_compact_redesign.md`
+- `docs/archive/codex/tasks/2026-04-27-компактный-редизайн-contextbar.md`
 - `app/ui/widgets/context_bar.py`
 - `app/ui/main_window.py`
 - `app/ui/theme.py`
@@ -5952,7 +5952,7 @@ P2:
 
 ### Что сделано
 
-- Создана спецификация `docs/specs/SPEC_form100_medical_help_details.md` и отмечена как реализованная.
+- Создана спецификация `docs/archive/specs/SPEC_form100_medical_help_details.md` и отмечена как реализованная.
 - В разделе 3 мастера Ф-100 `Мед. помощь` добавлены текстовые поля для ПСС, ПГС, переливания крови, кровезаменителей, иммобилизации и перевязки.
 - Добавлен пункт `Оперативное вмешательство` с отдельным текстовым описанием.
 - Синхронизированы мастер, полный редактор, legacy `Form100MainWidget`, payload-сервис, итоговый обзор и PDF-экспорт.
@@ -5961,7 +5961,7 @@ P2:
 
 ### Изменённые файлы
 
-- `docs/specs/SPEC_form100_medical_help_details.md`
+- `docs/archive/specs/SPEC_form100_medical_help_details.md`
 - `app/ui/form100_v2/wizard_widgets/wizard_steps/step_medical.py`
 - `app/ui/form100_v2/form100_editor.py`
 - `app/ui/form100_v2/wizard_widgets/form100_main_widget.py`
@@ -6204,7 +6204,7 @@ P2:
 
 ### Что сделано
 
-- Создана спецификация `docs/specs/SPEC_admin_view_redesign.md`.
+- Создана спецификация `docs/archive/specs/SPEC_admin_view_redesign.md`.
 - `UserAdminView` перестроен на вкладки `Пользователи`, `Аудит`, `Резервные копии`.
 - Вкладка `Пользователи` переведена в master-detail формат: поиск и таблица слева, карточка выбранного пользователя и форма создания справа.
 - Payload выбранного пользователя хранится в `Qt.UserRole`, поэтому действия над пользователем не зависят от текста в таблице.
@@ -6218,7 +6218,7 @@ P2:
 
 ### Изменённые файлы
 
-- `docs/specs/SPEC_admin_view_redesign.md`
+- `docs/archive/specs/SPEC_admin_view_redesign.md`
 - `app/ui/admin/user_admin_view.py`
 - `app/ui/theme.py`
 - `tests/unit/test_audit_ui_regressions.py`
@@ -6255,7 +6255,7 @@ P2:
 
 ### Изменённые файлы
 
-- `docs/specs/SPEC_patient_emk_emz_edit_and_form100_export.md`
+- `docs/archive/specs/SPEC_patient_emk_emz_edit_and_form100_export.md`
 - `app/ui/patient/patient_full_edit_dialog.py`
 - `app/ui/patient/patient_emk_view.py`
 - `app/ui/main_window.py`
@@ -7054,7 +7054,7 @@ Window title, кнопки, внутренние ключи — не трону�
 - Временный флаг `use_analytics_v2` удалён из `UserPreferences`, настроек UI и тестов флага.
 - Тесты, ранее завязанные на `AnalyticsSearchView`, переведены на `AnalyticsViewV2`, `OverviewTab`, `FilterBar`, `SearchTab` и `ReportsTab`.
 - Количество тестов после удаления флагового файла снизилось с `778` до `774`, то есть ровно на удалённые 4 теста флага.
-- Baseline отличался от ожидаемого: HEAD был `6a82d5b docs: add S4.4 comprehensive system audit task to action plan`, а не `3bce4b5`; проверка `git show --stat --oneline --name-only HEAD` показала только изменение `docs/CODEX_ACTION_PLAN.md`, поэтому реализация продолжена без отката.
+- Baseline отличался от ожидаемого: HEAD был `6a82d5b docs: add S4.4 comprehensive system audit task to action plan`, а не `3bce4b5`; проверка `git show --stat --oneline --name-only HEAD` показала только изменение `docs/archive/CODEX_ACTION_PLAN.md`, поэтому реализация продолжена без отката.
 
 ### Регрессионный чеклист `SPEC_analytics_redesign.md`
 
@@ -7519,7 +7519,7 @@ Window title, кнопки, внутренние ключи — не трону�
   - `app/ui/widgets/susceptibility_panel.py` — общая панель RIS/MIC и фагов.
 - В обоих диалогах добавлена inline-валидация обязательных полей без `QMessageBox.warning`.
 - `app/ui/theme.py` дополнен стилями `sampleHeader`, `sampleTabs`, `sampleSection`, `sampleFooter` и error-state для полей.
-- Обновлены `docs/user_guide.md`, `docs/tech_guide.md`, `docs/CODEX_ACTION_PLAN.md`.
+- Обновлены `docs/user_guide.md`, `docs/tech_guide.md`, `docs/archive/CODEX_ACTION_PLAN.md`.
 - Добавлены unit-тесты:
   - `tests/unit/test_susceptibility_panel.py`;
   - `tests/unit/test_lab_sample_detail_dialog.py`;
@@ -7832,7 +7832,7 @@ Window title, кнопки, внутренние ключи — не трону�
   - `tests/unit/test_row_delete_button.py` сохраняет `QTableWidget.item()` в локальные переменные и проверяет `None` перед `.text()`.
   - `tests/unit/test_emz_form_intervention_rows.py` проверяет `box.layout()` и `horizontalHeaderItem()` перед использованием.
 - Начат S4.6 финальный аудит:
-  - создан `docs/audit_report_v1_1_0.md`;
+  - создан `docs/archive/audit_report_v1_1_0.md`;
   - зафиксированы результаты автоматизированных проверок;
   - отдельно отмечены невыполненные ручные UI/regression пункты и blocked artifact validation.
 
@@ -7855,13 +7855,13 @@ Window title, кнопки, внутренние ключи — не трону�
 **Статус:** audit-only выполнен; релиз не подтверждён до закрытия High-пунктов
 
 - Повторно выполнен полный набор автоматизированных проверок из `CODEX_S4_6_FINAL_AUDIT`.
-- Обновлён `docs/audit_report_v1_1_0.md` по финальному шаблону:
+- Обновлён `docs/archive/audit_report_v1_1_0.md` по финальному шаблону:
   - автоматизированные gates зелёные;
   - coverage `78%`, HTML-отчёт `htmlcov/index.html`;
   - `alembic heads` показывает `0021_form100_artifacts (head)`;
   - sample exports: `15 OK / 0 SKIP / 0 ERROR`;
   - import round-trip: `7 PASS / 0 FAIL`.
-- Создан `docs/audit_v1_1_0/regression_checklist.md` как копия `docs/specs/SPEC_analytics_redesign.md` с audit-разметкой:
+- Создан `docs/archive/audit_v1_1_0/regression_checklist.md` как копия `docs/specs/SPEC_analytics_redesign.md` с audit-разметкой:
   - `53/122` подтверждено автоматикой;
   - `55/122` требует ручной проверки;
   - `14/122` отмечено как static gap / obsolete.
@@ -7885,3 +7885,110 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python scripts\seed_demo_data.py` - pass.
 - `python scripts\generate_sample_exports.py --skip-seed` - pass (`15 OK / 0 SKIP / 0 ERROR`).
 - `python scripts\test_import_roundtrip.py` - pass (`7 PASS / 0 FAIL`).
+
+---
+
+## 2026-05-29 - fix: DateInputAutoFlow больше не ломает посекционное редактирование
+
+**Статус:** реализовано и проверено локально, без коммита
+
+- Выбран вариант A: `DateInputAutoFlow` оставлен только для paste, а одиночные цифры, Backspace/Delete и посекционное редактирование отданы нативному `QDateEdit`/`QDateTimeEdit`.
+- Pre-gate нативного Qt без перехвата цифр подтвердил промежуточную видимость времени: после `...12` поле показывает `10.10.2024 12:00`, после `...124` - `10.10.2024 12:4`, после `...1243` - `10.10.2024 12:43`.
+- Grep по `_apply_buffer|_parse_partial_time|_BUFFER_PROP|_ACTIVE_PROP` до удаления показал только `date_input_flow.py` и удаляемые тесты; после удаления совпадений не осталось.
+- Paste теперь заменяет всё поле целиком, даже если курсор находится в середине секции: `10.10.2024 12:43` + Ctrl+V `26.05.2026 08:30` даёт `26.05.2026 08:30`.
+- Тесты `tests/unit/test_date_input_flow.py` переведены с приватного буфера на поведенческие сценарии: paste, последовательный ввод, правка секций, стрелка по выбранной секции и sentinel `01.01.1900`.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_date_input_flow.py -q --tb=short` - `3 failed, 12 passed` на старом буфере.
+- GREEN targeted: `python -m pytest tests/unit/test_date_input_flow.py -q --tb=short` - `15 passed`.
+- `python -m pytest tests/integration/test_form100_wizard_birth_date.py -q --tb=short` - `8 passed`, `1 warning`.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`398 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python -m pytest -q --tb=short` - `893 passed`, `3 warnings`.
+
+---
+
+## 2026-05-29 - fix: завершение QA-багов ввода даты и времени
+
+**Статус:** реализовано и проверено локально, без коммита
+
+- Баг №1: применён шаг 1 из prompt — `setKeyboardTracking(False)` для optional `QDateEdit`/`QDateTimeEdit`; технический минимум не понижался, sentinel остался `01.01.1900`.
+- Headless smoke подтвердил ввод года `1985`, дату рождения `15.06.1985` и последовательный datetime `101020241243`; текст виден сразу, значение коммитится после `interpretText`/focus-out.
+- Баг №2: при полном выделении поля первая цифра переводит выделение в первую секцию и отдаётся нативному Qt через `return False`; посекционная правка месяца осталась нативной.
+- Баг №3: paste из середины заполненного datetime-поля по-прежнему заменяет всё значение целиком.
+- Баг №4: полное выделение + `Delete`/`Backspace` сбрасывает поле в sentinel и возвращает `optional_*_value -> None`; контекстное меню «Очистить дату» не добавлялось.
+- `tests/unit/test_date_input_flow.py` расширен регрессиями для year typing, birth-date typing, select-all typing, clear-to-sentinel и single-section delete.
+
+### Проверки
+
+- RED: `python -m pytest tests/unit/test_date_input_flow.py tests/unit/test_emz_form_widget_factories.py::test_create_datetime_cell -q --tb=short` - `6 failed, 19 passed` на старой реализации.
+- GREEN targeted: `python -m pytest tests/unit/test_date_input_flow.py -q --tb=short` - `24 passed`.
+- `python -m pytest tests/integration/test_form100_wizard_birth_date.py -q --tb=short` - `8 passed`, `1 warning`.
+- `python -m pytest tests/unit/test_datetime_inputs_widget_helper.py -q --tb=short` - `19 passed`.
+- `python -m pytest tests/unit/test_emz_form_widget_factories.py -q --tb=short` - `11 passed`.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`398 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python -m pytest -q --tb=short` - `902 passed`, `3 warnings`.
+
+---
+
+## 2026-05-29 - docs: cleanup документации перед v1.1.0
+
+**Статус:** выполнено без коммита
+
+- Проведена инвентаризация `docs/` и корневых `README.md` / `CHANGELOG.md`.
+- Исторические планы, S4.6 audit-файлы, закрытые Codex task-файлы и реализованные промежуточные spec-планы перенесены в `docs/archive/` через `git mv`.
+- Создано оглавление архива `docs/archive/README.md`.
+- Обновлены живые документы:
+  - `CHANGELOG.md` отражает date/datetime fixes, поля Lab/Sanitary, week labels и sidebar Form100;
+  - `README.md` обновлён до даты документации `2026-05-29`;
+  - `docs/context.md` приведён к текущему статусу v1.1.0 и актуальным release-шагам;
+  - `docs/specs/SPEC_analytics_redesign.md` ссылается на архивную копию S4.6 regression-checklist;
+  - `docs/session_handoff.md` обновлён под текущую cleanup-сессию.
+- `docs/QA_CHECKLIST_DATETIME_WIDGET.md` и `docs/sample_exports/*` не тронуты: это untracked/ignored рабочие артефакты.
+
+### Проверки
+
+- `python scripts\check_mojibake.py` - pass.
+- `git diff --stat` - проверен.
+- `git status --short` - проверен: новые изменения ограничены документацией; существующие `.py`/test изменения относятся к предыдущему date/datetime-пакету и не менялись в cleanup.
+---
+
+## 2026-05-30 - fix: sanitary filter Enter handling and optional date NULL persistence
+
+**Статус:** реализовано и проверено локально, без коммита и push.
+
+### Причина
+
+- `SanitaryHistoryDialog` является `QDialog`; кнопка `Сбросить` становилась auto-default/default кнопкой диалога.
+- При нажатии Enter внутри `QDateEdit` событие активировало default-кнопку, вызывало `_clear_filters()` и сбрасывало даты в sentinel `01.01.1900`.
+- В `SanitaryDashboard` сценарий не воспроизвелся как top-level widget, но для защиты при встраивании в диалоги auto-default отключен и там.
+
+### Что изменено
+
+- Отключен auto-default/default режим у кнопок в `SanitaryHistoryDialog` и `SanitaryDashboard`, чтобы Enter в фильтрах не запускал действия кнопок.
+- `Form100EditorV2`, `StepIdentification`, `Form100StubWidget` и `Form100MainWidget` больше не сериализуют пустые optional-даты как `01.01.1900`.
+- `Form100ServiceV2.update_card()` различает отсутствующее поле `birth_date` и явное `birth_date=None`, поэтому очистка даты сохраняется как SQL `NULL`.
+- Добавлены регрессии на Enter в санитарных фильтрах и SQL `NULL` для optional-дат EMZ, Lab, Sanitary и Form100.
+
+### Проверки
+
+- RED до фикса: targeted tests - `4 failed, 1 passed`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_history_dialog.py::test_sanitary_history_dialog_enter_in_date_filters_does_not_reset tests/unit/test_sanitary_dashboard.py::test_sanitary_dashboard_enter_in_date_filters_keeps_filter_applied tests/unit/test_form100_v2_editor_fields.py::test_form100_v2_editor_empty_optional_dates_do_not_store_sentinel tests/integration/test_form100_wizard_birth_date.py::test_identification_collect_keeps_empty_optional_dates_blank tests/integration/test_form100_v2_service.py::test_form100_v2_update_can_clear_birth_date_to_null -q --tb=short` - `5 passed`.
+- `python -m pytest tests/integration/test_emz_service.py::test_emz_empty_optional_dates_persist_as_null tests/integration/test_lab_service.py::test_lab_sample_empty_optional_ordered_at_persists_as_null tests/integration/test_sanitary_service.py::test_sanitary_sample_empty_optional_ordered_at_persists_as_null -q --tb=short` - `3 passed`.
+- `python -m pytest tests/unit/test_sanitary_history_dialog.py tests/unit/test_sanitary_dashboard.py -q --tb=short` - `16 passed`.
+- `python -m pytest tests/integration -q --tb=short` - `162 passed`, `1 warning`.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`398 source files`).
+- `python scripts\check_architecture.py` - pass.
+- `python -m pytest -q --tb=short` - `910 passed`, `3 warnings`.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python -m app.main` - started in offscreen mode and was stopped after 8 seconds at expected GUI/login wait; no startup crash.

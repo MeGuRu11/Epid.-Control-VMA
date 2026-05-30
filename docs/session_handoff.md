@@ -1,62 +1,81 @@
-# Сессия 2026-05-26 - S4.6 final audit v1.1.0
+# CURRENT: 2026-05-30 - sanitary filters and optional date NULL persistence
+
+The current handoff is the `2026-05-30` section below. The older `2026-05-29` cleanup notes are retained for context.
+
+# Сессия 2026-05-29 - cleanup docs перед v1.1.0
 
 ## Текущее состояние
 
 - Репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
 - Ветка: `main`.
-- Аудируемый коммит на старте: `191c560 chore: comprehensive system audit and regression check for v1.1.0`.
-- Задача: финальный audit-only проход перед v1.1.0.
-- Статус: автоматизированные проверки прошли; релиз не подтверждён до решения High-пунктов.
+- Задача: инвентаризация и уборка документации перед v1.1.0.
+- Коммит и push не выполнялись.
+- В рабочей копии до начала cleanup уже были незакоммиченные изменения кода и тестов по date/datetime-вводу; они не трогались.
 
 ## Что сделано
 
-- Запущены все проверки из `CODEX_S4_6_FINAL_AUDIT`.
-- Обновлён `docs/audit_report_v1_1_0.md`:
-  - таблица автоматизированных проверок;
-  - coverage analysis;
-  - ручной checklist;
-  - найденные проблемы с приоритетами;
-  - versioning status;
-  - итоговый verdict.
-- Создан `docs/audit_v1_1_0/regression_checklist.md`:
-  - копия `docs/specs/SPEC_analytics_redesign.md`;
-  - `[x] (auto)` для пунктов, покрытых тестами/скриптами/static checks;
-  - `[ ] (manual)` для ручных UI-пунктов;
-  - `[ ] (gap)` для static gaps / obsolete items.
-- Обновлён `docs/progress_report.md`.
+- Проведена инвентаризация `docs/` и корневых `README.md` / `CHANGELOG.md`.
+- Через `git mv` в `docs/archive/` перенесены исторические планы, S4.6 audit-файлы, закрытые Codex task-файлы и реализованные промежуточные spec-планы.
+- Создано оглавление архива: `docs/archive/README.md`.
+- Обновлены живые документы:
+  - `CHANGELOG.md`;
+  - `README.md`;
+  - `docs/context.md`;
+  - `docs/specs/SPEC_analytics_redesign.md`;
+  - `docs/progress_report.md`;
+  - `docs/session_handoff.md`.
+- Untracked/ignored файлы не перемещались и не добавлялись в git:
+  - `docs/QA_CHECKLIST_DATETIME_WIDGET.md`;
+  - `docs/sample_exports/*`.
 
 ## Проверки
 
-- `python -c "import sys; print(f'Python: {sys.version}')"` - pass, Python `3.12.10`.
-- `git log --oneline -1` - pass, `191c560`.
-- `git status --short` - pass, чисто на старте аудита.
-- `python -m ruff check app tests scripts` - pass.
-- `python -m mypy app tests` - pass (`397 source files`).
-- `python scripts\check_architecture.py` - pass.
-- `python -m compileall -q app tests scripts` - pass.
-- `python -m pytest -q --tb=short` - pass (`861 passed`, `3 warnings`).
-- `python -m pytest --cov=app --cov-report=term-missing --cov-report=html -q` - pass (`861 passed`, `3 warnings`, coverage `78%`, HTML `htmlcov/index.html`).
-- `python -m alembic check` - pass.
-- `python -m alembic heads` - pass, `0021_form100_artifacts (head)`.
 - `python scripts\check_mojibake.py` - pass.
-- `python scripts\seed_demo_data.py --clear` - pass.
-- `python scripts\seed_demo_data.py` - pass.
-- `python scripts\generate_sample_exports.py --skip-seed` - pass (`15 OK / 0 SKIP / 0 ERROR`).
-- `python scripts\test_import_roundtrip.py` - pass (`7 PASS / 0 FAIL`).
+- `git diff --stat` - проверен.
+- `git status --short` - проверен; кодовые `.py`-изменения в статусе остались только прежними пользовательскими изменениями.
 
-## Найденные release-gates
+## Открытые вопросы
 
-- High: ручной regression-pass не выполнен (`55/122` Analytics checklist + общие UI smoke-сценарии).
-- High: `14/122` Analytics checklist отмечены как static gap / obsolete. Основные gap-пункты:
-  - нет Gram+/Gram- quick chips;
-  - нет сортировки/preview/pagination в `SearchTab`;
-  - нет quick-export текущей вкладки;
-  - `ReportsTab` не содержит open/save-as actions, period filter и полный type filter;
-  - v1 rollback/use_analytics_v2 пункты устарели после удаления v1.
-- Medium: coverage ниже `40%` в 8 UI-модулях.
+- Ручной smoke полей 3/4/S, date/datetime-ввода, сборка `EXE` и инсталлятор остаются следующими release-шагами.
+- `docs/QA_CHECKLIST_DATETIME_WIDGET.md` остаётся untracked по явному правилу cleanup-промпта.
 
 ## Следующие шаги
 
-1. Решить High static gaps: исправить, явно принять как scope change или обновить checklist.
-2. Выполнить ручной regression-pass из `docs/audit_report_v1_1_0.md`.
-3. Только после закрытия High-пунктов выполнять release prep: tag `v1.1.0`, push, финальная публикация.
+1. Пользователю проверить таблицу решений по файлам.
+2. После принятия cleanup-решений выполнить commit самостоятельно.
+3. Перед тегом v1.1.0 пройти ручной smoke и сборочные проверки.
+# Сессия 2026-05-30 - sanitary filters and optional date NULL persistence
+
+## Текущее состояние
+
+- Репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Задача: исправить сброс санитарных фильтров по Enter и проверить/исправить сохранение пустых optional-дат как SQL `NULL`, а не `1900-01-01`.
+- Коммит и push не выполнялись.
+- До начала работы в репозитории уже были незакоммиченные изменения документации и date/datetime-виджетов; они оставлены без отката.
+
+## Что сделано
+
+- Найдена причина бага Enter: в `SanitaryHistoryDialog` кнопка `Сбросить` становилась default/auto-default кнопкой `QDialog`, поэтому Enter в `QDateEdit` вызывал `_clear_filters()`.
+- В `SanitaryHistoryDialog` и `SanitaryDashboard` отключен default/auto-default режим у `QPushButton`-действий, чтобы Enter в фильтрах не запускал кнопки.
+- В `Form100EditorV2` и wizard-компонентах пустые optional-даты больше не сериализуются как `01.01.1900`; наружу уходит `""`/`None`.
+- В `Form100ServiceV2.update_card()` явное `birth_date=None` теперь очищает дату до SQL `NULL`, а отсутствие поля продолжает сохранять прежнее значение.
+- Добавлены регрессионные тесты для санитарного Enter, Form100 editor/wizard, очистки `birth_date`, а также SQL `NULL` для optional-дат EMZ/Lab/Sanitary.
+
+## Проверки
+
+- `python -m app.main` - стартовал в offscreen-режиме и был остановлен через 8 секунд на ожидаемом GUI/login wait; startup crash не обнаружен.
+- `python -m pytest tests/integration -q --tb=short` - `162 passed`, `1 warning`.
+- `python -m pytest tests/unit/test_sanitary_history_dialog.py tests/unit/test_sanitary_dashboard.py -q --tb=short` - `16 passed`.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`398 source files`).
+- `python scripts\check_architecture.py` - pass.
+- `python -m pytest -q --tb=short` - `910 passed`, `3 warnings`.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+
+## Открытые вопросы
+
+- Ручной smoke в реальном GUI после запуска приложения остается полезным для UX-подтверждения Enter-сценария, но автоматические регрессии покрывают сброс фильтров и SQL `NULL`.
+- Следующий шаг перед релизом: собрать/проверить `EXE` и пройти ручные сценарии из release checklist.
+
+---
