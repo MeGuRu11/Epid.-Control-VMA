@@ -7,7 +7,7 @@
 (`Quick-export` текущей вкладки, action-column отчётов, pagination/virtualization поиска,
 Gram+/Gram− chips и legacy feature-flag сценарии). Эти пункты приняты как `v1.2.0 backlog`,
 а не как блокеры v1.1.0; актуальная разметка приведена в
-`docs/audit_v1_1_0/regression_checklist.md`.
+`docs/archive/audit_v1_1_0/regression_checklist.md`.
 
 ---
 
