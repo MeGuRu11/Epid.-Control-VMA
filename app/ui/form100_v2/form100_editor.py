@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from PySide6.QtCore import QDate, QTime
+from PySide6.QtCore import QDate, QEvent, QObject, QTime
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -35,6 +35,11 @@ from app.application.services.form100_payload_service import (
     Form100MedicalHelpPayloadInput,
     Form100StubPayloadInput,
     build_form100_data_payload,
+)
+from app.ui.form100_v2.enter_key_guard import (
+    disable_enter_defaults,
+    install_enter_key_guard,
+    is_enter_key_press,
 )
 from app.ui.form100_v2.widgets.bodymap_editor_v2 import BodymapEditorV2
 from app.ui.widgets.datetime_inputs import (
@@ -101,6 +106,20 @@ class Form100EditorV2(QWidget):
         root.addWidget(self._build_bottom_block())
         root.addWidget(self._build_flags_block())
         root.addStretch()
+        disable_enter_defaults(self)
+        install_enter_key_guard(self, self)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if is_enter_key_press(event):
+            event.accept()
+            return True
+        return super().eventFilter(watched, event)
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if is_enter_key_press(event):
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def _build_stub_block(self) -> QWidget:
         box = QGroupBox("Корешок")

@@ -202,6 +202,8 @@ def test_sanitary_history_dialog_updates_filter_summary_and_resets_page(qapp) ->
     dialog.growth_filter.setCurrentIndex(1)
     dialog.date_from.setDate(QDate(2026, 4, 20))
     dialog.date_to.setDate(QDate(2026, 4, 22))
+    dialog.date_to.setFocus()
+    QTest.keyClick(dialog.date_to, Qt.Key.Key_Return)
     qapp.processEvents()
 
     assert dialog.page_index == 1
@@ -265,6 +267,59 @@ def test_sanitary_history_dialog_enter_in_date_filters_does_not_reset(qapp) -> N
 
     assert dialog._date_value(dialog.date_to) == _dt(2026, 4, 22, 0, 0).date()
     assert dialog.filter_summary_label.text() != "Без фильтров"
+
+
+def test_sanitary_history_dialog_date_filters_apply_on_enter_only(qapp) -> None:
+    samples = [
+        _make_sample(1, lab_no="SAN-0001", growth_flag=1, taken_at=_dt(2026, 5, 20, 8, 30)),
+        _make_sample(2, lab_no="SAN-0002", growth_flag=0, taken_at=_dt(2026, 5, 22, 8, 30)),
+    ]
+    service = _SanitaryServiceStub({1: samples})
+    dialog = SanitaryHistoryDialog(
+        sanitary_service=cast(Any, service),
+        reference_service=cast(Any, _reference_service_stub()),
+        department_id=1,
+        department_name="ОРИТ",
+        actor_id=77,
+    )
+    dialog.show()
+    qapp.processEvents()
+
+    initial_calls = len(service.calls)
+    dialog.date_from.setDate(QDate(2026, 5, 21))
+    qapp.processEvents()
+
+    assert len(service.calls) == initial_calls
+    assert dialog.filter_summary_label.text() == "Без фильтров"
+    assert dialog.list_widget.count() == 2
+
+    dialog.date_from.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dialog.date_from, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert len(service.calls) == initial_calls + 1
+    assert "21.05.2026" in dialog.filter_summary_label.text()
+    assert dialog.list_widget.count() == 1
+
+    dialog._clear_filters()
+    qapp.processEvents()
+    initial_calls = len(service.calls)
+    dialog.date_to.setDate(QDate(2026, 5, 21))
+    qapp.processEvents()
+
+    assert len(service.calls) == initial_calls
+    assert dialog.filter_summary_label.text() == "Без фильтров"
+    assert dialog.list_widget.count() == 2
+
+    dialog.date_to.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dialog.date_to, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert len(service.calls) == initial_calls + 1
+    assert "21.05.2026" in dialog.filter_summary_label.text()
+    assert dialog.list_widget.count() == 1
 
 
 def test_sanitary_history_dialog_distinguishes_no_data_and_filtered_empty_states(qapp) -> None:

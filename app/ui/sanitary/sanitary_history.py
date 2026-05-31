@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, cast
 
-from PySide6.QtCore import QSignalBlocker, Qt, Signal
+from PySide6.QtCore import QEvent, QObject, QSignalBlocker, Qt, Signal
+from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QApplication,
     QBoxLayout,
@@ -178,10 +179,9 @@ class SanitaryHistoryDialog(QDialog):
         growth_layout.addWidget(self.growth_filter)
 
         self.date_from = create_optional_date_edit()
-        self.date_from.dateChanged.connect(self._on_filter_changed)
 
         self.date_to = create_optional_date_edit()
-        self.date_to.dateChanged.connect(self._on_filter_changed)
+        self._install_date_filter_enter_handlers()
 
         self._date_group = QWidget()
         date_layout = QGridLayout(self._date_group)
@@ -298,6 +298,29 @@ class SanitaryHistoryDialog(QDialog):
         super().resizeEvent(event)
         self._update_filter_layout()
         self._update_list_header_layout()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        date_edit = self._date_filter_editor(watched)
+        if date_edit is not None and event.type() == QEvent.Type.KeyPress:
+            key_event = event if isinstance(event, QKeyEvent) else None
+            if key_event is not None and key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                date_edit.interpretText()
+                self._on_filter_changed()
+                return True
+        return super().eventFilter(watched, event)
+
+    def _install_date_filter_enter_handlers(self) -> None:
+        for date_edit in (self.date_from, self.date_to):
+            date_edit.installEventFilter(self)
+            line_edit = date_edit.lineEdit()
+            if line_edit is not None:
+                line_edit.installEventFilter(self)
+
+    def _date_filter_editor(self, watched: QObject) -> QDateEdit | None:
+        for date_edit in (self.date_from, self.date_to):
+            if watched is date_edit or watched is date_edit.lineEdit():
+                return date_edit
+        return None
 
     def _build_summary_field(self, layout: QGridLayout, row: int, column: int, title: str) -> QLabel:
         field = QWidget()

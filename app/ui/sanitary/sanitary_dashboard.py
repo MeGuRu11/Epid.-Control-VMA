@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import cast
 
-from PySide6.QtCore import QSignalBlocker, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPainterPath, QPaintEvent
+from PySide6.QtCore import QEvent, QObject, QSignalBlocker, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPaintEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QCheckBox,
@@ -299,6 +299,29 @@ class SanitaryDashboard(QWidget):
         self._update_filter_layout()
         self._reflow_utility_kpis()
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        date_edit = self._date_filter_editor(watched)
+        if date_edit is not None and event.type() == QEvent.Type.KeyPress:
+            key_event = event if isinstance(event, QKeyEvent) else None
+            if key_event is not None and key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                date_edit.interpretText()
+                self._on_filter_changed()
+                return True
+        return super().eventFilter(watched, event)
+
+    def _install_date_filter_enter_handlers(self) -> None:
+        for date_edit in (self.date_from, self.date_to):
+            date_edit.installEventFilter(self)
+            line_edit = date_edit.lineEdit()
+            if line_edit is not None:
+                line_edit.installEventFilter(self)
+
+    def _date_filter_editor(self, watched: QObject) -> QDateEdit | None:
+        for date_edit in (self.date_from, self.date_to):
+            if watched is date_edit or watched is date_edit.lineEdit():
+                return date_edit
+        return None
+
     def _build_hero_card(self) -> QWidget:
         card = QWidget()
         card.setObjectName("sanitaryHeroCard")
@@ -452,10 +475,9 @@ class SanitaryDashboard(QWidget):
         self.filter_enabled.stateChanged.connect(self._on_filter_changed)
 
         self.date_from = create_optional_date_edit()
-        self.date_from.dateChanged.connect(self._on_filter_changed)
 
         self.date_to = create_optional_date_edit()
-        self.date_to.dateChanged.connect(self._on_filter_changed)
+        self._install_date_filter_enter_handlers()
 
         date_layout.addWidget(self.filter_enabled, 0, 0, 1, 2)
         date_layout.addWidget(QLabel("Дата от"), 1, 0)

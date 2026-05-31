@@ -11,7 +11,7 @@ from collections.abc import Mapping
 from datetime import date
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -37,6 +37,11 @@ from app.application.dto.form100_v2_dto import (
 from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.domain.rules.form100_rules_v2 import Form100SigningError
+from app.ui.form100_v2.enter_key_guard import (
+    disable_enter_defaults,
+    install_enter_key_guard,
+    is_enter_key_press,
+)
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_bodymap import StepBodymap
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_evacuation import StepEvacuation
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_identification import StepIdentification
@@ -491,9 +496,23 @@ class Form100Wizard(QDialog):
 
         self._step4.btn_sign.clicked.connect(self._sign)
 
+        disable_enter_defaults(self)
+        install_enter_key_guard(self, self)
         self._apply_initial_size()
         self._apply_responsive_metrics()
         self._goto_step(0)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if is_enter_key_press(event):
+            event.accept()
+            return True
+        return super().eventFilter(watched, event)
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if is_enter_key_press(event):
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)

@@ -433,6 +433,75 @@ def test_sanitary_dashboard_enter_in_date_filters_keeps_filter_applied(qapp) -> 
     assert dashboard._filter_summary_label.text() != "Без фильтров"
 
 
+def test_sanitary_dashboard_date_filters_apply_on_enter_only(qapp) -> None:
+    dashboard = SanitaryDashboard(
+        sanitary_service=cast(
+            Any,
+            _SanitaryServiceStub(
+                {
+                    1: [
+                        _make_sample(
+                            1,
+                            department_id=1,
+                            lab_no="SAN-0001",
+                            growth_flag=1,
+                            taken_at=_dt(2026, 5, 20, 8, 30),
+                        )
+                    ],
+                    2: [
+                        _make_sample(
+                            2,
+                            department_id=2,
+                            lab_no="SAN-0002",
+                            growth_flag=0,
+                            taken_at=_dt(2026, 5, 22, 10, 0),
+                        )
+                    ],
+                }
+            ),
+        ),
+        reference_service=cast(Any, _reference_service_stub()),
+    )
+    dashboard.show()
+    qapp.processEvents()
+
+    dashboard.filters_toggle.setChecked(True)
+    dashboard.filter_enabled.setChecked(True)
+    qapp.processEvents()
+
+    dashboard.date_from.setDate(QDate(2026, 5, 21))
+    qapp.processEvents()
+
+    assert dashboard._kpi_widgets["samples"].value_label.text() == "2"
+    assert dashboard._filter_summary_label.text() == "Без фильтров"
+
+    dashboard.date_from.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dashboard.date_from, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert dashboard._kpi_widgets["samples"].value_label.text() == "1"
+    assert "21.05.2026" in dashboard._filter_summary_label.text()
+
+    dashboard._clear_filters()
+    dashboard.filter_enabled.setChecked(True)
+    qapp.processEvents()
+
+    dashboard.date_to.setDate(QDate(2026, 5, 21))
+    qapp.processEvents()
+
+    assert dashboard._kpi_widgets["samples"].value_label.text() == "2"
+    assert dashboard._filter_summary_label.text() == "Без фильтров"
+
+    dashboard.date_to.setFocus()
+    qapp.processEvents()
+    QTest.keyClick(dashboard.date_to, Qt.Key.Key_Return)
+    qapp.processEvents()
+
+    assert dashboard._kpi_widgets["samples"].value_label.text() == "1"
+    assert "21.05.2026" in dashboard._filter_summary_label.text()
+
+
 def test_sanitary_dashboard_distinguishes_empty_states_and_clears_selection(qapp) -> None:
     no_data_dashboard = SanitaryDashboard(
         sanitary_service=cast(Any, _SanitaryServiceStub({})),

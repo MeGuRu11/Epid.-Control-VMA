@@ -20,6 +20,8 @@ class IconSelectWidget(QWidget):
         for value, title in items:
             btn = QPushButton(title)
             btn.setCheckable(True)
+            btn.setAutoDefault(False)
+            btn.setDefault(False)
             btn.setObjectName("iconSelectToggle")
             btn.clicked.connect(lambda checked, key=value: self._on_clicked(key, checked))  # noqa: ARG005
             self._buttons[value] = btn
@@ -62,4 +64,3 @@ class IconSelectWidget(QWidget):
         btn.style().unpolish(btn)
         btn.style().polish(btn)
         btn.update()
-

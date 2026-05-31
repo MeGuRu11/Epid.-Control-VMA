@@ -5,10 +5,12 @@ from collections.abc import Callable
 from datetime import date
 from typing import cast
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
+    QDateEdit,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -50,6 +52,13 @@ from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.table_utils import resize_columns_to_content
 
 _HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
+
+
+def _disable_enter_defaults(root: QWidget) -> None:
+    buttons = cast(list[QPushButton], root.findChildren(QPushButton))
+    for button in buttons:
+        button.setAutoDefault(False)
+        button.setDefault(False)
 
 
 class PatientEmkView(QWidget):
@@ -139,11 +148,22 @@ class PatientEmkView(QWidget):
 
         scroll.setWidget(container)
         outer.addWidget(scroll)
+        _disable_enter_defaults(self)
         self._update_page_layouts()
 
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._update_page_layouts()
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        date_edit = self._case_filter_date_editor(watched)
+        if date_edit is not None and event.type() == QEvent.Type.KeyPress:
+            key_event = event if isinstance(event, QKeyEvent) else None
+            if key_event is not None and key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                date_edit.interpretText()
+                self._apply_case_filters()
+                return True
+        return super().eventFilter(watched, event)
 
     def _build_quick_actions_row(self) -> QWidget:
         quick_emz = QPushButton("Открыть ЭМЗ")
@@ -364,8 +384,7 @@ class PatientEmkView(QWidget):
         filter_row.addWidget(QLabel("Период"))
         self.date_from = create_optional_date_edit()
         self.date_to = create_optional_date_edit()
-        self.date_from.dateChanged.connect(self._apply_case_filters)
-        self.date_to.dateChanged.connect(self._apply_case_filters)
+        self._install_case_date_filter_enter_handlers()
         filter_row.addWidget(self.date_from)
         filter_row.addWidget(QLabel("по"))
         filter_row.addWidget(self.date_to)
@@ -375,6 +394,19 @@ class PatientEmkView(QWidget):
         filter_row.addWidget(reset_filters)
         filter_row.addStretch()
         return filter_row
+
+    def _install_case_date_filter_enter_handlers(self) -> None:
+        for date_edit in (self.date_from, self.date_to):
+            date_edit.installEventFilter(self)
+            line_edit = date_edit.lineEdit()
+            if line_edit is not None:
+                line_edit.installEventFilter(self)
+
+    def _case_filter_date_editor(self, watched: QObject) -> QDateEdit | None:
+        for date_edit in (self.date_from, self.date_to):
+            if watched is date_edit or watched is date_edit.lineEdit():
+                return date_edit
+        return None
 
     def _build_cases_box(self) -> QGroupBox:
         cases_box = QGroupBox("Госпитализации")
