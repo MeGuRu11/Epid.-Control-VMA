@@ -36,12 +36,12 @@ from app.application.dto.form100_v2_dto import (
 )
 from app.application.exceptions import AppError
 from app.application.services.form100_service_v2 import Form100ServiceV2
-from app.domain.rules.form100_rules_v2 import Form100SigningError
 from app.ui.form100_v2.enter_key_guard import (
     disable_enter_defaults,
     install_enter_key_guard,
     is_enter_key_press,
 )
+from app.ui.form100_v2.signing_errors import form100_signing_error_text
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_bodymap import StepBodymap
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_evacuation import StepEvacuation
 from app.ui.form100_v2.wizard_widgets.wizard_steps.step_identification import StepIdentification
@@ -57,12 +57,6 @@ _HANDLED_FORM100_WIZARD_ERRORS = (
     AppError,
     OSError,
 )
-
-
-def _form100_signing_error_text(exc: BaseException, fallback: str) -> str:
-    if isinstance(exc, Form100SigningError):
-        return str(exc)
-    return error_text(exc, fallback)
 
 _STEP_NAMES: tuple[str, ...] = (
     "Идентификация",
@@ -741,7 +735,7 @@ class Form100Wizard(QDialog):
             exec_message_box(
                 self,
                 "Ошибка подписи",
-                _form100_signing_error_text(exc, "Не удалось подписать карточку"),
+                form100_signing_error_text(exc, "Не удалось подписать карточку"),
                 icon=QMessageBox.Icon.Critical,
             )
             return

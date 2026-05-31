@@ -32,20 +32,14 @@ from app.application.exceptions import AppError
 from app.application.reporting.formatters import format_date
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.application.services.reporting_service import ReportingService
-from app.domain.rules.form100_rules_v2 import Form100SigningError
 from app.ui.form100_v2.form100_editor import Form100EditorV2
+from app.ui.form100_v2.signing_errors import form100_signing_error_text
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.notifications import error_text, show_error, show_info, show_warning
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.table_utils import connect_combo_autowidth
 
 _HANDLED_FORM100_V2_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError, OSError)
-
-
-def _form100_signing_error_text(exc: BaseException, fallback: str) -> str:
-    if isinstance(exc, Form100SigningError):
-        return str(exc)
-    return error_text(exc, fallback)
 
 
 class Form100ViewV2(QWidget):
@@ -424,7 +418,7 @@ class Form100ViewV2(QWidget):
             if self.on_data_changed:
                 self.on_data_changed()
         except _HANDLED_FORM100_V2_ERRORS as exc:
-            show_error(self, _form100_signing_error_text(exc, "Не удалось подписать карточку"))
+            show_error(self, form100_signing_error_text(exc, "Не удалось подписать карточку"))
 
     def _archive_card(self) -> None:
         if self.editor.current_card is None:
@@ -540,5 +534,4 @@ def _status_label(status: str, is_archived: bool) -> str:
         return "Архив"
     labels = {"DRAFT": "Черновик", "SIGNED": "Подписано"}
     return labels.get(status, status)
-
 
