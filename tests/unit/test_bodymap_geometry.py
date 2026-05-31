@@ -7,6 +7,7 @@ from app.domain.services.bodymap_geometry import (
     SLOT_PAD_TOP,
     denormalize_for_drawing,
     denormalize_for_pil,
+    fit_rect_keep_aspect,
 )
 
 
@@ -67,6 +68,37 @@ def test_drawing_y_is_inverted_vs_pil() -> None:
 
     assert y_rl < 800 * 0.5
     assert abs(y_rl - (800 - y_pil)) < 0.5
+
+
+def test_fit_rect_keep_aspect_centers_template_inside_slot() -> None:
+    x, y, width, height = fit_rect_keep_aspect(
+        container_x=24.0,
+        container_y=30.0,
+        container_w=352.0,
+        container_h=940.0,
+        source_w=120.0,
+        source_h=600.0,
+    )
+
+    assert abs(x - 106.0) < 0.5
+    assert abs(y - 30.0) < 0.5
+    assert abs(width - 188.0) < 0.5
+    assert abs(height - 940.0) < 0.5
+
+
+def test_denormalize_for_pil_uses_fitted_template_rect_when_source_size_is_provided() -> None:
+    x, y = denormalize_for_pil(
+        0.5,
+        1.0,
+        panel_width_px=400,
+        canvas_height_px=1000,
+        is_back=False,
+        source_width_px=120,
+        source_height_px=600,
+    )
+
+    assert abs(x - 200.0) < 0.5
+    assert abs(y - 970.0) < 0.5
 
 
 def test_constants_match_bodymap_widget() -> None:

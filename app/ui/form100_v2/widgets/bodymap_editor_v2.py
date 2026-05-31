@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.application.dto.form100_v2_dto import Form100AnnotationDto
+from app.domain.services.bodymap_geometry import fit_rect_keep_aspect
 from app.ui.form100_v2.bodymap_assets import (
     SILHOUETTE_ORDER as _SILHOUETTE_ORDER,
     load_bodymap_template_pixmap,
@@ -361,7 +362,6 @@ class _BodymapCanvasV2(QWidget):
         self._layout_silhouettes()
         for name in _SILHOUETTE_ORDER:
             slot = self._silhouette_rects[name]
-            body_rect = self._body_rects[name]
             path = self._body_paths[name]
             pixmap = self._silhouette_pixmaps.get(name)
             painter.setPen(QPen(QColor("#D7D7D7"), 1))
@@ -369,14 +369,13 @@ class _BodymapCanvasV2(QWidget):
             painter.drawRoundedRect(slot, 6, 6)
 
             if pixmap and not pixmap.isNull():
+                target_rect = self._template_rect(name)
                 scaled = pixmap.scaled(
-                    body_rect.size().toSize(),
+                    target_rect.size().toSize(),
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
-                x = body_rect.x() + (body_rect.width() - scaled.width()) / 2
-                y = body_rect.y() + (body_rect.height() - scaled.height()) / 2
-                painter.drawPixmap(int(x), int(y), scaled)
+                painter.drawPixmap(int(target_rect.x()), int(target_rect.y()), scaled)
             else:
                 painter.setPen(QPen(QColor("#111111"), 1.5))
                 painter.setBrush(QColor("#FFFFFF"))
@@ -415,15 +414,36 @@ class _BodymapCanvasV2(QWidget):
             self._body_rects[name] = body_rect
             self._body_paths[name] = path
 
+    def _template_rect(self, silhouette: str) -> QRectF:
+        body = self._body_rects.get(silhouette)
+        if body is None:
+            return QRectF()
+        pixmap = self._silhouette_pixmaps.get(silhouette)
+        if pixmap is None or pixmap.isNull():
+            return body
+        x, y, width, height = fit_rect_keep_aspect(
+            container_x=body.x(),
+            container_y=body.y(),
+            container_w=body.width(),
+            container_h=body.height(),
+            source_w=float(pixmap.width()),
+            source_h=float(pixmap.height()),
+        )
+        return QRectF(x, y, width, height)
+
     def _resolve_hit(self, point: QPointF) -> tuple[str, QPointF] | None:
         self._layout_silhouettes()
         for name in _SILHOUETTE_ORDER:
             if not self._silhouette_rects[name].contains(point):
                 continue
-            path = self._body_paths[name]
-            if not path.contains(point):
+            pixmap = self._silhouette_pixmaps.get(name)
+            body = self._template_rect(name) if pixmap is not None and not pixmap.isNull() else self._body_rects[name]
+            if pixmap is None or pixmap.isNull():
+                path = self._body_paths[name]
+                if not path.contains(point):
+                    continue
+            elif not body.contains(point):
                 continue
-            body = self._body_rects[name]
             norm = QPointF(
                 _clamp01((point.x() - body.x()) / max(1.0, body.width())),
                 _clamp01((point.y() - body.y()) / max(1.0, body.height())),
@@ -479,7 +499,7 @@ class _BodymapCanvasV2(QWidget):
         silhouette = str(mark.get("silhouette") or "")
         if silhouette not in self._body_rects:
             return
-        body = self._body_rects[silhouette]
+        body = self._template_rect(silhouette)
         x = _clamp01(float(mark.get("x") or 0.5))
         y = _clamp01(float(mark.get("y") or 0.5))
         p = QPointF(body.x() + x * body.width(), body.y() + y * body.height())
@@ -542,9 +562,9 @@ class _BodymapCanvasV2(QWidget):
 
     def _mark_anchor(self, mark: dict[str, Any]) -> QPointF:
         silhouette = str(mark.get("silhouette") or "")
-        body = self._body_rects.get(silhouette)
-        if body is None:
+        if silhouette not in self._body_rects:
             return QPointF(0, 0)
+        body = self._template_rect(silhouette)
         x = _clamp01(_to_float(mark.get("x"), 0.5))
         y = _clamp01(_to_float(mark.get("y"), 0.5))
         return QPointF(body.x() + x * body.width(), body.y() + y * body.height())

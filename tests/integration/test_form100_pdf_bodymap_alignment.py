@@ -38,15 +38,65 @@ def test_pil_bodymap_marker_uses_shared_geometry(tmp_path: Path, monkeypatch) ->
 
     assert flowable is not None
     assert captured
+    template = report_module._load_bodymap_template_image()
+    assert template is not None
+    silhouettes = report_module._split_bodymap_template_image(template)
+    front = silhouettes["male_front"]
     expected = denormalize_for_pil(
         0.25,
         0.99,
         panel_width_px=400,
         canvas_height_px=1000,
         is_back=False,
+        source_width_px=float(front.width),
+        source_height_px=float(front.height),
     )
     assert captured[0] == expected
     assert captured[0][1] < 1000 * 0.97
+
+
+def test_pil_bodymap_marker_uses_split_silhouette_size(tmp_path: Path, monkeypatch) -> None:
+    image_root = tmp_path / "images"
+    _create_template_png(image_root)
+    calls: list[dict[str, float | bool | None]] = []
+
+    def _spy_denormalize(
+        x_norm: float,
+        y_norm: float,
+        *,
+        panel_width_px: float,
+        canvas_height_px: float,
+        is_back: bool,
+        source_width_px: float | None = None,
+        source_height_px: float | None = None,
+    ) -> tuple[float, float]:
+        calls.append(
+            {
+                "x_norm": x_norm,
+                "y_norm": y_norm,
+                "panel_width_px": panel_width_px,
+                "canvas_height_px": canvas_height_px,
+                "is_back": is_back,
+                "source_width_px": source_width_px,
+                "source_height_px": source_height_px,
+            }
+        )
+        return 100.0, 200.0
+
+    monkeypatch.setattr(report_module, "_bodymap_image_root", lambda: image_root)
+    monkeypatch.setattr(report_module, "denormalize_for_pil", _spy_denormalize)
+
+    flowable = report_module._build_bodymap_image_flowable(
+        annotations=[{"annotation_type": "AMPUTATION", "x": 0.5, "y": 0.99, "silhouette": "male_back"}],
+        max_width_pt=400,
+        max_height_pt=500,
+    )
+
+    assert flowable is not None
+    assert calls
+    assert calls[0]["is_back"] is True
+    assert calls[0]["source_width_px"] is not None
+    assert calls[0]["source_height_px"] is not None
 
 
 def test_drawing_bodymap_marker_uses_shared_geometry(monkeypatch) -> None:

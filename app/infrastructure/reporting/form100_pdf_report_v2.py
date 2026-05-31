@@ -42,7 +42,12 @@ from app.application.reporting.formatters import (
     format_datetime,
     format_silhouette_short,
 )
-from app.domain.services.bodymap_geometry import denormalize_for_drawing, denormalize_for_pil
+from app.domain.services.bodymap_geometry import (
+    bodymap_slot_rect,
+    denormalize_for_drawing,
+    denormalize_for_pil,
+    fit_rect_keep_aspect,
+)
 from app.domain.services.bodymap_zones import coordinates_to_zone
 from app.infrastructure.reporting.pdf_determinism import build_invariant_pdf
 from app.infrastructure.reporting.pdf_fonts import get_pdf_unicode_font_name
@@ -98,6 +103,13 @@ _SILHOUETTE_LABELS: dict[str, str] = {
 }
 
 _BODYMAP_TEMPLATE_FILES: tuple[str, ...] = ("form_100_bd.png", "form_100_body.png")
+_TWO_FIGURE_SPLIT_MIN_RATIO = 0.6
+_LEGACY_STRIP_RATIO = 2.2
+_CENTER_SCAN_LEFT = 0.3
+_CENTER_SCAN_RIGHT = 0.7
+_SPLIT_PADDING = 12
+_CONTENT_LUMINANCE_THRESHOLD = 235
+_CONTENT_COLUMN_MIN_PIXELS = 18
 
 
 # ── Помощники ────────────────────────────────────────────────────────────────
@@ -215,6 +227,143 @@ def _load_bodymap_template_image() -> Any | None:
     return None
 
 
+def _split_bodymap_template_image(template: Any) -> dict[str, Any]:
+    width, height = template.size
+    if width <= 0 or height <= 0:
+        return {}
+
+    if width >= int(height * _LEGACY_STRIP_RATIO):
+        segment = max(1, width // 4)
+        return {
+            "male_front": template.crop((0, 0, segment, height)),
+            "male_back": template.crop((segment, 0, segment * 2, height)),
+        }
+
+    if width >= int(height * _TWO_FIGURE_SPLIT_MIN_RATIO):
+        split = _detect_bodymap_split_column(template)
+        if split is None:
+            split = max(1, width // 2)
+        front_box = _content_crop_box(template, 0, split)
+        back_box = _content_crop_box(template, split, width)
+        if front_box is None or back_box is None:
+            front_end = max(1, split - _SPLIT_PADDING)
+            back_start = min(width - 1, split + _SPLIT_PADDING)
+            front = template.crop((0, 0, front_end, height))
+            back = template.crop((back_start, 0, width, height))
+        else:
+            front = template.crop(front_box)
+            back = template.crop(back_box)
+        return {
+            "male_front": _add_transparent_padding(front, _SPLIT_PADDING),
+            "male_back": _add_transparent_padding(back, _SPLIT_PADDING),
+        }
+
+    return {
+        "male_front": template.copy(),
+        "male_back": template.copy(),
+    }
+
+
+def _build_bodymap_template_canvas(template: Any) -> tuple[Any, dict[str, Any]]:
+    silhouettes = _split_bodymap_template_image(template)
+    if not silhouettes:
+        return template.copy(), {}
+
+    canvas = PILImage.new("RGBA", template.size, (255, 255, 255, 255))
+    panel_width = canvas.width / 2.0
+    canvas_height = float(canvas.height)
+    for silhouette, image in silhouettes.items():
+        slot_x, slot_y, slot_w, slot_h = bodymap_slot_rect(
+            panel_width=panel_width,
+            canvas_height=canvas_height,
+            is_back=silhouette.endswith("back"),
+        )
+        target_x, target_y, target_w, target_h = fit_rect_keep_aspect(
+            container_x=slot_x,
+            container_y=slot_y,
+            container_w=slot_w,
+            container_h=slot_h,
+            source_w=float(image.width),
+            source_h=float(image.height),
+        )
+        resized = image.resize(
+            (max(1, round(target_w)), max(1, round(target_h))),
+            PILImage.Resampling.LANCZOS,
+        )
+        canvas.alpha_composite(resized, (round(target_x), round(target_y)))
+    return canvas, silhouettes
+
+
+def _detect_bodymap_split_column(image: Any) -> int | None:
+    width, height = image.size
+    if width <= 0 or height <= 0:
+        return None
+    scan_start = max(1, int(width * _CENTER_SCAN_LEFT))
+    scan_end = min(width - 1, int(width * _CENTER_SCAN_RIGHT))
+    if scan_start >= scan_end:
+        return None
+
+    column_scores = [(x, _column_content_score(image, x)) for x in range(scan_start, scan_end + 1)]
+    if not column_scores:
+        return None
+    return min(column_scores, key=lambda item: (item[1], abs(item[0] - (width // 2))))[0]
+
+
+def _column_content_score(image: Any, x: int) -> int:
+    _, height = image.size
+    score = 0
+    for y in range(height):
+        if _pixel_has_content(image.getpixel((x, y))):
+            score += 1
+    return score if score >= _CONTENT_COLUMN_MIN_PIXELS else 0
+
+
+def _row_content_score(image: Any, y: int, start_x: int, end_x: int) -> int:
+    score = 0
+    for x in range(start_x, end_x):
+        if _pixel_has_content(image.getpixel((x, y))):
+            score += 1
+    return score if score >= _CONTENT_COLUMN_MIN_PIXELS else 0
+
+
+def _pixel_has_content(pixel: object) -> bool:
+    if not isinstance(pixel, tuple) or len(pixel) < 3:
+        return False
+    alpha = int(pixel[3]) if len(pixel) >= 4 else 255
+    if alpha == 0:
+        return False
+    red, green, blue = int(pixel[0]), int(pixel[1]), int(pixel[2])
+    luminance = (red + green + blue) // 3
+    return luminance < _CONTENT_LUMINANCE_THRESHOLD
+
+
+def _content_crop_box(image: Any, start_x: int, end_x: int) -> tuple[int, int, int, int] | None:
+    width, height = image.size
+    start = max(0, min(start_x, width - 1))
+    end = max(start + 1, min(end_x, width))
+    x_columns = [x for x in range(start, end) if _column_content_score(image, x) > 0]
+    y_rows = [y for y in range(height) if _row_content_score(image, y, start, end) > 0]
+    if not x_columns or not y_rows:
+        return None
+    crop_left = max(0, min(x_columns) - _SPLIT_PADDING)
+    crop_top = max(0, min(y_rows) - _SPLIT_PADDING)
+    crop_right = min(width - 1, max(x_columns) + _SPLIT_PADDING)
+    crop_bottom = min(height - 1, max(y_rows) + _SPLIT_PADDING)
+    return crop_left, crop_top, crop_right + 1, crop_bottom + 1
+
+
+def _add_transparent_padding(image: Any, padding: int) -> Any:
+    if padding <= 0:
+        return image
+    canvas = PILImage.new(
+        "RGBA",
+        (image.width + padding * 2, image.height + padding * 2),
+        (0, 0, 0, 0),
+    )
+    canvas.alpha_composite(image, (padding, padding))
+    return canvas
+
+
 def _draw_annotation_marker(
     draw: Any,
     *,
@@ -271,7 +420,7 @@ def _build_bodymap_image_flowable(
     if template is None:
         return None
 
-    canvas = template.copy()
+    canvas, silhouettes = _build_bodymap_template_canvas(template)
     draw = ImageDraw.Draw(canvas)
     panel_width = canvas.width / 2.0
     canvas_height = float(canvas.height)
@@ -281,12 +430,15 @@ def _build_bodymap_image_flowable(
         silhouette = _normalize_silhouette(str(ann.get("silhouette") or "male_front"))
         x_norm = _clamp01(_to_float(ann.get("x"), 0.5))
         y_norm = _clamp01(_to_float(ann.get("y"), 0.5))
+        silhouette_image = silhouettes.get(silhouette)
         x, y = denormalize_for_pil(
             x_norm,
             y_norm,
             panel_width_px=panel_width,
             canvas_height_px=canvas_height,
             is_back=silhouette.endswith("back"),
+            source_width_px=float(silhouette_image.width) if silhouette_image is not None else None,
+            source_height_px=float(silhouette_image.height) if silhouette_image is not None else None,
         )
         _draw_annotation_marker(
             draw,
