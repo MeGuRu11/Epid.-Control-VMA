@@ -1,6 +1,41 @@
-# CURRENT: 2026-05-30 - sanitary filters and optional date NULL persistence
+# CURRENT: 2026-05-30 - sanitary date filters apply on Enter only
 
-The current handoff is the `2026-05-30` section below. The older `2026-05-29` cleanup notes are retained for context.
+The current handoff is the first `2026-05-30` section below. Older `2026-05-30` and `2026-05-29` notes are retained for context.
+
+# Session 2026-05-30 - sanitary date filters apply on Enter only
+
+## Current State
+
+- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Task: make Enter in sanitary date filter `date_to` apply the filter exactly like `date_from`, with reset only through the reset button.
+- Commit and push were not performed.
+- Required shared helpers were not touched: `app/ui/widgets/date_input_flow.py` and `app/ui/widgets/datetime_inputs.py`.
+
+## Done
+
+- Found that `SanitaryHistoryDialog` and `SanitaryDashboard` still refreshed date filters through `QDateEdit.dateChanged`, so date edits could apply before Enter.
+- Removed date-filter application from `dateChanged` for both `date_from` and `date_to`.
+- Added explicit Return/Enter event handling for both date fields in both sanitary views.
+- The Enter handler commits pending text with `interpretText()` and then applies the existing filter refresh logic.
+- Reset remains button-only; default/auto-default button behavior was not restored.
+- Added regression coverage proving that changing `date_from` or `date_to` does not refresh filters until Enter is pressed.
+
+## Checks
+
+- RED before the fix: targeted new sanitary Enter-only tests - `2 failed`.
+- GREEN targeted: targeted new sanitary Enter-only tests - `2 passed`.
+- `python -m pytest tests/unit/test_sanitary_history_dialog.py tests/unit/test_sanitary_dashboard.py -q --tb=short` - `18 passed`.
+- `python -m app.main` - started in offscreen mode and was stopped after 8 seconds at expected GUI/login wait; no startup crash.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`398 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m pytest -q --tb=short` - `912 passed`, `3 warnings`.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+
+## Open Notes
+
+- Working tree still contains the implemented code/test/doc changes and an existing untracked `docs/QA_CHECKLIST_DATETIME_WIDGET.md`.
 
 # Сессия 2026-05-29 - cleanup docs перед v1.1.0
 

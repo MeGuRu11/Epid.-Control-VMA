@@ -7992,3 +7992,36 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m compileall -q app tests scripts` - pass.
 - `python scripts\check_mojibake.py` - pass.
 - `python -m app.main` - started in offscreen mode and was stopped after 8 seconds at expected GUI/login wait; no startup crash.
+
+---
+
+## 2026-05-30 - fix: sanitary date filters apply on Enter only
+
+**Status:** implemented and verified locally, without commit or push.
+
+### Cause
+
+- `SanitaryHistoryDialog` and `SanitaryDashboard` still applied date filters from `QDateEdit.dateChanged`.
+- That meant changing `date_from` or `date_to` could refresh filters before Enter, and earlier tests did not prove the required Enter-only behavior because they used `setDate()` before pressing Enter.
+- The shared date input helpers were left untouched as required: `app/ui/widgets/date_input_flow.py` and `app/ui/widgets/datetime_inputs.py` were not modified for this task.
+
+### Changed
+
+- Removed automatic date-filter refresh on `dateChanged` in `SanitaryHistoryDialog` and `SanitaryDashboard`.
+- Added explicit Return/Enter handling for both sanitary filter fields, `date_from` and `date_to`.
+- The Enter handler commits the editor text with `interpretText()` and then applies filters through the existing filter refresh path.
+- Reset remains available only through the reset button; default/auto-default button behavior was not restored.
+- Added regression tests that first change each date field and verify no filter refresh happens until Enter is pressed.
+
+### Checks
+
+- RED before the fix: `python -m pytest tests/unit/test_sanitary_history_dialog.py::test_sanitary_history_dialog_date_filters_apply_on_enter_only tests/unit/test_sanitary_dashboard.py::test_sanitary_dashboard_date_filters_apply_on_enter_only -q --tb=short` - `2 failed`.
+- GREEN targeted: `python -m pytest tests/unit/test_sanitary_history_dialog.py::test_sanitary_history_dialog_date_filters_apply_on_enter_only tests/unit/test_sanitary_dashboard.py::test_sanitary_dashboard_date_filters_apply_on_enter_only -q --tb=short` - `2 passed`.
+- `python -m pytest tests/unit/test_sanitary_history_dialog.py tests/unit/test_sanitary_dashboard.py -q --tb=short` - `18 passed`.
+- `python -m app.main` - started in offscreen mode and was stopped after 8 seconds at expected GUI/login wait; no startup crash.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`398 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m pytest -q --tb=short` - `912 passed`, `3 warnings`.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
