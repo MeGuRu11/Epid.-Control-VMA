@@ -8,6 +8,7 @@ from typing import cast
 from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QBoxLayout,
     QComboBox,
     QDateEdit,
@@ -15,10 +16,9 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
-    QListWidget,
-    QListWidgetItem,
     QMenu,
     QMessageBox,
     QPushButton,
@@ -49,7 +49,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import clear_status, error_text, set_status
-from app.ui.widgets.table_utils import resize_columns_to_content
+from app.ui.widgets.table_utils import resize_columns_to_content, set_table_read_only
 
 _HANDLED_UI_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
@@ -90,10 +90,13 @@ class PatientEmkView(QWidget):
         self._current_patient: PatientResponse | None = None
         self._current_case_id: int | None = None
         self._date_empty = DEFAULT_EMPTY_DATE
+        self._picker_rows: list[PatientResponse] = []
+        self._picker_token = 0
         self._search_token = 0
         self._cases_token = 0
         self._build_ui()
         self._load_departments()
+        self._load_patient_picker_rows()
 
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
@@ -288,11 +291,24 @@ class PatientEmkView(QWidget):
     def _build_results_box(self) -> QGroupBox:
         results_box = QGroupBox("Результаты поиска")
         results_layout = QVBoxLayout(results_box)
-        self.results_list = QListWidget()
-        self.results_list.itemSelectionChanged.connect(self._select_from_results)
-        self.results_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.results_list.customContextMenuRequested.connect(self._show_patient_menu)
-        results_layout.addWidget(self.results_list)
+        self.results_count_label = QLabel("Пациентов: 0")
+        self.results_count_label.setObjectName("chipLabel")
+        results_layout.addWidget(self.results_count_label)
+
+        self.results_table = QTableWidget(0, 3)
+        self.results_table.setHorizontalHeaderLabels(["ID", "ФИО", "Дата рождения"])
+        self.results_table.horizontalHeader().setStretchLastSection(False)
+        self.results_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.results_table.verticalHeader().setVisible(False)
+        self.results_table.setAlternatingRowColors(True)
+        self.results_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.results_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.results_table.setMinimumHeight(260)
+        set_table_read_only(self.results_table)
+        self.results_table.itemSelectionChanged.connect(self._select_from_results)
+        self.results_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.results_table.customContextMenuRequested.connect(self._show_patient_menu)
+        results_layout.addWidget(self.results_table)
         return results_box
 
     def _build_patient_box(self) -> QGroupBox:
@@ -464,11 +480,78 @@ class PatientEmkView(QWidget):
                 return
             self.on_edit_patient(self._current_patient.id, case_id)
 
+    def _load_patient_picker_rows(self) -> None:
+        self._picker_token += 1
+        token = self._picker_token
+        self._clear_patient_results()
+        self._set_search_busy(True)
+
+        def _run() -> list[PatientResponse]:
+            return self.patient_service.list_for_picker()
+
+        def _on_success(patients: list[PatientResponse]) -> None:
+            if token != self._picker_token:
+                return
+            self._picker_rows = list(patients)
+            self._apply_patient_rows(self._filter_patient_rows(self.search_name.text().strip()))
+
+        def _on_error(exc: Exception) -> None:
+            if token != self._picker_token:
+                return
+            self._set_status(f"Не удалось загрузить список пациентов: {exc}", "error")
+
+        run_async(
+            self,
+            _run,
+            on_success=_on_success,
+            on_error=_on_error,
+            on_finished=lambda: self._set_search_busy(False),
+        )
+
+    def _clear_patient_results(self) -> None:
+        self.results_table.clearContents()
+        self.results_table.setRowCount(0)
+        self.results_count_label.setText("Пациентов: 0")
+
+    def _filter_patient_rows(self, query: str) -> list[PatientResponse]:
+        normalized = query.casefold().strip()
+        if not normalized:
+            return list(self._picker_rows)
+
+        filtered: list[PatientResponse] = []
+        for patient in self._picker_rows:
+            if normalized in str(patient.id):
+                filtered.append(patient)
+                continue
+            if normalized in patient.full_name.casefold():
+                filtered.append(patient)
+                continue
+            if patient.dob and normalized in patient.dob.strftime("%d.%m.%Y").casefold():
+                filtered.append(patient)
+        return filtered
+
+    def _apply_patient_rows(self, patients: list[PatientResponse]) -> None:
+        self.results_table.clearSelection()
+        self._clear_patient_results()
+        self.results_table.setRowCount(len(patients))
+        for row_index, patient in enumerate(patients):
+            dob_text = patient.dob.strftime("%d.%m.%Y") if patient.dob else "—"
+            for column_index, text in enumerate((str(patient.id), patient.full_name, dob_text)):
+                item = QTableWidgetItem(text)
+                item.setData(Qt.ItemDataRole.UserRole, patient.id)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.results_table.setItem(row_index, column_index, item)
+        if patients:
+            resize_columns_to_content(self.results_table)
+            self.results_table.setColumnWidth(0, max(80, self.results_table.columnWidth(0)))
+            self.results_table.setColumnWidth(2, max(130, self.results_table.columnWidth(2)))
+        self.results_count_label.setText(f"Пациентов: {len(patients)}")
+
     def _reset_search(self) -> None:
         self._search_token += 1
         self.search_name.clear()
         self.search_id.clear()
-        self.results_list.clear()
+        self._apply_patient_rows(self._picker_rows)
         self._clear_patient()
         self._set_status("")
         self._set_search_busy(False)
@@ -481,7 +564,6 @@ class PatientEmkView(QWidget):
         self._set_status("")
         query_id = self.search_id.text().strip()
         query_name = self.search_name.text().strip()
-        self.results_list.clear()
 
         if query_id:
             try:
@@ -499,71 +581,33 @@ class PatientEmkView(QWidget):
                 )
                 self._set_search_busy(False)
                 return
-            self._add_patient_result(patient)
-            if self.results_list.count() > 0:
-                self.results_list.setCurrentRow(0)
-            self._set_patient(patient)
-            self._load_cases(patient.id)
+            self._apply_patient_rows([patient])
+            self.results_table.selectRow(0)
             self._set_status("Пациент найден", "success")
             self._set_search_busy(False)
             return
 
-        if not query_name:
-            self._set_status("Укажите ФИО или ID пациента", "warning")
-            self._set_search_busy(False)
-            return
-
-        self._search_token += 1
-        token = self._search_token
-        self._set_search_busy(True)
-
-        def _run() -> list[PatientResponse]:
-            return self.patient_service.search_by_name(query_name, limit=50)
-
-        def _on_success(patients: list[PatientResponse]) -> None:
-            if token != self._search_token:
-                return
-            if not patients:
-                self._set_status("Пациенты не найдены", "warning")
-                self._set_search_busy(False)
-                return
-            for patient in patients:
-                self._add_patient_result(patient)
-            self._set_status(f"Найдено: {len(patients)}", "success")
-            self._set_search_busy(False)
-
-        def _on_error(exc: Exception) -> None:
-            if token != self._search_token:
-                return
-            self._set_status(f"Ошибка поиска: {exc}", "error")
-            self._set_search_busy(False)
-
-        run_async(
-            self,
-            _run,
-            on_success=_on_success,
-            on_error=_on_error,
-            on_finished=lambda: self._set_search_busy(False),
-        )
-
-    def _add_patient_result(self, patient: PatientResponse) -> None:
-        dob_text = patient.dob.strftime("%d.%m.%Y") if patient.dob else ""
-        label = f"{patient.full_name}"
-        if dob_text:
-            label = f"{label} ({dob_text})"
-        item = QListWidgetItem(label)
-        item.setData(Qt.ItemDataRole.UserRole, patient.id)
-        self.results_list.addItem(item)
+        filtered = self._filter_patient_rows(query_name)
+        self._apply_patient_rows(filtered)
+        if query_name and not filtered:
+            self._set_status("Пациенты не найдены", "warning")
+        elif query_name:
+            self._set_status(f"Найдено: {len(filtered)}", "success")
+        self._set_search_busy(False)
 
     def _select_from_results(self) -> None:
-        items = self.results_list.selectedItems()
-        if not items:
+        selected_items = self.results_table.selectedItems()
+        if not selected_items:
             return
-        patient_id = items[0].data(Qt.ItemDataRole.UserRole)
+        item = selected_items[0]
+        patient_id = item.data(Qt.ItemDataRole.UserRole)
         if patient_id is None:
             return
+        patient_id = int(patient_id)
+        if self._current_patient and self._current_patient.id == patient_id:
+            return
         try:
-            patient = self.patient_service.get_by_id(int(patient_id))
+            patient = self.patient_service.get_by_id(patient_id)
             self._set_patient(patient)
             self._load_cases(patient.id)
         except _HANDLED_UI_ERRORS as exc:
@@ -614,7 +658,7 @@ class PatientEmkView(QWidget):
     def clear_context(self) -> None:
         self.search_name.clear()
         self.search_id.clear()
-        self.results_list.clear()
+        self._apply_patient_rows(self._picker_rows)
         self._clear_patient()
         self._set_status("")
 
@@ -793,7 +837,7 @@ class PatientEmkView(QWidget):
             return
         menu = QMenu(self)
         delete_action = menu.addAction("Удалить пациента")
-        chosen = menu.exec(self.results_list.viewport().mapToGlobal(pos))
+        chosen = menu.exec(self.results_table.viewport().mapToGlobal(pos))
         if chosen == delete_action:
             self._delete_patient()
 
