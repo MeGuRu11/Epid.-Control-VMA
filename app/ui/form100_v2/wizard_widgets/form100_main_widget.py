@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.signing_errors import form100_required_label
 from app.ui.form100_v2.wizard_widgets.bodymap_widget import BodyMapWidget
 from app.ui.form100_v2.wizard_widgets.lesion_type_widget import LesionTypeWidget
 from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
@@ -91,7 +92,7 @@ class Form100MainWidget(QWidget):
         left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(6)
 
-        lesion_box = QGroupBox("Вид поражения")
+        lesion_box = QGroupBox(form100_required_label("lesion_or_san_loss", "Вид поражения"))
         lesion_box.setObjectName("form100Lesion")
         lesion_lay = QVBoxLayout(lesion_box)
         lesion_lay.setContentsMargins(8, 6, 8, 6)
@@ -99,7 +100,7 @@ class Form100MainWidget(QWidget):
         lesion_lay.addWidget(self.lesion_widget)
         left_col.addWidget(lesion_box)
 
-        san_box = QGroupBox("Вид сан. потерь")
+        san_box = QGroupBox(form100_required_label("lesion_or_san_loss", "Вид сан. потерь"))
         san_box.setObjectName("form100Lesion")
         san_lay = QVBoxLayout(san_box)
         san_lay.setContentsMargins(8, 6, 8, 6)
@@ -150,7 +151,7 @@ class Form100MainWidget(QWidget):
         mp_lay.setContentsMargins(10, 8, 10, 8)
         mp_lay.setVerticalSpacing(5)
 
-        self.mp_antibiotic = QCheckBox("Антибиотик")
+        self.mp_antibiotic = QCheckBox(form100_required_label("medical_help.mp_antibiotic_dose", "Антибиотик"))
         self.mp_antibiotic_dose = QLineEdit()
         self.mp_antibiotic_dose.setPlaceholderText("антибиотик, доза / путь")
         self.mp_serum_pss = QCheckBox("Сыворотка ПСС")
@@ -163,7 +164,7 @@ class Form100MainWidget(QWidget):
         self.mp_toxoid.setPlaceholderText("анатоксин (какой)")
         self.mp_antidote = QLineEdit()
         self.mp_antidote.setPlaceholderText("антидот (какой)")
-        self.mp_analgesic = QCheckBox("Обезболивающее")
+        self.mp_analgesic = QCheckBox(form100_required_label("medical_help.mp_analgesic_dose", "Обезболивающее"))
         self.mp_analgesic_dose = QLineEdit()
         self.mp_analgesic_dose.setPlaceholderText("обезболивающее, доза / путь")
         self.mp_transfusion_blood = QCheckBox("Переливание крови")
@@ -235,11 +236,11 @@ class Form100MainWidget(QWidget):
 
         ident_lay.addRow("Выдана:", self.main_issued_place)
         ident_lay.addRow("Время / дата выдачи:", issued_time_row)
-        ident_lay.addRow("В/звание:", self.main_rank)
-        ident_lay.addRow("В/часть:", self.main_unit)
-        ident_lay.addRow("ФИО:", self.main_full_name)
+        ident_lay.addRow(form100_required_label("main.main_rank", "В/звание:"), self.main_rank)
+        ident_lay.addRow(form100_required_label("main.main_unit", "В/часть:"), self.main_unit)
+        ident_lay.addRow(form100_required_label("main.main_full_name", "ФИО:"), self.main_full_name)
         ident_lay.addRow("Жетон №:", self.main_id_tag)
-        ident_lay.addRow("Ранен / заболел:", injury_time_row)
+        ident_lay.addRow(form100_required_label("main.main_injury_date", "Ранен / заболел:"), injury_time_row)
 
         root.addWidget(ident_box)
 

@@ -41,6 +41,7 @@ from app.ui.form100_v2.enter_key_guard import (
     install_enter_key_guard,
     is_enter_key_press,
 )
+from app.ui.form100_v2.signing_errors import form100_required_label
 from app.ui.form100_v2.widgets.bodymap_editor_v2 import BodymapEditorV2
 from app.ui.widgets.datetime_inputs import (
     DEFAULT_EMPTY_DATE,
@@ -173,24 +174,24 @@ class Form100EditorV2(QWidget):
 
         form.addRow("Выдана — дата", self.stub_issued_date)
         form.addRow("Выдана — время", self.stub_issued_time)
-        form.addRow("В/звание", self.stub_rank)
-        form.addRow("В/часть", self.stub_unit)
+        form.addRow(form100_required_label("main.main_rank", "В/звание"), self.stub_rank)
+        form.addRow(form100_required_label("main.main_unit", "В/часть"), self.stub_unit)
         form.addRow("ФИО", self.stub_full_name)
         form.addRow("Жетон/ID", self.stub_id_tag)
-        form.addRow("Дата ранения", self.stub_injury_date)
-        form.addRow("Время ранения", self.stub_injury_time)
+        form.addRow(form100_required_label("main.main_injury_date", "Дата ранения"), self.stub_injury_date)
+        form.addRow(form100_required_label("main.main_injury_time", "Время ранения"), self.stub_injury_time)
         form.addRow("Эвакуация", self.stub_evac_method)
         form.addRow("Положение", self.stub_evac_dest)
         form.addRow("Мед. помощь (подчеркнуть)", med_help_widget)
-        form.addRow("Доза антибиотика", self.stub_antibiotic_dose)
+        form.addRow(form100_required_label("medical_help.mp_antibiotic_dose", "Доза антибиотика"), self.stub_antibiotic_dose)
         form.addRow("Сыворотка ПСС/ПГС", self.stub_pss_pgs_dose)
         form.addRow("Анатоксин", self.stub_toxoid_type)
         form.addRow("Антидот", self.stub_antidote_type)
-        form.addRow("Обезболивание", self.stub_analgesic_dose)
+        form.addRow(form100_required_label("medical_help.mp_analgesic_dose", "Обезболивание"), self.stub_analgesic_dose)
         form.addRow(self.stub_transfusion)
         form.addRow(self.stub_immobilization)
         form.addRow(self.stub_tourniquet)
-        form.addRow("Диагноз", self.stub_diagnosis)
+        form.addRow(form100_required_label("bottom.main_diagnosis", "Диагноз"), self.stub_diagnosis)
         return box
 
     def _build_main_block(self) -> QWidget:
@@ -212,20 +213,20 @@ class Form100EditorV2(QWidget):
         self.main_injury_time.setDisplayFormat("HH:mm")
         self.main_injury_time.setTime(QTime.currentTime())
 
-        form.addRow("ФИО", self.main_full_name)
-        form.addRow("Подразделение", self.main_unit)
+        form.addRow(form100_required_label("main.main_full_name", "ФИО"), self.main_full_name)
+        form.addRow(form100_required_label("main.main_unit", "Подразделение"), self.main_unit)
         form.addRow("Жетон/ID", self.main_id_tag)
-        form.addRow("Дата рождения", self.birth_date)
-        form.addRow("В/звание", self.main_rank)
+        form.addRow(form100_required_label("main.birth_date", "Дата рождения"), self.birth_date)
+        form.addRow(form100_required_label("main.main_rank", "В/звание"), self.main_rank)
         form.addRow("Мед. пункт (выдана)", self.main_issued_place)
         form.addRow("Выдана — дата", self.main_issued_date)
         form.addRow("Выдана — время", self.main_issued_time)
-        form.addRow("Дата ранения", self.main_injury_date)
-        form.addRow("Время ранения", self.main_injury_time)
+        form.addRow(form100_required_label("main.main_injury_date", "Дата ранения"), self.main_injury_date)
+        form.addRow(form100_required_label("main.main_injury_time", "Время ранения"), self.main_injury_time)
         layout.addLayout(form)
 
         checklist_row = QHBoxLayout()
-        lesion_box = QGroupBox("Вид поражения")
+        lesion_box = QGroupBox(form100_required_label("lesion_or_san_loss", "Вид поражения"))
         lesion_layout = QVBoxLayout(lesion_box)
         self.lesion_checks: dict[str, QCheckBox] = {}
         for key, label in _LESION_KEYS:
@@ -234,7 +235,7 @@ class Form100EditorV2(QWidget):
             lesion_layout.addWidget(check)
         checklist_row.addWidget(lesion_box)
 
-        san_loss_box = QGroupBox("Вид санитарных потерь")
+        san_loss_box = QGroupBox(form100_required_label("lesion_or_san_loss", "Вид санитарных потерь"))
         san_loss_layout = QVBoxLayout(san_loss_box)
         self.san_loss_checks: dict[str, QCheckBox] = {}
         for key, label in _SAN_LOSS_KEYS:
@@ -270,7 +271,7 @@ class Form100EditorV2(QWidget):
     def _build_medical_help_block(self) -> QWidget:
         box = QGroupBox("Медицинская помощь")
         form = QFormLayout(box)
-        self.mp_antibiotic = QCheckBox("Антибиотик")
+        self.mp_antibiotic = QCheckBox(form100_required_label("medical_help.mp_antibiotic_dose", "Антибиотик"))
         self.mp_antibiotic_dose = QLineEdit()
         self.mp_antibiotic_dose.setPlaceholderText("антибиотик, доза / путь")
         self.mp_serum_pss = QCheckBox("Сыворотка ПСС")
@@ -283,7 +284,7 @@ class Form100EditorV2(QWidget):
         self.mp_toxoid.setPlaceholderText("анатоксин (какой)")
         self.mp_antidote = QLineEdit()
         self.mp_antidote.setPlaceholderText("антидот (какой)")
-        self.mp_analgesic = QCheckBox("Обезболивание")
+        self.mp_analgesic = QCheckBox(form100_required_label("medical_help.mp_analgesic_dose", "Обезболивание"))
         self.mp_analgesic_dose = QLineEdit()
         self.mp_analgesic_dose.setPlaceholderText("обезболивающее, доза / путь")
         self.mp_transfusion_blood = QCheckBox("Переливание крови")
@@ -348,10 +349,10 @@ class Form100EditorV2(QWidget):
         form.addRow("Жгут (время)", self.tourniquet_time)
         form.addRow("Санобработка", self.sanitation_type)
         form.addRow("Эвакуация", self.evacuation_dest)
-        form.addRow("Очередность", self.evacuation_priority)
+        form.addRow(form100_required_label("bottom.evacuation_priority", "Очередность"), self.evacuation_priority)
         form.addRow("Транспорт", self.transport_type)
         form.addRow("Подпись врача", self.doctor_signature)
-        form.addRow("Диагноз", self.main_diagnosis)
+        form.addRow(form100_required_label("bottom.main_diagnosis", "Диагноз"), self.main_diagnosis)
         return box
 
     def _build_flags_block(self) -> QWidget:

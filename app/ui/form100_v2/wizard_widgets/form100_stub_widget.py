@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.signing_errors import form100_required_label
 from app.ui.form100_v2.wizard_widgets.icon_select_widget import IconSelectWidget
 from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
 
@@ -90,12 +91,12 @@ class Form100StubWidget(QWidget):
         self.stub_injury_date = create_optional_date_edit()
         top_form.addRow("Выдана (время)", self.stub_issued_time)
         top_form.addRow("Выдана (дата)", self.stub_issued_date)
-        top_form.addRow("В/звание", self.stub_rank)
-        top_form.addRow("В/часть", self.stub_unit)
+        top_form.addRow(form100_required_label("main.main_rank", "В/звание"), self.stub_rank)
+        top_form.addRow(form100_required_label("main.main_unit", "В/часть"), self.stub_unit)
         top_form.addRow("ФИО", self.stub_full_name)
         top_form.addRow("Жетон / удостоверение", self.stub_id_tag)
-        top_form.addRow("Ранен (время)", self.stub_injury_time)
-        top_form.addRow("Ранен (дата)", self.stub_injury_date)
+        top_form.addRow(form100_required_label("main.main_injury_time", "Ранен (время)"), self.stub_injury_time)
+        top_form.addRow(form100_required_label("main.main_injury_date", "Ранен (дата)"), self.stub_injury_date)
         root.addWidget(top)
 
         evac = QGroupBox("Эвакуация (корешок)")
@@ -146,11 +147,17 @@ class Form100StubWidget(QWidget):
         self.stub_antidote_type = QLineEdit()
         self.stub_analgesic_dose = QLineEdit()
         help_form = QFormLayout()
-        help_form.addRow("Доза антибиотика", self.stub_antibiotic_dose)
+        help_form.addRow(
+            form100_required_label("medical_help.mp_antibiotic_dose", "Доза антибиотика"),
+            self.stub_antibiotic_dose,
+        )
         help_form.addRow("Доза ПСС/ПГС", self.stub_pss_pgs_dose)
         help_form.addRow("Анатоксин", self.stub_toxoid_type)
         help_form.addRow("Антидот", self.stub_antidote_type)
-        help_form.addRow("Обезболивающее", self.stub_analgesic_dose)
+        help_form.addRow(
+            form100_required_label("medical_help.mp_analgesic_dose", "Обезболивающее"),
+            self.stub_analgesic_dose,
+        )
         help_layout.addLayout(help_form)
 
         self.stub_transfusion = QCheckBox("Переливание")
@@ -161,7 +168,7 @@ class Form100StubWidget(QWidget):
         help_layout.addWidget(self.stub_tourniquet)
         root.addWidget(help_grp)
 
-        diag = QGroupBox("Диагноз (корешок)")
+        diag = QGroupBox(form100_required_label("bottom.main_diagnosis", "Диагноз (корешок)"))
         diag.setObjectName("form100StubSection")
         diag_layout = QVBoxLayout(diag)
         diag_layout.setContentsMargins(10, 8, 10, 8)

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.signing_errors import form100_required_label
 from app.ui.form100_v2.wizard_widgets.bodymap_widget import BodyMapWidget
 from app.ui.form100_v2.wizard_widgets.lesion_type_widget import LesionTypeWidget
 
@@ -77,7 +78,7 @@ class StepBodymap(QWidget):
         left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(6)
 
-        lesion_box = QGroupBox("Вид поражения")
+        lesion_box = QGroupBox(form100_required_label("lesion_or_san_loss", "Вид поражения"))
         lesion_box.setObjectName("form100Lesion")
         lesion_lay = QVBoxLayout(lesion_box)
         lesion_lay.setContentsMargins(8, 6, 8, 6)
@@ -85,7 +86,7 @@ class StepBodymap(QWidget):
         lesion_lay.addWidget(self.lesion_widget)
         left_col.addWidget(lesion_box)
 
-        san_box = QGroupBox("Вид сан. потерь")
+        san_box = QGroupBox(form100_required_label("lesion_or_san_loss", "Вид сан. потерь"))
         san_box.setObjectName("form100Lesion")
         san_lay = QVBoxLayout(san_box)
         san_lay.setContentsMargins(8, 6, 8, 6)
@@ -323,4 +324,3 @@ class StepBodymap(QWidget):
         for cb in self.chk_tissues:
             cb.setEnabled(enabled)
         self.chk_isolation.setEnabled(enabled)
-

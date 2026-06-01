@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.signing_errors import form100_required_label
 from app.ui.form100_v2.wizard_widgets.form100_stub_widget import Form100StubWidget
 from app.ui.widgets.datetime_inputs import (
     DEFAULT_EMPTY_DATE,
@@ -89,12 +90,12 @@ class StepIdentification(QWidget):
 
         ident_lay.addRow("Выдана:", self.main_issued_place)
         ident_lay.addRow("Время / дата выдачи:", issued_row)
-        ident_lay.addRow("В/звание:", self.main_rank)
-        ident_lay.addRow("В/часть:", self.main_unit)
-        ident_lay.addRow("ФИО:", self.main_full_name)
+        ident_lay.addRow(form100_required_label("main.main_rank", "В/звание:"), self.main_rank)
+        ident_lay.addRow(form100_required_label("main.main_unit", "В/часть:"), self.main_unit)
+        ident_lay.addRow(form100_required_label("main.main_full_name", "ФИО:"), self.main_full_name)
         ident_lay.addRow("Жетон №:", self.main_id_tag)
-        ident_lay.addRow("Дата рождения:", self.birth_date)
-        ident_lay.addRow("Ранен / заболел:", injury_row)
+        ident_lay.addRow(form100_required_label("main.birth_date", "Дата рождения:"), self.birth_date)
+        ident_lay.addRow(form100_required_label("main.main_injury_date", "Ранен / заболел:"), injury_row)
 
         ident_scroll = QScrollArea()
         ident_scroll.setWidgetResizable(True)

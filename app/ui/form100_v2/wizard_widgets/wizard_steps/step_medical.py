@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.signing_errors import form100_required_label
+
 
 def _truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
@@ -44,7 +46,7 @@ class StepMedical(QWidget):
         mp_lay.setVerticalSpacing(10)
         mp_lay.setHorizontalSpacing(16)
 
-        self.mp_antibiotic = QCheckBox("Антибиотик")
+        self.mp_antibiotic = QCheckBox(form100_required_label("medical_help.mp_antibiotic_dose", "Антибиотик"))
         self.mp_antibiotic_dose = QLineEdit()
         self.mp_antibiotic_dose.setPlaceholderText("антибиотик, доза / путь")
 
@@ -61,7 +63,7 @@ class StepMedical(QWidget):
         self.mp_antidote = QLineEdit()
         self.mp_antidote.setPlaceholderText("антидот (какой)")
 
-        self.mp_analgesic = QCheckBox("Обезболивающее")
+        self.mp_analgesic = QCheckBox(form100_required_label("medical_help.mp_analgesic_dose", "Обезболивающее"))
         self.mp_analgesic_dose = QLineEdit()
         self.mp_analgesic_dose.setPlaceholderText("обезболивающее, доза / путь")
 

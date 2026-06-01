@@ -17,6 +17,7 @@ FORM100_SIGNING_FIELD_LABELS: dict[str, str] = {
     "medical_help.mp_antibiotic_dose": "Антибиотик",
     "medical_help.mp_analgesic_dose": "Обезболивающее",
 }
+FORM100_SIGNING_UI_REQUIRED_FIELDS = frozenset(FORM100_SIGNING_FIELD_LABELS) - {"signed_by"}
 
 _SIGNING_ERROR_HEADER = "Карточку Формы 100 нельзя подписать. Заполните обязательные поля:"
 
@@ -25,6 +26,17 @@ def form100_signing_error_text(exc: BaseException, fallback: str) -> str:
     if isinstance(exc, Form100SigningError):
         return format_form100_signing_errors(exc.errors)
     return error_text(exc, fallback)
+
+
+def form100_required_label(field: str, text: str) -> str:
+    if field not in FORM100_SIGNING_UI_REQUIRED_FIELDS:
+        return text
+    stripped = text.rstrip()
+    suffix = ":" if stripped.endswith(":") else ""
+    base = stripped[:-1].rstrip() if suffix else stripped
+    if base.endswith("*"):
+        return text
+    return f"{base} *{suffix}"
 
 
 def format_form100_signing_errors(errors: list[FieldError]) -> str:

@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.ui.form100_v2.signing_errors import form100_required_label
 from app.ui.form100_v2.wizard_widgets.icon_select_widget import IconSelectWidget
 
 
@@ -131,7 +132,7 @@ class Form100BottomWidget(QWidget):
             self.priority_group.addButton(rb)
             prio_inner.addWidget(rb)
         prio_inner.addStretch(1)
-        vlay.addLayout(_row("Очерёдность", prio_widget))
+        vlay.addLayout(_row(form100_required_label("bottom.evacuation_priority", "Очерёдность"), prio_widget))
 
         # ── Транспорт ─────────────────────────────────────────────────────
         self.transport_type = IconSelectWidget(
@@ -155,7 +156,7 @@ class Form100BottomWidget(QWidget):
         self.doctor_signature = QLineEdit()
         vlay.addLayout(_row("Подпись врача", self.doctor_signature))
 
-        diag_lbl = QLabel("Диагноз")
+        diag_lbl = QLabel(form100_required_label("bottom.main_diagnosis", "Диагноз"))
         diag_lbl.setObjectName("form100BottomRowLabel")
         vlay.addWidget(diag_lbl)
         self.main_diagnosis = QTextEdit()
@@ -250,4 +251,3 @@ class Form100BottomWidget(QWidget):
         self.transport_type.setEnabled(not locked)
         self.doctor_signature.setEnabled(not locked)
         self.main_diagnosis.setReadOnly(locked)
-

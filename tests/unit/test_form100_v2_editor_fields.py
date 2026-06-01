@@ -1,11 +1,47 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 
 from PySide6.QtCore import QDate, QTime
+from PySide6.QtWidgets import QCheckBox, QGroupBox, QLabel
 
 from app.application.dto.form100_v2_dto import Form100CardV2Dto
 from app.ui.form100_v2.form100_editor import Form100EditorV2
+from app.ui.form100_v2.signing_errors import FORM100_SIGNING_FIELD_LABELS
+
+
+def _label_texts(editor: Form100EditorV2) -> set[str]:
+    labels = cast(list[QLabel], editor.findChildren(QLabel))
+    return {label.text() for label in labels}
+
+
+def _group_titles(editor: Form100EditorV2) -> set[str]:
+    groups = cast(list[QGroupBox], editor.findChildren(QGroupBox))
+    return {group.title() for group in groups}
+
+
+def _checkbox_texts(editor: Form100EditorV2) -> set[str]:
+    checkboxes = cast(list[QCheckBox], editor.findChildren(QCheckBox))
+    return {checkbox.text() for checkbox in checkboxes}
+
+
+def test_form100_v2_editor_marks_signing_required_fields(qapp) -> None:
+    editor = Form100EditorV2()
+
+    assert {
+        "ФИО *",
+        "Подразделение *",
+        "Дата рождения *",
+        "В/звание *",
+        "Дата ранения *",
+        "Время ранения *",
+        "Очередность *",
+        "Диагноз *",
+    }.issubset(_label_texts(editor))
+    assert {"Вид поражения *", "Вид санитарных потерь *"}.issubset(_group_titles(editor))
+    assert {"Антибиотик *", "Обезболивание *"}.issubset(_checkbox_texts(editor))
+    assert "signed_by" in FORM100_SIGNING_FIELD_LABELS
 
 
 def test_form100_v2_editor_builds_extended_stub_and_main_payload(qapp) -> None:
