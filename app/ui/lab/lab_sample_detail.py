@@ -45,7 +45,7 @@ from app.ui.widgets.dialog_utils import localize_button_box
 from app.ui.widgets.notifications import clear_status, set_status
 from app.ui.widgets.sample_header import SampleHeader
 from app.ui.widgets.susceptibility_panel import SusceptibilityPanel
-from app.ui.widgets.table_utils import connect_combo_autowidth
+from app.ui.widgets.table_utils import connect_combo_autowidth, set_combo_placeholder
 
 
 class LabSampleDetailDialog(QDialog):
@@ -139,39 +139,41 @@ class LabSampleDetailDialog(QDialog):
         self.barcode.setPlaceholderText("штрихкод пробирки")
         self.material_type = QComboBox()
         self.material_type.setEditable(False)
-        self.material_type.addItem("Выбрать", None)
+        set_combo_placeholder(self.material_type)
         self.taken_at = create_optional_datetime_edit()
         self.ordered_at = create_optional_datetime_edit()
         self.delivered_at = create_optional_datetime_edit()
         self.study_kind = QComboBox()
-        self.study_kind.addItem("Выбрать", None)
+        set_combo_placeholder(self.study_kind)
         self.study_kind.addItem("Первичное", "primary")
         self.study_kind.addItem("Повторное", "repeat")
+        self.study_kind.setCurrentIndex(-1)
         self.material_location = QLineEdit()
         self.medium = QLineEdit()
 
         self.growth_flag = QComboBox()
-        self.growth_flag.addItem("Выбрать", None)
+        set_combo_placeholder(self.growth_flag)
         self.growth_flag.addItem("Нет", 0)
         self.growth_flag.addItem("Да", 1)
+        self.growth_flag.setCurrentIndex(-1)
         self.growth_result_at = create_optional_datetime_edit()
         self.colony_desc = QLineEdit()
         self.microscopy = QLineEdit()
         self.cfu = QLineEdit()
 
         self.qc_status = QComboBox()
-        self.qc_status.addItem("Выберите статус QC", None)
+        set_combo_placeholder(self.qc_status, "Выберите статус QC")
         self.qc_status.addItem("Допустимо", "valid")
         self.qc_status.addItem("Условно", "conditional")
         self.qc_status.addItem("Брак", "rejected")
-        self.qc_status.setItemData(0, 0, Qt.ItemDataRole.UserRole - 1)
+        self.qc_status.setCurrentIndex(-1)
         self.qc_due_at = QLabel("-")
         self.qc_due_at.setObjectName("muted")
 
         self.micro_combo = QComboBox()
         self.micro_combo.setEditable(True)
         self.micro_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self.micro_combo.addItem("Выбрать", None)
+        set_combo_placeholder(self.micro_combo)
         self.micro_free = QLineEdit()
         self.micro_free.setPlaceholderText("если нет в справочнике")
 
@@ -364,9 +366,10 @@ class LabSampleDetailDialog(QDialog):
     def _load_material_types(self) -> None:
         try:
             self.material_type.clear()
-            self.material_type.addItem("Выбрать", None)
+            set_combo_placeholder(self.material_type)
             for mt in self.reference_service.list_material_types():
                 self.material_type.addItem(f"{mt.code} - {mt.name}", mt.id)
+            self.material_type.setCurrentIndex(-1)
             connect_combo_autowidth(self.material_type)
         except Exception as exc:  # noqa: BLE001
             set_status(self.error_label, str(exc), "error")
@@ -409,7 +412,7 @@ class LabSampleDetailDialog(QDialog):
             microbes = self.reference_service.list_microorganisms()
         with QSignalBlocker(self.micro_combo):
             self.micro_combo.clear()
-            self.micro_combo.addItem("Выбрать", None)
+            set_combo_placeholder(self.micro_combo)
             for microbe in microbes:
                 label = f"{microbe.code or '-'} - {microbe.name}"
                 self.micro_combo.addItem(label, microbe.id)
@@ -417,6 +420,8 @@ class LabSampleDetailDialog(QDialog):
                 idx = self.micro_combo.findData(current_data)
                 if idx >= 0:
                     self.micro_combo.setCurrentIndex(idx)
+            else:
+                self.micro_combo.setCurrentIndex(-1)
             self.micro_combo.setEditText(text)
 
     def refresh_references(self) -> None:
@@ -491,7 +496,7 @@ class LabSampleDetailDialog(QDialog):
             if sample.growth_result_at:
                 self.growth_result_at.setDateTime(sample.growth_result_at)
             if sample.growth_flag is None:
-                self.growth_flag.setCurrentIndex(0)
+                self.growth_flag.setCurrentIndex(-1)
             else:
                 idx = self.growth_flag.findData(sample.growth_flag)
                 if idx >= 0:

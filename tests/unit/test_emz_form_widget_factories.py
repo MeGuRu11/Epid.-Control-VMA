@@ -28,6 +28,7 @@ class _FakeComboBox:
         self.tooltip = ""
         self.current_index = -1
         self.edit_text = ""
+        self.placeholder_text = ""
         self.max_visible_items: int | None = None
         self.object_name = ""
         self.popup_view = _FakePopupView()
@@ -40,6 +41,15 @@ class _FakeComboBox:
 
     def setEditable(self, editable: bool) -> None:  # noqa: N802
         self.editable = editable
+
+    def isEditable(self) -> bool:  # noqa: N802
+        return self.editable
+
+    def lineEdit(self) -> _FakeComboBox:  # noqa: N802
+        return self
+
+    def setPlaceholderText(self, text: str) -> None:  # noqa: N802
+        self.placeholder_text = text
 
     def setInsertPolicy(self, policy: int) -> None:  # noqa: N802
         self.insert_policy = policy
@@ -311,9 +321,10 @@ def test_create_icd_combo_and_wire(qapp) -> None:
         assert isinstance(combo, factories.WidePopupComboBox)
         assert combo.isEditable() is True
         assert combo.insertPolicy() == QComboBox.InsertPolicy.NoInsert
-        assert combo.itemData(0) is None
-        assert combo.itemText(1) == "A00 - Cholera"
-        assert combo.itemData(1) == "A00"
+        assert combo.placeholderText() == "Выбрать"
+        assert combo.currentIndex() == -1
+        assert combo.itemText(0) == "A00 - Cholera"
+        assert combo.itemData(0) == "A00"
         assert wired == [combo]
     finally:
         combo.close()
@@ -328,17 +339,19 @@ def test_populate_icd_combo_restores_selection_and_edit_text(monkeypatch) -> Non
         selected_data="B00",
         edit_text="Her",
     )
-    assert combo.items[0][1] is None
-    assert combo.current_index == 2
+    assert combo.placeholder_text == "Выбрать"
+    assert combo.items[0][1] == "A00"
+    assert combo.current_index == 1
     assert combo.edit_text == "Her"
 
 
 def test_create_abx_combo(qapp) -> None:
     combo = factories.create_abx_combo(antibiotics=[_Abx(id=5, code="ABX", name="Amoxicillin")])
 
-    assert combo.itemData(0) is None
-    assert combo.itemText(1) == "ABX - Amoxicillin"
-    assert combo.itemData(1) == 5
+    assert combo.placeholderText() == "Выбрать"
+    assert combo.currentIndex() == -1
+    assert combo.itemText(0) == "ABX - Amoxicillin"
+    assert combo.itemData(0) == 5
     assert combo.maxVisibleItems() == factories.ABX_COMBO_MAX_VISIBLE_ITEMS
     assert combo.view().maximumHeight() == factories.ABX_COMBO_POPUP_MAX_HEIGHT
 
@@ -392,9 +405,10 @@ def test_create_ismp_type_combo_sets_tooltip(qapp) -> None:
     )
     try:
         assert isinstance(combo, factories.WidePopupComboBox)
-        assert combo.itemData(0) is None
-        assert combo.itemText(1).startswith("VAP")
-        assert combo.itemData(1) == "VAP"
-        assert combo.itemData(1, 42) == "Pneumonia"
+        assert combo.placeholderText() == "Выбрать"
+        assert combo.currentIndex() == -1
+        assert combo.itemText(0).startswith("VAP")
+        assert combo.itemData(0) == "VAP"
+        assert combo.itemData(0, 42) == "Pneumonia"
     finally:
         combo.close()

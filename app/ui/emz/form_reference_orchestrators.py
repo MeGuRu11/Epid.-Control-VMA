@@ -15,6 +15,7 @@ from app.ui.emz.form_table_setups import (
     setup_intervention_rows,
     setup_ismp_rows,
 )
+from app.ui.widgets.table_utils import set_combo_placeholder
 
 CreateComboFn = Callable[[], QComboBox]
 CreateDateTimeEditFn = Callable[[], QDateTimeEdit]
@@ -37,12 +38,13 @@ def apply_departments_to_combo(
     connect_combo_autowidth: ConnectComboAutowidthFn,
 ) -> None:
     department_combo.clear()
-    department_combo.addItem("Выбрать", None)
+    set_combo_placeholder(department_combo)
     for dep in departments:
         dep_name = getattr(dep, "name", "")
         dep_id_raw: Any = getattr(dep, "id", None)
         dep_id = int(dep_id_raw) if dep_id_raw is not None else None
         department_combo.addItem(str(dep_name), dep_id)
+    department_combo.setCurrentIndex(-1)
     connect_combo_autowidth(department_combo)
 
 

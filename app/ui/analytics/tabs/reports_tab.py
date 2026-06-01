@@ -26,6 +26,7 @@ from app.ui.widgets.notifications import show_error
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
     resize_columns_to_content,
+    set_combo_placeholder,
     set_table_read_only,
 )
 
@@ -52,8 +53,9 @@ class ReportsTab(QWidget):
 
         filter_row = QHBoxLayout()
         self.report_type_filter = QComboBox()
-        self.report_type_filter.addItem("Выбрать", None)
+        set_combo_placeholder(self.report_type_filter)
         self.report_type_filter.addItem("Аналитика", "analytics")
+        self.report_type_filter.setCurrentIndex(-1)
         connect_combo_autowidth(self.report_type_filter)
         self.report_type_filter.currentIndexChanged.connect(lambda _index: self.load_report_history())
         self.report_query_filter = QLineEdit()
@@ -146,7 +148,7 @@ class ReportsTab(QWidget):
         return None
 
     def _clear_report_history_filters(self) -> None:
-        self.report_type_filter.setCurrentIndex(0)
+        self.report_type_filter.setCurrentIndex(-1)
         self.report_query_filter.clear()
         self.load_report_history()
 

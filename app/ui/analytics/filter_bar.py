@@ -24,7 +24,7 @@ from app.ui.analytics.view_utils import (
 )
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.datetime_inputs import create_optional_date_edit
-from app.ui.widgets.table_utils import connect_combo_autowidth
+from app.ui.widgets.table_utils import connect_combo_autowidth, set_combo_placeholder
 
 if TYPE_CHECKING:
     from app.application.services.reference_service import ReferenceService
@@ -134,13 +134,13 @@ class FilterBar(QWidget):
             QSignalBlocker(self.search_text),
         ]
         _ = blockers
-        self.department.setCurrentIndex(0)
-        self.icd10.setCurrentIndex(0)
-        self.microbe.setCurrentIndex(0)
-        self.antibiotic.setCurrentIndex(0)
-        self.material.setCurrentIndex(0)
-        self.growth_flag.setCurrentIndex(0)
-        self.patient_category.setCurrentIndex(0)
+        self.department.setCurrentIndex(-1)
+        self.icd10.setCurrentIndex(-1)
+        self.microbe.setCurrentIndex(-1)
+        self.antibiotic.setCurrentIndex(-1)
+        self.material.setCurrentIndex(-1)
+        self.growth_flag.setCurrentIndex(-1)
+        self.patient_category.setCurrentIndex(-1)
         self.patient_name.clear()
         self.lab_no.clear()
         self.search_text.clear()
@@ -310,7 +310,7 @@ class FilterBar(QWidget):
         current = self.department.currentData()
         with QSignalBlocker(self.department):
             self.department.clear()
-            self.department.addItem("Выбрать", None)
+            set_combo_placeholder(self.department)
             for dep in self.reference_service.list_departments():
                 self.department.addItem(str(dep.name), cast(int, dep.id))
             self._set_combo_data(self.department, current)
@@ -319,7 +319,7 @@ class FilterBar(QWidget):
         current = self.icd10.currentData()
         with QSignalBlocker(self.icd10):
             self.icd10.clear()
-            self.icd10.addItem("Выбрать", None)
+            set_combo_placeholder(self.icd10)
             for icd in self.reference_service.list_icd10():
                 self.icd10.addItem(f"{icd.code} - {icd.title}", str(icd.code))
             self._set_combo_data(self.icd10, current)
@@ -328,7 +328,7 @@ class FilterBar(QWidget):
         current = self.microbe.currentData()
         with QSignalBlocker(self.microbe):
             self.microbe.clear()
-            self.microbe.addItem("Выбрать", None)
+            set_combo_placeholder(self.microbe)
             for micro in self.reference_service.list_microorganisms():
                 self.microbe.addItem(f"{micro.code or '-'} - {micro.name}", cast(int, micro.id))
             self._set_combo_data(self.microbe, current)
@@ -337,7 +337,7 @@ class FilterBar(QWidget):
         current = self.antibiotic.currentData()
         with QSignalBlocker(self.antibiotic):
             self.antibiotic.clear()
-            self.antibiotic.addItem("Выбрать", None)
+            set_combo_placeholder(self.antibiotic)
             for antibiotic in self.reference_service.list_antibiotics():
                 self.antibiotic.addItem(f"{antibiotic.code} - {antibiotic.name}", cast(int, antibiotic.id))
             self._set_combo_data(self.antibiotic, current)
@@ -346,7 +346,7 @@ class FilterBar(QWidget):
         current = self.material.currentData()
         with QSignalBlocker(self.material):
             self.material.clear()
-            self.material.addItem("Выбрать", None)
+            set_combo_placeholder(self.material)
             for material in self.reference_service.list_material_types():
                 self.material.addItem(f"{material.code} - {material.name}", cast(int, material.id))
             self._set_combo_data(self.material, current)
@@ -355,7 +355,7 @@ class FilterBar(QWidget):
         current = self.growth_flag.currentData()
         with QSignalBlocker(self.growth_flag):
             self.growth_flag.clear()
-            self.growth_flag.addItem("Выбрать", None)
+            set_combo_placeholder(self.growth_flag)
             self.growth_flag.addItem("Нет", 0)
             self.growth_flag.addItem("Да", 1)
             self._set_combo_data(self.growth_flag, current)
@@ -364,7 +364,7 @@ class FilterBar(QWidget):
         current = self.patient_category.currentData()
         with QSignalBlocker(self.patient_category):
             self.patient_category.clear()
-            self.patient_category.addItem("Выбрать", None)
+            set_combo_placeholder(self.patient_category)
             for value in MilitaryCategory.values():
                 self.patient_category.addItem(value, value)
             self._set_combo_data(self.patient_category, current)
@@ -391,7 +391,7 @@ class FilterBar(QWidget):
 
     def _set_combo_data(self, combo: QComboBox, value: object) -> None:
         if value is None:
-            combo.setCurrentIndex(0 if combo.count() else -1)
+            combo.setCurrentIndex(-1)
             return
         index = combo.findData(value)
         if index >= 0:

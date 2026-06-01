@@ -164,9 +164,9 @@ def test_section_counts_follow_required_fields_and_table_rows(qapp) -> None:
         assert not form.save_footer.save_btn.isEnabled()
 
         form.full_name.setText("Тестовый Пациент")
-        form.category_combo.setCurrentIndex(1)
+        form.category_combo.setCurrentIndex(form.category_combo.findData(MilitaryCategory.OFFICER.value))
         form.hospital_case_no.setText("CASE-2")
-        form.department_combo.setCurrentIndex(1)
+        form.department_combo.setCurrentIndex(form.department_combo.findData(1))
         qapp.processEvents()
 
         assert form.section_nav._chips["patient"].text() == "Основное"

@@ -27,6 +27,7 @@ from app.ui.widgets.notifications import show_error, show_info, show_warning
 from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
     resize_columns_to_content,
+    set_combo_placeholder,
     set_table_read_only,
 )
 
@@ -93,7 +94,7 @@ class SearchTab(QWidget):
         saved_box, saved_content_layout = make_section_frame("Сохранённые фильтры")
         saved_layout = QHBoxLayout()
         self.saved_filter_select = QComboBox()
-        self.saved_filter_select.addItem("Выбрать", None)
+        set_combo_placeholder(self.saved_filter_select)
         connect_combo_autowidth(self.saved_filter_select)
         apply_filter_btn = QPushButton("Применить")
         compact_button(apply_filter_btn)
@@ -202,7 +203,7 @@ class SearchTab(QWidget):
 
     def load_saved_filters(self) -> None:
         self.saved_filter_select.clear()
-        self.saved_filter_select.addItem("Выбрать", None)
+        set_combo_placeholder(self.saved_filter_select)
         try:
             filters = self.controller.list_saved_filters()
         except (LookupError, RuntimeError, ValueError, TypeError) as exc:
@@ -210,6 +211,7 @@ class SearchTab(QWidget):
             return
         for item in filters:
             self.saved_filter_select.addItem(str(item.name), str(item.payload_json))
+        self.saved_filter_select.setCurrentIndex(-1)
         connect_combo_autowidth(self.saved_filter_select)
 
     def _apply_search_results(self, rows: list[Any], agg: dict[str, Any]) -> None:

@@ -31,7 +31,11 @@ from app.ui.widgets.async_task import run_async
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import show_error, show_info, show_warning
-from app.ui.widgets.table_utils import connect_combo_autowidth, resize_columns_to_content
+from app.ui.widgets.table_utils import (
+    connect_combo_autowidth,
+    resize_columns_to_content,
+    set_combo_placeholder,
+)
 
 
 class ImportExportWizard(QWizard):
@@ -307,9 +311,10 @@ class DirectionPage(QWizardPage):
         self.format.currentIndexChanged.connect(self._sync_state)
 
         self.table_select = QComboBox()
-        self.table_select.addItem("Выбрать", None)
+        set_combo_placeholder(self.table_select)
         for key, label in self.wizard_ref.table_labels.items():
             self.table_select.addItem(label, key)
+        self.table_select.setCurrentIndex(-1)
         connect_combo_autowidth(self.table_select)
 
         self.import_mode = QComboBox()

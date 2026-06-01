@@ -22,6 +22,7 @@ from app.ui.widgets.datetime_inputs import (
     create_optional_date_edit,
     create_optional_datetime_edit,
 )
+from app.ui.widgets.table_utils import set_combo_placeholder
 
 ABX_COMBO_MAX_VISIBLE_ITEMS = 6
 ABX_COMBO_POPUP_MAX_HEIGHT = 216
@@ -296,9 +297,10 @@ def create_icd_combo(*, icd_items: Sequence[IcdLike], wire_search: Callable[[QCo
     combo = WidePopupComboBox()
     combo.setEditable(True)
     combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-    combo.addItem("Выбрать", None)
+    set_combo_placeholder(combo)
     for icd in icd_items:
         combo.addItem(f"{icd.code} - {icd.title}", str(icd.code))
+    combo.setCurrentIndex(-1)
     wire_search(combo)
     return combo
 
@@ -311,13 +313,15 @@ def populate_icd_combo(
     edit_text: str | None = None,
 ) -> None:
     combo.clear()
-    combo.addItem("Выбрать", None)
+    set_combo_placeholder(combo)
     for icd in icd_items:
         combo.addItem(f"{icd.code} - {icd.title}", str(icd.code))
     if selected_data is not None:
         idx = combo.findData(selected_data)
         if idx >= 0:
             combo.setCurrentIndex(idx)
+    else:
+        combo.setCurrentIndex(-1)
     if edit_text is not None:
         combo.setEditText(edit_text)
 
@@ -326,9 +330,10 @@ def create_abx_combo(*, antibiotics: Sequence[AntibioticLike]) -> QComboBox:
     combo = LimitedPopupComboBox(max_popup_height=ABX_COMBO_POPUP_MAX_HEIGHT)
     combo.setMaxVisibleItems(ABX_COMBO_MAX_VISIBLE_ITEMS)
     combo.view().setMaximumHeight(ABX_COMBO_POPUP_MAX_HEIGHT)
-    combo.addItem("Выбрать", None)
+    set_combo_placeholder(combo)
     for abx in antibiotics:
         combo.addItem(f"{abx.code} - {abx.name}", int(abx.id))
+    combo.setCurrentIndex(-1)
     return combo
 
 
@@ -338,7 +343,7 @@ def create_ismp_type_combo(
     tooltip_role: int,
 ) -> QComboBox:
     combo = WidePopupComboBox()
-    combo.addItem("Выбрать", None)
+    set_combo_placeholder(combo)
     for item in abbreviations:
         code = str(item.code)
         name = str(item.name)
@@ -347,4 +352,5 @@ def create_ismp_type_combo(
         description = str(item.description or "")
         tooltip = description or name
         combo.setItemData(combo.count() - 1, tooltip, tooltip_role)
+    combo.setCurrentIndex(-1)
     return combo

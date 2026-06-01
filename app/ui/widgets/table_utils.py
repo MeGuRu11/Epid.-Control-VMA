@@ -67,6 +67,15 @@ def connect_combo_autowidth(
     _update_width()
 
 
+def set_combo_placeholder(combo: QComboBox, text: str = "Выбрать") -> None:
+    combo.setPlaceholderText(text)
+    if combo.isEditable():
+        line_edit = combo.lineEdit()
+        if line_edit is not None:
+            line_edit.setPlaceholderText(text)
+    combo.setCurrentIndex(-1)
+
+
 def connect_combo_resize_on_content(
     table: QTableWidget, combo: QComboBox, row: int
 ) -> None:

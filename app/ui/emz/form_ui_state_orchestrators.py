@@ -91,11 +91,11 @@ def reset_full_form_fields(
     full_name.clear()
     dob.setDate(default_date)
     sex.setCurrentIndex(0)
-    category_combo.setCurrentIndex(0)
+    category_combo.setCurrentIndex(-1)
     military_unit.clear()
     military_district.clear()
     hospital_case_no.clear()
-    department_combo.setCurrentIndex(0)
+    department_combo.setCurrentIndex(-1)
     injury_date.setDateTime(default_datetime)
     admission_date.setDateTime(default_datetime)
     outcome_type_combo.setCurrentIndex(0)
@@ -121,7 +121,7 @@ def reset_hospitalization_fields(
     reset_detail_tables: Callable[[], None],
 ) -> None:
     hospital_case_no.clear()
-    department_combo.setCurrentIndex(0)
+    department_combo.setCurrentIndex(-1)
     injury_date.setDateTime(empty_datetime)
     admission_date.setDateTime(empty_datetime)
     outcome_type_combo.setCurrentIndex(0)

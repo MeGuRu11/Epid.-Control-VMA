@@ -29,6 +29,7 @@ from app.ui.widgets.action_bar_layout import update_action_bar_direction
 from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import error_text, show_error
+from app.ui.widgets.table_utils import set_combo_placeholder
 
 _HANDLED_REFERENCE_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
@@ -310,9 +311,10 @@ class ReferenceView(QWidget):
 
     def _create_abx_group_combo(self) -> QWidget:
         combo = QComboBox()
-        combo.addItem("Выбрать", None)
+        set_combo_placeholder(combo)
         for group in self.reference_service.list_antibiotic_groups():
             combo.addItem(f"{group.code or '-'} - {group.name}", group.id)
+        combo.setCurrentIndex(-1)
         return combo
 
     def _build_list_data(self) -> list[tuple[str, Any, dict[str, Any]]]:
@@ -462,7 +464,7 @@ class ReferenceView(QWidget):
                 widget.clear()
                 widget.setReadOnly(False)
             elif isinstance(widget, QComboBox):
-                widget.setCurrentIndex(0)
+                widget.setCurrentIndex(-1)
 
     def _current_item_label(self) -> str:
         data = self._collect_form()

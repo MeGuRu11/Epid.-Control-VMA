@@ -199,7 +199,7 @@ def test_sanitary_history_dialog_updates_filter_summary_and_resets_page(qapp) ->
     assert dialog.page_label.text() == "Стр. 2 / 3"
 
     dialog.search_input.setText("san-0001")
-    dialog.growth_filter.setCurrentIndex(1)
+    dialog.growth_filter.setCurrentIndex(dialog.growth_filter.findData(1))
     dialog.date_from.setDate(QDate(2026, 4, 20))
     dialog.date_to.setDate(QDate(2026, 4, 22))
     dialog.date_to.setFocus()
@@ -218,7 +218,7 @@ def test_sanitary_history_dialog_updates_filter_summary_and_resets_page(qapp) ->
     assert dialog.page_index == 1
     assert dialog.filter_summary_label.text() == "Без фильтров"
     assert dialog.search_input.text() == ""
-    assert dialog.growth_filter.currentIndex() == 0
+    assert dialog.growth_filter.currentIndex() == -1
     assert dialog._date_value(dialog.date_from) is None
     assert dialog._date_value(dialog.date_to) is None
 

@@ -66,7 +66,7 @@ from app.ui.widgets.notifications import clear_status, error_text, set_status
 from app.ui.widgets.responsive_actions import ResponsiveActionsPanel
 from app.ui.widgets.sample_header import SampleHeader
 from app.ui.widgets.susceptibility_panel import SusceptibilityPanel
-from app.ui.widgets.table_utils import connect_combo_autowidth
+from app.ui.widgets.table_utils import connect_combo_autowidth, set_combo_placeholder
 
 _HANDLED_SANITARY_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
@@ -164,9 +164,10 @@ class SanitaryHistoryDialog(QDialog):
         search_layout.addWidget(self.search_input)
 
         self.growth_filter = QComboBox()
-        self.growth_filter.addItem("Выбрать", None)
+        set_combo_placeholder(self.growth_filter)
         self.growth_filter.addItem("Положительные", 1)
         self.growth_filter.addItem("Отрицательные", 0)
+        self.growth_filter.setCurrentIndex(-1)
         connect_combo_autowidth(self.growth_filter)
         self.growth_filter.currentIndexChanged.connect(self._on_filter_changed)
         self._growth_group = QWidget()
@@ -523,7 +524,7 @@ class SanitaryHistoryDialog(QDialog):
 
     def _clear_filters(self) -> None:
         self.search_input.clear()
-        self.growth_filter.setCurrentIndex(0)
+        self.growth_filter.setCurrentIndex(-1)
         self.date_from.setDate(self._date_empty)
         self.date_to.setDate(self._date_empty)
         self.page_index = 1
@@ -692,9 +693,10 @@ class SanitarySampleDetailDialog(QDialog):
         self.sampling_point.textChanged.connect(self._update_header_context)
 
         self.growth_flag = QComboBox()
-        self.growth_flag.addItem("Выбрать", None)
+        set_combo_placeholder(self.growth_flag)
         self.growth_flag.addItem("Нет", 0)
         self.growth_flag.addItem("Да", 1)
+        self.growth_flag.setCurrentIndex(-1)
         self.growth_result_at = create_optional_datetime_edit()
         self.colony_desc = QLineEdit()
         self.microscopy = QLineEdit()
@@ -703,7 +705,7 @@ class SanitarySampleDetailDialog(QDialog):
         self.micro_combo = QComboBox()
         self.micro_combo.setEditable(True)
         self.micro_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self.micro_combo.addItem("Выбрать", None)
+        set_combo_placeholder(self.micro_combo)
         self.micro_free = QLineEdit()
         self.micro_free.setPlaceholderText("если нет в справочнике")
 
@@ -966,7 +968,7 @@ class SanitarySampleDetailDialog(QDialog):
             microbes = self.reference_service.list_microorganisms()
         with QSignalBlocker(self.micro_combo):
             self.micro_combo.clear()
-            self.micro_combo.addItem("Выбрать", None)
+            set_combo_placeholder(self.micro_combo)
             for m in microbes:
                 label = f"{m.code or '-'} - {m.name}"
                 self.micro_combo.addItem(label, m.id)
@@ -974,6 +976,8 @@ class SanitarySampleDetailDialog(QDialog):
                 idx = self.micro_combo.findData(current_data)
                 if idx >= 0:
                     self.micro_combo.setCurrentIndex(idx)
+            else:
+                self.micro_combo.setCurrentIndex(-1)
             self.micro_combo.setEditText(text)
 
     def _setup_abx_rows(self) -> None:
@@ -1001,16 +1005,18 @@ class SanitarySampleDetailDialog(QDialog):
 
     def _create_abx_combo(self) -> QComboBox:
         combo = QComboBox()
-        combo.addItem("Выбрать", None)
+        set_combo_placeholder(combo)
         for abx in self._abx_list:
             combo.addItem(f"{abx.code} - {abx.name}", abx.id)
+        combo.setCurrentIndex(-1)
         return combo
 
     def _create_phage_combo(self) -> QComboBox:
         combo = QComboBox()
-        combo.addItem("Выбрать", None)
+        set_combo_placeholder(combo)
         for ph in self._phage_list:
             combo.addItem(f"{ph.code or '-'} - {ph.name}", ph.id)
+        combo.setCurrentIndex(-1)
         return combo
 
     def _add_susc_row(self) -> None:
@@ -1045,7 +1051,7 @@ class SanitarySampleDetailDialog(QDialog):
             if sample.growth_result_at:
                 self.growth_result_at.setDateTime(sample.growth_result_at)
             if sample.growth_flag is None:
-                self.growth_flag.setCurrentIndex(0)
+                self.growth_flag.setCurrentIndex(-1)
             else:
                 idx = self.growth_flag.findData(sample.growth_flag)
                 if idx >= 0:

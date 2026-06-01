@@ -18,6 +18,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.table_utils import (
     connect_combo_resize_on_content,
     resize_columns_to_content,
+    set_combo_placeholder,
 )
 
 
@@ -271,17 +272,19 @@ class SusceptibilityPanel(QWidget):
 
     def _create_abx_combo(self) -> QComboBox:
         combo = QComboBox()
-        combo.addItem("Выбрать", None)
+        set_combo_placeholder(combo)
         for abx in self._abx_list:
             combo.addItem(f"{abx.code} - {abx.name}", abx.id)
+        combo.setCurrentIndex(-1)
         combo.currentIndexChanged.connect(lambda _index: self.data_changed.emit())
         return combo
 
     def _create_phage_combo(self) -> QComboBox:
         combo = QComboBox()
-        combo.addItem("Выбрать", None)
+        set_combo_placeholder(combo)
         for phage in self._phage_list:
             combo.addItem(f"{phage.code or '-'} - {phage.name}", phage.id)
+        combo.setCurrentIndex(-1)
         combo.currentIndexChanged.connect(lambda _index: self.data_changed.emit())
         return combo
 

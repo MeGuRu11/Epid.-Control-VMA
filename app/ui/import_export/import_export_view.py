@@ -34,6 +34,7 @@ from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
     make_readonly_item,
     resize_columns_to_content,
+    set_combo_placeholder,
     set_table_read_only,
 )
 
@@ -133,9 +134,10 @@ class ImportExportView(QWidget):
         self._history_filter_layout.setContentsMargins(0, 0, 0, 0)
         self._history_filter_layout.setSpacing(10)
         self.direction_filter = QComboBox()
-        self.direction_filter.addItem("Выбрать", None)
+        set_combo_placeholder(self.direction_filter)
         self.direction_filter.addItem("Экспорт", "export")
         self.direction_filter.addItem("Импорт", "import")
+        self.direction_filter.setCurrentIndex(-1)
         connect_combo_autowidth(self.direction_filter)
         self.direction_filter.currentIndexChanged.connect(self._load_history)
         self.query_filter = QLineEdit()
@@ -255,7 +257,7 @@ class ImportExportView(QWidget):
         self.history_table.setColumnWidth(0, 170)
 
     def _clear_filters(self) -> None:
-        self.direction_filter.setCurrentIndex(0)
+        self.direction_filter.setCurrentIndex(-1)
         self.query_filter.clear()
         self._load_history()
 
@@ -276,5 +278,3 @@ class ImportExportView(QWidget):
             show_error(self, "Открытие файла запрещено: путь вне разрешённых директорий артефактов.")
             return
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(file_path.resolve(strict=False))))
-
-

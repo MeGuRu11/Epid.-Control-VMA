@@ -204,11 +204,11 @@ def test_reset_full_form_fields() -> None:
     assert full_name.cleared is True
     assert dob.date is marker_date
     assert sex.current_index == 0
-    assert category.current_index == 0
+    assert category.current_index == -1
     assert military_unit.cleared is True
     assert military_district.cleared is True
     assert hospital_case_no.cleared is True
-    assert department.current_index == 0
+    assert department.current_index == -1
     assert injury.datetime is marker_dt
     assert admission.datetime is marker_dt
     assert outcome_type.current_index == 0
@@ -246,7 +246,7 @@ def test_reset_hospitalization_fields() -> None:
         reset_detail_tables=lambda: resets.append("ok"),
     )
     assert hospital_case_no.cleared is True
-    assert department.current_index == 0
+    assert department.current_index == -1
     assert injury.datetime is marker_dt
     assert admission.datetime is marker_dt
     assert outcome_type.current_index == 0

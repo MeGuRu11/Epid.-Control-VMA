@@ -24,6 +24,7 @@ from app.ui.widgets.button_utils import compact_button
 from app.ui.widgets.datetime_inputs import create_birth_date_edit, optional_date_value
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import clear_status, set_status
+from app.ui.widgets.table_utils import set_combo_placeholder
 
 
 class PatientEditDialog(QDialog):
@@ -66,9 +67,10 @@ class PatientEditDialog(QDialog):
         self.sex = QComboBox()
         self.sex.addItems(["М", "Ж"])
         self.category_combo = QComboBox()
-        self.category_combo.addItem("Выбрать", None)
+        set_combo_placeholder(self.category_combo)
         for value in MilitaryCategory.values():
             self.category_combo.addItem(value, value)
+        self.category_combo.setCurrentIndex(-1)
         self.military_unit = QLineEdit()
         self.military_district = QLineEdit()
 

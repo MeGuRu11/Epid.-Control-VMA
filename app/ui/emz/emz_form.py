@@ -159,6 +159,7 @@ from app.ui.widgets.table_utils import (
     connect_combo_autowidth,
     connect_combo_resize_on_content,
     resize_columns_to_content,
+    set_combo_placeholder,
 )
 
 
@@ -363,9 +364,10 @@ class EmzForm(QWidget):
         self.sex.addItems(["М", "Ж"])
         connect_combo_autowidth(self.sex)
         self.category_combo = QComboBox()
-        self.category_combo.addItem("Выбрать", None)
+        set_combo_placeholder(self.category_combo)
         for value in MilitaryCategory.values():
             self.category_combo.addItem(value, value)
+        self.category_combo.setCurrentIndex(-1)
         connect_combo_autowidth(self.category_combo)
         self.military_unit = QLineEdit()
         self.military_unit.setToolTip("Воинская часть (если применимо).")
@@ -375,7 +377,7 @@ class EmzForm(QWidget):
         self.hospital_case_no.setToolTip("Номер истории болезни. Обязательное поле.")
         self.department_combo = QComboBox()
         self.department_combo.setEditable(False)
-        self.department_combo.addItem("Выбрать", None)
+        set_combo_placeholder(self.department_combo)
 
         self.injury_date = create_optional_datetime_edit(empty_datetime=self._dt_empty)
         self.admission_date = create_optional_datetime_edit(empty_datetime=self._dt_empty)

@@ -18,12 +18,20 @@ class _FakeCombo:
     def __init__(self) -> None:
         self.items: list[tuple[str, object]] = []
         self.current_index = -1
+        self.placeholder_text = ""
 
     def clear(self) -> None:
         self.items.clear()
+        self.current_index = -1
 
     def addItem(self, label: str, data: object = None) -> None:  # noqa: N802
         self.items.append((label, data))
+
+    def setPlaceholderText(self, text: str) -> None:  # noqa: N802
+        self.placeholder_text = text
+
+    def isEditable(self) -> bool:  # noqa: N802
+        return False
 
     def findData(self, data: object) -> int:  # noqa: N802
         for idx, (_, value) in enumerate(self.items):
@@ -44,25 +52,25 @@ def test_apply_departments_to_combo_populates_and_connects() -> None:
         departments=[_Department(id=1, name="A"), _Department(id=2, name="B")],
         connect_combo_autowidth=lambda c: connected.append(cast(_FakeCombo, c)),
     )
-    assert combo.items == [("Выбрать", None), ("A", 1), ("B", 2)]
+    assert combo.placeholder_text == "Выбрать"
+    assert combo.current_index == -1
+    assert combo.items == [("A", 1), ("B", 2)]
     assert connected == [combo]
 
 
 def test_restore_department_selection_sets_existing_value() -> None:
     combo = _FakeCombo()
-    combo.addItem("Выбрать", None)
     combo.addItem("A", 1)
 
     refs.restore_department_selection(
         department_combo=cast(QComboBox, combo),
         current_department=1,
     )
-    assert combo.current_index == 1
+    assert combo.current_index == 0
 
 
 def test_restore_department_selection_keeps_state_for_missing_value() -> None:
     combo = _FakeCombo()
-    combo.addItem("Выбрать", None)
     combo.addItem("A", 1)
 
     refs.restore_department_selection(
