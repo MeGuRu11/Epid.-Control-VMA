@@ -103,7 +103,9 @@ def test_patient_emk_case_date_filters_apply_on_enter_only(qapp) -> None:
         qapp.processEvents()
 
         assert view.cases_table.rowCount() == 1
-        assert view.cases_table.item(0, 5).text() == "2"
+        case_id_item = view.cases_table.item(0, 5)
+        assert case_id_item is not None
+        assert case_id_item.text() == "2"
 
         view._reset_filters()
         qapp.processEvents()
@@ -120,7 +122,9 @@ def test_patient_emk_case_date_filters_apply_on_enter_only(qapp) -> None:
         qapp.processEvents()
 
         assert view.cases_table.rowCount() == 1
-        assert view.cases_table.item(0, 5).text() == "1"
+        case_id_item = view.cases_table.item(0, 5)
+        assert case_id_item is not None
+        assert case_id_item.text() == "1"
     finally:
         view.close()
 
