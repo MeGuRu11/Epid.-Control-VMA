@@ -14,14 +14,14 @@ class EmptyState(QWidget):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setMinimumHeight(104)
+        self.setMinimumHeight(132)
         self.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.MinimumExpanding,
         )
         frame = QFrame()
         frame.setObjectName("emptyState")
-        frame.setMinimumHeight(104)
+        frame.setMinimumHeight(132)
         frame.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.MinimumExpanding,

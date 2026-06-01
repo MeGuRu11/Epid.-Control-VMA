@@ -8025,3 +8025,28 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m pytest -q --tb=short` - `912 passed`, `3 warnings`.
 - `python -m compileall -q app tests scripts` - pass.
 - `python scripts\check_mojibake.py` - pass.
+
+---
+
+## 2026-06-01 - UX fixes v1.1.0: EMK picker, combo placeholders, Form100 required marks, reports empty-state
+
+**Статус:** реализовано и проверено локально, подготовлено к атомарным коммитам; push не выполнялся.
+
+### Что изменено
+
+- В ЭМК пациента встроен табличный список всех пациентов: список загружается при открытии, пустой фильтр показывает всех, поиск фильтрует по ФИО/ID/дате рождения, выбор строки загружает карточку и госпитализации.
+- Во всех найденных `QComboBox` со служебным пунктом `Выбрать`/`Выберите...` служебное значение заменено на `placeholderText`; отсутствие выбора теперь выражается через `currentIndex() == -1` / `currentData() is None`.
+- В Form100 поля, необходимые для подписи, помечаются `*` из общего источника `FORM100_SIGNING_FIELD_LABELS`; обновлены editor и wizard-компоненты.
+- Empty-state истории отчётов Analytics получил увеличенную минимальную высоту, чтобы текст “История отчётов пуста / Здесь появятся...” не обрезался.
+
+### Проверки
+
+- RED до фиксов: новые targeted-тесты падали по отсутствующей таблице ЭМК, selectable-placeholder combo, отсутствующим `*` в Form100 и недостаточной высоте `EmptyState`.
+- GREEN targeted: `python -m pytest tests/unit/test_patient_emk_enter_filters.py tests/unit/test_combo_placeholders.py tests/unit/test_emz_form_reference_orchestrators.py tests/unit/test_emz_form_widget_factories.py tests/unit/test_sanitary_history_dialog.py tests/unit/test_sanitary_dashboard.py tests/unit/test_form100_v2_editor_fields.py tests/unit/test_empty_state.py -q --tb=short` - `50 passed`, `1 warning`.
+- `python -m app.main` - стартовал в offscreen-режиме и остановлен через 8 секунд на ожидаемом GUI/login wait; startup crash не обнаружен.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m pytest -q --tb=short` - `929 passed`, `3 warnings`.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.

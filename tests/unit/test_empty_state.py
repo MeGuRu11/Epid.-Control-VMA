@@ -49,3 +49,19 @@ def test_empty_state_with_hint_has_room_for_wrapped_text(qtbot: Any) -> None:
     label_widgets = cast(list[QLabel], state.findChildren(QLabel))
     for label in label_widgets:
         assert label.wordWrap()
+
+
+def test_empty_state_has_enough_height_for_wrapped_title_and_hint(qtbot: Any) -> None:
+    from PySide6.QtWidgets import QFrame
+
+    from app.ui.analytics.widgets.empty_state import EmptyState
+
+    state = EmptyState("История отчётов пуста.", "Здесь появятся сформированные отчёты.")
+    qtbot.addWidget(state)
+
+    frame = state.findChild(QFrame, "emptyState")
+    assert frame is not None
+    assert state.minimumHeight() >= 132
+    assert frame.minimumHeight() >= 132
+    label_widgets = cast(list[QLabel], state.findChildren(QLabel))
+    assert all(label.wordWrap() for label in label_widgets)

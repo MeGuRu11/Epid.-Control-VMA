@@ -33,6 +33,39 @@ The current handoff is the first `2026-05-30` section below. Older `2026-05-30` 
 - `python -m compileall -q app tests scripts` - pass.
 - `python scripts\check_mojibake.py` - pass.
 
+# Сессия 2026-06-01 - UX fixes v1.1.0
+
+## Текущее состояние
+
+- Репозиторий: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Задача: внедрить UX-исправления из `CODEX_UX_FIXES_V110.md`.
+- Реализация завершена; full quality gate пройден.
+- Push не выполнялся.
+
+## Что сделано
+
+- `PatientEmkView` получил встроенный табличный patient picker по аналогии с Lab: полный список при открытии, локальная фильтрация по ФИО/ID/дате рождения, выбор строки грузит карточку пациента и госпитализации.
+- Введён общий helper `set_combo_placeholder()` и переведены combo со служебным `Выбрать`/`Выберите...` на placeholder + `currentIndex(-1)`.
+- Обновлены reset/restore-ветки и тесты, где старый selectable-placeholder был частью индексации.
+- Для Form100 добавлен `form100_required_label()` на базе `FORM100_SIGNING_FIELD_LABELS`; обязательные для подписи поля помечены `*` в editor и wizard.
+- `EmptyState` Analytics увеличен по минимальной высоте до 132px для корректного отображения пустой истории отчётов.
+- Добавлены/обновлены regression-тесты для всех четырёх пунктов.
+
+## Проверки
+
+- `python -m app.main` - стартовал в offscreen-режиме и остановлен через 8 секунд на ожидаемом GUI/login wait.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m pytest -q --tb=short` - `929 passed`, `3 warnings`.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+
+## Следующие шаги
+
+1. Просмотреть атомарные коммиты по четырём UX-пунктам.
+2. При необходимости пройти ручной smoke в реальном GUI по ЭМК, Analytics Reports и Form100 signing flow.
+
 ## Open Notes
 
 - Working tree still contains the implemented code/test/doc changes and an existing untracked `docs/QA_CHECKLIST_DATETIME_WIDGET.md`.
