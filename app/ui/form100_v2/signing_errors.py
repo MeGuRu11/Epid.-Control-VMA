@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel
 
-from app.domain.rules.form100_rules_v2 import FieldError, Form100SigningError
+from app.domain.rules.form100_rules_v2 import (
+    FORM100_SIGNING_REQUIRED_FIELDS,
+    FieldError,
+    Form100SigningError,
+)
 from app.ui.widgets.notifications import error_text
 
 FORM100_REQUIRED_HINT_TEXT = "Обязательные поля отмечены *."
@@ -20,7 +24,7 @@ FORM100_SIGNING_FIELD_LABELS: dict[str, str] = {
     "medical_help.mp_antibiotic_dose": "Антибиотик",
     "medical_help.mp_analgesic_dose": "Обезболивающее",
 }
-FORM100_SIGNING_UI_REQUIRED_FIELDS = frozenset(FORM100_SIGNING_FIELD_LABELS) - {"signed_by"}
+FORM100_SIGNING_UI_REQUIRED_FIELDS = FORM100_SIGNING_REQUIRED_FIELDS - {"signed_by"}
 
 _SIGNING_ERROR_HEADER = "Карточку Формы 100 нельзя подписать. Заполните обязательные поля:"
 

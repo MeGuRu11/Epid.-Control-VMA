@@ -75,6 +75,16 @@ def test_form100_v2_required_hint_is_shown_where_required_marks_are_visible(qapp
             widget.close()
 
 
+def test_form100_stub_marks_full_name_as_signing_required(qapp) -> None:
+    widget = Form100StubWidget()
+    try:
+        label_texts = _label_text_list(widget)
+        assert "ФИО *" in label_texts
+        assert "ФИО" not in label_texts
+    finally:
+        widget.close()
+
+
 def test_form100_v2_editor_builds_extended_stub_and_main_payload(qapp) -> None:
     editor = Form100EditorV2()
 

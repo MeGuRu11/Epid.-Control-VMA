@@ -2,9 +2,17 @@ from __future__ import annotations
 
 import re
 
-from app.domain.rules.form100_rules_v2 import FieldError, Form100SigningError
+import pytest
+
+from app.domain.rules.form100_rules_v2 import (
+    FORM100_SIGNING_REQUIRED_FIELDS,
+    FieldError,
+    Form100SigningError,
+    validate_for_signing,
+)
 from app.ui.form100_v2.signing_errors import (
     FORM100_SIGNING_FIELD_LABELS,
+    FORM100_SIGNING_UI_REQUIRED_FIELDS,
     form100_signing_error_text,
 )
 
@@ -69,3 +77,25 @@ def test_form100_signing_field_labels_cover_validator_keys() -> None:
         "medical_help.mp_antibiotic_dose",
         "medical_help.mp_analgesic_dose",
     } <= FORM100_SIGNING_FIELD_LABELS.keys()
+
+
+def test_form100_ui_required_marks_use_validator_required_field_source() -> None:
+    assert set(FORM100_SIGNING_FIELD_LABELS) == FORM100_SIGNING_REQUIRED_FIELDS
+    assert FORM100_SIGNING_REQUIRED_FIELDS - {"signed_by"} == FORM100_SIGNING_UI_REQUIRED_FIELDS
+
+
+def test_form100_signing_validator_emits_required_field_source_keys() -> None:
+    payload = {
+        "main": {},
+        "stub": {},
+        "lesion": {},
+        "san_loss": {},
+        "medical_help": {"mp_antibiotic": True, "mp_analgesic": True},
+        "bottom": {},
+        "flags": {"flag_emergency": True},
+    }
+
+    with pytest.raises(Form100SigningError) as exc_info:
+        validate_for_signing(payload, signed_by=None)
+
+    assert {error.field for error in exc_info.value.errors} == FORM100_SIGNING_REQUIRED_FIELDS

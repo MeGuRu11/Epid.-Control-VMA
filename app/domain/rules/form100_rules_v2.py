@@ -13,6 +13,22 @@ from app.domain.models.form100_v2 import (
 from app.domain.types import JSONDict, JSONValue
 
 _TISSUE_TYPES: set[str] = {"мягкие ткани", "кости", "сосуды", "полостные раны", "ожоги"}
+FORM100_SIGNING_REQUIRED_FIELDS = frozenset(
+    {
+        "main.main_full_name",
+        "main.main_rank",
+        "main.main_unit",
+        "main.birth_date",
+        "bottom.main_diagnosis",
+        "main.main_injury_date",
+        "main.main_injury_time",
+        "signed_by",
+        "lesion_or_san_loss",
+        "bottom.evacuation_priority",
+        "medical_help.mp_antibiotic_dose",
+        "medical_help.mp_analgesic_dose",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -130,25 +146,25 @@ def validate_for_signing(payload: Mapping[str, object], *, signed_by: str | None
     flags = _section(payload, "flags")
 
     errors: list[FieldError] = []
-    _require_text(errors, "main.main_full_name", "Укажите ФИО.", main.get("main_full_name"), payload.get("main_full_name"))
-    _require_text(errors, "main.main_rank", "Укажите воинское звание.", main.get("main_rank"), stub.get("stub_rank"))
-    _require_text(errors, "main.main_unit", "Укажите воинскую часть.", main.get("main_unit"), payload.get("main_unit"), stub.get("stub_unit"))
-    _require_text(errors, "main.birth_date", "Укажите дату рождения.", payload.get("birth_date"), main.get("birth_date"))
-    _require_text(errors, "bottom.main_diagnosis", "Укажите основной диагноз.", bottom.get("main_diagnosis"), payload.get("main_diagnosis"), stub.get("stub_diagnosis"))
-    _require_text(errors, "main.main_injury_date", "Укажите дату ранения или заболевания.", main.get("main_injury_date"), stub.get("stub_injury_date"))
-    _require_text(errors, "main.main_injury_time", "Укажите время ранения или заболевания.", main.get("main_injury_time"), stub.get("stub_injury_time"))
-    _require_text(errors, "signed_by", "Укажите подписанта.", signed_by)
+    _require_signing_text(errors, "main.main_full_name", "Укажите ФИО.", main.get("main_full_name"), payload.get("main_full_name"))
+    _require_signing_text(errors, "main.main_rank", "Укажите воинское звание.", main.get("main_rank"), stub.get("stub_rank"))
+    _require_signing_text(errors, "main.main_unit", "Укажите воинскую часть.", main.get("main_unit"), payload.get("main_unit"), stub.get("stub_unit"))
+    _require_signing_text(errors, "main.birth_date", "Укажите дату рождения.", payload.get("birth_date"), main.get("birth_date"))
+    _require_signing_text(errors, "bottom.main_diagnosis", "Укажите основной диагноз.", bottom.get("main_diagnosis"), payload.get("main_diagnosis"), stub.get("stub_diagnosis"))
+    _require_signing_text(errors, "main.main_injury_date", "Укажите дату ранения или заболевания.", main.get("main_injury_date"), stub.get("stub_injury_date"))
+    _require_signing_text(errors, "main.main_injury_time", "Укажите время ранения или заболевания.", main.get("main_injury_time"), stub.get("stub_injury_time"))
+    _require_signing_text(errors, "signed_by", "Укажите подписанта.", signed_by)
 
     if not (_section_has_selected_value(lesion, exclude={"isolation_required"}) or _section_has_selected_value(san_loss)):
-        errors.append(FieldError("lesion_or_san_loss", "Укажите вид поражения или вид санитарных потерь."))
+        errors.append(_signing_error("lesion_or_san_loss", "Укажите вид поражения или вид санитарных потерь."))
 
     if _truthy(flags.get("flag_emergency")):
-        _require_text(errors, "bottom.evacuation_priority", "Укажите очередность эвакуации.", bottom.get("evacuation_priority"))
+        _require_signing_text(errors, "bottom.evacuation_priority", "Укажите очередность эвакуации.", bottom.get("evacuation_priority"))
 
     if _truthy(medical_help.get("mp_antibiotic")):
-        _require_text(errors, "medical_help.mp_antibiotic_dose", "Укажите дозу/детали антибиотика.", medical_help.get("mp_antibiotic_dose"))
+        _require_signing_text(errors, "medical_help.mp_antibiotic_dose", "Укажите дозу/детали антибиотика.", medical_help.get("mp_antibiotic_dose"))
     if _truthy(medical_help.get("mp_analgesic")):
-        _require_text(errors, "medical_help.mp_analgesic_dose", "Укажите дозу/детали обезболивающего.", medical_help.get("mp_analgesic_dose"))
+        _require_signing_text(errors, "medical_help.mp_analgesic_dose", "Укажите дозу/детали обезболивающего.", medical_help.get("mp_analgesic_dose"))
 
     if errors:
         raise Form100SigningError(errors)
@@ -229,6 +245,17 @@ def _first_text(*values: object) -> str:
 def _require_text(errors: list[FieldError], field: str, message: str, *values: object) -> None:
     if not _first_text(*values):
         errors.append(FieldError(field, message))
+
+
+def _require_signing_text(errors: list[FieldError], field: str, message: str, *values: object) -> None:
+    if not _first_text(*values):
+        errors.append(_signing_error(field, message))
+
+
+def _signing_error(field: str, message: str) -> FieldError:
+    if field not in FORM100_SIGNING_REQUIRED_FIELDS:
+        raise AssertionError(f"unknown Form100 signing field: {field}")
+    return FieldError(field, message)
 
 
 def _truthy(value: object) -> bool:

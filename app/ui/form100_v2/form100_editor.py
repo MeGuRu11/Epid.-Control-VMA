@@ -180,7 +180,7 @@ class Form100EditorV2(QWidget):
         form.addRow("Выдана — время", self.stub_issued_time)
         form.addRow(form100_required_label("main.main_rank", "В/звание"), self.stub_rank)
         form.addRow(form100_required_label("main.main_unit", "В/часть"), self.stub_unit)
-        form.addRow("ФИО", self.stub_full_name)
+        form.addRow(form100_required_label("main.main_full_name", "ФИО"), self.stub_full_name)
         form.addRow("Жетон/ID", self.stub_id_tag)
         form.addRow(form100_required_label("main.main_injury_date", "Дата ранения"), self.stub_injury_date)
         form.addRow(form100_required_label("main.main_injury_time", "Время ранения"), self.stub_injury_time)

@@ -98,7 +98,7 @@ class Form100StubWidget(QWidget):
         top_form.addRow("Выдана (дата)", self.stub_issued_date)
         top_form.addRow(form100_required_label("main.main_rank", "В/звание"), self.stub_rank)
         top_form.addRow(form100_required_label("main.main_unit", "В/часть"), self.stub_unit)
-        top_form.addRow("ФИО", self.stub_full_name)
+        top_form.addRow(form100_required_label("main.main_full_name", "ФИО"), self.stub_full_name)
         top_form.addRow("Жетон / удостоверение", self.stub_id_tag)
         top_form.addRow(form100_required_label("main.main_injury_time", "Ранен (время)"), self.stub_injury_time)
         top_form.addRow(form100_required_label("main.main_injury_date", "Ранен (дата)"), self.stub_injury_date)
