@@ -5,8 +5,10 @@ from typing import Any, cast
 
 from PySide6.QtWidgets import QComboBox
 
+from app.application.dto.auth_dto import SessionContext
 from app.ui.analytics.filter_bar import FilterBar
 from app.ui.analytics.tabs.reports_tab import ReportsTab
+from app.ui.analytics.tabs.search_tab import SearchTab
 from app.ui.widgets.table_utils import set_combo_placeholder
 
 
@@ -30,6 +32,11 @@ class _ReferenceServiceStub:
 class _ReportsControllerStub:
     def load_report_history(self, **_kwargs: object) -> list[Any]:
         return []
+
+
+class _AnalyticsControllerStub:
+    def list_saved_filters(self) -> list[SimpleNamespace]:
+        return [SimpleNamespace(name="Фильтр ОРИТ", payload_json='{"department_id": 1}')]
 
 
 def _combo_texts(combo: QComboBox) -> list[str]:
@@ -77,5 +84,19 @@ def test_reports_type_filter_placeholder_is_not_item(qapp) -> None:
         assert tab.report_type_filter.placeholderText() == "Выбрать"
         assert tab.report_type_filter.currentIndex() == -1
         assert "Выбрать" not in _combo_texts(tab.report_type_filter)
+    finally:
+        tab.close()
+
+
+def test_search_saved_filter_placeholder_starts_unselected_without_manual_reset(qapp) -> None:
+    tab = SearchTab(
+        cast(Any, _AnalyticsControllerStub()),
+        SessionContext(user_id=1, login="tester", role="admin"),
+    )
+    try:
+        assert tab.saved_filter_select.placeholderText() == "Выбрать"
+        assert tab.saved_filter_select.currentIndex() == -1
+        assert "Выбрать" not in _combo_texts(tab.saved_filter_select)
+        assert tab.saved_filter_select.currentData() is None
     finally:
         tab.close()
