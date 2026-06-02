@@ -1,6 +1,46 @@
-# CURRENT: 2026-06-02 - verify UX fixes v1.1.0 / Form100 required hint
+# CURRENT: 2026-06-02 - v1.1.0 final UX fixes добивка
 
 The current handoff is the first `2026-06-02` section below. Older notes are retained for context.
+
+# Session 2026-06-02 - v1.1.0 final UX fixes добивка
+
+## Current State
+
+- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Task: execute `CODEX_V110_FINAL_FIXES.md` final v1.1.0 cleanup.
+- Implemented and verified locally; push/tag were not performed.
+- Verification artifacts remain intentionally untracked: `artifacts/verify_v110/` and root `VERIFY_V110_REPORT.md`.
+- CHANGELOG was not touched.
+
+## Done
+
+- Fixed Analytics Reports empty-state clipping root cause: `EmptyState` now recalculates wrapped `QLabel` minimum heights from `heightForWidth()` and updates frame/widget minimum heights from layout `sizeHint()`.
+- Added a RED/GREEN anti-clip regression for themed wrapped labels and a ReportsTab wide/narrow anti-clip check.
+- Updated `artifacts/verify_v110/verify_v110_offscreen.py` with the same anti-clip assertions, real theme application, no manual `SearchTab.saved_filter_select` reset, and a Form100 stub `ФИО *` check.
+- Added `FORM100_SIGNING_REQUIRED_FIELDS` in domain validation, derived UI required marks from it, and guarded signing errors against unknown signing keys.
+- Marked Form100 stub `ФИО` as `ФИО *` in both editor and wizard stub widget.
+- Added `SearchTab.saved_filter_select` placeholder regression proving `currentIndex() == -1` without manual reset.
+- Reviewed B2/B3/B5: no Form100 inline styles; EMK picker extraction deferred as tech debt; QC placeholder remains `Выберите статус QC`.
+
+## Checks
+
+- RED empty-state anti-clip test before fix - failed with `emptyStateText: height=29, needed=88, width=252`.
+- RED Form100 source test before fix - failed because `FORM100_SIGNING_REQUIRED_FIELDS` did not exist.
+- GREEN targeted: `python -m pytest tests/unit/test_empty_state.py tests/unit/test_form100_signing_error_text.py tests/unit/test_form100_v2_editor_fields.py tests/unit/test_combo_placeholders.py -q --tb=short` - `24 passed`, `1 warning`.
+- B2/B3 focused: `python -m pytest tests/unit/test_ui_no_inline_styles.py tests/unit/test_patient_emk_enter_filters.py tests/unit/test_patient_widgets_error_handling.py -q --tb=short` - `9 passed`.
+- Native startup: `python -m app.main` without offscreen - process stayed alive after 8 seconds and was stopped; startup crash not detected.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python -m pytest -q --tb=short` - `936 passed`, `3 warnings`.
+- `python -m ruff check app tests scripts` - pass.
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python artifacts/verify_v110/verify_v110_offscreen.py` - `PASS`.
+
+## Notes
+
+- Native Reports tab visual sign-off is still a manual Windows-GUI step. Automation confirmed native app startup and offscreen/themed anti-clip geometry, but did not interactively navigate through the live GUI.
+- Full pytest count is now `936 passed`, `3 warnings`.
 
 # Session 2026-06-02 - verify UX fixes v1.1.0 / Form100 required hint
 

@@ -8083,3 +8083,43 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m compileall -q app tests scripts` - pass.
 - `python scripts\check_mojibake.py` - pass.
 - `python -m pytest -q --tb=short` - `930 passed`, `3 warnings`.
+
+---
+
+## 2026-06-02 - v1.1.0 final UX fixes добивка
+
+**Status:** implemented, verified locally, committed without push/tag.
+
+### Cause
+
+- Analytics Reports empty-state still had a live-GUI clipping risk because `EmptyState` used a fixed base `minimumHeight=132` while wrapped `QLabel` geometry was not recalculated from `heightForWidth()` under real theme/font metrics.
+- Form100 required `*` marks and signing validator did not share a domain-level field-key source, and the Form100 stub showed `*` for rank/unit but not for `ФИО`.
+- The previous offscreen verifier manually reset `SearchTab.saved_filter_select`, which could mask an initialization regression.
+
+### Changed
+
+- `EmptyState` now recalculates wrapped label minimum heights from the current label width, then updates frame/widget minimum heights from layout `sizeHint()` while keeping 132 only as a base minimum.
+- Added anti-clip tests and verifier assertions for every word-wrap empty-state `QLabel` at wide/narrow widths.
+- Added `FORM100_SIGNING_REQUIRED_FIELDS` in the domain validator layer, guarded signing errors against that set, and derived UI required marks from it.
+- Marked stub `ФИО` as `ФИО *` in both `Form100EditorV2` and `Form100StubWidget`.
+- Added regression coverage for `SearchTab.saved_filter_select` starting at `currentIndex() == -1` without manual reset; removed that reset from the verifier.
+- Reviewed B2/B3/B5: no Form100 inline styles; EMK picker extraction deferred as tech debt; QC placeholder remains descriptive.
+
+### Checks
+
+- RED: `python -m pytest tests/unit/test_empty_state.py -q --tb=short` - failed before the `EmptyState` fix on `emptyStateText: height=29, needed=88, width=252`.
+- RED: targeted Form100 source test failed before adding `FORM100_SIGNING_REQUIRED_FIELDS`.
+- GREEN targeted: `python -m pytest tests/unit/test_empty_state.py tests/unit/test_form100_signing_error_text.py tests/unit/test_form100_v2_editor_fields.py tests/unit/test_combo_placeholders.py -q --tb=short` - `24 passed`, `1 warning`.
+- B2/B3 focused: `python -m pytest tests/unit/test_ui_no_inline_styles.py tests/unit/test_patient_emk_enter_filters.py tests/unit/test_patient_widgets_error_handling.py -q --tb=short` - `9 passed`.
+- Native startup: `python -m app.main` without offscreen - process stayed alive after 8 seconds and was stopped; startup crash not detected.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python -m pytest -q --tb=short` - `936 passed`, `3 warnings`.
+- `python -m ruff check app tests scripts` - pass.
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python artifacts/verify_v110/verify_v110_offscreen.py` - `PASS`.
+
+### Notes
+
+- Native GUI Reports visual sign-off still requires a human pass through the live Windows window; automation confirmed native startup and offscreen anti-clip geometry, not interactive navigation to Reports.
