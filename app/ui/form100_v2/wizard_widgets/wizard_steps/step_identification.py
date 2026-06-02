@@ -14,10 +14,14 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QScrollArea,
     QTimeEdit,
+    QVBoxLayout,
     QWidget,
 )
 
-from app.ui.form100_v2.signing_errors import form100_required_label
+from app.ui.form100_v2.signing_errors import (
+    form100_required_hint_label,
+    form100_required_label,
+)
 from app.ui.form100_v2.wizard_widgets.form100_stub_widget import Form100StubWidget
 from app.ui.widgets.datetime_inputs import (
     DEFAULT_EMPTY_DATE,
@@ -37,11 +41,17 @@ class StepIdentification(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(16)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(16, 16, 16, 16)
+        root.setSpacing(8)
+        root.addWidget(form100_required_hint_label())
 
-        self._stub = Form100StubWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(16)
+        root.addLayout(layout, 1)
+
+        self._stub = Form100StubWidget(show_required_hint=False)
         stub_scroll = QScrollArea()
         stub_scroll.setWidgetResizable(True)
         stub_scroll.setFrameShape(QFrame.Shape.NoFrame)

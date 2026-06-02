@@ -8050,3 +8050,36 @@ Window title, кнопки, внутренние ключи — не трону�
 - `python -m pytest -q --tb=short` - `929 passed`, `3 warnings`.
 - `python -m compileall -q app tests scripts` - pass.
 - `python scripts\check_mojibake.py` - pass.
+
+---
+
+## 2026-06-02 - verify UX fixes v1.1.0 and Form100 required hint cleanup
+
+**Status:** implemented and verified locally; verification artifacts are intentionally untracked, push was not performed.
+
+### Cause
+
+- During the DoD verification for `CODEX_VERIFY_V110.md`, Form100 required fields had `*` marks but did not show the explanatory hint `Обязательные поля отмечены *.` in the Form100 editor and wizard views.
+- Offscreen screenshot sanity-check also showed a duplicate hint in `StepIdentification`, because that step embedded `Form100StubWidget` with its own hint.
+
+### Changed
+
+- Added `FORM100_REQUIRED_HINT_TEXT` and `form100_required_hint_label()` for Form100 v2 UI.
+- Added the required-fields hint to `Form100EditorV2`, Form100 wizard blocks and steps.
+- Made `Form100StubWidget` optionally hide its own hint when embedded into `StepIdentification`, so the user sees the explanation once.
+- Added regression coverage that verifies the hint is present exactly once where Form100 required marks are visible.
+
+### Checks
+
+- RED: `python -m pytest tests/unit/test_form100_v2_editor_fields.py::test_form100_v2_required_hint_is_shown_where_required_marks_are_visible -q` - failed before the hint fix.
+- RED: the same targeted test failed again when requiring exactly one hint, reproducing the duplicate in `StepIdentification`.
+- GREEN targeted: `python -m pytest tests/unit/test_form100_v2_editor_fields.py::test_form100_v2_required_hint_is_shown_where_required_marks_are_visible -q` - `1 passed`.
+- Focused Form100 regression: `python -m pytest tests/unit/test_form100_v2_editor_fields.py tests/unit/test_form100_v2_step_medical.py tests/unit/test_form100_v2_step_evacuation.py tests/integration/test_form100_wizard_birth_date.py -q` - `20 passed`, `1 warning`.
+- `python artifacts/verify_v110/verify_v110_offscreen.py` - `PASS`, 54 PNG screenshots and JSON summary saved in `artifacts/verify_v110/`.
+- `python -m app.main` - started in offscreen mode and was stopped after 8 seconds at expected GUI/login wait; no startup crash.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python -m pytest -q --tb=short` - `930 passed`, `3 warnings`.

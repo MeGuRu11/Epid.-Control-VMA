@@ -4,16 +4,28 @@ from datetime import UTC, datetime
 from typing import cast
 
 from PySide6.QtCore import QDate, QTime
-from PySide6.QtWidgets import QCheckBox, QGroupBox, QLabel
+from PySide6.QtWidgets import QCheckBox, QGroupBox, QLabel, QWidget
 
 from app.application.dto.form100_v2_dto import Form100CardV2Dto
 from app.ui.form100_v2.form100_editor import Form100EditorV2
 from app.ui.form100_v2.signing_errors import FORM100_SIGNING_FIELD_LABELS
+from app.ui.form100_v2.wizard_widgets.form100_bottom_widget import Form100BottomWidget
+from app.ui.form100_v2.wizard_widgets.form100_main_widget import Form100MainWidget
+from app.ui.form100_v2.wizard_widgets.form100_stub_widget import Form100StubWidget
+from app.ui.form100_v2.wizard_widgets.wizard_steps.step_bodymap import StepBodymap
+from app.ui.form100_v2.wizard_widgets.wizard_steps.step_identification import StepIdentification
+from app.ui.form100_v2.wizard_widgets.wizard_steps.step_medical import StepMedical
+
+_REQUIRED_HINT_TEXT = "Обязательные поля отмечены *."
 
 
-def _label_texts(editor: Form100EditorV2) -> set[str]:
-    labels = cast(list[QLabel], editor.findChildren(QLabel))
-    return {label.text() for label in labels}
+def _label_texts(widget: QWidget) -> set[str]:
+    return set(_label_text_list(widget))
+
+
+def _label_text_list(widget: QWidget) -> list[str]:
+    labels = cast(list[QLabel], widget.findChildren(QLabel))
+    return [label.text() for label in labels]
 
 
 def _group_titles(editor: Form100EditorV2) -> set[str]:
@@ -42,6 +54,25 @@ def test_form100_v2_editor_marks_signing_required_fields(qapp) -> None:
     assert {"Вид поражения *", "Вид санитарных потерь *"}.issubset(_group_titles(editor))
     assert {"Антибиотик *", "Обезболивание *"}.issubset(_checkbox_texts(editor))
     assert "signed_by" in FORM100_SIGNING_FIELD_LABELS
+
+
+def test_form100_v2_required_hint_is_shown_where_required_marks_are_visible(qapp) -> None:
+    widgets = [
+        Form100EditorV2(),
+        Form100StubWidget(),
+        Form100MainWidget(),
+        Form100BottomWidget(),
+        StepIdentification(),
+        StepBodymap(),
+        StepMedical(),
+    ]
+
+    try:
+        for widget in widgets:
+            assert _label_text_list(widget).count(_REQUIRED_HINT_TEXT) == 1
+    finally:
+        for widget in widgets:
+            widget.close()
 
 
 def test_form100_v2_editor_builds_extended_stub_and_main_payload(qapp) -> None:

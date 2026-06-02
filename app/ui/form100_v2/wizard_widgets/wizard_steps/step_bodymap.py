@@ -17,7 +17,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.form100_v2.signing_errors import form100_required_label
+from app.ui.form100_v2.signing_errors import (
+    form100_required_hint_label,
+    form100_required_label,
+)
 from app.ui.form100_v2.wizard_widgets.bodymap_widget import BodyMapWidget
 from app.ui.form100_v2.wizard_widgets.lesion_type_widget import LesionTypeWidget
 
@@ -64,6 +67,7 @@ class StepBodymap(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(10, 10, 10, 10)
         root.setSpacing(8)
+        root.addWidget(form100_required_hint_label())
 
         # ── Top row: controls ───────────────────────────────────────────────
         self._controls = QWidget()

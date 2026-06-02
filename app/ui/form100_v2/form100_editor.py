@@ -41,7 +41,10 @@ from app.ui.form100_v2.enter_key_guard import (
     install_enter_key_guard,
     is_enter_key_press,
 )
-from app.ui.form100_v2.signing_errors import form100_required_label
+from app.ui.form100_v2.signing_errors import (
+    form100_required_hint_label,
+    form100_required_label,
+)
 from app.ui.form100_v2.widgets.bodymap_editor_v2 import BodymapEditorV2
 from app.ui.widgets.datetime_inputs import (
     DEFAULT_EMPTY_DATE,
@@ -99,6 +102,7 @@ class Form100EditorV2(QWidget):
 
         self.validation_banner = ValidationBanner()
         root.addWidget(self.validation_banner)
+        root.addWidget(form100_required_hint_label())
 
         root.addWidget(self._build_stub_block())
         root.addWidget(self._build_main_block())

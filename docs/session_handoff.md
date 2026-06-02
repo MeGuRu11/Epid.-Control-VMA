@@ -1,6 +1,44 @@
-# CURRENT: 2026-05-30 - sanitary date filters apply on Enter only
+# CURRENT: 2026-06-02 - verify UX fixes v1.1.0 / Form100 required hint
 
-The current handoff is the first `2026-05-30` section below. Older `2026-05-30` and `2026-05-29` notes are retained for context.
+The current handoff is the first `2026-06-02` section below. Older notes are retained for context.
+
+# Session 2026-06-02 - verify UX fixes v1.1.0 / Form100 required hint
+
+## Current State
+
+- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Task: verify the four UX fixes from v1.1.0 with programmatic checks and offscreen screenshots from `CODEX_VERIFY_V110.md`.
+- A Form100 DoD defect was found and fixed: required `*` marks now have the explanatory hint `Обязательные поля отмечены *.`.
+- Verification artifacts are intentionally untracked: `artifacts/verify_v110/` and root `VERIFY_V110_REPORT.md`.
+- Push was not performed.
+
+## Done
+
+- Added shared `FORM100_REQUIRED_HINT_TEXT` / `form100_required_hint_label()` in Form100 v2 UI.
+- Added the hint to `Form100EditorV2`, Form100 wizard blocks and steps.
+- Avoided duplicate hint in `StepIdentification` by making `Form100StubWidget(show_required_hint=False)` when embedded.
+- Added regression coverage that checks the hint is present exactly once where required marks are visible.
+- Created offscreen verification artifacts under `artifacts/verify_v110/`: verification script, JSON summary and 54 PNG screenshots.
+
+## Checks
+
+- RED targeted hint test before the fix - failed.
+- RED targeted exact-one-hint test before duplicate cleanup - failed.
+- GREEN targeted: `python -m pytest tests/unit/test_form100_v2_editor_fields.py::test_form100_v2_required_hint_is_shown_where_required_marks_are_visible -q` - `1 passed`.
+- Focused Form100 regression: `python -m pytest tests/unit/test_form100_v2_editor_fields.py tests/unit/test_form100_v2_step_medical.py tests/unit/test_form100_v2_step_evacuation.py tests/integration/test_form100_wizard_birth_date.py -q` - `20 passed`, `1 warning`.
+- Offscreen verification: `python artifacts/verify_v110/verify_v110_offscreen.py` - `PASS`.
+- `python -m app.main` - started in offscreen mode and was stopped after 8 seconds at expected GUI/login wait; no startup crash.
+- `python -m ruff check app tests scripts` - pass.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python -m pytest -q --tb=short` - `930 passed`, `3 warnings`.
+
+## Notes
+
+- Offscreen screenshots are useful for layout/text sanity checks, but they are not a native Windows GUI run. Manual Windows-GUI verification remains required for final visual sign-off.
+- The final verification report must stay untracked and should be read from `VERIFY_V110_REPORT.md`.
 
 # Session 2026-05-30 - sanitary date filters apply on Enter only
 

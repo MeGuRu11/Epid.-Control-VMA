@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from PySide6.QtWidgets import QLabel
+
 from app.domain.rules.form100_rules_v2 import FieldError, Form100SigningError
 from app.ui.widgets.notifications import error_text
 
+FORM100_REQUIRED_HINT_TEXT = "Обязательные поля отмечены *."
 FORM100_SIGNING_FIELD_LABELS: dict[str, str] = {
     "main.main_full_name": "ФИО",
     "main.main_rank": "Воинское звание",
@@ -37,6 +40,12 @@ def form100_required_label(field: str, text: str) -> str:
     if base.endswith("*"):
         return text
     return f"{base} *{suffix}"
+
+
+def form100_required_hint_label() -> QLabel:
+    label = QLabel(FORM100_REQUIRED_HINT_TEXT)
+    label.setObjectName("muted")
+    return label
 
 
 def format_form100_signing_errors(errors: list[FieldError]) -> str:

@@ -19,7 +19,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.form100_v2.signing_errors import form100_required_label
+from app.ui.form100_v2.signing_errors import (
+    form100_required_hint_label,
+    form100_required_label,
+)
 from app.ui.form100_v2.wizard_widgets.icon_select_widget import IconSelectWidget
 from app.ui.widgets.datetime_inputs import DEFAULT_EMPTY_DATE, create_optional_date_edit
 
@@ -68,11 +71,13 @@ def _to_storage_date(value: QDate) -> str:
 
 
 class Form100StubWidget(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, *, show_required_hint: bool = True) -> None:
         super().__init__(parent)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(10)
+        if show_required_hint:
+            root.addWidget(form100_required_hint_label())
 
         top = QGroupBox("Корешок")
         top.setObjectName("form100StubSection")

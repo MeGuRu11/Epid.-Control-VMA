@@ -18,7 +18,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.form100_v2.signing_errors import form100_required_label
+from app.ui.form100_v2.signing_errors import (
+    form100_required_hint_label,
+    form100_required_label,
+)
 from app.ui.form100_v2.wizard_widgets.icon_select_widget import IconSelectWidget
 
 
@@ -61,7 +64,8 @@ class Form100BottomWidget(QWidget):
         super().__init__(parent)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
+        root.setSpacing(6)
+        root.addWidget(form100_required_hint_label())
 
         block = QGroupBox("Эвакуация и заключение")
         block.setObjectName("form100Bottom")
