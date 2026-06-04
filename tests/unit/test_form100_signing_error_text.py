@@ -99,3 +99,30 @@ def test_form100_signing_validator_emits_required_field_source_keys() -> None:
         validate_for_signing(payload, signed_by=None)
 
     assert {error.field for error in exc_info.value.errors} == FORM100_SIGNING_REQUIRED_FIELDS
+
+
+def test_form100_signing_accepts_previously_valid_payload_without_stub_full_name() -> None:
+    payload = {
+        "main": {
+            "main_full_name": "Иванов Иван",
+            "main_rank": "капитан",
+            "main_unit": "1 рота",
+            "birth_date": "1990-01-02",
+            "main_injury_date": "17.02.2026",
+            "main_injury_time": "07:30",
+        },
+        "stub": {
+            "stub_rank": "капитан",
+            "stub_unit": "1 рота",
+            "stub_injury_date": "17.02.2026",
+            "stub_injury_time": "07:30",
+        },
+        "lesion": {"lesion_gunshot": True},
+        "san_loss": {},
+        "medical_help": {"mp_antibiotic": False, "mp_analgesic": False},
+        "bottom": {"main_diagnosis": "Огнестрельное ранение"},
+        "flags": {"flag_emergency": False},
+    }
+
+    validate_for_signing(payload, signed_by="doctor")
+    assert "stub.stub_full_name" not in FORM100_SIGNING_REQUIRED_FIELDS

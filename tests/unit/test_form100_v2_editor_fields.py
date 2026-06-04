@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 from PySide6.QtCore import QDate, QTime
-from PySide6.QtWidgets import QCheckBox, QGroupBox, QLabel, QWidget
+from PySide6.QtWidgets import QCheckBox, QFormLayout, QGroupBox, QLabel, QLayout, QWidget
 
 from app.application.dto.form100_v2_dto import Form100CardV2Dto
 from app.ui.form100_v2.form100_editor import Form100EditorV2
@@ -36,6 +36,31 @@ def _group_titles(editor: Form100EditorV2) -> set[str]:
 def _checkbox_texts(editor: Form100EditorV2) -> set[str]:
     checkboxes = cast(list[QCheckBox], editor.findChildren(QCheckBox))
     return {checkbox.text() for checkbox in checkboxes}
+
+
+def _iter_layouts(layout: QLayout | None) -> list[QLayout]:
+    if layout is None:
+        return []
+    layouts = [layout]
+    for index in range(layout.count()):
+        item = layout.itemAt(index)
+        child_layout = item.layout()
+        if child_layout is not None:
+            layouts.extend(_iter_layouts(child_layout))
+        child_widget = item.widget()
+        if child_widget is not None:
+            layouts.extend(_iter_layouts(child_widget.layout()))
+    return layouts
+
+
+def _form_label_for_field(root: QWidget, field: QWidget) -> str:
+    for layout in _iter_layouts(root.layout()):
+        if not isinstance(layout, QFormLayout):
+            continue
+        label = layout.labelForField(field)
+        if isinstance(label, QLabel):
+            return label.text()
+    raise AssertionError(f"label for field {field.objectName() or field.__class__.__name__} not found")
 
 
 def test_form100_v2_editor_marks_signing_required_fields(qapp) -> None:
@@ -83,6 +108,20 @@ def test_form100_stub_marks_full_name_as_signing_required(qapp) -> None:
         assert "ФИО" not in label_texts
     finally:
         widget.close()
+
+
+def test_form100_stub_full_name_required_mark_is_bound_to_stub_field(qapp) -> None:
+    editor = Form100EditorV2()
+    stub = Form100StubWidget()
+    step = StepIdentification()
+    try:
+        assert _form_label_for_field(editor, editor.stub_full_name) == "ФИО *"
+        assert _form_label_for_field(stub, stub.stub_full_name) == "ФИО *"
+        assert _form_label_for_field(step._stub, step._stub.stub_full_name) == "ФИО *"
+    finally:
+        editor.close()
+        stub.close()
+        step.close()
 
 
 def test_form100_v2_editor_builds_extended_stub_and_main_payload(qapp) -> None:
