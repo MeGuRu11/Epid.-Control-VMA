@@ -1,6 +1,44 @@
-# CURRENT: 2026-06-02 - v1.1.0 final UX fixes добивка
+# CURRENT: 2026-06-04 - v1.1.0 native verification reconciliation
 
-The current handoff is the first `2026-06-02` section below. Older notes are retained for context.
+The current handoff is the first `2026-06-04` section below. Older notes are retained for context.
+
+# Session 2026-06-04 - v1.1.0 native verification reconciliation
+
+## Current State
+
+- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Task: execute `CODEX_V110_NATIVE_VERIFY.md` final native/non-offscreen verification and artifact reconciliation.
+- Production code was not changed in this pass.
+- Push/tag were not performed.
+- Verification outputs remain intentionally untracked: root `VERIFY_V110_REPORT.md` and `artifacts/verify_v110/`.
+- CHANGELOG was not touched.
+
+## Done
+
+- Recreated `artifacts/verify_v110/verify_v110_offscreen.py` with Reports anti-clip assertions and no manual `SearchTab.saved_filter_select.setCurrentIndex(-1)`.
+- Added `artifacts/verify_v110/verify_v110_native.py` for native Windows Qt `QWidget.grab()` checks at default scale and `QT_SCALE_FACTOR=1.5`, with blank/monochrome guards.
+- Regenerated current verification outputs: 2 verifier scripts, 2 JSON summaries, and 14 PNG screenshots under `artifacts/verify_v110/`.
+- Added deterministic Form100 coverage for `ФИО *` bound to `stub_full_name` in `Form100EditorV2`, `Form100StubWidget`, and `StepIdentification`.
+- Added B1 regression proving `validate_for_signing` still accepts a previously valid payload without `stub.stub_full_name`; the stub `ФИО *` mark is UI-only.
+- Replaced `VERIFY_V110_REPORT.md` so it matches the current artifacts and removes stale claims about old EMK/combo 54 PNGs and `minimumHeight == 132`.
+
+## Checks
+
+- Focused Form100 regression: `python -m pytest tests/unit/test_form100_v2_editor_fields.py tests/unit/test_form100_signing_error_text.py -q --tb=short` - `15 passed`, `1 warning`.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python -m pytest -q --tb=short` - `938 passed`, `3 warnings`.
+- `python -m ruff check app tests scripts` - pass.
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python artifacts/verify_v110/verify_v110_offscreen.py` - `PASS`; Reports anti-clip wide/narrow and SearchTab `currentIndex=-1`.
+- `python artifacts/verify_v110/verify_v110_native.py` - `PASS`; `qt_platform=windows`; Reports wide/narrow nonblank; Form100 StepIdentification nonblank with `ФИО *`.
+- `python artifacts/verify_v110/verify_v110_native.py --scale 1.5` - `PASS`; Reports scale 1.5 nonblank and anti-clip.
+
+## Notes
+
+- Native Qt `QWidget.grab()` on platform `windows` is stronger evidence than offscreen rendering, but it is not the user's full manual desktop/DPI workflow. Final visual sign-off remains manual.
+- Expected working tree after commits: tracked changes clean, with untracked `VERIFY_V110_REPORT.md` and `artifacts/`.
 
 # Session 2026-06-02 - v1.1.0 final UX fixes добивка
 

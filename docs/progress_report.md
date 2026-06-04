@@ -8123,3 +8123,41 @@ Window title, кнопки, внутренние ключи — не трону�
 ### Notes
 
 - Native GUI Reports visual sign-off still requires a human pass through the live Windows window; automation confirmed native startup and offscreen anti-clip geometry, not interactive navigation to Reports.
+
+---
+
+## 2026-06-04 - v1.1.0 native verification reconciliation
+
+**Status:** verified locally; production code was not changed; push/tag were not performed.
+
+### Cause
+
+- `VERIFY_V110_REPORT.md` and `artifacts/verify_v110/` still described stale offscreen artifacts, including old EMK/combo screenshots and the obsolete Reports `minimumHeight == 132` statement.
+- The final v1.1.0 check needed native, non-offscreen `QWidget.grab()` verification for Reports empty-state at default scale and `QT_SCALE_FACTOR=1.5`.
+- Form100 stub `ФИО *` needed deterministic coverage, and B1 had to prove the signing validator was not expanded by the UI-only stub mark.
+
+### Changed
+
+- Recreated `artifacts/verify_v110/verify_v110_offscreen.py` with explicit anti-clip assertions and without manual `SearchTab.saved_filter_select.setCurrentIndex(-1)`.
+- Added `artifacts/verify_v110/verify_v110_native.py` for native Windows Qt grabs, blank/monochrome guards, default wide/narrow Reports screenshots, scale 1.5 Reports screenshot, and Form100 StepIdentification screenshot.
+- Added tests that bind `ФИО *` to `stub_full_name` in `Form100EditorV2`, `Form100StubWidget`, and `StepIdentification`.
+- Added a regression proving `validate_for_signing` still accepts a previously valid payload without `stub.stub_full_name`; the stub `ФИО *` mark remains UI-only.
+- Replaced root `VERIFY_V110_REPORT.md` so it matches the current 18 verification files and no longer claims old EMK/combo PNGs.
+
+### Checks
+
+- Focused Form100 regression: `python -m pytest tests/unit/test_form100_v2_editor_fields.py tests/unit/test_form100_signing_error_text.py -q --tb=short` - `15 passed`, `1 warning`.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python -m pytest -q --tb=short` - `938 passed`, `3 warnings`.
+- `python -m ruff check app tests scripts` - pass.
+- `python scripts/check_architecture.py` - pass.
+- `python -m compileall -q app tests scripts` - pass.
+- `python scripts\check_mojibake.py` - pass.
+- `python artifacts/verify_v110/verify_v110_offscreen.py` - `PASS`; Reports offscreen anti-clip: wide `34/34` and `48/48`, narrow `34/34` and `48/48`; SearchTab `current_index=-1`.
+- `python artifacts/verify_v110/verify_v110_native.py` - `PASS`; `qt_platform=windows`; Reports native wide/narrow anti-clip `36/36` and `48/48`; nonblank sampled colors 21/25; Form100 StepIdentification nonblank 23.
+- `python artifacts/verify_v110/verify_v110_native.py --scale 1.5` - `PASS`; Reports scale 1.5 anti-clip `36/36` and `48/48`; nonblank sampled colors 16.
+
+### Notes
+
+- Native `QWidget.grab()` on Qt platform `windows` is closer than offscreen rendering, but it is still not the user's full desktop/DPI manual workflow. Final visual sign-off remains manual.
+- `VERIFY_V110_REPORT.md` and `artifacts/verify_v110/` remain intentionally untracked verification outputs.
