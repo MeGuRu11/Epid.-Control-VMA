@@ -268,8 +268,9 @@ def test_create_outcome_type_combo_uses_placeholder_and_stable_codes(monkeypatch
     combo = cast(_FakeComboBox, factories.create_outcome_type_combo())
 
     assert combo.object_name == "emzOutcomeTypeCombo"
+    assert combo.placeholder_text == "Не выбран"
+    assert combo.current_index == -1
     assert combo.items == [
-        ("Не выбран", None),
         ("Выписка", "discharge"),
         ("Перевод", "transfer"),
         ("Летальный исход", "death"),

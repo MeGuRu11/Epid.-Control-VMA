@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
+import app.application.reporting.formatters as formatters
 from app.application.reporting.formatters import (
     DASH,
     format_annotation_type,
@@ -154,3 +155,37 @@ def test_format_silhouette_short_back() -> None:
 
 def test_format_silhouette_short_none() -> None:
     assert format_silhouette_short(None) == DASH
+
+
+def test_export_enum_labels_cover_printable_exchange_values() -> None:
+    assert hasattr(formatters, "format_export_enum")
+
+    assert formatters.format_export_enum("sex", "M") == "М"
+    assert formatters.format_export_enum("sex", "F") == "Ж"
+    assert formatters.format_export_enum("sex", "U") == DASH
+    assert formatters.format_export_enum("outcome_type", "discharge") == "Выписан"
+    assert formatters.format_export_enum("severity", "light") == "Лёгкая"
+    assert formatters.format_export_enum("study_kind", "primary") == "Первичное"
+    assert formatters.format_export_enum("qc_status", "valid") == "Действителен"
+    assert formatters.format_export_enum("method", "disk") == "Диско-диффузионный"
+    assert formatters.format_export_enum("ris", "S") == "Чувствительный"
+    assert formatters.format_export_enum("kind", "admission") == "При поступлении"
+    assert formatters.format_export_enum("growth_flag", 1) == "Рост выявлен"
+    assert formatters.format_export_enum("status", "DRAFT") == "Черновик"
+
+
+def test_localized_export_enum_labels_map_back_to_single_machine_value() -> None:
+    assert hasattr(formatters, "export_enum_reverse_labels")
+
+    reverse = formatters.export_enum_reverse_labels()
+
+    assert reverse["sex"]["м"] == "M"
+    assert reverse["outcome_type"]["выписан"] == "discharge"
+    assert reverse["severity"]["лёгкая"] == "mild"
+    assert reverse["study_kind"]["первичное"] == "primary"
+    assert reverse["qc_status"]["действителен"] == "valid"
+    assert reverse["method"]["диско-диффузионный"] == "disk"
+    assert reverse["ris"]["чувствительный"] == "S"
+    assert reverse["kind"]["при поступлении"] == "admission"
+    assert reverse["growth_flag"]["рост выявлен"] == 1
+    assert reverse["status"]["черновик"] == "DRAFT"

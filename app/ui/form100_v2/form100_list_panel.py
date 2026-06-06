@@ -27,15 +27,12 @@ from app.application.dto.form100_v2_dto import (
     Form100V2Filters,
 )
 from app.application.exceptions import AppError
+from app.application.reporting.formatters import format_form100_status
 from app.application.services.form100_service_v2 import Form100ServiceV2
 from app.ui.form100_v2.form100_wizard import Form100Wizard
 from app.ui.widgets.dialog_utils import exec_message_box
 from app.ui.widgets.notifications import error_text
 
-_STATUS_LABELS: dict[str, str] = {
-    "DRAFT":  "Черновик",
-    "SIGNED": "Подписан",
-}
 _HANDLED_FORM100_ERRORS = (ValueError, RuntimeError, LookupError, TypeError, AppError)
 
 
@@ -125,7 +122,7 @@ class _PreviewPanel(QFrame):
             label = "Архив"
             tone = "archived"
         else:
-            label = _STATUS_LABELS.get(card.status, card.status)
+            label = format_form100_status(card.status)
             tone = "signed" if card.status == "SIGNED" else "draft"
 
         self._badge.setText(label)
@@ -299,10 +296,7 @@ class Form100ListPanel(QDialog):
             self._table.insertRow(row)
 
             date_str = card.updated_at.strftime("%d.%m.%Y %H:%M")
-            if card.is_archived:
-                status_text = "Архив"
-            else:
-                status_text = _STATUS_LABELS.get(card.status, card.status)
+            status_text = "Архив" if card.is_archived else format_form100_status(card.status)
 
             items = [
                 QTableWidgetItem(date_str),
@@ -418,7 +412,5 @@ class Form100ListPanel(QDialog):
             self._load_cards()
             if self._on_data_changed:
                 self._on_data_changed()
-
-
 
 

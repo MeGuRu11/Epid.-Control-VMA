@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, cast
 
 from app.domain.constants import IsmpType, MilitaryCategory
 
@@ -70,6 +70,12 @@ _SEX_LABELS = {
     "F": "Женский",
 }
 
+_EXPORT_SEX_LABELS = {
+    "M": "М",
+    "F": "Ж",
+    "U": DASH,
+}
+
 _OUTCOME_LABELS = {
     "discharge": "Выписан",
     "transfer": "Перевод",
@@ -112,6 +118,44 @@ _RIS_LABELS = {
     "S": "Чувствительный",
     "I": "Промежуточный",
     "R": "Резистентный",
+}
+
+_METHOD_LABELS = {
+    "disk": "Диско-диффузионный",
+    "etest": "Е-тест",
+    "broth": "Бульонный",
+}
+
+_DIAGNOSIS_KIND_LABELS = {
+    "admission": "При поступлении",
+    "discharge": "При выписке",
+    "complication": "Осложнение",
+}
+
+_GROWTH_FLAG_LABELS = {
+    0: "Рост не выявлен",
+    1: "Рост выявлен",
+    "0": "Рост не выявлен",
+    "1": "Рост выявлен",
+}
+
+_FORM100_STATUS_LABELS = {
+    "DRAFT": "Черновик",
+    "SIGNED": "Подписан",
+}
+
+EXPORT_ENUM_LABELS: dict[str, dict[object, str]] = {
+    "sex": cast(dict[object, str], _EXPORT_SEX_LABELS),
+    "outcome_type": cast(dict[object, str], _OUTCOME_LABELS),
+    "severity": cast(dict[object, str], _SEVERITY_LABELS),
+    "study_kind": cast(dict[object, str], _STUDY_KIND_LABELS),
+    "route": cast(dict[object, str], _ROUTE_LABELS),
+    "qc_status": cast(dict[object, str], _QC_STATUS_LABELS),
+    "method": cast(dict[object, str], _METHOD_LABELS),
+    "ris": cast(dict[object, str], _RIS_LABELS),
+    "kind": cast(dict[object, str], _DIAGNOSIS_KIND_LABELS),
+    "growth_flag": _GROWTH_FLAG_LABELS,
+    "status": cast(dict[object, str], _FORM100_STATUS_LABELS),
 }
 
 _ANNOTATION_TYPE_LABELS = {
@@ -266,6 +310,71 @@ def format_ris(code: str | None) -> str:
     if code is None:
         return DASH
     return _RIS_LABELS.get(code.strip().upper(), DASH)
+
+
+def _normalize_enum_text(value: object) -> str:
+    return str(value).strip().casefold()
+
+
+def _machine_enum_value(field: str, value: object) -> object:
+    mapping = EXPORT_ENUM_LABELS.get(field)
+    if mapping is None:
+        return value
+    if value in mapping:
+        return value
+    normalized_value = _normalize_enum_text(value)
+    for machine_value in mapping:
+        if _normalize_enum_text(machine_value) == normalized_value:
+            return machine_value
+    return value
+
+
+def format_export_enum(field: str, value: object) -> object:
+    mapping = EXPORT_ENUM_LABELS.get(field)
+    if mapping is None or value is None:
+        return value
+    machine_value = _machine_enum_value(field, value)
+    return mapping.get(machine_value, value)
+
+
+def export_enum_reverse_labels() -> dict[str, dict[str, object]]:
+    reverse: dict[str, dict[str, object]] = {}
+    for field, mapping in EXPORT_ENUM_LABELS.items():
+        field_reverse: dict[str, object] = {}
+        for machine_value, label in mapping.items():
+            field_reverse.setdefault(_normalize_enum_text(label), machine_value)
+        reverse[field] = field_reverse
+    return reverse
+
+
+def normalize_export_enum(field: str, value: object) -> object:
+    if value is None or value == "":
+        return value
+    machine_value = _machine_enum_value(field, value)
+    if machine_value != value:
+        return machine_value
+    return export_enum_reverse_labels().get(field, {}).get(_normalize_enum_text(value), value)
+
+
+def format_method(code: str | None) -> str:
+    if code is None:
+        return DASH
+    return _METHOD_LABELS.get(code.strip().lower(), DASH)
+
+
+def format_diagnosis_kind(code: str | None) -> str:
+    if code is None:
+        return DASH
+    return _DIAGNOSIS_KIND_LABELS.get(code.strip().lower(), DASH)
+
+
+def format_form100_status(code: str | None) -> str:
+    if code is None:
+        return DASH
+    normalized = code.strip().upper()
+    if not normalized:
+        return DASH
+    return _FORM100_STATUS_LABELS.get(normalized, normalized)
 
 
 def format_annotation_type(code: str | None) -> str:

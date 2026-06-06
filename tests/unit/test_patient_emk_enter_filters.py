@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QHeaderView, QPushButton
 
 from app.application.dto.auth_dto import SessionContext
 from app.application.dto.emz_dto import EmzCaseDetail, EmzCaseResponse
@@ -158,6 +158,23 @@ def test_patient_emk_embedded_patient_table_loads_filters_and_selects(monkeypatc
         assert view._current_patient.id == 8
         assert emz_service.loaded_patient_ids == [8]
         assert view.cases_table.rowCount() == 1
+    finally:
+        view.close()
+
+
+def test_patient_emk_results_table_columns_are_not_interactively_resizable(qapp) -> None:
+    view = _make_view(qapp)
+    try:
+        header = view.results_table.horizontalHeader()
+
+        assert header.sectionResizeMode(0) == QHeaderView.ResizeMode.ResizeToContents
+        assert header.sectionResizeMode(1) == QHeaderView.ResizeMode.Stretch
+        assert header.sectionResizeMode(2) == QHeaderView.ResizeMode.ResizeToContents
+        assert all(
+            header.sectionResizeMode(column) != QHeaderView.ResizeMode.Interactive
+            for column in range(view.results_table.columnCount())
+        )
+        assert not header.sectionsMovable()
     finally:
         view.close()
 

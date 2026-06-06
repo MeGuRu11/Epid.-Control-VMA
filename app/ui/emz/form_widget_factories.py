@@ -279,9 +279,10 @@ def create_intervention_type_combo() -> QComboBox:
 def create_outcome_type_combo() -> QComboBox:
     combo = QComboBox()
     combo.setObjectName("emzOutcomeTypeCombo")
-    combo.addItem(OUTCOME_TYPE_PLACEHOLDER, None)
+    set_combo_placeholder(combo, OUTCOME_TYPE_PLACEHOLDER)
     for label, value in OUTCOME_TYPE_OPTIONS:
         combo.addItem(label, value)
+    combo.setCurrentIndex(-1)
     return combo
 
 

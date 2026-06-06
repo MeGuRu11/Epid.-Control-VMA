@@ -2,7 +2,7 @@
 
 Короткий контекст для новых чатов: что за продукт, где мы находимся и что делать дальше.
 
-Дата обновления: 2026-05-07
+Дата обновления: 2026-06-06
 
 ## Кратко о продукте
 
@@ -31,6 +31,36 @@ Desktop-приложение для стационара: ЭМЗ пациент�
 - Тесты нужно запускать после каждого изменения.
 
 ## Журнал работ
+
+### 2026-06-06 — fix: final QA A1/A2 and localized readable exports for v1.1.0
+
+Причины:
+- В `PatientEmkView.results_table` ширины `ID` и `Дата рождения` оставались интерактивными после общего `resize_columns_to_content`, поэтому границы можно было тянуть мышью.
+- `create_outcome_type_combo()` добавлял `Не выбран` как реальный item с `None`, а `_set_outcome_type(None)` выбирал этот item вместо пустого `currentIndex == -1`.
+- PDF использовал неполную локальную enum-карту в `exchange_service`, из-за чего `sex` оставался `M/F`; статус Form100 и часть enum-меток дублировались вне `formatters.py`.
+- Пользовательский Excel был машинным, а безопасный round-trip требовал сохранить machine-values по умолчанию и добавить отдельный readable режим.
+
+Сделано:
+- Для встроенного списка пациентов в EMK зафиксированы режимы заголовка: `ID`/`Дата рождения` = `ResizeToContents`, `ФИО` = `Stretch`, секции не movable/clickable; `cases_table` не трогалась.
+- `Исход` в ЭМЗ переведен на placeholder-паттерн: пустое состояние `currentIndex == -1`, в списке только реальные значения; сохранение без исхода пишет `NULL`, сохраненный исход преселектится.
+- Enum-метки и обратная нормализация перенесены в `app/application/reporting/formatters.py`; PDF, readable Excel/CSV и Form100 list panel используют общий источник.
+- `export_excel`/`export_csv` получили `localized=False` по умолчанию и readable `localized=True`; мастер пользовательского Excel-экспорта вызывает readable режим, `export_json` и внутренний ZIP `export.xlsx` остались машинными.
+- Добавлены regression-тесты A1/A2/B/C, readable round-trip Excel/CSV, PDF sex-localization и guard биективности enum-подписей.
+- Добавлены verification-артефакты `artifacts/live_gui_v110_final/`: native GUI screenshots/JSON и экспортные PDF/XLSX/CSV.
+- В `pyproject.toml` добавлен exclude `.agents`, чтобы `ruff check .` проверял проект, не падая на локальных внешних skill-скриптах.
+
+Проверки:
+- RED до правок: новые A1/A2/B/C тесты падали на интерактивном заголовке, item-плейсхолдере, отсутствии formatter API/PDF sex-localization и отсутствии `localized` режима.
+- Targeted GREEN: `102 passed`, затем `44 passed` + `60 passed` на сфокусированных наборах.
+- Live GUI: `python artifacts\live_gui_v110_final\verify_live_gui_v110_final.py --fresh` — pass, `qt_platform=windows`, A1 drag widths unchanged, A2 placeholder/dropdown/preselect/save-NULL проверены.
+- Export artifacts: `python artifacts\live_gui_v110_final\verify_exports_v110_final.py` — pass, PDF patients создан, readable Excel/CSV импортированы обратно с `error_count == 0`, SQL machine-value checks = 0.
+- `python -m ruff check .` — pass.
+- `python -m mypy app tests` — pass (`404 source files`).
+- `python -m pytest -q --tb=short` — `946 passed`, `3 warnings`.
+- `python scripts\check_architecture.py` — pass.
+- `python -m compileall app` — pass.
+- `python -m alembic check` — pass.
+- `python scripts\check_mojibake.py` — pass.
 
 ### 2026-05-26 — fix: proper optional date and datetime widgets
 

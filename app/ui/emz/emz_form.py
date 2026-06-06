@@ -558,15 +558,17 @@ class EmzForm(QWidget):
         return optional_datetime_value(widget, empty_datetime=self._dt_empty)
 
     def _outcome_type_value(self) -> str | None:
+        if self.outcome_type_combo.currentIndex() < 0:
+            return None
         value = self.outcome_type_combo.currentData()
         return str(value) if value else None
 
     def _set_outcome_type(self, value: str | None) -> None:
         if not outcome_type_to_label(value):
-            self.outcome_type_combo.setCurrentIndex(0)
+            self.outcome_type_combo.setCurrentIndex(-1)
             return
         idx = self.outcome_type_combo.findData(value)
-        self.outcome_type_combo.setCurrentIndex(idx if idx >= 0 else 0)
+        self.outcome_type_combo.setCurrentIndex(idx if idx >= 0 else -1)
 
     def _to_qdate(self, value: date) -> QDate:
         return to_qdate(value)

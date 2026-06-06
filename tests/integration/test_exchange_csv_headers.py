@@ -215,3 +215,36 @@ def test_lab_sample_pdf_headers_match_csv_headers(tmp_path: Path, monkeypatch: A
     assert "Срок QC" in captured_headers
     assert "Статус QC" in captured_headers
     assert "Тип материала" in captured_headers
+
+
+def test_patients_pdf_localizes_short_sex_values(tmp_path: Path, monkeypatch: Any) -> None:
+    session_factory = make_session_factory(tmp_path / "patients_pdf_sex.db")
+    actor_id = seed_actor(session_factory)
+    service = ExchangeService(session_factory=session_factory)
+    captured_rows: list[list[str]] = []
+    original_table = exchange_module.Table
+
+    def capture_table(data: list[list[object]], *args: object, **kwargs: object) -> object:
+        captured_rows[:] = [
+            [
+                cast(str, cell.getPlainText()) if hasattr(cell, "getPlainText") else str(cell)
+                for cell in row
+            ]
+            for row in data
+        ]
+        return original_table(data, *args, **kwargs)
+
+    monkeypatch.setattr(exchange_module, "Table", capture_table)
+    with session_factory() as session:
+        session.add_all(
+            [
+                models.Patient(full_name="Иванов Иван", dob=date(1990, 1, 1), sex="M"),
+                models.Patient(full_name="Петрова Анна", dob=date(1991, 2, 2), sex="F"),
+            ]
+        )
+
+    service.export_pdf(tmp_path / "patients.pdf", "patients", actor_id=actor_id)
+
+    sex_column = captured_rows[0].index("Пол")
+    sex_values = {row[sex_column] for row in captured_rows[1:]}
+    assert sex_values == {"М", "Ж"}

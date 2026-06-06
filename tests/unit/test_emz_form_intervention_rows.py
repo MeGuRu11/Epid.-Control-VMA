@@ -288,14 +288,14 @@ def test_form_contains_outcome_type_combo_between_admission_and_outcome(qapp) ->
         combo = form.outcome_type_combo
         assert isinstance(combo, QComboBox)
         assert form.outcome_type_label.text() == "Исход"
-        assert combo.itemText(0) == "Не выбран"
-        assert combo.itemData(0) is None
-        assert [combo.itemText(index) for index in range(1, combo.count())] == [
+        assert combo.placeholderText() == "Не выбран"
+        assert combo.currentIndex() == -1
+        assert [combo.itemText(index) for index in range(combo.count())] == [
             "Выписка",
             "Перевод",
             "Летальный исход",
         ]
-        assert [combo.itemData(index) for index in range(1, combo.count())] == [
+        assert [combo.itemData(index) for index in range(combo.count())] == [
             "discharge",
             "transfer",
             "death",
@@ -352,7 +352,7 @@ def test_form_keeps_old_case_without_outcome_type_on_placeholder(qapp) -> None:
         form.load_case(7, 42, emit_context=False)
         qapp.processEvents()
 
-        assert form.outcome_type_combo.currentIndex() == 0
+        assert form.outcome_type_combo.currentIndex() == -1
         assert form.outcome_type_combo.currentData() is None
         assert form._outcome_type_value() is None
     finally:

@@ -41,7 +41,11 @@ from app.application.dto.exchange_dto import (
     ZipExportResult,
     ZipImportResult,
 )
-from app.application.reporting.formatters import to_iso_utc
+from app.application.reporting.formatters import (
+    format_export_enum,
+    normalize_export_enum,
+    to_iso_utc,
+)
 from app.application.reporting.id_resolver import IdResolver
 from app.application.security.role_matrix import Role, has_permission
 from app.config import DATA_DIR
@@ -398,22 +402,6 @@ _EXPORT_BATCH_SIZE = 500
 _FORM100_PDF_EXPORT_NOTE = "PDF-артефакты карточек Формы 100 экспортируются отдельно через Form100 ZIP"
 _FULL_EXPORT_NOTES: dict[str, str] = {"form100_pdf": _FORM100_PDF_EXPORT_NOTE}
 _HUMAN_EXPORT_SKIP_TABLES = {"form100_data"}
-_ENUM_VALUE_LABELS: dict[str, dict[object, str]] = {
-    "study_kind": {"primary": "первичное", "repeat": "повторное"},
-    "qc_status": {"valid": "валидный", "conditional": "условный", "rejected": "отклонён"},
-    "kind": {
-        "admission": "при поступлении",
-        "discharge": "при выписке",
-        "complication": "осложнение",
-    },
-    "method": {"disk": "диско-диффузионный", "etest": "Е-тест", "broth": "бульонный"},
-    "growth_flag": {
-        0: "Рост не выявлен",
-        1: "Рост выявлен",
-        "0": "Рост не выявлен",
-        "1": "Рост выявлен",
-    },
-}
 _JSON_LIST_COLUMNS = frozenset(
     {
         "bodymap_annotations_json",
@@ -459,10 +447,14 @@ def _serialize_json_value(value: object) -> JSONValue | object:
 
 def _apply_enum_labels(record: JSONDict) -> None:
     """Перевести enum-поля БД в человекочитаемые значения для экспортов."""
-    for field, mapping in _ENUM_VALUE_LABELS.items():
-        if field in record and record[field] is not None:
-            value = record[field]
-            record[field] = cast(JSONValue, mapping.get(value, value))
+    for field, value in list(record.items()):
+        if value is not None:
+            record[field] = cast(JSONValue, format_export_enum(field, value))
+
+
+def _normalize_import_enum_values(record: dict[str, object]) -> None:
+    for field, value in list(record.items()):
+        record[field] = normalize_export_enum(field, value)
 
 
 def _is_json_column(column_name: str) -> bool:
@@ -704,6 +696,7 @@ def _validate_csv_row(
         return None, shape_errors
 
     mapped_row = _map_csv_row(table_name, row)
+    _normalize_import_enum_values(mapped_row)
     errors: list[ExchangeImportErrorEntry] = []
     pk_cols = list(model_cls.__mapper__.primary_key)
     if len(pk_cols) == 1:
@@ -877,6 +870,7 @@ def _finalize_excel_workbook(workbook: Workbook) -> None:
 
 def _prepare_import_value(value: object, column: object) -> object:
     column_name = str(getattr(column, "name", ""))
+    value = normalize_export_enum(column_name, value)
     if _is_json_column(column_name) and isinstance(value, dict | list):
         return json.dumps(value, ensure_ascii=False, default=str)
     return _parse_value(value, column)
@@ -1206,6 +1200,7 @@ class ExchangeService:
         *,
         exported_by: str | None = None,
         actor_id: int,
+        localized: bool = False,
         log_package: bool = True,
     ) -> ExcelExportResult:
         self._require_permission(actor_id, "manage_exchange")
@@ -1235,6 +1230,8 @@ class ExchangeService:
                 for row in _iter_model_rows(session, model_cls):
                     data = _model_to_dict(row)
                     _fill_resolved_fields(data, name, resolver)
+                    if localized:
+                        _apply_enum_labels(data)
                     ws.append([data.get(col) for col in extended_columns])
                     row_count += 1
                 counts[name] = row_count
@@ -1345,6 +1342,7 @@ class ExchangeService:
                             header: row[idx] if row is not None and idx < len(row) else None
                             for idx, header in header_positions
                         }
+                        _normalize_import_enum_values(data)
                         identity = _get_pk_identity(model_cls, data)
                         existing = session.get(model_cls, identity) if identity is not None else None
                         if mode == "append" and existing is not None:
@@ -1500,7 +1498,14 @@ class ExchangeService:
             rows = q.order_by(models.DataExchangePackage.created_at.desc()).limit(limit).all()
             return cast(list[models.DataExchangePackage], rows)
 
-    def export_csv(self, file_path: str | Path, table_name: str, *, actor_id: int) -> CsvExportResult:
+    def export_csv(
+        self,
+        file_path: str | Path,
+        table_name: str,
+        *,
+        actor_id: int,
+        localized: bool = False,
+    ) -> CsvExportResult:
         self._require_permission(actor_id, "manage_exchange")
         file_path = Path(file_path)
         if table_name not in CSV_TABLES:
@@ -1518,6 +1523,8 @@ class ExchangeService:
                 for row in _iter_model_rows(session, model_cls):
                     data = _model_to_dict(row)
                     _fill_resolved_fields(data, table_name, resolver)
+                    if localized:
+                        _apply_enum_labels(data)
                     writer.writerow([data.get(col) for col in extended_columns])
                     count += 1
         self._record_package("export", "csv", file_path, actor_id, scope_tables=[table_name], rows_affected=count)

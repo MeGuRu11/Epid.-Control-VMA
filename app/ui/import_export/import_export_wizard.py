@@ -156,6 +156,7 @@ class ImportExportWizard(QWizard):
                     file_path=file_path,
                     exported_by=self.session.login,
                     actor_id=actor_id,
+                    localized=True,
                 )
                 total = sum(excel_result["counts"].values())
                 return f"{total} записей", False

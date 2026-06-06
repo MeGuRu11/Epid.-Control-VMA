@@ -1,6 +1,55 @@
-# CURRENT: 2026-06-04 - v1.1.0 native verification reconciliation
+# CURRENT: 2026-06-06 - v1.1.0 final QA fixes
 
-The current handoff is the first `2026-06-04` section below. Older notes are retained for context.
+The current handoff is the first `2026-06-06` section below. Older notes are retained for context.
+
+# Session 2026-06-06 - v1.1.0 final QA fixes
+
+## Current State
+
+- Repository: `C:\Users\user\Desktop\Program\Epid.-Control-VMA`.
+- Task: execute `C:/Users/user/Downloads/CODEX_V110_FINAL_QA_FIXES.md`.
+- Implemented A1/A2 UI fixes, B PDF enum localization through a single formatter source, and C readable localized Excel/CSV with safe reverse import.
+- Local commit was created for code/tests/docs. Push/tag were not performed. CHANGELOG was not touched.
+- Existing untracked `docs/QA_CHECKLIST_RELEASE_v1.1.0.md` was present before this session and was not modified.
+- Verification artifacts are intentionally untracked under `artifacts/live_gui_v110_final/`.
+
+## Done
+
+- `PatientEmkView.results_table`: header modes are `ResizeToContents / Stretch / ResizeToContents`, with movable/clickable header sections disabled; hospitalization `cases_table` behavior is unchanged.
+- EMZ `Исход`: removed the selectable `Не выбран` item, kept `Не выбран` as combo placeholder, normalized empty state to `currentIndex == -1`, and saved empty outcome as `NULL`.
+- Added central export enum helpers in `app/application/reporting/formatters.py`, including short printable sex labels, outcome/severity/study/QC/method/RIS/diagnosis/growth/Form100 mappings, reverse maps, and normalization.
+- `exchange_service`: PDF uses the central formatter; `export_excel`/`export_csv` now support `localized=True` while defaults remain machine-oriented; import accepts machine codes and localized labels before validation.
+- Import/export wizard now uses readable `export_excel(..., localized=True)` for user Excel export.
+- Form100 list panel delegates status labels to `format_form100_status`.
+- Added regression coverage for A1/A2/B/C and kept old machine-value round-trip guards intact.
+- Added native Windows Qt verifier and export verifier:
+  - `artifacts/live_gui_v110_final/verify_live_gui_v110_final.py`
+  - `artifacts/live_gui_v110_final/verify_exports_v110_final.py`
+
+## Checks
+
+- RED before production fixes: new A1/A2/B/C tests failed on interactive patient-result columns, selectable outcome placeholder, missing formatter/export APIs, PDF `M/F`, and missing wizard `localized=True`.
+- Targeted GREEN: focused A1/A2/B/C suites passed (`102 passed`, then `44 passed` + `60 passed` after the final formatter fallback adjustment).
+- Live GUI: `python artifacts\live_gui_v110_final\verify_live_gui_v110_final.py --fresh` - `PASS`; `qt_platform=windows`; EMK drag widths unchanged; name/ID filter and case loading passed; EMZ placeholder/dropdown/preselect/save-NULL passed.
+- Export self-check: `python artifacts\live_gui_v110_final\verify_exports_v110_final.py` - `PASS`; `pdf_patients.pdf`, `full_export_localized.xlsx`, and `lab_sample_localized.csv` created; localized Excel/CSV import returned `error_count == 0`; SQL machine-value checks all `0`.
+- `python -m ruff check .` - pass.
+- `python -m mypy app tests` - pass (`404 source files`).
+- `python -m pytest -q --tb=short` - `946 passed`, `3 warnings`.
+- `python scripts\check_architecture.py` - pass.
+- `python -m compileall app` - pass.
+- `python -m alembic check` - pass.
+- `python scripts\check_mojibake.py` - pass.
+
+## Notes
+
+- `export_json` and the internal `export.xlsx` in ZIP remain machine-oriented.
+- The UI patient card full-word sex labels were not changed; short `М/Ж` labels are for printable/tabular exports.
+- `pyproject.toml` now excludes `.agents` from `ruff check .` because local external skill scripts there produced unrelated lint failures outside the app/test tree.
+- Useful artifacts:
+  - `artifacts/live_gui_v110_final/live_gui_summary.json`
+  - `artifacts/live_gui_v110_final/export_summary.json`
+  - `artifacts/live_gui_v110_final/screenshots/*.png`
+  - `artifacts/live_gui_v110_final/exports/*`
 
 # Session 2026-06-04 - v1.1.0 native verification reconciliation
 

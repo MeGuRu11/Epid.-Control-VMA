@@ -212,6 +212,43 @@ def test_path_page_browse_uses_contextual_export_filename(
     assert wizard._path_page.path_input.text() == captured[0][1]
 
 
+def test_wizard_excel_export_uses_localized_readable_mode(qapp) -> None:
+    class _ReadableExcelServiceStub(_ExchangeServiceStub):
+        def __init__(self) -> None:
+            self.localized: bool | None = None
+
+        def export_excel(
+            self,
+            file_path: str,
+            *,
+            exported_by: str | None,
+            actor_id: int,
+            localized: bool = False,
+        ) -> dict[str, object]:
+            del file_path, exported_by, actor_id
+            self.localized = localized
+            return {"counts": {"patients": 1}}
+
+    service = _ReadableExcelServiceStub()
+    wizard = ImportExportWizard(
+        exchange_service=cast(ExchangeService, service),
+        session=_session(),
+        table_labels={"patients": "Пациенты"},
+    )
+
+    message, has_errors = wizard._run_operation(
+        direction="export",
+        fmt="excel",
+        table_name=None,
+        file_path="C:/exports/full_export.xlsx",
+        import_mode="merge",
+    )
+
+    assert message == "1 записей"
+    assert has_errors is False
+    assert service.localized is True
+
+
 def test_preview_page_export_shows_summary_table(qapp) -> None:
     wizard = _wizard({"patients": "Пациенты"})
     wizard._direction_page.format.setCurrentText("Excel")
