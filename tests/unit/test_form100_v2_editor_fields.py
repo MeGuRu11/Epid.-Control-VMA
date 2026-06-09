@@ -44,6 +44,8 @@ def _iter_layouts(layout: QLayout | None) -> list[QLayout]:
     layouts = [layout]
     for index in range(layout.count()):
         item = layout.itemAt(index)
+        if item is None:
+            continue
         child_layout = item.layout()
         if child_layout is not None:
             layouts.extend(_iter_layouts(child_layout))
